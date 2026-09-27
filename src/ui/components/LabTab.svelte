@@ -3,6 +3,7 @@
   import { formatNumber } from '@core/format';
   import { content } from '@content/index';
   import { filterCreatures, sortCreatures } from '@core/queries';
+  import { activeLoci } from '@core/genetics';
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments, recycle } from '@core/features/recycler';
@@ -33,7 +34,7 @@
       sellValue: batchSellValue(game, chosen),
       fragments: game.state.features['recycler'] ? batchFragments(game, chosen) : null,
       species: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
-      alleles: content.genes.list.flatMap((l) => l.alleles.filter((a) => game.state.geneLibrary[`${l.id}:${a.id}`]).map((a) => ({ key: `${l.id}:${a.id}`, label: `${l.name}: ${a.name} (${a.symbol})` }))),
+      alleles: activeLoci(game).flatMap((l) => l.alleles.filter((a) => game.state.geneLibrary[`${l.id}:${a.id}`]).map((a) => ({ key: `${l.id}:${a.id}`, label: `${l.name}: ${a.name} (${a.symbol})` }))),
     };
   });
 

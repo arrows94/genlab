@@ -5,7 +5,7 @@
   import { formatDuration, formatPercent } from '@core/format';
   import { isBeingSequenced, runningSequencing, sequencerSlots, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
   import { instabilityChance, maxSplices, splice, spliceCost } from '@core/features/splicing';
-  import { libraryHas } from '@core/genetics';
+  import { activeLoci, libraryHas } from '@core/genetics';
   import { processRemainingMs } from '@core/systems/processes';
   import { game, view, act } from '../store.svelte';
   import CreaturePicker from './CreaturePicker.svelte';
@@ -24,8 +24,9 @@
     view.frame;
     const selected = toSequence !== null ? findCreature(game, toSequence) : undefined;
     const target = spliceTarget !== null ? findCreature(game, spliceTarget) : undefined;
-    const libraryTotal = content.genes.list.reduce((n, l) => n + l.alleles.length, 0);
+    const libraryTotal = activeLoci(game).reduce((n, l) => n + l.alleles.length, 0);
     return {
+      loci: activeLoci(game),
       slots: sequencerSlots(game),
       running: runningSequencing(game).map((p) => ({
         id: p.id,
@@ -50,7 +51,7 @@
 
   const library = $derived.by(() => {
     view.frame;
-    return content.genes.list.map((locus) => ({
+    return activeLoci(game).map((locus) => ({
       locus,
       alleles: locus.alleles.map((a) => ({ a, found: libraryHas(game, locus.id, a.id) })),
     }));
@@ -121,7 +122,7 @@
     <div class="splice">
       <CreaturePicker creatures={data.sequenced} bind:value={spliceTarget} placeholder="Sequenzierte Kreatur …" />
       <select bind:value={spliceLocus} onchange={() => (spliceAllele = '')}>
-        {#each content.genes.list as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
+        {#each data.loci as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
       </select>
       <select bind:value={spliceSlot}>
         <option value={0}>Allel 1{data.target ? ` (${data.target.genome[spliceLocus]?.[0]})` : ''}</option>

@@ -1,6 +1,6 @@
 import { D } from '../num';
 import { checkPerfection, findCreature } from '../creatures';
-import { alleleDef, libraryHas, rollAllele } from '../genetics';
+import { activeLoci, alleleDef, libraryHas, rollAllele } from '../genetics';
 import { trySpend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -34,7 +34,7 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   if (!c.sequenced) return { ok: false, reason: 'Nur sequenzierte Kreaturen können verändert werden.' };
-  if (!ctx.content.genes.has(locusId)) return { ok: false, reason: 'Unbekanntes Gen.' };
+  if (!activeLoci(ctx).some((l) => l.id === locusId)) return { ok: false, reason: 'Unbekanntes Gen.' };
   const locus = ctx.content.genes.get(locusId);
   if (!alleleDef(locus, alleleId)) return { ok: false, reason: 'Unbekanntes Allel.' };
   if (!libraryHas(ctx, locusId, alleleId)) return { ok: false, reason: 'Dieses Allel fehlt in der Genbibliothek.' };
@@ -47,7 +47,8 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   let scrambledLocus: string | null = null;
   if (ctx.rng.chance(instabilityChance(ctx))) {
     success = false;
-    const others = ctx.content.genes.list.filter((l) => l.id !== locusId);
+    // Only loci that currently exist (the Urgen needs its Äon talent).
+    const others = activeLoci(ctx).filter((l) => l.id !== locusId);
     if (others.length > 0) {
       const other = ctx.rng.pick(others);
       const pair = c.genome[other.id] ?? [rollAllele(ctx, other), rollAllele(ctx, other)];
