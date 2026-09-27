@@ -57,7 +57,7 @@ Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 - [x] **Phase 1 – Fundament**: Setup, Ordnerstruktur, Content-Interfaces + Validierung, Modifier-System, Tick/Offline, Save/Load/Migration, Event-Bus, Tests, spielbares Grundgerüst (Sammeln, Farm/Mine, Forschung, Dex, Statistik, Vererbung, Export/Import)
 - [x] **Phase 2 – Portierung**: Brutstation (Vererbung von Werten, Aussehen, Fähigkeiten, Mutation, mehrere Nester), Erkundung (Camps, Beute, wilde Kreaturen), Bio-Labor, Markt (Kraftfutter, Turbo-Trank, Festmahl, Zeitkristall), Fähigkeiten in Stufen, vollständiger Forschungsbaum inkl. Dex-Freischaltungen, langsamer Start mit schrittweisen Freischaltungen, Tab-Badges
 - [x] **Phase 3 – Genetik**: 9 Gen-Loci mit dominanten, rezessiven und kodominanten Allelen, Mendel-Vererbung mit Mutation, verborgene Genome + Sequenzierlabor, Genbibliothek, Gen-Splicing mit Instabilität, Zuchtplaner, DNA-Darstellung
-- [ ] Phase 4 – Arten & Hybride
+- [x] **Phase 4 – Arten & Hybride**: 12 Basisarten (ein Element je Art), 10 Hybride, 7 seltene Hybride, 4 mythische Endformen; Rezepte mit Bedingungen, Hinweise über Forschung/Erkundung, Evolution mit Evolutionskristallen, Regionen mit eigenen Arten, Dex-Stammbaum
 - [ ] Phase 5 – Management & Verwertung
 - [ ] Phase 6 – Endgame
 - [ ] Phase 7 – Feinschliff

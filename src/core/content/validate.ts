@@ -147,6 +147,9 @@ export function validateContent(data: ContentData): string[] {
     const w = at('recipes', r.id);
     r.parents.forEach((p) => ref(`${w}.parents`, 'species', p));
     ref(`${w}.result`, 'species', r.result);
+    text(`${w}.hint`, r.hint);
+    const result = data.species.find((s) => s.id === r.result);
+    if (result?.tier === 'base') issues.push(`${w}.result: Hybrid-Ergebnis darf keine Basisart sein`);
     num(`${w}.chance`, r.chance, 0, 1);
     ref(`${w}.requires.minRarity`, 'rarities', r.requires?.minRarity);
     alleleRef(`${w}.requires.allele`, r.requires?.allele);
@@ -156,6 +159,7 @@ export function validateContent(data: ContentData): string[] {
     const w = at('evolutions', e.id);
     ref(`${w}.from`, 'species', e.from);
     ref(`${w}.to`, 'species', e.to);
+    if (e.from === e.to) issues.push(`${w}: from und to sind gleich`);
     ref(`${w}.requires.minRarity`, 'rarities', e.requires.minRarity);
     alleleRef(`${w}.requires.allele`, e.requires.allele);
     amounts(`${w}.requires.cost`, e.requires.cost);
@@ -177,6 +181,7 @@ export function validateContent(data: ContentData): string[] {
     mods(`${w}.modifiers`, u.modifiers);
     u.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
     cond(`${w}.requires`, u.requires);
+    if (u.grantsHints !== undefined) num(`${w}.grantsHints`, u.grantsHints, 0);
   }
   for (const p of data.potions) {
     const w = at('potions', p.id);
@@ -192,6 +197,8 @@ export function validateContent(data: ContentData): string[] {
     num(`${w}.durationSec`, m.durationSec, 1);
     amounts(`${w}.cost`, m.cost);
     num(`${w}.wildChance`, m.wildChance, 0, 1);
+    m.species?.forEach((s) => ref(`${w}.species`, 'species', s));
+    cond(`${w}.requires`, m.requires);
     for (const [res, range] of Object.entries(m.rewards)) {
       ref(`${w}.rewards`, 'resources', res);
       if (!Array.isArray(range) || range.length !== 2 || range[0] > range[1]) issues.push(`${w}.rewards.${res}: [min, max] erwartet`);

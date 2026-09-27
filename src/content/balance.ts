@@ -16,7 +16,7 @@ export const balance: Balance = {
     summaryMinSec: 60,
   },
   start: {
-    resources: { food: 0, gold: 0, essence: 0, heritage: 0 },
+    resources: { food: 0, gold: 0, essence: 0, catalyst: 0, heritage: 0 },
     species: 'emberpup',
     rarity: 'common',
   },
@@ -66,6 +66,9 @@ export const balance: Balance = {
       maxPerCreature: 3,
       instability: 0.25,
     },
+  },
+  hybrids: {
+    hintChancePerHour: 0.4,
   },
   missions: {
     baseCamps: 1,

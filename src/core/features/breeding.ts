@@ -2,6 +2,7 @@ import { D } from '../num';
 import { inheritAbilities } from '../abilities';
 import { createCreature, creatureModifiers, findCreature } from '../creatures';
 import { inheritGenome } from '../genetics';
+import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -88,24 +89,6 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number): Actio
   return { ok: true };
 }
 
-/** Species of the offspring: a matching hybrid recipe (if unlocked) or one of the parents. */
-export function offspringSpecies(ctx: GameContext, a: Creature, b: Creature): string {
-  if (ctx.state.features['hybrids']) {
-    for (const r of ctx.content.recipes.list) {
-      const [p1, p2] = r.parents;
-      const match = (a.speciesId === p1 && b.speciesId === p2) || (a.speciesId === p2 && b.speciesId === p1);
-      if (!match) continue;
-      const req = r.requires;
-      if (req?.minGeneration && Math.min(a.generation, b.generation) < req.minGeneration) continue;
-      if (req?.minRarity) {
-        const min = ctx.content.rarities.get(req.minRarity).order;
-        if (ctx.content.rarities.get(a.rarity).order < min || ctx.content.rarities.get(b.rarity).order < min) continue;
-      }
-      if (ctx.rng.chance(r.chance)) return r.result;
-    }
-  }
-  return ctx.rng.chance(0.5) ? a.speciesId : b.speciesId;
-}
 
 /** Averaged parent stats with variance; mutated stats get an extra multiplier. */
 export function inheritStats(ctx: GameContext, a: Creature, b: Creature, mutation: number): StatBlock {
@@ -143,11 +126,15 @@ registerProcessHandler(EGG, {
     for (const p of [a, b]) if (p?.job?.kind === 'nest') p.job = null;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
     const mutation = mutationChance(ctx);
+    const speciesId = rollOffspringSpecies(ctx, a, b);
+    let stats = inheritStats(ctx, a, b, mutation);
+    // A new species (hybrid) takes on its own stat profile.
+    if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const child = createCreature(ctx, {
-      speciesId: offspringSpecies(ctx, a, b),
+      speciesId,
       generation: data.generation,
       parents: data.parents,
-      stats: inheritStats(ctx, a, b, mutation),
+      stats,
       exactStats: true,
       appearance: inheritAppearance(ctx, a, b),
       abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),

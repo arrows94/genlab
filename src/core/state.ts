@@ -84,6 +84,8 @@ export interface GameState {
   processes: Process[];
   buffs: Buff[];
   nextId: number;
+  /** Hybrid recipes whose hint has been revealed. */
+  recipeHints: Record<string, boolean>;
   /** Catalogued alleles, key `${locus}:${allele}` (Genbibliothek). */
   geneLibrary: Record<string, boolean>;
   /** Discovered dex entries, key `${species}:${rarity}`. */
@@ -112,6 +114,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     nextId: 1,
     dex: {},
     geneLibrary: {},
+    recipeHints: {},
     achievements: {},
     statistics: {},
     prestige: {},

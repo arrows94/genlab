@@ -36,6 +36,8 @@
     return 'Beschäftigt';
   });
 
+  const TIER_LABELS: Record<string, string> = { hybrid: 'Hybrid', rareHybrid: 'Seltener Hybrid', mythic: 'Mythisch' };
+
   let editing = $state(false);
   let draft = $state('');
 
@@ -56,7 +58,7 @@
       {creature.locked ? '★' : '☆'}
     </button>
   </header>
-  <div class="art"><CreatureSvg appearance={look} shape={species.shape} /></div>
+  <div class="art"><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} /></div>
   {#if editing}
     <form onsubmit={(e) => { e.preventDefault(); commit(); }}>
       <!-- svelte-ignore a11y_autofocus -->
@@ -68,6 +70,7 @@
   <div class="meta">
     <span class="element">{element.name}</span>
     <span>{species.name}</span>
+    {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
     <span class="num">Gen {creature.generation}</span>
   </div>
   <dl class="stats">
@@ -109,6 +112,7 @@
   .name { background: none; border: none; padding: 0; font-weight: 700; font-size: 1.05rem; text-align: left; }
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
   .element { color: var(--element); }
+  .tier { color: var(--violet); }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem; margin: 0; }
   .stats div { background: var(--bg-2); border-radius: 6px; padding: 0.2rem; text-align: center; }
   dt { font-size: 0.65rem; color: var(--muted); }

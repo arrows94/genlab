@@ -3,6 +3,7 @@ import type { Creature } from '../state';
 import { genotypeDistribution, phenotypeLabel } from '../genetics';
 import { rarityChances, rarityWeights } from '../rarity';
 import { mutationChance } from './breeding';
+import { hybridChance, isRecipeDiscovered, recipeMatches } from './hybrids';
 
 /**
  * Breeding planner (Zuchtplaner): outcome probabilities for a pair.
@@ -42,11 +43,10 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): Bre
   let remaining = 1;
   if (ctx.state.features['hybrids']) {
     for (const r of ctx.content.recipes.list) {
-      const [p1, p2] = r.parents;
-      if (!((a.speciesId === p1 && b.speciesId === p2) || (a.speciesId === p2 && b.speciesId === p1))) continue;
-      const discovered = ctx.content.rarities.list.some((rar) => ctx.state.dex[`${r.result}:${rar.id}`]);
-      species.push({ id: discovered ? r.result : null, p: remaining * r.chance });
-      remaining *= 1 - r.chance;
+      if (!recipeMatches(ctx, r, a, b)) continue;
+      const p = remaining * hybridChance(ctx, r);
+      species.push({ id: isRecipeDiscovered(ctx, r) ? r.result : null, p });
+      remaining -= p;
     }
   }
   if (a.speciesId === b.speciesId) species.push({ id: a.speciesId, p: remaining });

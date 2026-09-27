@@ -73,7 +73,9 @@ function wireEvents(g: Game): void {
     const c = g.state.creatures.find((x) => x.id === e.creatureId);
     if (c) {
       const rarity = content.rarities.get(c.rarity);
-      toast(`🐣 Geschlüpft: ${content.species.get(c.speciesId).name} (${rarity.name})`, rarity.order >= 3 ? 'rare' : 'info');
+      const species = content.species.get(c.speciesId);
+      const hybrid = species.tier !== 'base';
+      toast(`${hybrid ? '🧪 Hybrid' : '🐣 Geschlüpft'}: ${species.name} (${rarity.name})`, rarity.order >= 3 || hybrid ? 'rare' : 'info', hybrid ? 6000 : 3500);
     }
     markUnseen('breeding');
   });
@@ -82,6 +84,11 @@ function wireEvents(g: Game): void {
     toast(`🧬 Genom entschlüsselt: ${c?.name ?? '?'}`, 'info');
     markUnseen('genetics');
   });
+  g.bus.on('recipeHinted', (e) => {
+    toast(`📜 Hinweis auf eine Kreuzung: „${content.recipes.get(e.recipe).hint}“`, 'unlock', 6000);
+    markUnseen('dex');
+  });
+  g.bus.on('evolved', (e) => toast(`✨ Evolution: ${content.species.get(e.from).name} → ${content.species.get(e.to).name}`, 'rare', 6000));
   g.bus.on('alleleCatalogued', (e) => {
     const locus = content.genes.get(e.locus);
     const allele = locus.alleles.find((a) => a.id === e.allele);

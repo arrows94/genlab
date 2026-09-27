@@ -23,7 +23,11 @@ export const features: FeatureDef[] = [
   { id: 'splicing', name: 'Gen-Splicing', hint: 'Gen-Splicing möglich: Übertrage Allele aus der Genbibliothek – mit Risiko.' },
   { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 25 } },
   { id: 'recycler', name: 'Gen-Recycler', hint: 'Zerlege Kreaturen in Gen-Fragmente.' },
-  { id: 'hybrids', name: 'Hybride', hint: 'Kreuzungen verschiedener Arten sind möglich.' },
+  {
+    id: 'hybrids', name: 'Hybride', hint: 'Hybride entdeckt! Bestimmte Artkombinationen können neue Arten hervorbringen. Hinweise gibt es durch Forschung und Erkundung.',
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'hatched', amount: 30 }] },
+  },
+  { id: 'evolution', name: 'Evolution', hint: 'Ein Evolutionskristall! Manche Arten können sich damit weiterentwickeln.', condition: { type: 'resourceEarned', resource: 'catalyst', amount: 1 } },
   { id: 'dex', name: 'Monster-Dex', tab: 'dex', hint: 'Der Monster-Dex sammelt deine Entdeckungen.', condition: { type: 'creatureCount', count: 2 } },
   { id: 'legendaryHeritage', name: 'Legendäres Erbgut', hint: 'Legendäres Erbgut erforschbar.' },
   { id: 'primordialChamber', name: 'Ur-Gen-Kammer', hint: 'Die Ur-Gen-Kammer ist erwacht.' },
@@ -58,6 +62,16 @@ export const achievements: AchievementDef[] = [
   { id: 'librarian', name: 'Bibliothekar', description: '12 Allele katalogisiert.', condition: { type: 'geneLibrary', count: 12 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'archivist', name: 'Archivar', description: '20 Allele katalogisiert.', condition: { type: 'geneLibrary', count: 20 }, modifiers: [{ target: 'cost.sequencing', op: 'pct', value: -0.2 }] },
   { id: 'completeLibrary', name: 'Lebendes Archiv', description: 'Alle Allele katalogisiert.', condition: { type: 'geneLibrary', count: 26 }, modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.05 }] },
+  { id: 'firstHybrid', name: 'Kreuzung geglückt', description: 'Einen Hybriden entdeckt.', condition: { type: 'any', of: [
+    { type: 'dex', species: 'steamling' }, { type: 'dex', species: 'magmole' }, { type: 'dex', species: 'stormhawk' }, { type: 'dex', species: 'mossgolem' },
+    { type: 'dex', species: 'glacierfin' }, { type: 'dex', species: 'duskmoth' }, { type: 'dex', species: 'rustling' }, { type: 'dex', species: 'venomvine' },
+    { type: 'dex', species: 'geodite' }, { type: 'dex', species: 'voltprism' },
+  ] }, modifiers: [{ target: 'breeding.hybridChance', op: 'pct', value: 0.1 }] },
+  { id: 'allElements', name: 'Elementarist', description: 'Alle zwölf Basisarten entdeckt.', condition: { type: 'all', of: [
+    'emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox', 'toxling', 'prismin',
+  ].map((species) => ({ type: 'dex' as const, species })) }, modifiers: [{ target: 'mission.wildChance', op: 'add', value: 0.05 }] },
+  { id: 'firstEvolution', name: 'Metamorphose', description: 'Erste Evolution.', condition: { type: 'statistic', statistic: 'evolved', amount: 1 }, modifiers: [{ target: 'stat.hp', op: 'pct', value: 0.05 }] },
+  { id: 'mythicForm', name: 'Mythos', description: 'Eine mythische Endform erreicht.', condition: { type: 'any', of: ['phoenix', 'leviathan', 'worldtree', 'chronodrake'].map((species) => ({ type: 'dex' as const, species })) }, modifiers: [{ target: 'production.essence', op: 'pct', value: 0.25 }] },
   { id: 'firstHeir', name: 'Erbe angetreten', description: 'Erste Vererbung abgeschlossen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, modifiers: [{ target: 'offline.capHours', op: 'add', value: 1 }] },
 ];
 

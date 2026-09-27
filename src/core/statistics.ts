@@ -28,6 +28,7 @@ export function attachStatistics(bus: EventBus<GameEvents>, getState: () => Game
     }),
     bus.on('potionUsed', () => inc('potionsUsed')),
     bus.on('sequenced', () => inc('sequenced')),
+    bus.on('evolved', () => inc('evolved')),
     bus.on('spliced', (e) => inc(e.success ? 'splices' : 'splicesFailed')),
   ];
   return () => offs.forEach((off) => off());

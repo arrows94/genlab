@@ -88,6 +88,10 @@ export interface Balance {
       instability: number;
     };
   };
+  hybrids: {
+    /** Recipe hint chance per hour of expedition (scaled by mission length, capped at 1). */
+    hintChancePerHour: number;
+  };
   missions: {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */

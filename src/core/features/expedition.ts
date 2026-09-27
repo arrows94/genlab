@@ -2,6 +2,8 @@ import { D, type Decimal } from '../num';
 import { createCreature, effectiveStats, findCreature } from '../creatures';
 import { grant, trySpend } from '../resources';
 import { toCost } from '../costs';
+import { checkCondition } from '../conditions';
+import { revealHint } from './hybrids';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -30,8 +32,26 @@ export function wildChance(ctx: GameContext, missionId: string): number {
   return Math.min(1, ctx.mods().apply('mission.wildChance', ctx.content.missions.get(missionId).wildChance));
 }
 
+export function missionAvailable(ctx: GameContext, missionId: string): boolean {
+  const def = ctx.content.missions.get(missionId);
+  return !def.requires || checkCondition(ctx.state, def.requires);
+}
+
+/** Species that can be found on this mission. */
+export function missionSpecies(ctx: GameContext, missionId: string): string[] {
+  const def = ctx.content.missions.get(missionId);
+  return def.species ?? ctx.content.species.list.filter((s) => s.wild).map((s) => s.id);
+}
+
+/** Chance to find a recipe hint: longer expeditions are more likely to find one. */
+export function hintChance(ctx: GameContext, missionId: string): number {
+  const hours = ctx.content.missions.get(missionId).durationSec / 3600;
+  return Math.min(1, hours * ctx.balance.hybrids.hintChancePerHour);
+}
+
 export function startMission(ctx: GameContext, creatureId: number, missionId: string): ActionResult {
   if (!ctx.state.features['expedition']) return { ok: false, reason: 'Erkundung ist noch nicht freigeschaltet.' };
+  if (!missionAvailable(ctx, missionId)) return { ok: false, reason: 'Dieses Gebiet ist noch nicht erschlossen.' };
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   if (c.job && c.job.kind !== 'building') return { ok: false, reason: 'Die Kreatur ist beschäftigt.' };
@@ -56,7 +76,8 @@ registerProcessHandler(MISSION, {
     const factor = ctx.mods().apply('mission.reward', 1) * (1 + speed * ctx.balance.missions.statScaling);
     const rewards: Record<string, Decimal> = {};
     for (const [res, [min, max]] of Object.entries(def.rewards)) {
-      const amount = D(ctx.rng.range(min, max) * factor).floor();
+      // Stochastic rounding keeps the expected value for small integer rewards (0–1 crystals).
+      const amount = D(Math.floor(ctx.rng.range(min, max) * factor + ctx.rng.next()));
       if (amount.gt(0)) {
         rewards[res] = amount;
         grant(ctx, res, amount, `mission:${missionId}`);
@@ -65,9 +86,10 @@ registerProcessHandler(MISSION, {
 
     let wildCreatureId: number | null = null;
     if (ctx.rng.chance(wildChance(ctx, missionId))) {
-      const pool = ctx.content.species.list.filter((s) => s.wild);
-      if (pool.length > 0) wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool).id, source: 'wild' }).id;
+      const pool = missionSpecies(ctx, missionId);
+      if (pool.length > 0) wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), source: 'wild' }).id;
     }
+    if (ctx.state.features['hybrids'] && ctx.rng.chance(hintChance(ctx, missionId))) revealHint(ctx);
     ctx.bus.emit('missionCompleted', { missionId, creatureId, rewards, wildCreatureId });
   },
 });

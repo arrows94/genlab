@@ -77,7 +77,7 @@ export const upgrades: UpgradeDef[] = [
   },
   {
     id: 'cartographer', name: 'Kartograf', category: 'research', requires: expedition,
-    description: '−10 % Erkundungsdauer, +10 % Beute.',
+    description: '−10 % Erkundungsdauer, +10 % Beute. Stufe 2/4/6 erschließen neue Regionen.',
     cost: { gold: 150 }, costGrowth: 2, maxLevel: 10,
     modifiers: [{ target: 'mission.time', op: 'mult', value: 0.9 }, { target: 'mission.reward', op: 'pct', value: 0.1 }],
   },
@@ -136,6 +136,13 @@ export const upgrades: UpgradeDef[] = [
     description: '+1 Splicing-Versuch pro Kreatur.',
     cost: { essence: 300, gold: 10000 }, costGrowth: 4, maxLevel: 2,
     modifiers: [{ target: 'splicing.max', op: 'add', value: 1 }],
+  },
+  // --- Hybride ---
+  {
+    id: 'hybridTheory', name: 'Kreuzungstheorie', category: 'research', requires: { type: 'feature', feature: 'hybrids' },
+    description: 'Enthüllt einen Hinweis auf ein Hybrid-Rezept, +5 % Hybrid-Chance.',
+    cost: { essence: 30, gold: 800 }, costGrowth: 1.8, maxLevel: 8,
+    modifiers: [{ target: 'breeding.hybridChance', op: 'pct', value: 0.05 }], grantsHints: 1,
   },
   // --- über den Dex freigeschaltet ---
   {

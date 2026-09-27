@@ -5,6 +5,7 @@
   import { game, view, act } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
+  import EvolvePanel from './EvolvePanel.svelte';
 
   const creatures = $derived.by(() => {
     view.frame;
@@ -39,7 +40,7 @@
   <h2>Kreaturen <span class="muted num">({creatures.length})</span></h2>
   <div class="grid">
     {#each creatures as c (c.id)}
-      <CreatureCard creature={c} />
+      <CreatureCard creature={c}><EvolvePanel creature={c} /></CreatureCard>
     {/each}
   </div>
 </section>

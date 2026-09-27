@@ -5,6 +5,7 @@ import { grant, trySpend } from './resources';
 import { checkCondition } from './conditions';
 import { jobCount, jobSlots } from './systems/production';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
+import { revealHint } from './features/hybrids';
 import type { GameContext } from './context';
 
 /**
@@ -58,6 +59,7 @@ export function buyUpgrade(ctx: GameContext, id: string): ActionResult {
   ctx.invalidate();
   ctx.bus.emit('upgradeBought', { upgrade: id, level });
   if (level === 1) def.unlocksFeatures?.forEach((f) => unlockFeature(ctx, f));
+  for (let i = 0; i < (def.grantsHints ?? 0); i++) revealHint(ctx);
   checkUnlocks(ctx);
   return ok;
 }

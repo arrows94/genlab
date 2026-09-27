@@ -3,7 +3,7 @@
   import { canAfford, toCost } from '@core/costs';
   import { findCreature } from '@core/creatures';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { campSlots, missionDurationMs, runningMissions, startMission, wildChance, type MissionData } from '@core/features/expedition';
+  import { campSlots, hintChance, missionAvailable, missionDurationMs, missionSpecies, runningMissions, startMission, wildChance, type MissionData } from '@core/features/expedition';
   import { processRemainingMs } from '@core/systems/processes';
   import { game, view, act } from '../store.svelte';
   import CreaturePicker from './CreaturePicker.svelte';
@@ -26,8 +26,10 @@
         };
       }),
       idle: game.state.creatures.filter((c) => c.job === null || c.job.kind === 'building'),
-      missions: content.missions.list.map((m) => ({
+      missions: content.missions.list.filter((m) => missionAvailable(game, m.id)).map((m) => ({
         def: m,
+        species: m.species ? missionSpecies(game, m.id).map((s) => content.species.get(s).name) : null,
+        hint: game.state.features['hybrids'] ? hintChance(game, m.id) : 0,
         cost: toCost(m.cost),
         affordable: canAfford(game.state, toCost(m.cost)),
         duration: missionDurationMs(game, m.id),
@@ -61,24 +63,25 @@
   <article class="panel pick">
     <CreaturePicker creatures={data.idle} bind:value={chosen} placeholder="Wer geht auf Erkundung? …" />
   </article>
-  <div class="grid">
+{:else}
+  <p class="muted">Alle Camps sind belegt.</p>
+{/if}
+<div class="grid">
     {#each data.missions as m (m.def.id)}
       <article class="panel">
         <h3>{m.def.name}</h3>
         <p class="muted small">{m.def.description}</p>
-        <p class="small num">⏱ {formatDuration(m.duration)} · 🐾 {formatPercent(m.wild, 0)} wilde Kreatur</p>
+        <p class="small num">⏱ {formatDuration(m.duration)} · 🐾 {formatPercent(m.wild, 0)} wilde Kreatur{#if m.hint > 0} · 📜 {formatPercent(m.hint, 0)} Hinweis{/if}</p>
+        {#if m.species}<p class="small muted">Heimat von: {m.species.join(', ')}</p>{/if}
         <p class="small num">
           Beute: {#each Object.entries(m.def.rewards) as [res, [min, max]] (res)}<span class="reward">{formatNumber(min)}–{formatNumber(max)} {content.resources.get(res).icon}</span>{/each}
         </p>
-        <button class="primary" disabled={chosen === null || !m.affordable} onclick={() => send(m.def.id)}>
+        <button class="primary" disabled={chosen === null || !m.affordable || data.running.length >= data.slots} onclick={() => send(m.def.id)}>
           Losschicken · <CostLabel cost={m.cost} />
         </button>
       </article>
     {/each}
-  </div>
-{:else}
-  <p class="muted">Alle Camps sind belegt.</p>
-{/if}
+</div>
 
 <style>
   .small { font-size: 0.85rem; margin: 0.3rem 0; }

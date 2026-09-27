@@ -139,14 +139,15 @@ export interface HybridRecipeDef {
     allele?: { locus: string; allele: string };
     condition?: Condition;
   };
-  /** Shown as "???" in the dex until discovered; hint text becomes visible via research. */
-  hint?: string;
+  /** Shown as "???" in the dex until discovered; the hint is revealed via research or expeditions. */
+  hint: string;
 }
 
 export interface EvolutionDef {
   id: string;
   from: string;
   to: string;
+  description?: string;
   requires: {
     minGeneration?: number;
     minRarity?: string;
@@ -184,6 +185,8 @@ export interface UpgradeDef {
   modifiers: ModifierDef[];
   /** Features unlocked when level ≥ 1. */
   unlocksFeatures?: string[];
+  /** Hybrid recipe hints revealed per level bought. */
+  grantsHints?: number;
   requires?: Condition;
 }
 
@@ -210,6 +213,10 @@ export interface MissionDef {
   id: string;
   name: string;
   description: string;
+  /** Mission is only offered once this holds (e.g. new regions via research). */
+  requires?: Condition;
+  /** Wild species found here; omitted = every species with `wild: true`. */
+  species?: string[];
   durationSec: number;
   cost: ResourceAmounts;
   /** resource → [min, max] */

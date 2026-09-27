@@ -56,13 +56,44 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 
 ## Neues Hybrid-Rezept
 
-`src/content/recipes.ts` (die Ergebnis-Art muss in `species.ts` existieren, mit `tier: 'hybrid'` und `wild: false`):
+`src/content/recipes.ts` (die Ergebnis-Art muss in `species.ts` existieren, mit `tier: 'hybrid'`, `'rareHybrid'` oder `'mythic'` und `wild: false`):
 
 ```ts
 {
   id: 'magma', parents: ['emberpup', 'pebblit'], result: 'magmole', chance: 0.12,
   requires: { minGeneration: 3, allele: { locus: 'strength', allele: 'K' } },
   hint: 'Heißes Gestein …',
+},
+```
+
+- Die Reihenfolge der Eltern ist egal. `allele` = mindestens ein Elternteil trägt das Allel; `minRarity` gilt für beide Eltern.
+- `chance` wird über `breeding.hybridChance`-Modifier verändert (z. B. Forschung „Kreuzungstheorie“).
+- Bis zur Entdeckung steht das Rezept im Dex als „???“; der `hint` wird durch Forschung (`grantsHints`) oder lange Erkundungen enthüllt.
+- Hybride übernehmen das Stat-Profil ihrer Art (Werte werden relativ zu den Eltern-Arten umgerechnet).
+- Ein Test prüft, dass jede Nicht-Basisart über ein Rezept oder eine Evolution erreichbar ist und jeder Elternteil beschaffbar ist.
+
+## Neue Evolution
+
+`src/content/recipes.ts` → `evolutions`:
+
+```ts
+{
+  id: 'phoenix', from: 'volcanodrake', to: 'phoenix', description: 'Aus der Glut wiedergeboren.',
+  requires: { minGeneration: 6, minRarity: 'epic', allele: { locus: 'stamina', allele: 'Ae' }, cost: { catalyst: 8, essence: 500 } },
+},
+```
+
+Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die Werte auf das Profil der neuen Art um.
+
+## Neue Region (Erkundung)
+
+`src/content/missions.ts`: eine Mission mit `requires` (wann sie erscheint) und `species` (wer dort lebt):
+
+```ts
+{
+  id: 'frostpeak', name: 'Frostgipfel', description: 'Eisige Höhen voller Metalladern.', durationSec: 900, cost: { food: 400 },
+  requires: { type: 'upgradeLevel', upgrade: 'cartographer', level: 2 },
+  rewards: { gold: [150, 400], catalyst: [0, 1] }, wildChance: 0.45, species: ['frostling', 'ferrox'],
 },
 ```
 
