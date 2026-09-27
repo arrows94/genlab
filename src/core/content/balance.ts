@@ -44,10 +44,46 @@ export interface Balance {
     hueVariance: number;
     maxNameLength: number;
   };
+  abilities: {
+    /** Chance for the 1st, 2nd, 3rd … ability when a creature is created without parents. */
+    slotChances: number[];
+    /** Tier (rarity id) weights when rolling a new ability. */
+    tierWeights: Record<string, number>;
+    max: number;
+  };
+  breeding: {
+    baseTimeSec: number;
+    /** Each generation of the offspring adds this fraction of base time. */
+    timePerGeneration: number;
+    /**
+     * Cost components: base × generationGrowth^(offspring generation − 2)
+     * × creatureGrowth^(creatures owned − 1); only from `fromGeneration` on.
+     */
+    costs: { resource: string; base: number; generationGrowth: number; creatureGrowth: number; fromGeneration: number }[];
+    /** Base mutation chance (modified by `breeding.mutation` add). */
+    mutationChance: number;
+    /** Stat mutation: multiplier range applied to a mutated stat. */
+    mutationStatRange: [number, number];
+    /** Chance each parent ability is passed on. */
+    abilityInheritChance: number;
+    /** Base nest slots (modified by `slots.nest`). */
+    baseNests: number;
+  };
+  missions: {
+    baseCamps: number;
+    /** Each point of speed adds this fraction to rewards. */
+    statScaling: number;
+  };
+  market: {
+    /** Per-creature cost growth for permanent stat potions is on the potion; this caps uses. */
+    maxBoostsPerStat: number;
+  };
   appearance: {
     patterns: string[];
     eyes: string[];
     horns: string[];
+    /** Chance a visual trait mutates instead of being inherited. */
+    mutationChance: number;
   };
   prestige: Record<string, { divisor: number; exponent: number; minGain: number }>;
 }

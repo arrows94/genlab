@@ -35,10 +35,35 @@ export const balance: Balance = {
     hueVariance: 18,
     maxNameLength: 20,
   },
+  abilities: {
+    slotChances: [0.35, 0.15, 0.05],
+    tierWeights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 },
+    max: 3,
+  },
+  breeding: {
+    baseTimeSec: 20,
+    timePerGeneration: 0.15,
+    costs: [
+      { resource: 'food', base: 30, generationGrowth: 1.6, creatureGrowth: 1.1, fromGeneration: 2 },
+      { resource: 'gold', base: 20, generationGrowth: 1.6, creatureGrowth: 1.1, fromGeneration: 3 },
+    ],
+    mutationChance: 0.08,
+    mutationStatRange: [1.05, 1.25],
+    abilityInheritChance: 0.5,
+    baseNests: 1,
+  },
+  missions: {
+    baseCamps: 1,
+    statScaling: 0.02,
+  },
+  market: {
+    maxBoostsPerStat: 10,
+  },
   appearance: {
     patterns: ['none', 'spots', 'stripes', 'rings'],
     eyes: ['round', 'sleepy', 'sharp', 'wide'],
     horns: ['none', 'nub', 'curved', 'antenna'],
+    mutationChance: 0.1,
   },
   prestige: {
     inheritance: { divisor: 1e5, exponent: 0.5, minGain: 1 },

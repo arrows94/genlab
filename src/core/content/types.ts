@@ -185,6 +185,8 @@ export interface PotionDef {
   /** permanentStat: cost growth per use on the same creature. */
   costGrowth?: number;
   durationSec?: number;
+  /** permanentStat: bonus per use on the chosen stat (0.05 = +5 %). */
+  statBonus?: number;
   /** timeSkip: seconds removed from running processes. */
   skipSec?: number;
   modifiers?: ModifierDef[];
@@ -221,6 +223,8 @@ export interface FeatureDef {
   condition?: Condition;
   /** UI tab shown once unlocked. */
   tab?: string;
+  /** Creature granted once when the feature unlocks (e.g. a second creature for breeding). */
+  grantsCreature?: { species: string; rarity: string };
 }
 
 export interface AchievementDef {

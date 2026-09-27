@@ -17,6 +17,15 @@
     return effectiveStats(game, creature);
   });
 
+  const jobLabel = $derived.by(() => {
+    const job = creature.job;
+    if (!job) return '';
+    if (job.kind === 'building') return `Arbeitet: ${content.buildings.get(job.target).name}`;
+    if (job.kind === 'nest') return '🥚 Brütet';
+    if (job.kind === 'mission') return '🧭 Auf Erkundung';
+    return 'Beschäftigt';
+  });
+
   let editing = $state(false);
   let draft = $state('');
 
@@ -56,8 +65,16 @@
       <div><dt>{s.short}</dt><dd class="num">{stats[s.id]}</dd></div>
     {/each}
   </dl>
+  {#if creature.abilities.length > 0}
+    <ul class="abilities">
+      {#each creature.abilities as id (id)}
+        {@const a = content.abilities.get(id)}
+        <li style="--t: {content.rarities.get(a.tier).color}" title={a.description}>{a.name}</li>
+      {/each}
+    </ul>
+  {/if}
   {#if creature.job}
-    <div class="job">Arbeitet: {content.buildings.has(creature.job.target) ? content.buildings.get(creature.job.target).name : creature.job.target}</div>
+    <div class="job">{jobLabel}</div>
   {/if}
   {@render children?.()}
 </article>
@@ -86,5 +103,7 @@
   dt { font-size: 0.65rem; color: var(--muted); }
   dd { margin: 0; font-size: 0.9rem; }
   .job { font-size: 0.8rem; color: var(--teal); }
+  .abilities { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .abilities li { font-size: 0.7rem; border: 1px solid var(--t); color: var(--t); border-radius: 99px; padding: 0.05rem 0.45rem; }
   input { width: 100%; }
 </style>

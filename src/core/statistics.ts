@@ -22,6 +22,11 @@ export function attachStatistics(bus: EventBus<GameEvents>, getState: () => Game
     bus.on('processCompleted', (e) => inc(`completed.${e.kind}`)),
     bus.on('upgradeBought', () => inc('upgradesBought')),
     bus.on('prestige', (e) => inc(`prestige.${e.layer}`)),
+    bus.on('eggHatched', () => inc('hatched')),
+    bus.on('missionCompleted', (e) => {
+      if (e.wildCreatureId !== null) inc('wildFound');
+    }),
+    bus.on('potionUsed', () => inc('potionsUsed')),
   ];
   return () => offs.forEach((off) => off());
 }

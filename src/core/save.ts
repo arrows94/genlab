@@ -6,7 +6,7 @@ import { createEmptyState, type GameState } from './state';
  * `MIGRATIONS[oldVersion]` (old → old+1) whenever the state shape changes in
  * a way `mergeDefaults` cannot fix on its own (renames, restructures).
  */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -17,7 +17,11 @@ export interface SaveEnvelope {
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>;
 
 export const MIGRATIONS: Record<number, Migration> = {
-  // 1: (s) => ({ ...s, renamedField: s.oldField }),
+  // v1 → v2: creatures gained permanent potion boosts (Kraftfutter).
+  1: (s) => ({
+    ...s,
+    creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ boosts: {}, boostUses: 0, ...c })),
+  }),
 };
 
 export class SaveError extends Error {

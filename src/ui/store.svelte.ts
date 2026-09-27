@@ -2,6 +2,7 @@ import { content, balance } from '@content/index';
 import { Game, type OfflineReport } from '@core/game';
 import { deserialize, exportSave, importSave, serialize, type SaveStorage } from '@core/save';
 import type { ActionResult } from '@core/actions';
+import { formatNumber } from '@core/format';
 import { LocalSaveStorage } from './platform/storage';
 
 /**
@@ -22,6 +23,8 @@ export const view = $state({
   tab: 'lab',
   toasts: [] as Toast[],
   offline: null as OfflineReport | null,
+  /** Unseen results per tab (badge), cleared when the tab is opened. */
+  unseen: {} as Record<string, number>,
   loadError: null as string | null,
 });
 
@@ -63,8 +66,30 @@ function wireEvents(g: Game): void {
       toast(`📖 Neu im Dex: ${content.species.get(e.species).name} (${content.rarities.get(e.rarity).name})`, 'info');
   });
   g.bus.on('prestige', () => toast('🧬 Vererbung abgeschlossen!', 'rare'));
+  const markUnseen = (tab: string) => {
+    if (view.tab !== tab) view.unseen = { ...view.unseen, [tab]: (view.unseen[tab] ?? 0) + 1 };
+  };
+  g.bus.on('eggHatched', (e) => {
+    const c = g.state.creatures.find((x) => x.id === e.creatureId);
+    if (c) {
+      const rarity = content.rarities.get(c.rarity);
+      toast(`🐣 Geschlüpft: ${content.species.get(c.speciesId).name} (${rarity.name})`, rarity.order >= 3 ? 'rare' : 'info');
+    }
+    markUnseen('breeding');
+  });
+  g.bus.on('missionCompleted', (e) => {
+    const loot = Object.entries(e.rewards).map(([r, v]) => `+${formatNumber(v)} ${content.resources.get(r).icon}`).join(' ');
+    const wild = e.wildCreatureId !== null ? g.state.creatures.find((x) => x.id === e.wildCreatureId) : null;
+    toast(`🧭 ${content.missions.get(e.missionId).name}: ${loot}${wild ? ` · wild: ${content.species.get(wild.speciesId).name}!` : ''}`, wild ? 'rare' : 'info');
+    markUnseen('expedition');
+  });
 }
 wireEvents(game);
+
+export function openTab(tab: string): void {
+  view.tab = tab;
+  if (view.unseen[tab]) view.unseen = { ...view.unseen, [tab]: 0 };
+}
 
 export function refresh(): void {
   view.frame++;

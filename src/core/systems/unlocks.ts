@@ -1,4 +1,5 @@
 import { checkCondition } from '../conditions';
+import { createCreature } from '../creatures';
 import type { GameContext } from '../context';
 import type { System } from './types';
 
@@ -10,6 +11,8 @@ export function unlockFeature(ctx: GameContext, feature: string): boolean {
   ctx.state.seenHints[feature] = true;
   ctx.invalidate();
   ctx.bus.emit('featureUnlocked', { feature, silent });
+  const grant = ctx.content.features.get(feature).grantsCreature;
+  if (grant) createCreature(ctx, { speciesId: grant.species, rarity: grant.rarity, source: 'other' });
   return true;
 }
 

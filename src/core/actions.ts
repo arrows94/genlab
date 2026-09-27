@@ -68,6 +68,7 @@ export function assignJob(ctx: GameContext, creatureId: number, buildingId: stri
   if (buildingId === null) {
     if (c.job?.kind !== 'building') return fail('Kreatur arbeitet nicht.');
     c.job = null;
+    ctx.invalidate();
     return ok;
   }
   const b = ctx.content.buildings.get(buildingId);
@@ -76,6 +77,7 @@ export function assignJob(ctx: GameContext, creatureId: number, buildingId: stri
   if (c.job?.target === buildingId) return ok;
   if (jobCount(ctx, buildingId) >= jobSlots(ctx, buildingId)) return fail('Keine freien Plätze.');
   c.job = { kind: 'building', target: buildingId };
+  ctx.invalidate();
   return ok;
 }
 

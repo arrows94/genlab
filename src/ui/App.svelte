@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
-  import { game, view, start } from './store.svelte';
+  import { game, view, start, openTab } from './store.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
   import Toasts from './components/Toasts.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
@@ -13,12 +13,18 @@
   import StatsTab from './components/StatsTab.svelte';
   import PrestigeTab from './components/PrestigeTab.svelte';
   import SettingsTab from './components/SettingsTab.svelte';
+  import BreedingTab from './components/BreedingTab.svelte';
+  import ExpeditionTab from './components/ExpeditionTab.svelte';
+  import MarketTab from './components/MarketTab.svelte';
 
   /** Tab id (from FeatureDef.tab) → label + component. New systems register here. */
   const TABS: Record<string, { label: string; icon: string; component: Component }> = {
     lab: { label: 'Labor', icon: '🧬', component: LabTab },
     facilities: { label: 'Anlagen', icon: '🏭', component: FacilitiesTab },
+    breeding: { label: 'Brutstation', icon: '🥚', component: BreedingTab },
+    expedition: { label: 'Erkundung', icon: '🧭', component: ExpeditionTab },
     research: { label: 'Forschung', icon: '🔬', component: ResearchTab },
+    market: { label: 'Markt', icon: '⚗️', component: MarketTab },
     dex: { label: 'Dex', icon: '📖', component: DexTab },
     stats: { label: 'Statistik', icon: '📊', component: StatsTab },
     prestige: { label: 'Vererbung', icon: '♾️', component: PrestigeTab },
@@ -31,7 +37,7 @@
   });
   const badges = $derived.by((): Record<string, number> => {
     view.frame;
-    return { research: affordableUpgradeCount(game) };
+    return { ...view.unseen, research: affordableUpgradeCount(game) };
   });
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 
@@ -49,7 +55,7 @@
 
   <nav>
     {#each tabs as t (t)}
-      <button class:active={view.tab === t} onclick={() => (view.tab = t)}>
+      <button class:active={view.tab === t} onclick={() => openTab(t)}>
         <span class="icon">{TABS[t]!.icon}</span>
         <span class="label">{TABS[t]!.label}</span>
         {#if badges[t]}<span class="badge num">{badges[t]}</span>{/if}

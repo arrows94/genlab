@@ -39,13 +39,22 @@ tests/         Vitest-Tests für die Core-Logik
 | Speichern | `core/save.ts` | Versionierte Spielstände (`saveVersion` + Migrationen), Default-Merge für neue Felder, Export/Import als Text (`GENLAB1:…`), austauschbarer `SaveStorage`. |
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
+| Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt – registrieren ihre Zeitprozesse selbst. |
+
+## Balancing prüfen
+
+`tests/progression.test.ts` lässt einen einfachen Bot die erste Spielstunde spielen und prüft, ob die Systeme in der richtigen Reihenfolge freigeschaltet werden und mindestens alle 8 Minuten etwas Neues passiert. Die Zeitleiste lässt sich ausgeben:
+
+```bash
+GENLAB_TIMELINE=1 npx vitest run tests/progression.test.ts --silent=false
+```
 
 Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 
 ## Stand
 
 - [x] **Phase 1 – Fundament**: Setup, Ordnerstruktur, Content-Interfaces + Validierung, Modifier-System, Tick/Offline, Save/Load/Migration, Event-Bus, Tests, spielbares Grundgerüst (Sammeln, Farm/Mine, Forschung, Dex, Statistik, Vererbung, Export/Import)
-- [ ] Phase 2 – Portierung aller Prototyp-Features
+- [x] **Phase 2 – Portierung**: Brutstation (Vererbung von Werten, Aussehen, Fähigkeiten, Mutation, mehrere Nester), Erkundung (Camps, Beute, wilde Kreaturen), Bio-Labor, Markt (Kraftfutter, Turbo-Trank, Festmahl, Zeitkristall), Fähigkeiten in Stufen, vollständiger Forschungsbaum inkl. Dex-Freischaltungen, langsamer Start mit schrittweisen Freischaltungen, Tab-Badges
 - [ ] Phase 3 – Genetik
 - [ ] Phase 4 – Arten & Hybride
 - [ ] Phase 5 – Management & Verwertung

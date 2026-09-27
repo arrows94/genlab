@@ -1,47 +1,65 @@
 import { ModifierSet, type SourcedModifier } from './modifiers';
+import { rollStartingAbilities } from './abilities';
+import { rarityWeights, rollRarity } from './rarity';
 import type { GameContext } from './context';
-import { dexKey, type Creature, type StatBlock } from './state';
+import { dexKey, type Appearance, type Creature, type StatBlock } from './state';
+
+export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
 
 export interface CreateCreatureOptions {
   speciesId: string;
-  rarity: string;
+  /** Omitted → rolled with the current rarity weights. */
+  rarity?: string;
   generation?: number;
   parents?: [number, number] | null;
+  /** Base stats before variance; defaults to the species' base stats. */
   stats?: StatBlock;
+  /** Skip the random variance (stats already rolled, e.g. by breeding). */
+  exactStats?: boolean;
+  appearance?: Appearance;
+  /** Omitted → rolled starting abilities. */
   abilities?: string[];
-  source?: 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
+  source?: CreatureSource;
+}
+
+export function rollAppearance(ctx: GameContext, speciesHue: number): Appearance {
+  const { balance, rng } = ctx;
+  const hueShift = rng.range(-balance.creature.hueVariance, balance.creature.hueVariance);
+  return {
+    hue: Math.round((speciesHue + hueShift + 360) % 360),
+    pattern: rng.pick(balance.appearance.patterns),
+    eyes: rng.pick(balance.appearance.eyes),
+    horn: rng.pick(balance.appearance.horns),
+  };
 }
 
 /** Creates a creature with rolled stats/appearance and registers it (dex, events). */
 export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): Creature {
   const { content, balance, rng, state } = ctx;
   const species = content.species.get(opts.speciesId);
-  content.rarities.get(opts.rarity);
+  const rarity = opts.rarity ?? rollRarity(rng, rarityWeights(content, balance, ctx.mods()));
+  content.rarities.get(rarity);
 
   const stats: StatBlock = {};
   for (const stat of content.stats.list) {
     const base = opts.stats?.[stat.id] ?? species.baseStats[stat.id] ?? 0;
-    const variance = balance.creature.statVariance;
+    const variance = opts.exactStats ? 0 : balance.creature.statVariance;
     stats[stat.id] = Math.max(1, Math.round(base * rng.range(1 - variance, 1 + variance)));
   }
 
-  const hueShift = rng.range(-balance.creature.hueVariance, balance.creature.hueVariance);
   const creature: Creature = {
     id: state.nextId++,
     speciesId: species.id,
     name: species.name,
-    rarity: opts.rarity,
+    rarity,
     generation: opts.generation ?? 1,
     stats,
-    appearance: {
-      hue: Math.round((species.hue + hueShift + 360) % 360),
-      pattern: rng.pick(balance.appearance.patterns),
-      eyes: rng.pick(balance.appearance.eyes),
-      horn: rng.pick(balance.appearance.horns),
-    },
-    abilities: opts.abilities ?? [],
+    appearance: opts.appearance ?? rollAppearance(ctx, species.hue),
+    abilities: opts.abilities ?? rollStartingAbilities(ctx),
     genome: null,
     sequenced: false,
+    boosts: {},
+    boostUses: 0,
     parents: opts.parents ?? null,
     job: null,
     locked: false,
@@ -67,7 +85,7 @@ export function findCreature(ctx: GameContext, id: number): Creature | undefined
   return ctx.state.creatures.find((c) => c.id === id);
 }
 
-/** Modifiers that apply to one creature only (self abilities, creature buffs, alleles). */
+/** Modifiers that apply to one creature only (abilities, creature buffs, potion boosts, alleles). */
 export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModifier[] {
   const out: SourcedModifier[] = [];
   for (const id of c.abilities) {
@@ -78,6 +96,9 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
   }
   for (const buff of ctx.state.buffs) {
     if (buff.creatureId === c.id) for (const m of buff.modifiers) out.push({ ...m, source: `buff:${buff.source}` });
+  }
+  for (const [stat, value] of Object.entries(c.boosts ?? {})) {
+    if (value) out.push({ target: `stat.${stat}`, op: 'pct', value, source: 'boost' });
   }
   if (c.genome) {
     for (const [locusId, pair] of Object.entries(c.genome)) {
@@ -114,6 +135,17 @@ export function effectiveStats(ctx: GameContext, c: Creature): StatBlock {
   return out;
 }
 
+/** Sum of effective stats – a simple "power" score for sorting and auto-assignment. */
+export function creaturePower(ctx: GameContext, c: Creature): number {
+  return Object.values(effectiveStats(ctx, c)).reduce((a, b) => a + b, 0);
+}
+
 export function isBusy(c: Creature): boolean {
   return c.job !== null;
+}
+
+export function removeCreature(ctx: GameContext, id: number, reason: string): void {
+  ctx.state.creatures = ctx.state.creatures.filter((c) => c.id !== id);
+  ctx.invalidate();
+  ctx.bus.emit('creatureRemoved', { creatureId: id, reason });
 }

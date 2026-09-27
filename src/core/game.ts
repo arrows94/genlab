@@ -13,6 +13,7 @@ import { DEFAULT_SYSTEMS, type System } from './systems';
 import { checkUnlocks } from './systems/unlocks';
 import { createCreature } from './creatures';
 import { productionRates } from './systems/production';
+import './features';
 
 export interface GameOptions {
   content: ContentDB;

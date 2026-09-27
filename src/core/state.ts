@@ -28,6 +28,10 @@ export interface Creature {
   abilities: string[];
   /** Allele ids per locus (phase 3); `null` for creatures without genome data yet. */
   genome: Record<string, [string, string]> | null;
+  /** Permanent potion boosts: stat id → total bonus (0.1 = +10 %). */
+  boosts: Record<string, number>;
+  /** Number of permanent boosts used on this creature (drives their cost). */
+  boostUses: number;
   sequenced: boolean;
   parents: [number, number] | null;
   job: CreatureJob | null;

@@ -179,6 +179,7 @@ export function validateContent(data: ContentData): string[] {
     ref(`${w}.feature`, 'features', p.feature);
     if ((p.kind === 'creatureBuff' || p.kind === 'globalBuff') && !(p.durationSec! > 0)) issues.push(`${w}: Buff braucht durationSec > 0`);
     if (p.kind === 'timeSkip' && !(p.skipSec! > 0)) issues.push(`${w}: timeSkip braucht skipSec > 0`);
+    if (p.kind === 'permanentStat' && !(p.statBonus! > 0)) issues.push(`${w}: permanentStat braucht statBonus > 0`);
   }
   for (const m of data.missions) {
     const w = at('missions', m.id);
@@ -199,6 +200,8 @@ export function validateContent(data: ContentData): string[] {
   for (const f of data.features) {
     text(`${at('features', f.id)}.hint`, f.hint);
     cond(`${at('features', f.id)}.condition`, f.condition);
+    ref(`${at('features', f.id)}.grantsCreature.species`, 'species', f.grantsCreature?.species);
+    ref(`${at('features', f.id)}.grantsCreature.rarity`, 'rarities', f.grantsCreature?.rarity);
   }
   for (const a of data.achievements) {
     cond(`${at('achievements', a.id)}.condition`, a.condition);

@@ -1,0 +1,7 @@
+/**
+ * Feature modules register their process handlers on import. Importing this
+ * file (done by `game.ts`) makes every feature available.
+ */
+import './breeding';
+import './expedition';
+import './market';

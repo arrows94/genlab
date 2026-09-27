@@ -74,3 +74,18 @@ describe('save migrations', () => {
     expect(() => migrate({ saveVersion: SAVE_VERSION + 1, savedAt: 0, state: {} })).toThrow(SaveError);
   });
 });
+
+describe('real migrations', () => {
+  it('v1 → v2 adds potion boosts to creatures', () => {
+    const g = makeGame();
+    const raw = JSON.parse(serialize(g.state));
+    raw.saveVersion = 1;
+    for (const c of raw.state.creatures) {
+      delete c.boosts;
+      delete c.boostUses;
+    }
+    const { state } = deserialize(JSON.stringify(raw));
+    expect(state.creatures[0]!.boosts).toEqual({});
+    expect(state.creatures[0]!.boostUses).toBe(0);
+  });
+});

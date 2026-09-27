@@ -15,4 +15,7 @@ export interface GameEvents {
   achievementUnlocked: { achievement: string };
   prestige: { layer: string; gain: Decimal };
   offlineProgress: { requestedMs: number; simulatedMs: number };
+  eggHatched: { creatureId: number; parents: [number, number] };
+  missionCompleted: { missionId: string; creatureId: number; rewards: Record<string, Decimal>; wildCreatureId: number | null };
+  potionUsed: { potion: string; creatureId: number | null };
 }

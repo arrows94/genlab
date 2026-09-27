@@ -4,8 +4,23 @@ import { produce } from '../resources';
 import type { GameContext } from '../context';
 import type { System } from './types';
 
+/**
+ * Rates only change when something calls `ctx.invalidate()` (new modifier
+ * set), so they are cached per modifier set – offline catch-up stays cheap.
+ */
+const rateCache = new WeakMap<object, Record<string, Decimal>>();
+
 /** Production per second for every resource (buildings + flat `production.*` bonuses). */
 export function productionRates(ctx: GameContext): Record<string, Decimal> {
+  const mods = ctx.mods();
+  const cached = rateCache.get(mods);
+  if (cached) return cached;
+  const rates = computeRates(ctx);
+  rateCache.set(mods, rates);
+  return rates;
+}
+
+function computeRates(ctx: GameContext): Record<string, Decimal> {
   const { content, state, balance } = ctx;
   const mods = ctx.mods();
   const base: Record<string, number> = {};
