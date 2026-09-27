@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
-  import { game, view, start, openTab } from './store.svelte';
+  import { game, view, init, openTab, save } from './store.svelte';
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
   import Toasts from './components/Toasts.svelte';
@@ -55,7 +55,7 @@
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 
   loadPrefs();
-  start();
+  void init();
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
@@ -65,6 +65,12 @@
   });
 </script>
 
+{#if !view.ready}
+  <div class="splash">
+    <DnaHelix pairs={14} width={200} height={44} />
+    <p>Genlab lädt …</p>
+  </div>
+{:else}
 <div class="app">
   <header>
     <div class="brand">
@@ -94,10 +100,22 @@
 </div>
 
 <CreatureDetail />
-<Toasts />
 <OfflineModal />
+{#if view.applyUpdate}
+  <div class="update panel">
+    <span>Eine neue Version von Genlab ist da.</span>
+    <button class="primary" onclick={() => { save(); view.applyUpdate?.(); }}>Jetzt aktualisieren</button>
+  </div>
+{/if}
+{/if}
+<Toasts />
 
 <style>
+  .update {
+    position: fixed; z-index: 15; left: 50%; transform: translateX(-50%); top: calc(0.5rem + env(safe-area-inset-top));
+    display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0.8rem; border-color: var(--violet); font-size: 0.9rem;
+  }
+  .splash { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 0.5rem; color: var(--muted); }
   .app { max-width: 1100px; margin: 0 auto; padding: 0.75rem 1rem 6rem; }
   header { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
   .brand { display: flex; align-items: center; gap: 0.5rem; }

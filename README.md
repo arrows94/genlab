@@ -11,10 +11,32 @@ npm install      # Abhängigkeiten installieren
 npm run dev      # Entwicklungsserver (http://localhost:5173)
 npm test         # Unit-Tests (Vitest)
 npm run check    # Typprüfung (svelte-check / tsc)
-npm run build    # Typprüfung + Produktions-Build nach dist/
+npm run build    # Typprüfung + Produktions-Build nach dist/ (inkl. PWA)
+npm run desktop:dev    # Desktop-App (Tauri, braucht Rust)
+npm run android        # Android-Projekt in Android Studio öffnen
 ```
 
 Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://` bzw. in Tauri/Capacitor.
+
+## Als App verpacken
+
+| Ziel | Technik | Befehl lokal | Automatisch (GitHub Actions) |
+|---|---|---|---|
+| Web-App zum Installieren (PWA) | `vite-plugin-pwa` | `npm run build` → `dist/` hosten | `pages.yml`: bei jedem Push auf `main` nach GitHub Pages |
+| Windows, macOS, Linux | [Tauri 2](https://tauri.app) (`src-tauri/`) | `npm run desktop:dev` / `npm run desktop:build` | `desktop.yml`: bei Tag `v*` oder manuell → Entwurfs-Release mit Installern |
+| Android | [Capacitor 8](https://capacitorjs.com) (`android/`) | `npm run android` (öffnet Android Studio) | `android.yml`: bei Tag `v*` oder manuell → Debug-APK als Artefakt |
+| iOS | Capacitor (`ios/`) | `npm run ios` (öffnet Xcode, nur auf dem Mac) | – (braucht Mac + Apple-Developer-Konto) |
+
+**Spielstände:** Browser und Desktop speichern im `localStorage` (bei Tauri dauerhaft im App-Profil). Die Handy-Apps nutzen Capacitor Preferences (Android SharedPreferences, iOS UserDefaults), weil das System den WebView-Speicher löschen kann; ein vorhandener Browser-Spielstand wird beim ersten Start übernommen. Export/Import (Optionen) funktioniert überall – so lässt sich ein Spielstand zwischen Geräten umziehen.
+
+### Einmalige Einrichtung
+
+- **PWA / GitHub Pages:** Repository → *Settings → Pages → Source: GitHub Actions*. Danach ist das Spiel unter `https://arrows94.github.io/genlab/` erreichbar und lässt sich im Browser „installieren“ bzw. „Zum Startbildschirm hinzufügen“. Es läuft danach auch offline; neue Versionen werden per Hinweis angeboten.
+- **Desktop lokal bauen:** [Rust](https://rustup.rs) plus Systempakete ([Tauri-Voraussetzungen](https://tauri.app/start/prerequisites/): Windows WebView2 + MSVC Build Tools, macOS Xcode Command Line Tools, Linux `libwebkit2gtk-4.1-dev`). Installer landen in `src-tauri/target/release/bundle/`. Ohne Code-Signing warnen Windows (SmartScreen) und macOS (Gatekeeper) beim ersten Start.
+- **Android lokal bauen:** Android Studio + JDK 21. `npm run android`, dann *Build → Build APK(s)*. Für Google Play ein signiertes AAB: Keystore anlegen und als Secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` hinterlegen – dann baut `android.yml` zusätzlich ein Release-AAB.
+- **iOS:** Mac mit Xcode, `npm run ios`, Signing-Team in Xcode wählen. Für den App Store ist ein Apple-Developer-Konto nötig.
+- **Icons ändern:** `resources/icon.png` (1024 × 1024) ersetzen, dann `npx tauri icon resources/icon.png` (Desktop) und `npx @capacitor/assets generate --iconBackgroundColor '#071317' --splashBackgroundColor '#071317' --android --ios` (Handy). Die PWA-Icons liegen in `public/icons/`.
+- **Nach Code-Änderungen für die Handy-Apps:** `npm run mobile:sync` kopiert den aktuellen Build in `android/` und `ios/`.
 
 ## Spielen
 

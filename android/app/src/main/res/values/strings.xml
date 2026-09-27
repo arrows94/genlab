@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Genlab</string>
+    <string name="title_activity_main">Genlab</string>
+    <string name="package_name">io.github.arrows94.genlab</string>
+    <string name="custom_url_scheme">io.github.arrows94.genlab</string>
+</resources>
