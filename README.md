@@ -16,6 +16,10 @@ npm run build    # Typprüfung + Produktions-Build nach dist/
 
 Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://` bzw. in Tauri/Capacitor.
 
+## Spielen
+
+Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern und auf einem anderen Gerät wieder einspielen.
+
 ## Architektur
 
 ```
@@ -61,4 +65,4 @@ Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 - [x] **Phase 4 – Arten & Hybride**: 12 Basisarten (ein Element je Art), 10 Hybride, 7 seltene Hybride, 4 mythische Endformen; Rezepte mit Bedingungen, Hinweise über Forschung/Erkundung, Evolution mit Evolutionskristallen, Regionen mit eigenen Arten, Dex-Stammbaum
 - [x] **Phase 5 – Management & Verwertung**: Filter/Sortierung/Suche, Favoriten, Stall mit Kapazität, Verkauf und Recycling (einzeln/Stapel), Arbeitsplaner und Zuchtautomat, Detailansicht (Bonus-Aufschlüsselung, Genom, Stammbaum), Rekorde, Infusion mit Allel-Übertragung und Durchbruch, Gen-Kapseln mit offenen Chancen und Pity-System
 - [x] **Phase 6 – Endgame**: Genom-Turm (Auto-Kampf mit Elementen, Kontrollpunkte, Bestenliste, Turm-Marken), Äon-Prestige mit Talentbaum (Zwillinge, Urgen-Locus, dauerhafte Automatik, größeres Team), Perfektions-Jagd (perfektes Genom, Schillernd, mythische Formen), Anomalien, unendliche Forschung, Wochen-Mutation
-- [ ] Phase 7 – Feinschliff
+- [x] **Phase 7 – Feinschliff**: Balancing-Durchgang (multiplikative Produktions-Forschung, Erbgut-Bonus, Brutkosten, Bot-Tests bis zur Vererbung), Animationen (schwebende Zahlen, Einblenden, Tab-Übergänge, schlüpfende Eier) mit Option „Weniger Animationen“, Mobile-Layout (wischbare Ressourcen- und Tab-Leiste, einklappbare Filter), Export/Import als Text oder Datei, wissenschaftliche Zahlen

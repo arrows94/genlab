@@ -26,3 +26,15 @@ describe('German number formatting', () => {
     expect(formatDuration(3_720_000)).toBe('1 h 2 min');
   });
 });
+
+describe('scientific notation preference', () => {
+  it('switches large numbers to scientific notation', async () => {
+    const { setNotation } = await import('@core/format');
+    expect(formatNumber(4_560_000, { notation: 'scientific' })).toBe('4,56e6');
+    setNotation('scientific');
+    expect(formatNumber(12_345)).toBe('1,23e4');
+    expect(formatNumber(1234)).toBe('1.234');
+    setNotation('short');
+    expect(formatNumber(12_345)).toBe('12,3 Tsd.');
+  });
+});

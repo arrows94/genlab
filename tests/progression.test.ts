@@ -54,3 +54,19 @@ describe('offline performance', () => {
     expect(ms).toBeLessThan(3000);
   });
 });
+
+describe('mid game pacing (bot with inheritance)', () => {
+  it('reaches the first inheritance within ~1.5 h and production keeps growing', () => {
+    const g = makeGame(2024);
+    const early = (() => {
+      playBot(g, 30);
+      return g.productionRates().food!.toNumber();
+    })();
+    const timeline = playBot(g, 90, { prestigeAt: 2 });
+    const first = timeline.find((t) => t.what.startsWith('Prestige'));
+    expect(first, 'erste Vererbung').toBeDefined();
+    expect(first!.min).toBeLessThanOrEqual(100);
+    expect(g.state.resources.heritage!.toNumber()).toBeGreaterThanOrEqual(2);
+    expect(early).toBeGreaterThan(10);
+  }, 60_000);
+});

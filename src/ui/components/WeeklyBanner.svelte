@@ -24,5 +24,8 @@
     background: linear-gradient(90deg, color-mix(in srgb, var(--violet) 25%, var(--panel)), var(--panel));
     border: 1px solid var(--violet); border-radius: 10px; padding: 0.35rem 0.7rem; margin-bottom: 0.6rem;
   }
+  @media (max-width: 640px) {
+    .weekly { font-size: 0.75rem; padding: 0.25rem 0.5rem; margin-bottom: 0.4rem; }
+  }
   .tag { background: var(--violet); color: #fff; border-radius: 99px; padding: 0 0.45rem; font-size: 0.7rem; font-weight: 700; }
 </style>

@@ -27,6 +27,8 @@ export const view = $state({
   unseen: {} as Record<string, number>,
   /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
   muteDex: false,
+  /** Wall clock of the last successful save. */
+  lastSaved: 0,
   /** Creature shown in the detail view. */
   detail: null as number | null,
   loadError: null as string | null,
@@ -156,6 +158,7 @@ export function act(result: ActionResult): boolean {
 export function save(): void {
   try {
     storage.save(serialize(game.state));
+    view.lastSaved = Date.now();
   } catch (err) {
     toast(`Speichern fehlgeschlagen: ${(err as Error).message}`, 'error');
   }

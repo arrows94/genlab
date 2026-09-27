@@ -23,7 +23,7 @@
 <article class="panel">
   <p>{layer.description}</p>
   <p class="num">Besitz: {formatNumber(data.owned ?? 0)} {content.resources.get(layer.currency).icon} · Durchläufe: {data.count}</p>
-  <p class="muted small">Jeder Punkt: +2 % Nahrungs- und Goldproduktion.</p>
+  <p class="muted small">Jeder Punkt: +10 % Nahrungs- und Goldproduktion, +5 % Essenz.</p>
   <button class="primary" disabled={data.gain.lte(0)} onclick={confirmPrestige}>
     Vererben für <span class="num">+{formatNumber(data.gain)}</span> {content.resources.get(layer.currency).icon}
   </button>

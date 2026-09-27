@@ -46,7 +46,7 @@ describe('tick simulation', () => {
     g.state.resources.food = D(1000);
     unlockFeature(g, 'research');
     expect(buyUpgrade(g, 'fertileSoil').ok).toBe(true);
-    expect(g.productionRates().food!.toNumber()).toBeCloseTo(base * 1.25);
+    expect(g.productionRates().food!.toNumber()).toBeCloseTo(base * 1.2);
   });
 });
 

@@ -32,6 +32,11 @@
     view.frame;
     return creature.infusion?.level ?? 0;
   });
+  /** Freshly hatched/found creatures get a "NEU" marker for a few seconds. */
+  const isNew = $derived.by(() => {
+    view.frame;
+    return game.state.simTimeMs - creature.bornAt < 15_000 && creature.bornAt > 0;
+  });
   const sequenced = $derived.by(() => {
     view.frame;
     return creature.sequenced;
@@ -68,6 +73,7 @@
       <input type="checkbox" checked={selected} onchange={() => onselect?.()} aria-label="Auswählen" />
     {/if}
     <span class="rarity">{rarity.name}</span>
+    {#if isNew}<span class="new">NEU</span>{/if}
     <button class="lock" title={creature.locked ? 'Favorit (gesperrt)' : 'Als Favorit sperren'} onclick={() => act(toggleLock(game, creature.id))}>
       {creature.locked ? '★' : '☆'}
     </button>
@@ -119,7 +125,10 @@
     flex-direction: column;
     gap: 0.4rem;
   }
-  .card.glow { animation: mythic-glow 2.2s ease-in-out infinite; }
+  .card { animation: appear 0.3s ease-out; }
+  .card.glow { animation: appear 0.3s ease-out, mythic-glow 2.2s ease-in-out 0.3s infinite; }
+  .new { background: var(--gold); color: #000; border-radius: 99px; padding: 0 0.4rem; font-size: 0.62rem; font-weight: 800; animation: pulse-new 1s ease-in-out infinite; }
+  @keyframes pulse-new { 50% { opacity: 0.55; } }
   header { display: flex; justify-content: space-between; align-items: center; }
   .rarity { color: var(--rarity); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
   .lock { background: none; border: none; padding: 0.1rem 0.3rem; color: var(--gold); font-size: 1.1rem; }

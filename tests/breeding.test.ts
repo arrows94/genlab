@@ -74,7 +74,7 @@ describe('breeding', () => {
     const gen2 = breedingCost(g, 2);
     expect(gen2.gold).toBeUndefined();
     const gen4 = breedingCost(g, 4);
-    expect(gen4.food!.toNumber()).toBe(Math.ceil(30 * 1.6 ** 2 * 1.1));
+    expect(gen4.food!.toNumber()).toBe(Math.ceil(30 * 1.5 ** 2 * 1.04));
     expect(gen4.gold!.gt(0)).toBe(true);
     for (let i = 0; i < 4; i++) createCreature(g, { speciesId: 'pebblit', rarity: 'common' });
     expect(breedingCost(g, 2).food!.gt(gen2.food!)).toBe(true);

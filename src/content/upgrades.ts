@@ -22,14 +22,14 @@ export const upgrades: UpgradeDef[] = [
   {
     id: 'farmExpansion', name: 'Farm-Ausbau', category: 'research', requires: { type: 'feature', feature: 'farm' },
     description: '+1 Platz auf der Farm.',
-    cost: { food: 75 }, costGrowth: 3, maxLevel: 4,
+    cost: { food: 75 }, costGrowth: 2.6, maxLevel: 9,
     modifiers: [{ target: 'slots.farm', op: 'add', value: 1 }],
   },
   {
     id: 'fertileSoil', name: 'Fruchtbarer Boden', category: 'research', requires: { type: 'feature', feature: 'farm' },
-    description: '+25 % Nahrungsproduktion.',
-    cost: { food: 120 }, costGrowth: 1.9, maxLevel: 20,
-    modifiers: [{ target: 'production.food', op: 'pct', value: 0.25 }],
+    description: 'Nahrungsproduktion ×1,2 (multipliziert sich).',
+    cost: { food: 120 }, costGrowth: 1.75, maxLevel: 30,
+    modifiers: [{ target: 'production.food', op: 'mult', value: 1.2 }],
   },
   {
     id: 'minePermit', name: 'Grabungslizenz', category: 'research', requires: breeding,
@@ -40,8 +40,14 @@ export const upgrades: UpgradeDef[] = [
   {
     id: 'mineExpansion', name: 'Minen-Ausbau', category: 'research', requires: mine,
     description: '+1 Platz in der Mine.',
-    cost: { gold: 60 }, costGrowth: 3, maxLevel: 4,
+    cost: { gold: 60 }, costGrowth: 2.6, maxLevel: 9,
     modifiers: [{ target: 'slots.mine', op: 'add', value: 1 }],
+  },
+  {
+    id: 'richVeins', name: 'Reiche Adern', category: 'research', requires: mine,
+    description: 'Goldproduktion ×1,2 (multipliziert sich).',
+    cost: { gold: 100 }, costGrowth: 1.8, maxLevel: 30,
+    modifiers: [{ target: 'production.gold', op: 'mult', value: 1.2 }],
   },
   {
     id: 'timeVault', name: 'Zeitgewölbe', category: 'research', requires: mine,
@@ -91,8 +97,14 @@ export const upgrades: UpgradeDef[] = [
   {
     id: 'biolabExpansion', name: 'Labor-Ausbau', category: 'research', requires: biolab,
     description: '+1 Platz im Bio-Labor.',
-    cost: { essence: 15 }, costGrowth: 3, maxLevel: 4,
+    cost: { essence: 15 }, costGrowth: 2.6, maxLevel: 9,
     modifiers: [{ target: 'slots.biolab', op: 'add', value: 1 }],
+  },
+  {
+    id: 'enzymes', name: 'Enzymkultur', category: 'research', requires: biolab,
+    description: 'Essenzproduktion ×1,2 (multipliziert sich).',
+    cost: { essence: 10, gold: 300 }, costGrowth: 1.9, maxLevel: 25,
+    modifiers: [{ target: 'production.essence', op: 'mult', value: 1.2 }],
   },
   {
     id: 'ancestorLab', name: 'Ahnenlabor', category: 'research', requires: biolab,

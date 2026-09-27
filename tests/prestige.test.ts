@@ -64,6 +64,6 @@ describe('prestige (Vererbung)', () => {
     performPrestige(g, 'inheritance');
     const points = g.state.resources.heritage!.toNumber();
     expect(points).toBeGreaterThan(0);
-    expect(g.mods().totals('production.food').pct).toBeCloseTo(pctBefore + 0.02 * points, 8);
+    expect(g.mods().totals('production.food').pct).toBeCloseTo(pctBefore + 0.1 * points, 8);
   });
 });

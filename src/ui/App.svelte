@@ -2,6 +2,7 @@
   import type { Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
   import { game, view, start, openTab } from './store.svelte';
+  import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
   import Toasts from './components/Toasts.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
@@ -53,7 +54,15 @@
   });
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 
+  loadPrefs();
   start();
+
+  // Keep the active tab visible in the scrollable bottom bar on phones.
+  let navEl: HTMLElement | undefined = $state();
+  $effect(() => {
+    view.tab;
+    navEl?.querySelector('button.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  });
 </script>
 
 <div class="app">
@@ -67,7 +76,7 @@
 
   <WeeklyBanner />
 
-  <nav>
+  <nav bind:this={navEl}>
     {#each tabs as t (t)}
       <button class:active={view.tab === t} onclick={() => openTab(t)}>
         <span class="icon">{TABS[t]!.icon}</span>
@@ -78,7 +87,9 @@
   </nav>
 
   <main>
-    <Current />
+    {#key view.tab}
+      <div class="page"><Current /></div>
+    {/key}
   </main>
 </div>
 
@@ -102,16 +113,23 @@
     border-radius: 999px; background: var(--violet); font-size: 0.7rem; display: grid; place-items: center;
   }
 
+  .page { animation: fade-in 0.2s ease-out; }
+
   /* Portrait phones: bottom tab bar */
   @media (max-width: 640px) {
     .app { padding: 0.5rem 0.6rem 5.5rem; }
+    header { gap: 0.4rem; margin-bottom: 0.5rem; }
+    .brand :global(svg) { display: none; }
+    h1 { font-size: 1.2rem; }
     nav {
       position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; margin: 0;
       padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom));
       background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
       border-top: 1px solid var(--line); flex-wrap: nowrap; overflow-x: auto;
     }
-    nav button { flex: 1 0 auto; flex-direction: column; gap: 0.1rem; padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+    nav button { flex: 1 0 auto; flex-direction: column; gap: 0.1rem; padding: 0.35rem 0.5rem; font-size: 0.7rem; min-width: 4.2rem; }
+    nav { scrollbar-width: none; }
+    nav::-webkit-scrollbar { display: none; }
     nav .icon { font-size: 1.2rem; }
   }
 </style>

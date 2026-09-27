@@ -83,8 +83,8 @@
 
 <div class="grid">
   {#each data.eggs as egg (egg.id)}
-    <article class="panel egg">
-      <h3>🥚 Ei · Gen {egg.generation}</h3>
+    <article class="panel egg" class:soon={egg.progress > 0.85}>
+      <h3><span class="eggicon">🥚</span> Ei · Gen {egg.generation}</h3>
       <p class="muted small">{egg.names.join(' × ')}</p>
       <DnaHelix progress={egg.progress} pairs={16} width={220} height={40} />
       <p class="num small">noch {formatDuration(egg.remaining)}</p>
@@ -119,6 +119,9 @@
   .small { font-size: 0.85rem; margin: 0.3rem 0; }
   .pick { display: grid; gap: 0.4rem; margin-bottom: 0.4rem; }
   .egg { display: flex; flex-direction: column; align-items: flex-start; }
+  .eggicon { display: inline-block; }
+  .soon .eggicon { animation: wobble 0.5s ease-in-out infinite; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
   article:has(:global(.planner)) { grid-column: 1 / -1; }
   button { width: 100%; }
   .hint { margin-top: 1rem; }

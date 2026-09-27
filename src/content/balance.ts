@@ -44,8 +44,8 @@ export const balance: Balance = {
     baseTimeSec: 20,
     timePerGeneration: 0.15,
     costs: [
-      { resource: 'food', base: 30, generationGrowth: 1.6, creatureGrowth: 1.1, fromGeneration: 2 },
-      { resource: 'gold', base: 20, generationGrowth: 1.6, creatureGrowth: 1.1, fromGeneration: 3 },
+      { resource: 'food', base: 30, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 2 },
+      { resource: 'gold', base: 20, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 3 },
     ],
     mutationChance: 0.08,
     mutationStatRange: [1.05, 1.25],

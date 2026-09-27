@@ -5,11 +5,24 @@ const SUFFIXES = ['', 'Tsd.', 'Mio.', 'Mrd.', 'Bio.', 'Brd.', 'Trio.', 'Trd.', '
 const de = (value: number, maxFraction: number, minFraction = 0) =>
   value.toLocaleString('de-DE', { maximumFractionDigits: maxFraction, minimumFractionDigits: minFraction });
 
+export type Notation = 'short' | 'scientific';
+
+let defaultNotation: Notation = 'short';
+
+/** Player preference: German short scale (Tsd., Mio. …) or scientific from 10.000 on. */
+export function setNotation(n: Notation): void {
+  defaultNotation = n;
+}
+
+export function getNotation(): Notation {
+  return defaultNotation;
+}
+
 /**
  * German number formatting: `1.234,5`, `12,3 Tsd.`, `4,56 Mio.` …, and
- * scientific (`1,23e45`) beyond the suffix list.
+ * scientific (`1,23e45`) beyond the suffix list or when chosen.
  */
-export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimals?: number } = {}): string {
+export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimals?: number; notation?: Notation } = {}): string {
   const d = D(value);
   const fullBelow = opts.fullBelow ?? 1e4;
   const sign = d.lt(0) ? '-' : '';
@@ -20,7 +33,7 @@ export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimal
   }
   const exponent = Math.floor(abs.log10());
   const tier = Math.floor(exponent / 3);
-  if (tier < SUFFIXES.length) {
+  if ((opts.notation ?? defaultNotation) === 'short' && tier < SUFFIXES.length) {
     const scaled = abs.div(D(10).pow(tier * 3)).toNumber();
     const decimals = scaled < 10 ? 2 : scaled < 100 ? 1 : 0;
     return `${sign}${de(floorTo(scaled, decimals), decimals)} ${SUFFIXES[tier]}`;

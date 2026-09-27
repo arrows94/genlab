@@ -22,7 +22,7 @@ export const features: FeatureDef[] = [
     id: 'infusion', name: 'Infusion', hint: 'Infusion freigeschaltet: Eine Kreatur kann Artgenossen aufnehmen und wird stärker (Detailansicht öffnen).',
     condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'creatureCount', count: 12 }] },
   },
-  { id: 'sequencing', name: 'Sequenzierlabor', tab: 'genetics', hint: 'Das Sequenzierlabor ist bereit: Entschlüssele Genome mit Essenz und plane gezielte Zuchten.', condition: { type: 'resourceEarned', resource: 'essence', amount: 5 } },
+  { id: 'sequencing', name: 'Sequenzierlabor', tab: 'genetics', hint: 'Das Sequenzierlabor ist bereit: Entschlüssele Genome mit Essenz und plane gezielte Zuchten.', condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'resourceEarned', resource: 'essence', amount: 5 }] } },
   { id: 'splicing', name: 'Gen-Splicing', hint: 'Gen-Splicing möglich: Übertrage Allele aus der Genbibliothek – mit Risiko.' },
   { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 25 } },
   {
@@ -111,8 +111,9 @@ export const prestigeLayers: PrestigeLayerDef[] = [
     description: 'Setzt Kreaturen, Nahrung, Gold und laufende Vorgänge zurück. Forschung, Dex und Essenz bleiben.',
     gainFrom: ['food', 'gold'],
     modifiersPerPoint: [
-      { target: 'production.food', op: 'pct', value: 0.02 },
-      { target: 'production.gold', op: 'pct', value: 0.02 },
+      { target: 'production.food', op: 'pct', value: 0.1 },
+      { target: 'production.gold', op: 'pct', value: 0.1 },
+      { target: 'production.essence', op: 'pct', value: 0.05 },
     ],
     resets: { resources: ['food', 'gold'], creatures: true, processes: true, buffs: true, upgradeCategories: [], dex: false, features: false },
   },

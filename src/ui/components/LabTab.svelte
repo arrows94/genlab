@@ -17,6 +17,10 @@
   let selecting = $state(false);
   let selected = $state<Set<number>>(new Set());
   let limit = $state(60);
+  let showFilters = $state(false);
+  const activeFilters = $derived(
+    [filter.search, filter.species, filter.element, filter.rarity, filter.status !== 'all', alleleKey].filter(Boolean).length,
+  );
 
   const data = $derived.by(() => {
     view.frame;
@@ -42,8 +46,17 @@
   });
 
   let pulse = $state(0);
-  function onCollect() {
-    if (act(collect(game))) pulse++;
+  /** Floating "+X" numbers at the click position. */
+  let floaters = $state<{ id: number; x: number; y: number; text: string }[]>([]);
+  let floaterId = 0;
+  function onCollect(e: MouseEvent) {
+    const gain = perClick.map(([res, amount]) => `+${formatNumber(amount)} ${content.resources.get(res).icon}`).join(' ');
+    if (!act(collect(game))) return;
+    pulse++;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const f = { id: ++floaterId, x: (e.clientX || rect.left + rect.width / 2) - rect.left + (Math.random() * 30 - 15), y: (e.clientY || rect.top + rect.height / 2) - rect.top, text: gain };
+    floaters = [...floaters.slice(-8), f];
+    setTimeout(() => (floaters = floaters.filter((x) => x.id !== f.id)), 900);
   }
 
   function toggle(id: number) {
@@ -69,6 +82,7 @@
     <p class="muted">Sammle Nahrung für deine Kreaturen.</p>
   </div>
   <button class="primary big" onclick={onCollect}>
+    {#each floaters as f (f.id)}<span class="floater num" style="left: {f.x}px; top: {f.y}px">{f.text}</span>{/each}
     Sammeln
     <span class="num gain">
       {#each perClick as [res, amount] (res)}+{formatNumber(amount)} {content.resources.get(res).icon} {/each}
@@ -80,10 +94,13 @@
 <section>
   <div class="head">
     <h2>Kreaturen <span class="num" class:full={data.total >= data.capacity}>{data.total}/{data.capacity}</span></h2>
-    <button class:active={selecting} onclick={() => { selecting = !selecting; selected = new Set(); }}>{selecting ? 'Auswahl beenden' : 'Auswählen'}</button>
+    <div class="head-actions">
+      <button class="filter-toggle" class:active={showFilters} onclick={() => (showFilters = !showFilters)}>Filter{activeFilters ? ` (${activeFilters})` : ''} ▾</button>
+      <button class:active={selecting} onclick={() => { selecting = !selecting; selected = new Set(); }}>{selecting ? 'Auswahl beenden' : 'Auswählen'}</button>
+    </div>
   </div>
 
-  <div class="toolbar panel">
+  <div class="toolbar panel" class:open={showFilters}>
     <input type="search" placeholder="Suchen …" bind:value={filter.search} />
     <select bind:value={filter.species}>
       <option value={null}>Alle Arten</option>
@@ -134,7 +151,7 @@
     </div>
   {/if}
 
-  <div class="grid">
+  <div class="grid cards">
     {#each data.list.slice(0, limit) as c (c.id)}
       <CreatureCard creature={c} selectable={selecting} selected={selected.has(c.id)} onselect={() => toggle(c.id)}>
         <EvolvePanel creature={c} />
@@ -154,6 +171,9 @@
   .collect p { margin: 0; }
   .big { font-size: 1.15rem; padding: 0.9rem 1.6rem; display: flex; flex-direction: column; align-items: center; min-width: 11rem; }
   .gain { font-size: 0.8rem; opacity: 0.85; }
+  .big { position: relative; overflow: visible; }
+  .floater { position: absolute; pointer-events: none; font-size: 0.95rem; font-weight: 700; color: var(--gold); text-shadow: 0 1px 4px #000; white-space: nowrap; transform: translate(-50%, -50%); animation: float-up 0.9s ease-out forwards; }
+  @keyframes float-up { to { transform: translate(-50%, -260%); opacity: 0; } }
   .helix { animation: pop 0.3s ease-out; }
   @keyframes pop { from { transform: scale(1.12); filter: brightness(1.6); } to { transform: scale(1); } }
   .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
@@ -167,5 +187,14 @@
   .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: 0.4rem; z-index: 5; }
   .small { font-size: 0.8rem; }
   .more { width: 100%; margin-top: 0.75rem; }
-  @media (max-width: 640px) { .toolbar select, .toolbar input { flex: 1 1 45%; } }
+  .head-actions { display: flex; gap: 0.4rem; }
+  .filter-toggle { display: none; }
+  @media (max-width: 640px) {
+    .toolbar select, .toolbar input { flex: 1 1 45%; }
+    .filter-toggle { display: inline-block; }
+    .toolbar:not(.open) { display: none; }
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+    .cards :global(.card) { padding: 0.5rem; }
+    .cards :global(.card svg) { width: 72px; height: 72px; }
+  }
 </style>

@@ -6,6 +6,7 @@ import { jobCount, jobSlots } from '@core/systems/production';
 import { visibleUpgrades } from '@core/queries';
 import { creaturePower } from '@core/creatures';
 import type { Game } from '@core/game';
+import { performPrestige, prestigeGain } from '@core/prestige';
 import { canConsume, sell, stableFree } from '@core/features/stable';
 
 export interface TimelineEntry {
@@ -17,7 +18,14 @@ export interface TimelineEntry {
  * A simple greedy "player" used to check pacing: clicks a few times per
  * second, buys the cheapest research, breeds, explores and fills jobs.
  */
-export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEntry[] {
+export interface BotOptions {
+  clicksPerSec?: number;
+  /** Perform an inheritance once the gain reaches this many heritage points. */
+  prestigeAt?: number;
+}
+
+export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}): TimelineEntry[] {
+  const { clicksPerSec = 2, prestigeAt = 0 } = typeof opts === 'number' ? { clicksPerSec: opts } : opts;
   const timeline: TimelineEntry[] = [];
   const now = () => Math.round((g.state.simTimeMs / 60_000) * 10) / 10;
   g.bus.on('featureUnlocked', (e) => timeline.push({ min: now(), what: `Freigeschaltet: ${e.feature}` }));
@@ -25,6 +33,11 @@ export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEnt
   g.bus.on('eggHatched', () => timeline.push({ min: now(), what: 'Ei geschlüpft' }));
   g.bus.on('missionCompleted', (e) => e.wildCreatureId && timeline.push({ min: now(), what: 'Wilde Kreatur gefunden' }));
   g.bus.on('achievementUnlocked', (e) => timeline.push({ min: now(), what: `Erfolg: ${e.achievement}` }));
+  g.bus.on('prestige', (e) => timeline.push({ min: now(), what: `Prestige: ${e.layer} +${e.gain.toString()}` }));
+  g.bus.on('dexDiscovered', (e) => {
+    const tier = g.content.species.get(e.species).tier;
+    if (tier !== 'base') timeline.push({ min: now(), what: `Neue Art (${tier}): ${e.species}` });
+  });
 
   for (let sec = 0; sec < minutes * 60; sec++) {
     for (let i = 0; i < clicksPerSec; i++) collect(g);
@@ -69,6 +82,8 @@ export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEnt
         .sort((a, b) => jobCount(g, a.id) - jobCount(g, b.id));
       if (!idle || !open[0] || !assignJob(g, idle.id, open[0].id).ok) break;
     }
+
+    if (prestigeAt > 0 && g.state.features.inheritance && prestigeGain(g, 'inheritance').gte(prestigeAt)) performPrestige(g, 'inheritance');
 
     g.advance(1000);
   }
