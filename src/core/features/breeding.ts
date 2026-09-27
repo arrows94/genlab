@@ -4,6 +4,7 @@ import { createCreature, creatureModifiers, findCreature } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
+import { blendNames } from '../names';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -143,8 +144,10 @@ registerProcessHandler(EGG, {
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
+    const nameFor = () => blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.offspringName, ctx.content.species.get(speciesId).name);
     const child = createCreature(ctx, {
       speciesId,
+      name: nameFor(),
       generation: data.generation,
       parents: data.parents,
       stats,
@@ -162,6 +165,7 @@ registerProcessHandler(EGG, {
     if (twinChance > 0 && stableFree(ctx) > 0 && ctx.rng.chance(twinChance)) {
       const twin = createCreature(ctx, {
         speciesId,
+        name: nameFor(),
         generation: data.generation,
         parents: data.parents,
         stats: inheritStats(ctx, a, b, mutation),

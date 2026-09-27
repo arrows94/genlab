@@ -2,7 +2,8 @@
   import { collect, collectAmounts } from '@core/actions';
   import { formatNumber } from '@core/format';
   import { content } from '@content/index';
-  import { EMPTY_FILTER, filterCreatures, sortCreatures, type CreatureFilter, type CreatureSort } from '@core/queries';
+  import { filterCreatures, sortCreatures } from '@core/queries';
+  import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments, recycle } from '@core/features/recycler';
   import { game, view, act } from '../store.svelte';
@@ -11,25 +12,21 @@
   import EvolvePanel from './EvolvePanel.svelte';
   import CostLabel from './CostLabel.svelte';
 
-  let filter = $state<CreatureFilter>({ ...EMPTY_FILTER });
-  let sort = $state<CreatureSort>('newest');
-  let alleleKey = $state('');
+  // Filters live in viewState so they survive tab switches.
+  const list = viewState.list;
   let selecting = $state(false);
   let selected = $state<Set<number>>(new Set());
   let limit = $state(60);
-  let showFilters = $state(false);
-  const activeFilters = $derived(
-    [filter.search, filter.species, filter.element, filter.rarity, filter.status !== 'all', alleleKey].filter(Boolean).length,
-  );
+  const activeFilters = $derived(activeListFilters());
 
   const data = $derived.by(() => {
     view.frame;
-    const [locus, allele] = alleleKey ? alleleKey.split(':') : [];
-    const f = { ...filter, allele: locus && allele ? { locus, allele } : null };
-    const list = sortCreatures(game, filterCreatures(game, f), sort);
+    const [locus, allele] = list.alleleKey ? list.alleleKey.split(':') : [];
+    const f = { ...list.filter, allele: locus && allele ? { locus, allele } : null };
+    const shown = sortCreatures(game, filterCreatures(game, f), list.sort);
     const chosen = game.state.creatures.filter((c) => selected.has(c.id) && canConsume(game, c));
     return {
-      list,
+      list: shown,
       total: game.state.creatures.length,
       capacity: stableCapacity(game),
       chosen,
@@ -95,26 +92,26 @@
   <div class="head">
     <h2>Kreaturen <span class="num" class:full={data.total >= data.capacity}>{data.total}/{data.capacity}</span></h2>
     <div class="head-actions">
-      <button class="filter-toggle" class:active={showFilters} onclick={() => (showFilters = !showFilters)}>Filter{activeFilters ? ` (${activeFilters})` : ''} ▾</button>
+      <button class="filter-toggle" class:active={list.showFilters} onclick={() => (list.showFilters = !list.showFilters)}>Filter{activeFilters ? ` (${activeFilters})` : ''} ▾</button>
       <button class:active={selecting} onclick={() => { selecting = !selecting; selected = new Set(); }}>{selecting ? 'Auswahl beenden' : 'Auswählen'}</button>
     </div>
   </div>
 
-  <div class="toolbar panel" class:open={showFilters}>
-    <input type="search" placeholder="Suchen …" bind:value={filter.search} />
-    <select bind:value={filter.species}>
+  <div class="toolbar panel" class:open={list.showFilters}>
+    <input type="search" placeholder="Suchen …" bind:value={list.filter.search} />
+    <select bind:value={list.filter.species}>
       <option value={null}>Alle Arten</option>
       {#each data.species as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
     </select>
-    <select bind:value={filter.element}>
+    <select bind:value={list.filter.element}>
       <option value={null}>Alle Elemente</option>
       {#each content.elements.list as e (e.id)}<option value={e.id}>{e.name}</option>{/each}
     </select>
-    <select bind:value={filter.rarity}>
+    <select bind:value={list.filter.rarity}>
       <option value={null}>Alle Seltenheiten</option>
       {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
     </select>
-    <select bind:value={filter.status}>
+    <select bind:value={list.filter.status}>
       <option value="all">Alle</option>
       <option value="idle">Frei</option>
       <option value="working">Arbeitend</option>
@@ -122,12 +119,12 @@
       <option value="locked">Favoriten</option>
     </select>
     {#if data.alleles.length > 0}
-      <select bind:value={alleleKey}>
+      <select bind:value={list.alleleKey}>
         <option value="">Jedes Allel</option>
         {#each data.alleles as a (a.key)}<option value={a.key}>{a.label}</option>{/each}
       </select>
     {/if}
-    <select bind:value={sort}>
+    <select bind:value={list.sort}>
       <option value="newest">Neueste</option>
       <option value="oldest">Älteste</option>
       <option value="rarity">Seltenheit</option>
@@ -136,6 +133,9 @@
       {#each content.stats.list as s (s.id)}<option value={`stat:${s.id}`}>{s.name}</option>{/each}
       <option value="name">Name</option>
     </select>
+    {#if activeFilters > 0}
+      <button class="reset" onclick={resetListFilters}>Filter zurücksetzen ({activeFilters})</button>
+    {/if}
   </div>
 
   {#if selecting}

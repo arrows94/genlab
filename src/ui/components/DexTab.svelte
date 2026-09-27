@@ -3,10 +3,12 @@
   import { dexKey } from '@core/state';
   import { dexCount } from '@core/queries';
   import { familyTree, perfectionSummary } from '@core/features/dex';
+  import { viewState } from '../viewState.svelte';
   import { game, view } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
-  let mode = $state<'grid' | 'tree'>('grid');
+  // Kept in viewState so the chosen view survives tab switches.
+  const dex = viewState.dex;
 
   const data = $derived.by(() => {
     view.frame;
@@ -19,8 +21,8 @@
 <div class="head">
   <h2>Monster-Dex <span class="muted num">{data.count.found}/{data.count.total}</span></h2>
   <div class="switch">
-    <button class:active={mode === 'grid'} onclick={() => (mode = 'grid')}>Raster</button>
-    <button class:active={mode === 'tree'} onclick={() => (mode = 'tree')}>Stammbaum</button>
+    <button class:active={dex.mode === 'grid'} onclick={() => (dex.mode = 'grid')}>Raster</button>
+    <button class:active={dex.mode === 'tree'} onclick={() => (dex.mode = 'tree')}>Stammbaum</button>
   </div>
 </div>
 
@@ -31,7 +33,7 @@
   <span>👑 Mythische Endformen <span class="num">{data.perfection.mythic}/{data.perfection.mythicTotal}</span></span>
 </div>
 
-{#if mode === 'grid'}
+{#if dex.mode === 'grid'}
   <div class="scroll panel">
     <table>
       <thead>

@@ -34,6 +34,7 @@ export const balance: Balance = {
     statVariance: 0.1,
     hueVariance: 18,
     maxNameLength: 20,
+    offspringName: { minLength: 4, maxLength: 12, attempts: 12 },
   },
   abilities: {
     slotChances: [0.35, 0.15, 0.05],

@@ -22,6 +22,8 @@ const storage: SaveStorage = createStorage();
 
 export const view = $state({
   frame: 0,
+  /** Slower counter (4×/s) for live number displays, so they don't flicker. */
+  slowFrame: 0,
   tab: 'lab',
   toasts: [] as Toast[],
   offline: null as OfflineReport | null,
@@ -90,7 +92,7 @@ function wireEvents(g: Game): void {
       const rarity = content.rarities.get(c.rarity);
       const species = content.species.get(c.speciesId);
       const hybrid = species.tier !== 'base';
-      toast(`${hybrid ? '🧪 Hybrid' : '🐣 Geschlüpft'}: ${species.name} (${rarity.name})`, rarity.order >= 3 || hybrid ? 'rare' : 'info', hybrid ? 6000 : 3500);
+      toast(`${hybrid ? '🧪 Hybrid' : '🐣 Geschlüpft'}: ${c.name} (${species.name}, ${rarity.name})`, rarity.order >= 3 || hybrid ? 'rare' : 'info', hybrid ? 6000 : 3500);
     }
     markUnseen('breeding');
   });
@@ -155,6 +157,7 @@ export function openTab(tab: string): void {
 
 export function refresh(): void {
   view.frame++;
+  view.slowFrame++;
 }
 
 /** Runs an action and reports failures as a toast. */
@@ -234,12 +237,17 @@ function startLoop(): void {
   if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
 
   let lastRender = 0;
+  let lastSlow = 0;
   const loop = (t: number) => {
     const r = game.update(Date.now());
     if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
     if (t - lastRender >= 100) {
       lastRender = t;
-      refresh();
+      view.frame++;
+    }
+    if (t - lastSlow >= 250) {
+      lastSlow = t;
+      view.slowFrame++;
     }
     requestAnimationFrame(loop);
   };

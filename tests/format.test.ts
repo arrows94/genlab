@@ -38,3 +38,13 @@ describe('scientific notation preference', () => {
     expect(formatNumber(12_345)).toBe('12,3 Tsd.');
   });
 });
+
+describe('fixed decimals for live counters', () => {
+  it('keeps trailing zeros so the width stays stable', () => {
+    expect(formatNumber(12, { fixed: true })).toBe('12,0');
+    expect(formatNumber(12.34, { fixed: true })).toBe('12,3');
+    expect(formatNumber(4_500_000, { fixed: true })).toBe('4,50 Mio.');
+    expect(formatNumber(4_500_000)).toBe('4,5 Mio.');
+    expect(formatNumber(250, { decimals: 0, fixed: true })).toBe('250');
+  });
+});
