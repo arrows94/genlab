@@ -1,11 +1,11 @@
 import { D } from '../num';
-import { checkPerfection, findCreature } from '../creatures';
-import { activeLoci, alleleDef, libraryHas, rollAllele } from '../genetics';
+import { checkPerfection, effectiveStats, findCreature } from '../creatures';
+import { activeLoci, alleleDef, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
 import { trySpend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature } from '../state';
+import type { Creature, StatBlock } from '../state';
 
 /**
  * Gene splicing: replace one allele of a sequenced creature with an allele
@@ -65,4 +65,35 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   checkPerfection(ctx, c);
   ctx.bus.emit('spliced', { creatureId, locus: locusId, success, scrambledLocus });
   return { ok: true };
+}
+
+export interface SplicePreview {
+  /** Allele currently in the chosen slot. */
+  current: string;
+  phenotypeBefore: string;
+  phenotypeAfter: string;
+  statsBefore: StatBlock;
+  statsAfter: StatBlock;
+  /** False when the new allele is masked (e.g. recessive next to a dominant one). */
+  visibleChange: boolean;
+}
+
+/** What a successful splice would change – for the splicing workbench. */
+export function splicePreview(ctx: GameContext, c: Creature, locusId: string, slot: 0 | 1, alleleId: string): SplicePreview | null {
+  const locus = activeLoci(ctx).find((l) => l.id === locusId);
+  const pair = c.genome[locusId];
+  if (!locus || !pair) return null;
+  const next: [string, string] = [pair[0], pair[1]];
+  next[slot] = alleleId;
+  const after = { ...c, genome: { ...c.genome, [locusId]: next } };
+  const phenotypeBefore = phenotypeLabel(locus, pair);
+  const phenotypeAfter = phenotypeLabel(locus, next);
+  return {
+    current: pair[slot],
+    phenotypeBefore,
+    phenotypeAfter,
+    statsBefore: effectiveStats(ctx, c),
+    statsAfter: effectiveStats(ctx, after),
+    visibleChange: phenotypeBefore !== phenotypeAfter,
+  };
 }

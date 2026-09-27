@@ -2,9 +2,8 @@
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { findCreature } from '@core/creatures';
-  import { formatDuration, formatPercent } from '@core/format';
+  import { formatDuration } from '@core/format';
   import { isBeingSequenced, runningSequencing, sequencerSlots, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
-  import { instabilityChance, maxSplices, splice, spliceCost } from '@core/features/splicing';
   import { activeLoci, libraryHas } from '@core/genetics';
   import { processRemainingMs } from '@core/systems/processes';
   import { game, view, act } from '../store.svelte';
@@ -12,21 +11,16 @@
   import CostLabel from './CostLabel.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import DnaSequence from './DnaSequence.svelte';
+  import SplicingBench from './SplicingBench.svelte';
 
   let toSequence = $state<number | null>(null);
   let inspect = $state<number | null>(null);
-  let spliceTarget = $state<number | null>(null);
-  let spliceLocus = $state(content.genes.list[0]!.id);
-  let spliceSlot = $state<0 | 1>(0);
-  let spliceAllele = $state('');
 
   const data = $derived.by(() => {
     view.frame;
     const selected = toSequence !== null ? findCreature(game, toSequence) : undefined;
-    const target = spliceTarget !== null ? findCreature(game, spliceTarget) : undefined;
     const libraryTotal = activeLoci(game).reduce((n, l) => n + l.alleles.length, 0);
     return {
-      loci: activeLoci(game),
       slots: sequencerSlots(game),
       running: runningSequencing(game).map((p) => ({
         id: p.id,
@@ -35,17 +29,12 @@
         remaining: processRemainingMs(game, p),
       })),
       unsequenced: game.state.creatures.filter((c) => !c.sequenced && !isBeingSequenced(game, c.id)),
-      sequenced: game.state.creatures.filter((c) => c.sequenced),
       cost: selected ? sequencingCost(game, selected) : null,
       time: sequencingTimeMs(game),
       inspected: inspect !== null ? findCreature(game, inspect) : undefined,
       libraryCount: Object.keys(game.state.geneLibrary).length,
       libraryTotal,
       splicing: game.state.features['splicing'] === true,
-      target,
-      spliceCost: target ? spliceCost(game, target) : null,
-      splicesLeft: target ? maxSplices(game) - (target.splices ?? 0) : 0,
-      instability: instabilityChance(game),
     };
   });
 
@@ -57,10 +46,6 @@
     }));
   });
 
-  const libraryAlleles = $derived.by(() => {
-    view.frame;
-    return content.genes.get(spliceLocus).alleles.filter((a) => libraryHas(game, spliceLocus, a.id));
-  });
 </script>
 
 <h2>Genlabor</h2>
@@ -116,29 +101,7 @@
 </section>
 
 {#if data.splicing}
-  <section class="panel">
-    <h3>✂️ Gen-Splicing</h3>
-    <p class="small muted">Ersetze ein Allel durch eines aus der Genbibliothek. Instabilität {formatPercent(data.instability, 0)}: dann bleibt das Ziel unverändert und ein anderes Gen mutiert zufällig.</p>
-    <div class="splice">
-      <CreaturePicker creatures={data.sequenced} bind:value={spliceTarget} placeholder="Sequenzierte Kreatur …" />
-      <select bind:value={spliceLocus} onchange={() => (spliceAllele = '')}>
-        {#each data.loci as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
-      </select>
-      <select bind:value={spliceSlot}>
-        <option value={0}>Allel 1{data.target ? ` (${data.target.genome[spliceLocus]?.[0]})` : ''}</option>
-        <option value={1}>Allel 2{data.target ? ` (${data.target.genome[spliceLocus]?.[1]})` : ''}</option>
-      </select>
-      <select bind:value={spliceAllele}>
-        <option value="">Neues Allel …</option>
-        {#each libraryAlleles as a (a.id)}<option value={a.id}>{a.symbol} – {a.name}</option>{/each}
-      </select>
-    </div>
-    {#if data.target}<p class="small muted num">Verbleibende Versuche: {data.splicesLeft}</p>{/if}
-    <button class="primary" disabled={!data.target || !spliceAllele || data.splicesLeft <= 0 || !data.spliceCost || !canAfford(game.state, data.spliceCost)}
-      onclick={() => spliceTarget !== null && act(splice(game, spliceTarget, spliceLocus, spliceSlot, spliceAllele))}>
-      Splicen {#if data.spliceCost}· <CostLabel cost={data.spliceCost} />{/if}
-    </button>
-  </section>
+  <SplicingBench />
 {/if}
 
 <style>
@@ -158,6 +121,5 @@
   }
   .allele small { font-family: system-ui, sans-serif; font-size: 0.65rem; }
   .allele.found { border: 1px solid var(--c); color: var(--text); background: color-mix(in srgb, var(--c) 18%, transparent); }
-  .splice { display: grid; gap: 0.4rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 0.4rem; }
   @media (max-width: 480px) { .locus { grid-template-columns: 1fr; gap: 0.2rem; } }
 </style>
