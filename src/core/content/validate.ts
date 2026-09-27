@@ -1,0 +1,301 @@
+import { isValidTarget, type ModifierDef } from '../modifiers';
+import type { Condition, ContentData, ContentDB, Registry, ResourceAmounts } from './types';
+
+export class ContentValidationError extends Error {
+  constructor(public readonly issues: string[]) {
+    super(`Ungültige Spielinhalte (${issues.length} Fehler):\n  - ${issues.join('\n  - ')}`);
+    this.name = 'ContentValidationError';
+  }
+}
+
+type Kind = keyof ContentData;
+
+/**
+ * Validates all content (shape, unique ids, cross references, modifier
+ * targets, conditions) and returns a list of human readable issues.
+ */
+export function validateContent(data: ContentData): string[] {
+  const issues: string[] = [];
+  const ids = {} as Record<Kind, Set<string>>;
+
+  for (const kind of Object.keys(data) as Kind[]) {
+    const list = data[kind] as { id?: unknown }[];
+    ids[kind] = new Set();
+    if (!Array.isArray(list)) {
+      issues.push(`${kind}: muss eine Liste sein`);
+      continue;
+    }
+    list.forEach((entry, i) => {
+      if (typeof entry?.id !== 'string' || entry.id.length === 0) {
+        issues.push(`${kind}[${i}]: fehlende oder leere id`);
+      } else if (ids[kind].has(entry.id)) {
+        issues.push(`${kind}[${entry.id}]: doppelte id`);
+      } else {
+        ids[kind].add(entry.id);
+      }
+    });
+  }
+
+  const at = (kind: Kind, id: string) => `${kind}[${id}]`;
+  const ref = (where: string, kind: Kind, id: string | undefined) => {
+    if (id === undefined) return;
+    if (!ids[kind]?.has(id)) issues.push(`${where}: unbekannte ${kind}-id "${id}"`);
+  };
+  const text = (where: string, value: unknown) => {
+    if (typeof value !== 'string' || value.trim() === '') issues.push(`${where}: Text fehlt`);
+  };
+  const num = (where: string, value: unknown, min = -Infinity, max = Infinity) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) issues.push(`${where}: muss eine Zahl sein`);
+    else if (value < min || value > max) issues.push(`${where}: ${value} liegt nicht in [${min}, ${max}]`);
+  };
+  const amounts = (where: string, value: ResourceAmounts | undefined) => {
+    if (!value) return;
+    for (const [res, amount] of Object.entries(value)) {
+      ref(`${where}.${res}`, 'resources', res);
+      num(`${where}.${res}`, amount, 0);
+    }
+  };
+  const mods = (where: string, list: readonly ModifierDef[] | undefined) => {
+    if (list === undefined) return;
+    if (!Array.isArray(list)) return issues.push(`${where}: muss eine Liste sein`);
+    list.forEach((m, i) => {
+      const w = `${where}[${i}]`;
+      if (!isValidTarget(m.target)) issues.push(`${w}: ungültiges Modifier-Ziel "${m.target}"`);
+      if (!['add', 'pct', 'mult'].includes(m.op)) issues.push(`${w}: ungültige Operation "${m.op}"`);
+      num(`${w}.value`, m.value);
+      if (m.op === 'mult' && m.value <= 0) issues.push(`${w}: mult muss > 0 sein`);
+    });
+  };
+  const cond = (where: string, c: Condition | undefined): void => {
+    if (!c) return;
+    switch (c.type) {
+      case 'always':
+        return;
+      case 'resourceEarned':
+      case 'resourceOwned':
+        ref(where, 'resources', c.resource);
+        return num(`${where}.amount`, c.amount, 0);
+      case 'upgradeLevel':
+        ref(where, 'upgrades', c.upgrade);
+        return num(`${where}.level`, c.level, 0);
+      case 'feature':
+        return ref(where, 'features', c.feature);
+      case 'creatureCount':
+        return num(`${where}.count`, c.count, 0);
+      case 'statistic':
+        text(`${where}.statistic`, c.statistic);
+        return num(`${where}.amount`, c.amount, 0);
+      case 'dex':
+        ref(where, 'species', c.species);
+        ref(where, 'rarities', c.rarity);
+        return;
+      case 'prestigeCount':
+        return ref(where, 'prestigeLayers', c.layer);
+      case 'talent':
+        return ref(where, 'talents', c.talent);
+      case 'towerFloor':
+        return num(`${where}.floor`, c.floor, 1);
+      case 'anomaly':
+        return ref(where, 'anomalies', c.anomaly);
+      case 'geneLibrary': {
+        const total = data.genes.reduce((n, g) => n + g.alleles.length, 0);
+        return num(`${where}.count`, c.count, 0, total);
+      }
+      case 'all':
+      case 'any':
+        return c.of.forEach((sub, i) => cond(`${where}.${c.type}[${i}]`, sub));
+      default:
+        issues.push(`${where}: unbekannter Bedingungstyp "${(c as { type: string }).type}"`);
+    }
+  };
+
+  const statIds = ids.stats ?? new Set<string>();
+
+  for (const r of data.resources) {
+    text(`${at('resources', r.id)}.name`, r.name);
+    ref(`${at('resources', r.id)}.feature`, 'features', r.feature);
+  }
+  for (const s of data.species) {
+    const w = at('species', s.id);
+    text(`${w}.name`, s.name);
+    ref(`${w}.element`, 'elements', s.element);
+    num(`${w}.hue`, s.hue, 0, 360);
+    for (const stat of statIds) num(`${w}.baseStats.${stat}`, s.baseStats[stat], 0);
+    for (const key of Object.keys(s.baseStats)) if (!statIds.has(key)) issues.push(`${w}.baseStats: unbekannter Stat "${key}"`);
+  }
+  for (const e of data.elements) {
+    for (const other of e.strongAgainst) ref(`${at('elements', e.id)}.strongAgainst`, 'elements', other);
+  }
+  for (const g of data.genes) {
+    const w = at('genes', g.id);
+    if (g.alleles.length < 2) issues.push(`${w}: braucht mindestens 2 Allele`);
+    if (!g.alleles.some((a) => a.weight > 0)) issues.push(`${w}: mindestens ein Allel braucht weight > 0`);
+    const alleleIds = new Set<string>();
+    for (const a of g.alleles) {
+      if (alleleIds.has(a.id)) issues.push(`${w}.alleles[${a.id}]: doppelte id`);
+      alleleIds.add(a.id);
+      num(`${w}.alleles[${a.id}].weight`, a.weight, 0);
+      num(`${w}.alleles[${a.id}].dominance`, a.dominance);
+      mods(`${w}.alleles[${a.id}].modifiers`, a.modifiers);
+    }
+  }
+  const alleleRef = (where: string, a: { locus: string; allele: string } | undefined) => {
+    if (!a) return;
+    const locus = data.genes.find((g) => g.id === a.locus);
+    if (!locus) issues.push(`${where}: unbekannter Gen-Locus "${a.locus}"`);
+    else if (!locus.alleles.some((x) => x.id === a.allele)) issues.push(`${where}: unbekanntes Allel "${a.allele}"`);
+  };
+  for (const a of data.abilities) {
+    ref(`${at('abilities', a.id)}.tier`, 'rarities', a.tier);
+    mods(`${at('abilities', a.id)}.modifiers`, a.modifiers);
+  }
+  for (const r of data.recipes) {
+    const w = at('recipes', r.id);
+    r.parents.forEach((p) => ref(`${w}.parents`, 'species', p));
+    ref(`${w}.result`, 'species', r.result);
+    text(`${w}.hint`, r.hint);
+    const result = data.species.find((s) => s.id === r.result);
+    if (result?.tier === 'base') issues.push(`${w}.result: Hybrid-Ergebnis darf keine Basisart sein`);
+    num(`${w}.chance`, r.chance, 0, 1);
+    ref(`${w}.requires.minRarity`, 'rarities', r.requires?.minRarity);
+    alleleRef(`${w}.requires.allele`, r.requires?.allele);
+    cond(`${w}.requires.condition`, r.requires?.condition);
+  }
+  for (const e of data.evolutions) {
+    const w = at('evolutions', e.id);
+    ref(`${w}.from`, 'species', e.from);
+    ref(`${w}.to`, 'species', e.to);
+    if (e.from === e.to) issues.push(`${w}: from und to sind gleich`);
+    ref(`${w}.requires.minRarity`, 'rarities', e.requires.minRarity);
+    alleleRef(`${w}.requires.allele`, e.requires.allele);
+    amounts(`${w}.requires.cost`, e.requires.cost);
+  }
+  for (const b of data.buildings) {
+    const w = at('buildings', b.id);
+    ref(`${w}.produces`, 'resources', b.produces);
+    ref(`${w}.feature`, 'features', b.feature);
+    if (!statIds.has(b.workStat)) issues.push(`${w}.workStat: unbekannter Stat "${b.workStat}"`);
+    num(`${w}.baseRate`, b.baseRate, 0);
+    num(`${w}.baseSlots`, b.baseSlots, 0);
+  }
+  for (const u of data.upgrades) {
+    const w = at('upgrades', u.id);
+    text(`${w}.name`, u.name);
+    amounts(`${w}.cost`, u.cost);
+    num(`${w}.costGrowth`, u.costGrowth, 1);
+    if (u.maxLevel !== null) num(`${w}.maxLevel`, u.maxLevel, 1);
+    mods(`${w}.modifiers`, u.modifiers);
+    u.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
+    cond(`${w}.requires`, u.requires);
+    if (u.grantsHints !== undefined) num(`${w}.grantsHints`, u.grantsHints, 0);
+  }
+  for (const p of data.potions) {
+    const w = at('potions', p.id);
+    amounts(`${w}.cost`, p.cost);
+    mods(`${w}.modifiers`, p.modifiers);
+    ref(`${w}.feature`, 'features', p.feature);
+    if ((p.kind === 'creatureBuff' || p.kind === 'globalBuff') && !(p.durationSec! > 0)) issues.push(`${w}: Buff braucht durationSec > 0`);
+    if (p.kind === 'timeSkip' && !(p.skipSec! > 0)) issues.push(`${w}: timeSkip braucht skipSec > 0`);
+    if (p.kind === 'permanentStat' && !(p.statBonus! > 0)) issues.push(`${w}: permanentStat braucht statBonus > 0`);
+  }
+  for (const m of data.missions) {
+    const w = at('missions', m.id);
+    num(`${w}.durationSec`, m.durationSec, 1);
+    amounts(`${w}.cost`, m.cost);
+    num(`${w}.wildChance`, m.wildChance, 0, 1);
+    m.species?.forEach((s) => ref(`${w}.species`, 'species', s));
+    cond(`${w}.requires`, m.requires);
+    for (const [res, range] of Object.entries(m.rewards)) {
+      ref(`${w}.rewards`, 'resources', res);
+      if (!Array.isArray(range) || range.length !== 2 || range[0] > range[1]) issues.push(`${w}.rewards.${res}: [min, max] erwartet`);
+    }
+  }
+  for (const d of data.dexRewards) {
+    const w = at('dexRewards', d.id);
+    ref(`${w}.rarity`, 'rarities', d.rarity);
+    mods(`${w}.modifiersPerEntry`, d.modifiersPerEntry);
+    d.unlocksFeatures?.forEach((u) => u.features.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f)));
+  }
+  for (const f of data.features) {
+    text(`${at('features', f.id)}.hint`, f.hint);
+    cond(`${at('features', f.id)}.condition`, f.condition);
+    ref(`${at('features', f.id)}.grantsCreature.species`, 'species', f.grantsCreature?.species);
+    ref(`${at('features', f.id)}.grantsCreature.rarity`, 'rarities', f.grantsCreature?.rarity);
+  }
+  for (const a of data.achievements) {
+    cond(`${at('achievements', a.id)}.condition`, a.condition);
+    mods(`${at('achievements', a.id)}.modifiers`, a.modifiers);
+  }
+  for (const l of data.prestigeLayers) {
+    const w = at('prestigeLayers', l.id);
+    ref(`${w}.currency`, 'resources', l.currency);
+    ref(`${w}.feature`, 'features', l.feature);
+    l.gainFrom.forEach((r) => ref(`${w}.gainFrom`, 'resources', r));
+    l.resets.resources.forEach((r) => ref(`${w}.resets.resources`, 'resources', r));
+    if (l.resets.resources.includes(l.currency)) issues.push(`${w}: darf die eigene Währung nicht zurücksetzen`);
+    mods(`${w}.modifiersPerPoint`, l.modifiersPerPoint);
+  }
+  for (const c of data.capsules) {
+    const w = at('capsules', c.id);
+    amounts(`${w}.cost`, c.cost);
+    ref(`${w}.feature`, 'features', c.feature);
+    ref(`${w}.pity.minRarity`, 'rarities', c.pity.minRarity);
+    num(`${w}.pity.threshold`, c.pity.threshold, 1);
+    for (const [r, v] of Object.entries(c.rarityWeights)) {
+      ref(`${w}.rarityWeights`, 'rarities', r);
+      num(`${w}.rarityWeights.${r}`, v, 0);
+    }
+    if (!Object.values(c.rarityWeights).some((v) => v > 0)) issues.push(`${w}.rarityWeights: mindestens ein Gewicht > 0`);
+    const pityOrder = data.rarities.find((r) => r.id === c.pity.minRarity)?.order ?? 0;
+    if (!Object.entries(c.rarityWeights).some(([r, v]) => v > 0 && (data.rarities.find((x) => x.id === r)?.order ?? -1) >= pityOrder)) {
+      issues.push(`${w}.pity: keine Seltenheit ≥ ${c.pity.minRarity} mit Gewicht > 0`);
+    }
+    for (const [tier, v] of Object.entries(c.tierWeights)) num(`${w}.tierWeights.${tier}`, v, 0);
+  }
+  for (const t of data.talents) {
+    const w = at('talents', t.id);
+    num(`${w}.cost`, t.cost, 0);
+    t.requires.forEach((r) => ref(`${w}.requires`, 'talents', r));
+    mods(`${w}.modifiers`, t.modifiers);
+    t.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
+    amounts(`${w}.onReset`, t.onReset);
+  }
+  for (const a of data.anomalies) {
+    const w = at('anomalies', a.id);
+    mods(`${w}.modifiers`, a.modifiers);
+    mods(`${w}.reward`, a.reward);
+    cond(`${w}.goal`, a.goal);
+    cond(`${w}.requires`, a.requires);
+  }
+  for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
+  for (const g of data.genes) cond(`${at('genes', g.id)}.requires`, g.requires);
+  if (data.rarities.length === 0) issues.push('rarities: mindestens eine Seltenheit nötig');
+
+  return issues;
+}
+
+function makeRegistry<T extends { id: string }>(kind: string, list: readonly T[]): Registry<T> {
+  const map = new Map(list.map((e) => [e.id, e]));
+  return {
+    list,
+    has: (id) => map.has(id),
+    get(id) {
+      const found = map.get(id);
+      if (!found) throw new Error(`Unbekannte ${kind}-id "${id}"`);
+      return found;
+    },
+  };
+}
+
+/** Validates content and builds lookup registries. Throws on any issue. */
+export function buildContentDB(data: ContentData): ContentDB {
+  const issues = validateContent(data);
+  if (issues.length > 0) throw new ContentValidationError(issues);
+  const db = {} as Record<string, Registry<{ id: string }>>;
+  for (const kind of Object.keys(data) as Kind[]) {
+    const list = [...(data[kind] as { id: string }[])];
+    if (kind === 'rarities') (list as unknown as { order: number }[]).sort((a, b) => a.order - b.order);
+    db[kind] = makeRegistry(kind, list);
+  }
+  return db as unknown as ContentDB;
+}
