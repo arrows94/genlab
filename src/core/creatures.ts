@@ -25,6 +25,8 @@ export interface CreateCreatureOptions {
   ancestry?: AncestorInfo[] | null;
   /** Omitted → rolled with the (tiny) shiny chance. */
   shiny?: boolean;
+  /** Omitted → the species name. */
+  name?: string;
   source?: CreatureSource;
 }
 
@@ -56,7 +58,7 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
   const creature: Creature = {
     id: state.nextId++,
     speciesId: species.id,
-    name: species.name,
+    name: opts.name ?? species.name,
     rarity,
     generation: opts.generation ?? 1,
     stats,

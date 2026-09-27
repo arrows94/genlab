@@ -22,21 +22,23 @@ export function getNotation(): Notation {
  * German number formatting: `1.234,5`, `12,3 Tsd.`, `4,56 Mio.` …, and
  * scientific (`1,23e45`) beyond the suffix list or when chosen.
  */
-export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimals?: number; notation?: Notation } = {}): string {
+export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimals?: number; notation?: Notation; fixed?: boolean } = {}): string {
+  // `fixed` keeps trailing zeros ("12,0", "4,50 Mio.") so live counters don't change width.
+  const min = (decimals: number) => (opts.fixed ? decimals : 0);
   const d = D(value);
   const fullBelow = opts.fullBelow ?? 1e4;
   const sign = d.lt(0) ? '-' : '';
   const abs = d.abs();
   if (abs.lt(fullBelow)) {
     const decimals = opts.decimals ?? 1;
-    return sign + de(floorTo(abs.toNumber(), decimals), decimals);
+    return sign + de(floorTo(abs.toNumber(), decimals), decimals, min(decimals));
   }
   const exponent = Math.floor(abs.log10());
   const tier = Math.floor(exponent / 3);
   if ((opts.notation ?? defaultNotation) === 'short' && tier < SUFFIXES.length) {
     const scaled = abs.div(D(10).pow(tier * 3)).toNumber();
     const decimals = scaled < 10 ? 2 : scaled < 100 ? 1 : 0;
-    return `${sign}${de(floorTo(scaled, decimals), decimals)} ${SUFFIXES[tier]}`;
+    return `${sign}${de(floorTo(scaled, decimals), decimals, min(decimals))} ${SUFFIXES[tier]}`;
   }
   return `${sign}${de(floorTo(abs.mantissa, 2), 2, 2)}e${abs.exponent}`;
 }

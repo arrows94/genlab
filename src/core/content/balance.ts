@@ -43,6 +43,8 @@ export interface Balance {
     statVariance: number;
     hueVariance: number;
     maxNameLength: number;
+    /** Offspring names are blended from the parents' names within these limits. */
+    offspringName: { minLength: number; maxLength: number; attempts: number };
   };
   abilities: {
     /** Chance for the 1st, 2nd, 3rd … ability when a creature is created without parents. */
