@@ -69,6 +69,25 @@ export interface Balance {
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
   };
+  genetics: {
+    /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */
+    alleleMutationFactor: number;
+    sequencing: {
+      baseTimeSec: number;
+      cost: Record<string, number>;
+      /** Extra cost fraction per generation of the creature. */
+      costPerGeneration: number;
+      baseSlots: number;
+    };
+    splicing: {
+      cost: Record<string, number>;
+      /** Cost multiplier per splice already applied to the creature. */
+      costGrowth: number;
+      maxPerCreature: number;
+      /** Base chance a splice fails and scrambles another locus (modified by `splicing.instability`). */
+      instability: number;
+    };
+  };
   missions: {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */

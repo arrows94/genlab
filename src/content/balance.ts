@@ -52,6 +52,21 @@ export const balance: Balance = {
     abilityInheritChance: 0.5,
     baseNests: 1,
   },
+  genetics: {
+    alleleMutationFactor: 0.5,
+    sequencing: {
+      baseTimeSec: 60,
+      cost: { essence: 5 },
+      costPerGeneration: 0.2,
+      baseSlots: 1,
+    },
+    splicing: {
+      cost: { essence: 80, gold: 2000 },
+      costGrowth: 2.5,
+      maxPerCreature: 3,
+      instability: 0.25,
+    },
+  },
   missions: {
     baseCamps: 1,
     statScaling: 0.02,

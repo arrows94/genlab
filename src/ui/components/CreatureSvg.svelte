@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Appearance } from '@core/state';
 
-  let { appearance, shape, size = 96 }: { appearance: Appearance; shape: string; size?: number } = $props();
+  let { appearance, shape, size = 96 }: { appearance: Appearance & { saturation?: number; lightness?: number }; shape: string; size?: number } = $props();
 
-  const body = $derived(`hsl(${appearance.hue} 65% 55%)`);
-  const dark = $derived(`hsl(${appearance.hue} 55% 35%)`);
-  const light = $derived(`hsl(${(appearance.hue + 20) % 360} 80% 75%)`);
+  const sat = $derived(appearance.saturation ?? 65);
+  const lig = $derived(appearance.lightness ?? 55);
+  const body = $derived(`hsl(${appearance.hue} ${sat}% ${lig}%)`);
+  const dark = $derived(`hsl(${appearance.hue} ${sat * 0.85}% ${lig * 0.62}%)`);
+  const light = $derived(`hsl(${(appearance.hue + 20) % 360} ${Math.min(90, sat + 15)}% ${Math.min(92, lig + 20)}%)`);
 
   const bodyPath = $derived(
     {

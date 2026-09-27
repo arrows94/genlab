@@ -37,16 +37,22 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 
 ```ts
 {
-  id: 'armor', name: 'Panzer', category: 'stat',
+  id: 'glow', name: 'Leuchten', category: 'visual', description: 'Biolumineszenz. Rezessiv.',
   alleles: [
-    { id: 'P', name: 'Gepanzert', symbol: 'P', dominance: 2, weight: 20, color: '#b0bec5',
-      modifiers: [{ target: 'stat.def', op: 'pct', value: 0.25 }] },
-    { id: 'p', name: 'Normal', symbol: 'p', dominance: 1, weight: 80, color: '#607d8b', modifiers: [] },
+    { id: 'L', name: 'Normal', symbol: 'L', dominance: 2, weight: 85, color: '#546e7a', modifiers: [] },
+    { id: 'l', name: 'Leuchtend', symbol: 'l', dominance: 1, weight: 15, color: '#e6ff5c',
+      modifiers: [{ target: 'production.essence', op: 'pct', value: 0.15 }],
+      visual: { lightness: 70, saturation: 90 } },
   ],
 },
 ```
 
-Höhere `dominance` setzt sich durch, gleiche `dominance` = kodominant. `weight` bestimmt die Häufigkeit bei wilden Kreaturen.
+- **Ausprägung:** Das Allel mit höherer `dominance` setzt sich durch. Bei gleicher `dominance` und verschiedenen Allelen sind beide kodominant zu je 50 % ausgeprägt (Modifier halbiert). Ein rezessives Merkmal braucht zwei Kopien.
+- `weight` bestimmt die Häufigkeit in neuen/wilden Genomen – seltene Allele bekommen kleine Werte.
+- `modifiers` wirken auf die Kreatur (Stats, Produktion bei der Arbeit, `breeding.time` als Elternteil …).
+- `visual` verändert das Aussehen (`hueShift`, `saturation`, `lightness`, `pattern`, `horn`). Das Aussehen ist immer sichtbar, die Allele erst nach der Sequenzierung.
+- Ein neues Gen braucht **keine** Save-Migration: Beim Laden bekommen alle Kreaturen fehlende Loci zufällig gewürfelt.
+- Ziele wie „alle Allele katalogisiert“ (`geneLibrary`-Bedingung) werden gegen die tatsächliche Allelzahl validiert.
 
 ## Neues Hybrid-Rezept
 

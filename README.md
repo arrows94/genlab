@@ -39,7 +39,8 @@ tests/         Vitest-Tests für die Core-Logik
 | Speichern | `core/save.ts` | Versionierte Spielstände (`saveVersion` + Migrationen), Default-Merge für neue Felder, Export/Import als Text (`GENLAB1:…`), austauschbarer `SaveStorage`. |
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
-| Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt – registrieren ihre Zeitprozesse selbst. |
+| Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Genetik | `core/genetics.ts` | Ausprägung (dominant/rezessiv/kodominant), Mendel-Vererbung, Genom-Modifier, sichtbarer Phänotyp. Neue Gene in alten Spielständen werden beim Laden automatisch ergänzt. |
 
 ## Balancing prüfen
 
@@ -55,7 +56,7 @@ Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 
 - [x] **Phase 1 – Fundament**: Setup, Ordnerstruktur, Content-Interfaces + Validierung, Modifier-System, Tick/Offline, Save/Load/Migration, Event-Bus, Tests, spielbares Grundgerüst (Sammeln, Farm/Mine, Forschung, Dex, Statistik, Vererbung, Export/Import)
 - [x] **Phase 2 – Portierung**: Brutstation (Vererbung von Werten, Aussehen, Fähigkeiten, Mutation, mehrere Nester), Erkundung (Camps, Beute, wilde Kreaturen), Bio-Labor, Markt (Kraftfutter, Turbo-Trank, Festmahl, Zeitkristall), Fähigkeiten in Stufen, vollständiger Forschungsbaum inkl. Dex-Freischaltungen, langsamer Start mit schrittweisen Freischaltungen, Tab-Badges
-- [ ] Phase 3 – Genetik
+- [x] **Phase 3 – Genetik**: 9 Gen-Loci mit dominanten, rezessiven und kodominanten Allelen, Mendel-Vererbung mit Mutation, verborgene Genome + Sequenzierlabor, Genbibliothek, Gen-Splicing mit Instabilität, Zuchtplaner, DNA-Darstellung
 - [ ] Phase 4 – Arten & Hybride
 - [ ] Phase 5 – Management & Verwertung
 - [ ] Phase 6 – Endgame

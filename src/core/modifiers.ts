@@ -41,7 +41,8 @@ export const MODIFIER_ROOTS = [
   'stat', // stat.<statId> (global creature stat bonus)
   'offline', // offline.capHours
   'prestige', // prestige.<layer>.gain
-  'sequencing',
+  'sequencing', // sequencing.time
+  'splicing', // splicing.instability, splicing.cost
   'infusion',
   'capsule',
   'tower',

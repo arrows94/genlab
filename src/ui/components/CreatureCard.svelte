@@ -5,6 +5,8 @@
   import { game, view, act } from '../store.svelte';
   import { renameCreature, toggleLock } from '@core/actions';
   import CreatureSvg from './CreatureSvg.svelte';
+  import DnaSequence from './DnaSequence.svelte';
+  import { expressedAppearance } from '@core/genetics';
   import type { Snippet } from 'svelte';
 
   let { creature, children }: { creature: Creature; children?: Snippet } = $props();
@@ -15,6 +17,14 @@
   const stats = $derived.by(() => {
     view.frame;
     return effectiveStats(game, creature);
+  });
+  const look = $derived.by(() => {
+    view.frame;
+    return expressedAppearance(game, creature);
+  });
+  const sequenced = $derived.by(() => {
+    view.frame;
+    return creature.sequenced;
   });
 
   const jobLabel = $derived.by(() => {
@@ -46,7 +56,7 @@
       {creature.locked ? '★' : '☆'}
     </button>
   </header>
-  <div class="art"><CreatureSvg appearance={creature.appearance} shape={species.shape} /></div>
+  <div class="art"><CreatureSvg appearance={look} shape={species.shape} /></div>
   {#if editing}
     <form onsubmit={(e) => { e.preventDefault(); commit(); }}>
       <!-- svelte-ignore a11y_autofocus -->
@@ -65,6 +75,7 @@
       <div><dt>{s.short}</dt><dd class="num">{stats[s.id]}</dd></div>
     {/each}
   </dl>
+  <div class="dna"><DnaSequence genome={creature.genome} known={sequenced} /></div>
   {#if creature.abilities.length > 0}
     <ul class="abilities">
       {#each creature.abilities as id (id)}
@@ -103,6 +114,7 @@
   dt { font-size: 0.65rem; color: var(--muted); }
   dd { margin: 0; font-size: 0.9rem; }
   .job { font-size: 0.8rem; color: var(--teal); }
+  .dna { display: flex; justify-content: center; }
   .abilities { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }
   .abilities li { font-size: 0.7rem; border: 1px solid var(--t); color: var(--t); border-radius: 99px; padding: 0.05rem 0.45rem; }
   input { width: 100%; }

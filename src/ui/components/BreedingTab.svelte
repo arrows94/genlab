@@ -9,6 +9,7 @@
   import CreaturePicker from './CreaturePicker.svelte';
   import CostLabel from './CostLabel.svelte';
   import DnaHelix from './DnaHelix.svelte';
+  import BreedingPlanner from './BreedingPlanner.svelte';
 
   let parentA = $state<number | null>(null);
   let parentB = $state<number | null>(null);
@@ -21,6 +22,8 @@
     const generation = offspringGeneration(a, b);
     const cost = breedingCost(game, generation);
     return {
+      a,
+      b,
       slots: nestSlots(game),
       eggs: eggs(game).map((p) => {
         const d = p.data as EggData;
@@ -36,7 +39,7 @@
       cost,
       affordable: canAfford(game.state, cost),
       generation,
-      time: breedingTimeMs(game, generation),
+      time: breedingTimeMs(game, generation, [a, b]),
       mutation: mutationChance(game),
     };
   });
@@ -76,6 +79,7 @@
       <button class="primary" disabled={parentA === null || parentB === null || !data.affordable} onclick={breed}>
         Brüten · <CostLabel cost={data.cost} />
       </button>
+      {#if data.a && data.b}<BreedingPlanner a={data.a} b={data.b} />{/if}
     </article>
   {/if}
 </div>
@@ -89,6 +93,7 @@
   .small { font-size: 0.85rem; margin: 0.3rem 0; }
   .pick { display: grid; gap: 0.4rem; margin-bottom: 0.4rem; }
   .egg { display: flex; flex-direction: column; align-items: flex-start; }
+  article:has(:global(.planner)) { grid-column: 1 / -1; }
   button { width: 100%; }
   .hint { margin-top: 1rem; }
 </style>

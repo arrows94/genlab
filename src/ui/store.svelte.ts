@@ -77,6 +77,22 @@ function wireEvents(g: Game): void {
     }
     markUnseen('breeding');
   });
+  g.bus.on('sequenced', (e) => {
+    const c = g.state.creatures.find((x) => x.id === e.creatureId);
+    toast(`🧬 Genom entschlüsselt: ${c?.name ?? '?'}`, 'info');
+    markUnseen('genetics');
+  });
+  g.bus.on('alleleCatalogued', (e) => {
+    const locus = content.genes.get(e.locus);
+    const allele = locus.alleles.find((a) => a.id === e.allele);
+    if (allele && allele.weight <= 5) toast(`📚 Seltenes Allel katalogisiert: ${allele.name} (${locus.name})`, 'rare');
+  });
+  g.bus.on('spliced', (e) =>
+    toast(
+      e.success ? `✂️ Splicing erfolgreich (${content.genes.get(e.locus).name})` : `⚠️ Instabil! ${e.scrambledLocus ? content.genes.get(e.scrambledLocus).name : 'Ein Gen'} ist mutiert.`,
+      e.success ? 'rare' : 'error',
+    ),
+  );
   g.bus.on('missionCompleted', (e) => {
     const loot = Object.entries(e.rewards).map(([r, v]) => `+${formatNumber(v)} ${content.resources.get(r).icon}`).join(' ');
     const wild = e.wildCreatureId !== null ? g.state.creatures.find((x) => x.id === e.wildCreatureId) : null;
@@ -117,7 +133,7 @@ export function exportText(): string {
 export function importText(text: string): boolean {
   try {
     const { state } = importSave(text);
-    game.setState(state);
+    game.loadState(state);
     save();
     toast('Spielstand importiert.', 'info');
     refresh();

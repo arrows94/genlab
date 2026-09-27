@@ -1,6 +1,7 @@
 import { D } from '../num';
 import { inheritAbilities } from '../abilities';
-import { createCreature, findCreature } from '../creatures';
+import { createCreature, creatureModifiers, findCreature } from '../creatures';
+import { inheritGenome } from '../genetics';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -46,10 +47,16 @@ export function breedingCost(ctx: GameContext, generation = 2): Cost {
   return cost;
 }
 
-export function breedingTimeMs(ctx: GameContext, generation: number): number {
+/** Breeding time; parents' own `breeding.time` modifiers (e.g. fertility genes) apply too. */
+export function breedingTimeMs(ctx: GameContext, generation: number, parents: (Creature | undefined)[] = []): number {
   const b = ctx.balance.breeding;
-  const base = b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1));
-  return Math.max(1000, ctx.mods().apply('breeding.time', base) * 1000);
+  let seconds = ctx.mods().apply('breeding.time', b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1)));
+  for (const p of parents) {
+    if (!p) continue;
+    // creatureModifiers only carries global stat.* targets, so this is the parent's own share.
+    seconds *= creatureModifiers(ctx, p).factor('breeding.time');
+  }
+  return Math.max(1000, seconds * 1000);
 }
 
 export function mutationChance(ctx: GameContext): number {
@@ -74,7 +81,7 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number): Actio
   const generation = offspringGeneration(a, b);
   if (!trySpend(ctx, breedingCost(ctx, generation))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
   const data: EggData = { parents: [aId, bId], generation };
-  const proc = startProcess(ctx, EGG, breedingTimeMs(ctx, generation), data);
+  const proc = startProcess(ctx, EGG, breedingTimeMs(ctx, generation, [a, b]), data);
   a!.job = { kind: 'nest', target: String(proc.id) };
   b!.job = { kind: 'nest', target: String(proc.id) };
   ctx.invalidate();
@@ -144,6 +151,7 @@ registerProcessHandler(EGG, {
       exactStats: true,
       appearance: inheritAppearance(ctx, a, b),
       abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
+      genome: inheritGenome(ctx, a.genome, b.genome, mutation),
       source: 'hatch',
     });
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });

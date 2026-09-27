@@ -20,6 +20,7 @@ export type Condition =
   | { type: 'statistic'; statistic: string; amount: number }
   | { type: 'dex'; species?: string; rarity?: string; count?: number }
   | { type: 'prestigeCount'; layer: string; count: number }
+  | { type: 'geneLibrary'; count: number }
   | { type: 'all'; of: Condition[] }
   | { type: 'any'; of: Condition[] };
 
@@ -87,11 +88,23 @@ export interface AlleleDef {
   /** Modifiers applied to the creature when this allele is expressed. */
   modifiers: ModifierDef[];
   color: string;
+  /** Visual effect when expressed (phenotype is always visible, genotype only after sequencing). */
+  visual?: AlleleVisual;
+}
+
+export interface AlleleVisual {
+  hueShift?: number;
+  /** Saturation / lightness overrides in percent (e.g. albino). */
+  saturation?: number;
+  lightness?: number;
+  pattern?: string;
+  horn?: string;
 }
 
 export interface GeneLocusDef {
   id: string;
   name: string;
+  description: string;
   category: 'stat' | 'trait' | 'visual';
   alleles: AlleleDef[];
 }

@@ -105,6 +105,38 @@ export const upgrades: UpgradeDef[] = [
       { target: 'rarity.weight.mythic', op: 'pct', value: 0.15 },
     ],
   },
+  // --- Genetik ---
+  {
+    id: 'fastSequencer', name: 'Schnellsequenzierer', category: 'research', requires: { type: 'feature', feature: 'sequencing' },
+    description: '−15 % Sequenzierdauer.',
+    cost: { essence: 20 }, costGrowth: 2, maxLevel: 10,
+    modifiers: [{ target: 'sequencing.time', op: 'mult', value: 0.85 }],
+  },
+  {
+    id: 'sequencerExpansion', name: 'Zweiter Sequenzierer', category: 'research', requires: { type: 'feature', feature: 'sequencing' },
+    description: '+1 Platz im Sequenzierlabor.',
+    cost: { essence: 40, gold: 500 }, costGrowth: 3, maxLevel: 3,
+    modifiers: [{ target: 'slots.sequencer', op: 'add', value: 1 }],
+  },
+  {
+    id: 'splicingLab', name: 'Splicing-Labor', category: 'research',
+    requires: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'geneLibrary', count: 12 }] },
+    description: 'Schaltet Gen-Splicing frei.',
+    cost: { essence: 150, gold: 3000 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['splicing'],
+  },
+  {
+    id: 'stabilizer', name: 'Gen-Stabilisator', category: 'research', requires: { type: 'feature', feature: 'splicing' },
+    description: '−4 % Instabilität beim Splicing.',
+    cost: { essence: 100 }, costGrowth: 2.5, maxLevel: 5,
+    modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.04 }],
+  },
+  {
+    id: 'spliceCapacity', name: 'Erweiterte Toleranz', category: 'research', requires: { type: 'feature', feature: 'splicing' },
+    description: '+1 Splicing-Versuch pro Kreatur.',
+    cost: { essence: 300, gold: 10000 }, costGrowth: 4, maxLevel: 2,
+    modifiers: [{ target: 'splicing.max', op: 'add', value: 1 }],
+  },
   // --- über den Dex freigeschaltet ---
   {
     id: 'legendaryHeritage', name: 'Legendäres Erbgut', category: 'research', requires: { type: 'feature', feature: 'legendaryHeritage' },

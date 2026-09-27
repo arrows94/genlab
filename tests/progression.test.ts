@@ -18,7 +18,7 @@ describe('early game pacing (bot)', () => {
   const unlockedAt = (f: string) => timeline.find((t) => t.what === `Freigeschaltet: ${f}`)?.min;
 
   it('unlocks systems in the intended order within the first hour', () => {
-    const order = ['farm', 'research', 'breeding', 'mine', 'expedition', 'biolab', 'market'];
+    const order = ['farm', 'research', 'breeding', 'mine', 'expedition', 'biolab', 'sequencing', 'market'];
     const times = order.map(unlockedAt);
     times.forEach((t, i) => expect(t, order[i]).toBeDefined());
     for (let i = 1; i < times.length; i++) expect(times[i]!, `${order[i]} nach ${order[i - 1]}`).toBeGreaterThanOrEqual(times[i - 1]!);

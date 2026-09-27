@@ -46,3 +46,11 @@ describe('content validation', () => {
     expect(() => buildContentDB(data)).toThrow(ContentValidationError);
   });
 });
+
+describe('gene content', () => {
+  it('rejects gene library goals above the number of alleles', () => {
+    const data = structuredClone(contentData);
+    data.achievements.push({ id: 'impossible', name: 'x', description: 'x', condition: { type: 'geneLibrary', count: 999 }, modifiers: [] });
+    expect(validateContent(data).join('\n')).toContain('achievements[impossible].condition.count: 999 liegt nicht in');
+  });
+});

@@ -27,6 +27,8 @@ export function attachStatistics(bus: EventBus<GameEvents>, getState: () => Game
       if (e.wildCreatureId !== null) inc('wildFound');
     }),
     bus.on('potionUsed', () => inc('potionsUsed')),
+    bus.on('sequenced', () => inc('sequenced')),
+    bus.on('spliced', (e) => inc(e.success ? 'splices' : 'splicesFailed')),
   ];
   return () => offs.forEach((off) => off());
 }

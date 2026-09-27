@@ -20,6 +20,7 @@ describe('market potions', () => {
     const g = marketGame();
     const c = g.state.creatures[0]!;
     c.abilities = [];
+    c.genome = {}; // isolate the potion effect from gene bonuses
     const atk = effectiveStats(g, c).atk!;
     const cost1 = potionCost(g, 'powerFeed', c.id).gold!;
     expect(usePotion(g, 'powerFeed', c.id, 'atk').ok).toBe(true);

@@ -5,3 +5,5 @@
 import './breeding';
 import './expedition';
 import './market';
+import './sequencing';
+import './splicing';

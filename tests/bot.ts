@@ -35,11 +35,16 @@ export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEnt
       .sort((a, b) => sum(a.cost!) - sum(b.cost!));
     if (affordable[0]) buyUpgrade(g, affordable[0].u.id);
 
-    // Breeding: the two strongest available creatures (improves the line).
+    // Breeding: the two strongest available creatures; if too expensive, the cheapest (lowest generation) pair.
     if (g.state.features.breeding && eggs(g).length < nestSlots(g)) {
-      const pool = g.state.creatures.filter((c) => c.job?.kind !== 'nest' && c.job?.kind !== 'mission').sort((a, b) => creaturePower(g, b) - creaturePower(g, a));
-      if (pool.length >= 2 && canAfford(g.state, breedingCost(g, offspringGeneration(pool[0], pool[1])))) {
-        startBreeding(g, pool[0]!.id, pool[1]!.id);
+      const pool = g.state.creatures.filter((c) => c.job?.kind !== 'nest' && c.job?.kind !== 'mission');
+      const strong = [...pool].sort((a, b) => creaturePower(g, b) - creaturePower(g, a));
+      const cheap = [...pool].sort((a, b) => a.generation - b.generation);
+      for (const pair of [strong, cheap]) {
+        if (pair.length >= 2 && canAfford(g.state, breedingCost(g, offspringGeneration(pair[0], pair[1])))) {
+          startBreeding(g, pair[0]!.id, pair[1]!.id);
+          break;
+        }
       }
     }
 
@@ -49,13 +54,13 @@ export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEnt
       if (idle && g.state.resources.food!.gte(100)) startMission(g, idle.id, 'short');
     }
 
-    // Jobs: fill free slots with idle creatures.
-    for (const b of g.content.buildings.list) {
-      if (!g.state.features[b.feature]) continue;
-      while (jobCount(g, b.id) < jobSlots(g, b.id)) {
-        const idle = g.state.creatures.find((c) => c.job === null);
-        if (!idle || !assignJob(g, idle.id, b.id).ok) break;
-      }
+    // Jobs: fill free slots round-robin (building with the fewest workers first).
+    for (;;) {
+      const idle = g.state.creatures.find((c) => c.job === null);
+      const open = g.content.buildings.list
+        .filter((b) => g.state.features[b.feature] && jobCount(g, b.id) < jobSlots(g, b.id))
+        .sort((a, b) => jobCount(g, a.id) - jobCount(g, b.id));
+      if (!idle || !open[0] || !assignJob(g, idle.id, open[0].id).ok) break;
     }
 
     g.advance(1000);

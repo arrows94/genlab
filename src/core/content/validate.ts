@@ -91,6 +91,10 @@ export function validateContent(data: ContentData): string[] {
         return;
       case 'prestigeCount':
         return ref(where, 'prestigeLayers', c.layer);
+      case 'geneLibrary': {
+        const total = data.genes.reduce((n, g) => n + g.alleles.length, 0);
+        return num(`${where}.count`, c.count, 0, total);
+      }
       case 'all':
       case 'any':
         return c.of.forEach((sub, i) => cond(`${where}.${c.type}[${i}]`, sub));
@@ -119,11 +123,13 @@ export function validateContent(data: ContentData): string[] {
   for (const g of data.genes) {
     const w = at('genes', g.id);
     if (g.alleles.length < 2) issues.push(`${w}: braucht mindestens 2 Allele`);
+    if (!g.alleles.some((a) => a.weight > 0)) issues.push(`${w}: mindestens ein Allel braucht weight > 0`);
     const alleleIds = new Set<string>();
     for (const a of g.alleles) {
       if (alleleIds.has(a.id)) issues.push(`${w}.alleles[${a.id}]: doppelte id`);
       alleleIds.add(a.id);
       num(`${w}.alleles[${a.id}].weight`, a.weight, 0);
+      num(`${w}.alleles[${a.id}].dominance`, a.dominance);
       mods(`${w}.alleles[${a.id}].modifiers`, a.modifiers);
     }
   }

@@ -1,8 +1,9 @@
 import { ModifierSet, type SourcedModifier } from './modifiers';
 import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
+import { genomeModifiers, rollGenome } from './genetics';
 import type { GameContext } from './context';
-import { dexKey, type Appearance, type Creature, type StatBlock } from './state';
+import { dexKey, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
 export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
 
@@ -19,6 +20,8 @@ export interface CreateCreatureOptions {
   appearance?: Appearance;
   /** Omitted → rolled starting abilities. */
   abilities?: string[];
+  /** Omitted → rolled wild genome (hidden until sequenced). */
+  genome?: Genome;
   source?: CreatureSource;
 }
 
@@ -56,8 +59,9 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     stats,
     appearance: opts.appearance ?? rollAppearance(ctx, species.hue),
     abilities: opts.abilities ?? rollStartingAbilities(ctx),
-    genome: null,
+    genome: opts.genome ?? rollGenome(ctx),
     sequenced: false,
+    splices: 0,
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,
@@ -100,17 +104,7 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
   for (const [stat, value] of Object.entries(c.boosts ?? {})) {
     if (value) out.push({ target: `stat.${stat}`, op: 'pct', value, source: 'boost' });
   }
-  if (c.genome) {
-    for (const [locusId, pair] of Object.entries(c.genome)) {
-      if (!ctx.content.genes.has(locusId)) continue;
-      const locus = ctx.content.genes.get(locusId);
-      for (const alleleId of pair) {
-        const allele = locus.alleles.find((a) => a.id === alleleId);
-        // Each allele contributes half; expression rules are refined in the genetics phase.
-        if (allele) for (const m of allele.modifiers) out.push({ ...m, value: m.op === 'mult' ? Math.sqrt(m.value) : m.value / 2, source: `gene:${locusId}` });
-      }
-    }
-  }
+  if (c.genome) out.push(...genomeModifiers(ctx, c.genome));
   return out;
 }
 

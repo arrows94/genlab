@@ -18,4 +18,7 @@ export interface GameEvents {
   eggHatched: { creatureId: number; parents: [number, number] };
   missionCompleted: { missionId: string; creatureId: number; rewards: Record<string, Decimal>; wildCreatureId: number | null };
   potionUsed: { potion: string; creatureId: number | null };
+  sequenced: { creatureId: number };
+  alleleCatalogued: { locus: string; allele: string };
+  spliced: { creatureId: number; locus: string; success: boolean; scrambledLocus: string | null };
 }

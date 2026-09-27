@@ -27,6 +27,8 @@ export function checkCondition(state: GameState, c: Condition): boolean {
     }
     case 'prestigeCount':
       return (state.prestige[c.layer]?.count ?? 0) >= c.count;
+    case 'geneLibrary':
+      return Object.keys(state.geneLibrary ?? {}).length >= c.count;
     case 'all':
       return c.of.every((sub) => checkCondition(state, sub));
     case 'any':

@@ -13,6 +13,7 @@ import { DEFAULT_SYSTEMS, type System } from './systems';
 import { checkUnlocks } from './systems/unlocks';
 import { createCreature } from './creatures';
 import { productionRates } from './systems/production';
+import { ensureGenomes } from './genetics';
 import './features';
 
 export interface GameOptions {
@@ -50,8 +51,10 @@ export class Game implements GameContext {
     this.systems = opts.systems ?? DEFAULT_SYSTEMS;
     this.providers = opts.providers ?? DEFAULT_PROVIDERS;
     attachStatistics(this.bus, () => this._state);
-    if (opts.state) this.setState(opts.state);
-    else this.setState(newGameState(this, opts.now ?? Date.now(), opts.seed ?? Math.floor(Math.random() * 2 ** 32)));
+    if (opts.state) {
+      this.setState(opts.state);
+      ensureGenomes(this);
+    } else this.setState(newGameState(this, opts.now ?? Date.now(), opts.seed ?? Math.floor(Math.random() * 2 ** 32)));
   }
 
   get state(): GameState {
@@ -68,6 +71,12 @@ export class Game implements GameContext {
     this._rng = new Rng(state.rng);
     this.accumulatorMs = 0;
     this.invalidate();
+  }
+
+  /** Load/import: replaces the state and repairs content-dependent data (new gene loci …). */
+  loadState(state: GameState): void {
+    this.setState(state);
+    ensureGenomes(this);
   }
 
   mods(): ModifierSet {

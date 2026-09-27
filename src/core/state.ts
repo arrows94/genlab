@@ -4,6 +4,9 @@ import type { ModifierDef } from './modifiers';
 
 export type StatBlock = Record<string, number>;
 
+/** Locus id → allele pair. */
+export type Genome = Record<string, [string, string]>;
+
 export interface Appearance {
   hue: number;
   pattern: string;
@@ -26,13 +29,15 @@ export interface Creature {
   stats: StatBlock;
   appearance: Appearance;
   abilities: string[];
-  /** Allele ids per locus (phase 3); `null` for creatures without genome data yet. */
-  genome: Record<string, [string, string]> | null;
+  /** Two allele ids per locus. Hidden in the UI until `sequenced`. */
+  genome: Genome;
   /** Permanent potion boosts: stat id → total bonus (0.1 = +10 %). */
   boosts: Record<string, number>;
   /** Number of permanent boosts used on this creature (drives their cost). */
   boostUses: number;
   sequenced: boolean;
+  /** Gene splices already applied (limited per creature). */
+  splices: number;
   parents: [number, number] | null;
   job: CreatureJob | null;
   locked: boolean;
@@ -79,6 +84,8 @@ export interface GameState {
   processes: Process[];
   buffs: Buff[];
   nextId: number;
+  /** Catalogued alleles, key `${locus}:${allele}` (Genbibliothek). */
+  geneLibrary: Record<string, boolean>;
   /** Discovered dex entries, key `${species}:${rarity}`. */
   dex: Record<string, boolean>;
   achievements: Record<string, boolean>;
@@ -104,6 +111,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     buffs: [],
     nextId: 1,
     dex: {},
+    geneLibrary: {},
     achievements: {},
     statistics: {},
     prestige: {},
