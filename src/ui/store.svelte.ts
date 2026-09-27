@@ -3,7 +3,9 @@ import { Game, type OfflineReport } from '@core/game';
 import { deserialize, exportSave, importSave, serialize, type SaveStorage } from '@core/save';
 import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
-import { LocalSaveStorage } from './platform/storage';
+import { createStorage } from './platform/storage';
+import { registerPwa } from './platform/pwa';
+import { setupNative } from './platform/native';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -16,7 +18,7 @@ export interface Toast {
   kind: 'info' | 'unlock' | 'rare' | 'error';
 }
 
-const storage: SaveStorage = new LocalSaveStorage();
+const storage: SaveStorage = createStorage();
 
 export const view = $state({
   frame: 0,
@@ -27,6 +29,10 @@ export const view = $state({
   unseen: {} as Record<string, number>,
   /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
   muteDex: false,
+  /** Set when a new app version is downloaded (PWA); calling it reloads into the update. */
+  applyUpdate: null as (() => void) | null,
+  /** False until the stored save has been loaded (async on native platforms). */
+  ready: false,
   /** Wall clock of the last successful save. */
   lastSaved: 0,
   /** Creature shown in the detail view. */
@@ -41,26 +47,29 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500): vo
   setTimeout(() => (view.toasts = view.toasts.filter((x) => x.id !== t.id)), ms);
 }
 
-function loadGame(): Game {
-  const raw = storage.load();
-  if (raw) {
+/** The single game instance. Starts fresh; `init()` swaps in the stored save. */
+export const game = new Game({ content, balance });
+
+async function loadSave(): Promise<void> {
+  let raw: string | null = null;
+  try {
+    raw = await storage.load();
+  } catch (err) {
+    view.loadError = (err as Error).message;
+  }
+  if (!raw) return;
+  try {
+    game.loadState(deserialize(raw).state);
+  } catch (err) {
+    view.loadError = (err as Error).message;
+    // Keep the broken save around so it can be exported / inspected.
     try {
-      const { state } = deserialize(raw);
-      return new Game({ content, balance, state });
-    } catch (err) {
-      view.loadError = (err as Error).message;
-      // Keep the broken save around so it can be exported / inspected.
-      try {
-        localStorage.setItem('genlab.save.broken', raw);
-      } catch {
-        /* ignore */
-      }
+      localStorage.setItem('genlab.save.broken', raw);
+    } catch {
+      /* ignore */
     }
   }
-  return new Game({ content, balance });
 }
-
-export const game = loadGame();
 
 function wireEvents(g: Game): void {
   g.bus.on('featureUnlocked', (e) => {
@@ -156,12 +165,12 @@ export function act(result: ActionResult): boolean {
 }
 
 export function save(): void {
-  try {
-    storage.save(serialize(game.state));
-    view.lastSaved = Date.now();
-  } catch (err) {
-    toast(`Speichern fehlgeschlagen: ${(err as Error).message}`, 'error');
-  }
+  // Never overwrite the stored save with the placeholder state before loading finished.
+  if (!view.ready) return;
+  storage.save(serialize(game.state)).then(
+    () => (view.lastSaved = Date.now()),
+    (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
+  );
 }
 
 export function exportText(): string {
@@ -183,7 +192,7 @@ export function importText(text: string): boolean {
 }
 
 export function hardReset(): void {
-  storage.clear();
+  void storage.clear();
   const fresh = new Game({ content, balance });
   game.setState(fresh.state);
   save();
@@ -191,10 +200,36 @@ export function hardReset(): void {
 }
 
 let started = false;
-export function start(): void {
+/** Loads the save (async on native platforms), then starts the game loop. */
+export async function init(): Promise<void> {
   if (started) return;
   started = true;
+  await loadSave();
+  view.ready = true;
+  refresh();
+  startLoop();
+  void registerPwa((apply) => (view.applyUpdate = apply)).catch(() => {
+    /* offline cache is optional */
+  });
+  void setupNative({
+    save,
+    resume: () => {
+      const r = game.update(Date.now());
+      if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
+      refresh();
+    },
+    // Close the topmost dialog; false = nothing open (app gets minimised).
+    back: () => {
+      if (view.detail !== null) view.detail = null;
+      else if (view.offline) view.offline = null;
+      else if (view.tab !== 'lab') view.tab = 'lab';
+      else return false;
+      return true;
+    },
+  });
+}
 
+function startLoop(): void {
   const report = game.update(Date.now());
   if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
 
@@ -213,8 +248,10 @@ export function start(): void {
   // Background tabs throttle rAF; a slow interval keeps the sim alive.
   setInterval(() => game.update(Date.now()), 1000);
   setInterval(save, balance.sim.autosaveSec * 1000);
+  // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') save();
+    else game.update(Date.now());
   });
   window.addEventListener('beforeunload', save);
 }

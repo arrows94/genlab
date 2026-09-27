@@ -89,3 +89,17 @@ describe('real migrations', () => {
     expect(state.creatures[0]!.boostUses).toBe(0);
   });
 });
+
+describe('async save storage', () => {
+  it('round-trips a save through the async storage contract', async () => {
+    const { MemoryStorage } = await import('@core/save');
+    const storage = new MemoryStorage();
+    expect(await storage.load()).toBeNull();
+    const g = makeGame();
+    await storage.save(serialize(g.state, NOW));
+    const loaded = deserialize((await storage.load())!);
+    expect(loaded.state.creatures).toEqual(g.state.creatures);
+    await storage.clear();
+    expect(await storage.load()).toBeNull();
+  });
+});

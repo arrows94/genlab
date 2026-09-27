@@ -134,22 +134,25 @@ export function importSave(text: string): { state: GameState; savedAt: number } 
   return deserialize(json);
 }
 
-/** Storage abstraction so web (localStorage), Tauri or Capacitor can plug in. */
+/**
+ * Storage abstraction so web (localStorage), Tauri or Capacitor can plug in.
+ * Async because native key-value stores (Capacitor Preferences) are async.
+ */
 export interface SaveStorage {
-  load(): string | null;
-  save(data: string): void;
-  clear(): void;
+  load(): Promise<string | null>;
+  save(data: string): Promise<void>;
+  clear(): Promise<void>;
 }
 
 export class MemoryStorage implements SaveStorage {
   private data: string | null = null;
-  load() {
+  async load() {
     return this.data;
   }
-  save(data: string) {
+  async save(data: string) {
     this.data = data;
   }
-  clear() {
+  async clear() {
     this.data = null;
   }
 }
