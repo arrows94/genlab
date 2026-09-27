@@ -40,6 +40,15 @@ export const features: FeatureDef[] = [
   { id: 'legendaryHeritage', name: 'Legendäres Erbgut', hint: 'Legendäres Erbgut erforschbar.' },
   { id: 'primordialChamber', name: 'Ur-Gen-Kammer', hint: 'Die Ur-Gen-Kammer ist erwacht.' },
   { id: 'inheritance', name: 'Vererbung', tab: 'prestige', hint: 'Vererbung möglich: Tausche Fortschritt gegen dauerhaftes Erbgut.', condition: { type: 'resourceEarned', resource: 'gold', amount: 25_000 } },
+  { id: 'tower', name: 'Genom-Turm', tab: 'tower', hint: 'Der Genom-Turm erhebt sich! Stelle ein Team zusammen und kämpfe Etage für Etage.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  { id: 'towerAuto', name: 'Turm-Routine', hint: 'Dein Team startet nach einer Niederlage automatisch neu.' },
+  { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  { id: 'anomalies', name: 'Anomalien', tab: 'anomalies', hint: 'Anomalien entdeckt: Durchläufe mit besonderen Regeln und dauerhaften Belohnungen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 } },
+  {
+    id: 'aeon', name: 'Äon', tab: 'aeon', hint: 'Das Äon ruft: Ein tieferer Neustart für Äon-Splitter und einen eigenen Talentbaum.',
+    condition: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 3 }, { type: 'towerFloor', floor: 15 }] },
+  },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];
 
@@ -84,6 +93,15 @@ export const achievements: AchievementDef[] = [
   { id: 'fullyInfused', name: 'Vollendet', description: 'Eine Kreatur auf Infusionsstufe +10 gebracht.', condition: { type: 'statistic', statistic: 'record.infusion', amount: 10 }, modifiers: [{ target: 'infusion.ep', op: 'pct', value: 0.1 }] },
   { id: 'breakthrough', name: 'Durchbruch', description: 'Eine Seltenheit per Durchbruch erhöht.', condition: { type: 'statistic', statistic: 'breakthroughs', amount: 1 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.05 }] },
   { id: 'capsuleCollector', name: 'Kapselsammler', description: '50 Gen-Kapseln geöffnet.', condition: { type: 'statistic', statistic: 'capsulesOpened', amount: 50 }, modifiers: [{ target: 'capsule.fragmentYield', op: 'pct', value: 0.1 }] },
+  { id: 'tower10', name: 'Turmläufer', description: 'Etage 10 im Genom-Turm.', condition: { type: 'towerFloor', floor: 10 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.05 }] },
+  { id: 'tower50', name: 'Turmstürmer', description: 'Etage 50 im Genom-Turm.', condition: { type: 'towerFloor', floor: 50 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.1 }] },
+  { id: 'tower100', name: 'Turmspitze?', description: 'Etage 100 im Genom-Turm.', condition: { type: 'towerFloor', floor: 100 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.1 }] },
+  { id: 'perfectGenome', name: 'Makellos', description: 'Ein perfektes Genom entdeckt.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 1 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
+  { id: 'shinyFound', name: 'Schillernd!', description: 'Eine schillernde Kreatur gefunden.', condition: { type: 'statistic', statistic: 'shinies', amount: 1 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
+  { id: 'anomalist', name: 'Anomalist', description: 'Alle Anomalien gemeistert.', condition: { type: 'all', of: [
+    { type: 'anomaly', anomaly: 'broodFever' }, { type: 'anomaly', anomaly: 'ascetic' }, { type: 'anomaly', anomaly: 'famine' }, { type: 'anomaly', anomaly: 'cramped' },
+  ] }, modifiers: [{ target: 'prestige.inheritance.gain', op: 'pct', value: 0.25 }] },
+  { id: 'firstAeon', name: 'Zeitenwende', description: 'Erstes Äon abgeschlossen.', condition: { type: 'prestigeCount', layer: 'aeon', count: 1 }, modifiers: [{ target: 'offline.capHours', op: 'add', value: 4 }] },
   { id: 'firstHeir', name: 'Erbe angetreten', description: 'Erste Vererbung abgeschlossen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, modifiers: [{ target: 'offline.capHours', op: 'add', value: 1 }] },
 ];
 
@@ -97,5 +115,15 @@ export const prestigeLayers: PrestigeLayerDef[] = [
       { target: 'production.gold', op: 'pct', value: 0.02 },
     ],
     resets: { resources: ['food', 'gold'], creatures: true, processes: true, buffs: true, upgradeCategories: [], dex: false, features: false },
+  },
+  {
+    id: 'aeon', name: 'Äon', currency: 'aeonShards', feature: 'aeon', gainSource: 'owned',
+    description: 'Setzt zusätzlich Forschung, Erbgut, Essenz, Kristalle und Fragmente zurück. Dex, Genbibliothek, Talente, Turm-Rekorde und Anomalie-Belohnungen bleiben.',
+    gainFrom: ['heritage'],
+    modifiersPerPoint: [],
+    resets: {
+      resources: ['food', 'gold', 'essence', 'catalyst', 'fragments', 'heritage'],
+      creatures: true, processes: true, buffs: true, upgradeCategories: ['research', 'infinite'], dex: false, features: true,
+    },
   },
 ];

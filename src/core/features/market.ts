@@ -6,6 +6,7 @@ import { addBuff } from '../systems/buffs';
 import { skipProcessTime } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import { ruleActive } from './anomalies';
 
 export function potionCost(ctx: GameContext, potionId: string, creatureId: number | null = null): Cost {
   const def = ctx.content.potions.get(potionId);
@@ -32,6 +33,7 @@ export function potionNeedsCreature(ctx: GameContext, potionId: string): boolean
 export function usePotion(ctx: GameContext, potionId: string, creatureId: number | null = null, stat: string | null = null): ActionResult {
   const def = ctx.content.potions.get(potionId);
   if (!ctx.state.features[def.feature]) return { ok: false, reason: 'Der Markt ist noch nicht freigeschaltet.' };
+  if (ruleActive(ctx, 'noPotions')) return { ok: false, reason: 'In dieser Anomalie sind Tränke verboten.' };
   const c = creatureId !== null ? findCreature(ctx, creatureId) : undefined;
   if (potionNeedsCreature(ctx, potionId) && !c) return { ok: false, reason: 'Wähle eine Kreatur.' };
 

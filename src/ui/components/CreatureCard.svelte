@@ -43,6 +43,7 @@
     if (job.kind === 'building') return `Arbeitet: ${content.buildings.get(job.target).name}`;
     if (job.kind === 'nest') return '🥚 Brütet';
     if (job.kind === 'mission') return '🧭 Auf Erkundung';
+    if (job.kind === 'tower') return '🗼 Im Genom-Turm';
     return 'Beschäftigt';
   });
 
@@ -71,7 +72,7 @@
       {creature.locked ? '★' : '☆'}
     </button>
   </header>
-  <button class="art" title="Details" onclick={() => (view.detail = creature.id)}><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} /></button>
+  <button class="art" title="Details" onclick={() => (view.detail = creature.id)}><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} shiny={creature.shiny} /></button>
   {#if editing}
     <form onsubmit={(e) => { e.preventDefault(); commit(); }}>
       <!-- svelte-ignore a11y_autofocus -->
@@ -84,6 +85,7 @@
     <span class="element">{element.name}</span>
     <span>{species.name}</span>
     {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
+    {#if creature.shiny}<span class="shiny">✦ Schillernd</span>{/if}
     <span class="num">Gen {creature.generation}</span>
   </div>
   <dl class="stats">
@@ -129,6 +131,7 @@
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
   .element { color: var(--element); }
   .tier { color: var(--violet); }
+  .shiny { background: linear-gradient(90deg, #ff7ad9, #7ad9ff, #b8ff7a); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem; margin: 0; }
   .stats div { background: var(--bg-2); border-radius: 6px; padding: 0.2rem; text-align: center; }
   dt { font-size: 0.65rem; color: var(--muted); }

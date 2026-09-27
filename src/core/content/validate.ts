@@ -91,6 +91,12 @@ export function validateContent(data: ContentData): string[] {
         return;
       case 'prestigeCount':
         return ref(where, 'prestigeLayers', c.layer);
+      case 'talent':
+        return ref(where, 'talents', c.talent);
+      case 'towerFloor':
+        return num(`${where}.floor`, c.floor, 1);
+      case 'anomaly':
+        return ref(where, 'anomalies', c.anomaly);
       case 'geneLibrary': {
         const total = data.genes.reduce((n, g) => n + g.alleles.length, 0);
         return num(`${where}.count`, c.count, 0, total);
@@ -246,6 +252,23 @@ export function validateContent(data: ContentData): string[] {
     }
     for (const [tier, v] of Object.entries(c.tierWeights)) num(`${w}.tierWeights.${tier}`, v, 0);
   }
+  for (const t of data.talents) {
+    const w = at('talents', t.id);
+    num(`${w}.cost`, t.cost, 0);
+    t.requires.forEach((r) => ref(`${w}.requires`, 'talents', r));
+    mods(`${w}.modifiers`, t.modifiers);
+    t.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
+    amounts(`${w}.onReset`, t.onReset);
+  }
+  for (const a of data.anomalies) {
+    const w = at('anomalies', a.id);
+    mods(`${w}.modifiers`, a.modifiers);
+    mods(`${w}.reward`, a.reward);
+    cond(`${w}.goal`, a.goal);
+    cond(`${w}.requires`, a.requires);
+  }
+  for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
+  for (const g of data.genes) cond(`${at('genes', g.id)}.requires`, g.requires);
   if (data.rarities.length === 0) issues.push('rarities: mindestens eine Seltenheit nötig');
 
   return issues;

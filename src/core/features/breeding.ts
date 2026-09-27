@@ -156,5 +156,23 @@ registerProcessHandler(EGG, {
       source: 'hatch',
     });
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });
+
+    // Twin births (Äon talent): a second child from the same parents, if the stable has room.
+    const twinChance = Math.min(1, ctx.mods().apply('breeding.twinChance', 0));
+    if (twinChance > 0 && stableFree(ctx) > 0 && ctx.rng.chance(twinChance)) {
+      const twin = createCreature(ctx, {
+        speciesId,
+        generation: data.generation,
+        parents: data.parents,
+        stats: inheritStats(ctx, a, b, mutation),
+        exactStats: true,
+        appearance: inheritAppearance(ctx, a, b),
+        abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
+        genome: inheritGenome(ctx, a.genome, b.genome, mutation),
+        ancestry: [snapshot(a), snapshot(b)],
+        source: 'hatch',
+      });
+      ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents });
+    }
   },
 });

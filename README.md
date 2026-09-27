@@ -40,6 +40,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Endgame | `core/features/tower.ts`, `talents.ts`, `anomalies.ts`, `weekly.ts` | Turm als System (läuft offline weiter), Talente/Anomalien/Wochen-Mutation als Modifier-Provider. |
 | Genetik | `core/genetics.ts` | Ausprägung (dominant/rezessiv/kodominant), Mendel-Vererbung, Genom-Modifier, sichtbarer Phänotyp. Neue Gene in alten Spielständen werden beim Laden automatisch ergänzt. |
 
 ## Balancing prüfen
@@ -59,5 +60,5 @@ Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 - [x] **Phase 3 – Genetik**: 9 Gen-Loci mit dominanten, rezessiven und kodominanten Allelen, Mendel-Vererbung mit Mutation, verborgene Genome + Sequenzierlabor, Genbibliothek, Gen-Splicing mit Instabilität, Zuchtplaner, DNA-Darstellung
 - [x] **Phase 4 – Arten & Hybride**: 12 Basisarten (ein Element je Art), 10 Hybride, 7 seltene Hybride, 4 mythische Endformen; Rezepte mit Bedingungen, Hinweise über Forschung/Erkundung, Evolution mit Evolutionskristallen, Regionen mit eigenen Arten, Dex-Stammbaum
 - [x] **Phase 5 – Management & Verwertung**: Filter/Sortierung/Suche, Favoriten, Stall mit Kapazität, Verkauf und Recycling (einzeln/Stapel), Arbeitsplaner und Zuchtautomat, Detailansicht (Bonus-Aufschlüsselung, Genom, Stammbaum), Rekorde, Infusion mit Allel-Übertragung und Durchbruch, Gen-Kapseln mit offenen Chancen und Pity-System
-- [ ] Phase 6 – Endgame
+- [x] **Phase 6 – Endgame**: Genom-Turm (Auto-Kampf mit Elementen, Kontrollpunkte, Bestenliste, Turm-Marken), Äon-Prestige mit Talentbaum (Zwillinge, Urgen-Locus, dauerhafte Automatik, größeres Team), Perfektions-Jagd (perfektes Genom, Schillernd, mythische Formen), Anomalien, unendliche Forschung, Wochen-Mutation
 - [ ] Phase 7 – Feinschliff

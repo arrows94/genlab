@@ -16,7 +16,7 @@ export const balance: Balance = {
     summaryMinSec: 60,
   },
   start: {
-    resources: { food: 0, gold: 0, essence: 0, catalyst: 0, fragments: 0, heritage: 0 },
+    resources: { food: 0, gold: 0, essence: 0, catalyst: 0, fragments: 0, heritage: 0, towerTokens: 0, aeonShards: 0 },
     species: 'emberpup',
     rarity: 'common',
   },
@@ -107,6 +107,28 @@ export const balance: Balance = {
   automation: {
     intervalSec: 5,
   },
+  tower: {
+    fightIntervalSec: 8,
+    baseTeamSize: 3,
+    maxRounds: 40,
+    enemyBase: { hp: 60, atk: 9, def: 5, spd: 6 },
+    enemyGrowth: 1.11,
+    bossEvery: 10,
+    bossHpMult: 2.2,
+    bossAtkMult: 1.3,
+    strongMult: 1.5,
+    weakMult: 0.7,
+    defScale: 50,
+    tokensPerFloor: 2,
+    tokenGrowthPerFloor: 0.1,
+    catalystEvery: 10,
+    alleleEvery: 25,
+    leaderboardSize: 10,
+    checkpointEvery: 10,
+  },
+  perfection: {
+    shinyChance: 0.0005,
+  },
   missions: {
     baseCamps: 1,
     statScaling: 0.02,
@@ -122,5 +144,7 @@ export const balance: Balance = {
   },
   prestige: {
     inheritance: { divisor: 1e5, exponent: 0.5, minGain: 1 },
+    aeon: { divisor: 50, exponent: 0.5, minGain: 1 },
   },
+  weekly: { epoch: '2024-01-01' },
 };

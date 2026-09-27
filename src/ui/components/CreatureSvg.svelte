@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { Appearance } from '@core/state';
 
-  let { appearance, shape, tier = 'base', size = 96 }: {
+  let { appearance, shape, tier = 'base', size = 96, shiny = false }: {
     appearance: Appearance & { saturation?: number; lightness?: number };
     shape: string;
     tier?: string;
     size?: number;
+    shiny?: boolean;
   } = $props();
+  const gid = `shiny-${Math.random().toString(36).slice(2, 9)}`;
 
   const sat = $derived(appearance.saturation ?? 65);
   const lig = $derived(appearance.lightness ?? 55);
@@ -54,7 +56,19 @@
     <line x1="56" y1="26" x2="62" y2="10" stroke={dark} stroke-width="2" /><circle cx="62" cy="10" r="3" fill={light} />
   {/if}
 
-  <path d={bodyPath} fill={body} stroke={dark} stroke-width="2" />
+  {#if shiny}
+    <defs>
+      <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ff7ad9"><animate attributeName="stop-color" values="#ff7ad9;#7ad9ff;#b8ff7a;#ff7ad9" dur="4s" repeatCount="indefinite" /></stop>
+        <stop offset="50%" stop-color={body} />
+        <stop offset="100%" stop-color="#7ad9ff"><animate attributeName="stop-color" values="#7ad9ff;#ffe07a;#ff7ad9;#7ad9ff" dur="4s" repeatCount="indefinite" /></stop>
+      </linearGradient>
+    </defs>
+  {/if}
+  <path d={bodyPath} fill={shiny ? `url(#${gid})` : body} stroke={dark} stroke-width="2" />
+  {#if shiny}
+    <text x="80" y="24" font-size="14" class="sparkle">✦</text>
+  {/if}
 
   {#if appearance.pattern === 'spots'}
     <circle cx="34" cy="66" r="4" fill={dark} opacity="0.5" />
@@ -84,6 +98,8 @@
 </svg>
 
 <style>
+  .sparkle { fill: #fff6a8; animation: twinkle 1.4s ease-in-out infinite; }
+  @keyframes twinkle { 50% { opacity: 0.2; } }
   .aura { transform-origin: 50px 54px; animation: spin 12s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>

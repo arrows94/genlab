@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { findCreature } from '../creatures';
+import { checkPerfection, findCreature } from '../creatures';
 import { catalogueGenome } from '../genetics';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
@@ -60,6 +60,7 @@ export function startSequencing(ctx: GameContext, creatureId: number): ActionRes
 export function revealGenome(ctx: GameContext, c: Creature): void {
   c.sequenced = true;
   catalogueGenome(ctx, c.genome);
+  checkPerfection(ctx, c);
   ctx.invalidate();
   ctx.bus.emit('sequenced', { creatureId: c.id });
 }

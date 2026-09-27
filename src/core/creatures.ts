@@ -1,7 +1,7 @@
 import { ModifierSet, type SourcedModifier } from './modifiers';
 import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
-import { genomeModifiers, rollGenome } from './genetics';
+import { genomeModifiers, isPerfectGenome, rollGenome } from './genetics';
 import type { GameContext } from './context';
 import { dexKey, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
@@ -23,6 +23,8 @@ export interface CreateCreatureOptions {
   /** Omitted → rolled wild genome (hidden until sequenced). */
   genome?: Genome;
   ancestry?: AncestorInfo[] | null;
+  /** Omitted → rolled with the (tiny) shiny chance. */
+  shiny?: boolean;
   source?: CreatureSource;
 }
 
@@ -63,6 +65,7 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     genome: opts.genome ?? rollGenome(ctx),
     sequenced: false,
     splices: 0,
+    shiny: opts.shiny ?? ctx.rng.chance(Math.min(1, ctx.mods().apply('creature.shinyChance', balance.perfection.shinyChance))),
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,
@@ -76,7 +79,24 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
   registerDex(ctx, creature.speciesId, creature.rarity);
   ctx.invalidate();
   ctx.bus.emit('creatureAdded', { creatureId: creature.id, source: opts.source ?? 'other' });
+  checkPerfection(ctx, creature);
   return creature;
+}
+
+/**
+ * Perfection hunt: records shiny creatures and (for sequenced creatures)
+ * perfect genomes per species. Call after anything that changes a genome.
+ */
+export function checkPerfection(ctx: GameContext, c: Creature): void {
+  const p = ctx.state.perfection;
+  if (c.shiny && !p.shiny[c.speciesId]) {
+    p.shiny[c.speciesId] = true;
+    ctx.bus.emit('shiny', { creatureId: c.id, species: c.speciesId });
+  }
+  if (c.sequenced && !p.perfect[c.speciesId] && isPerfectGenome(ctx, c.genome)) {
+    p.perfect[c.speciesId] = true;
+    ctx.bus.emit('perfectGenome', { creatureId: c.id, species: c.speciesId });
+  }
 }
 
 export function registerDex(ctx: GameContext, species: string, rarity: string): boolean {

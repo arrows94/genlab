@@ -1,4 +1,5 @@
 import type { AlleleDef, GeneLocusDef } from './content/types';
+import { checkCondition } from './conditions';
 import type { GameContext } from './context';
 import type { ModifierDef, SourcedModifier } from './modifiers';
 import type { Appearance, Creature, Genome } from './state';
@@ -14,6 +15,21 @@ import type { Appearance, Creature, Genome } from './state';
  */
 
 export type Expression = { allele: AlleleDef; share: number }[];
+
+/** Loci that currently exist (some are gated, e.g. by an Äon talent). */
+export function activeLoci(ctx: GameContext): GeneLocusDef[] {
+  return ctx.content.genes.list.filter((l) => !l.requires || checkCondition(ctx.state, l.requires));
+}
+
+/** Perfect genome: every active locus that has a `top` allele is homozygous for it. */
+export function isPerfectGenome(ctx: GameContext, genome: Genome): boolean {
+  const loci = activeLoci(ctx).filter((l) => l.alleles.some((a) => a.top));
+  return loci.length > 0 && loci.every((l) => {
+    const top = l.alleles.find((a) => a.top)!.id;
+    const pair = genome[l.id];
+    return pair?.[0] === top && pair[1] === top;
+  });
+}
 
 export function alleleDef(locus: GeneLocusDef, id: string): AlleleDef | undefined {
   return locus.alleles.find((a) => a.id === id);
@@ -66,7 +82,7 @@ export function rollAllele(ctx: GameContext, locus: GeneLocusDef): string {
 
 export function rollGenome(ctx: GameContext): Genome {
   const genome: Genome = {};
-  for (const locus of ctx.content.genes.list) genome[locus.id] = [rollAllele(ctx, locus), rollAllele(ctx, locus)];
+  for (const locus of activeLoci(ctx)) genome[locus.id] = [rollAllele(ctx, locus), rollAllele(ctx, locus)];
   return genome;
 }
 
@@ -77,7 +93,7 @@ export function rollGenome(ctx: GameContext): Genome {
 export function ensureGenomes(ctx: GameContext): void {
   for (const c of ctx.state.creatures) {
     if (!c.genome) c.genome = {};
-    for (const locus of ctx.content.genes.list) {
+    for (const locus of activeLoci(ctx)) {
       const pair = c.genome[locus.id];
       if (!pair || !alleleDef(locus, pair[0]) || !alleleDef(locus, pair[1])) c.genome[locus.id] = [rollAllele(ctx, locus), rollAllele(ctx, locus)];
     }
@@ -89,7 +105,7 @@ export function ensureGenomes(ctx: GameContext): void {
 export function inheritGenome(ctx: GameContext, a: Genome, b: Genome, mutationChance: number): Genome {
   const rate = mutationChance * ctx.balance.genetics.alleleMutationFactor;
   const genome: Genome = {};
-  for (const locus of ctx.content.genes.list) {
+  for (const locus of activeLoci(ctx)) {
     const pick = (pair: [string, string] | undefined) => {
       const allele = pair ? pair[ctx.rng.chance(0.5) ? 0 : 1] : rollAllele(ctx, locus);
       return ctx.rng.chance(rate) ? rollAllele(ctx, locus) : allele;

@@ -1,5 +1,6 @@
 import { checkCondition } from '../conditions';
 import { createCreature } from '../creatures';
+import { checkAnomaly } from '../features/anomalies';
 import type { GameContext } from '../context';
 import type { System } from './types';
 
@@ -32,6 +33,7 @@ export function checkUnlocks(ctx: GameContext): void {
       if ((perRarity[reward.rarity] ?? 0) >= milestone.count) milestone.features.forEach((f) => unlockFeature(ctx, f));
     }
   }
+  checkAnomaly(ctx);
   for (const a of content.achievements.list) {
     if (!state.achievements[a.id] && checkCondition(state, a.condition)) {
       state.achievements[a.id] = true;

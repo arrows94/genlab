@@ -1,6 +1,6 @@
 import type { GameContext } from '../context';
 import type { Creature } from '../state';
-import { genotypeDistribution, phenotypeLabel } from '../genetics';
+import { activeLoci, genotypeDistribution, phenotypeLabel } from '../genetics';
 import { rarityChances, rarityWeights } from '../rarity';
 import { mutationChance } from './breeding';
 import { hybridChance, isRecipeDiscovered, recipeMatches } from './hybrids';
@@ -26,7 +26,7 @@ export interface BreedingPreview {
 
 export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): BreedingPreview {
   const known = a.sequenced && b.sequenced;
-  const loci: LocusPreview[] = ctx.content.genes.list.map((locus) => {
+  const loci: LocusPreview[] = activeLoci(ctx).map((locus) => {
     const pa = a.genome[locus.id];
     const pb = b.genome[locus.id];
     if (!known || !pa || !pb) return { locus: locus.id, name: locus.name, known: false, outcomes: [] };

@@ -30,7 +30,8 @@ function computeRates(ctx: GameContext): Record<string, Decimal> {
     for (const c of state.creatures) {
       if (c.job?.kind !== 'building' || c.job.target !== b.id) continue;
       const stat = effectiveStats(ctx, c)[b.workStat] ?? 0;
-      const perCreature = b.baseRate * (1 + stat * balance.production.statScaling);
+      const element = content.species.get(c.speciesId).element;
+      const perCreature = b.baseRate * (1 + stat * balance.production.statScaling) * mods.factor(`element.${element}.production`);
       // Job-scoped abilities / creature buffs targeting this resource.
       const own = creatureModifiers(ctx, c).apply(`production.${b.produces}`, perCreature) - perCreature;
       base[b.produces] = (base[b.produces] ?? 0) + perCreature + own;

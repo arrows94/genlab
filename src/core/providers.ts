@@ -1,6 +1,9 @@
 import { D } from './num';
 import { ModifierSet } from './modifiers';
 import type { GameContext } from './context';
+import { talentProvider } from './features/talents';
+import { anomalyProvider } from './features/anomalies';
+import { weeklyProvider } from './features/weekly';
 
 /**
  * A modifier provider contributes modifiers from one part of the state.
@@ -12,7 +15,7 @@ export const upgradeProvider: ModifierProvider = (ctx, into) => {
   for (const [id, level] of Object.entries(ctx.state.upgrades)) {
     if (level > 0 && ctx.content.upgrades.has(id)) {
       const def = ctx.content.upgrades.get(id);
-      into.addAll(`upgrade:${id}`, def.modifiers, level);
+      into.addAll(`upgrade:${id}`, def.modifiers, Math.pow(level, def.levelPower ?? 1));
     }
   }
 };
@@ -64,4 +67,7 @@ export const DEFAULT_PROVIDERS: ModifierProvider[] = [
   prestigeProvider,
   buffProvider,
   globalAbilityProvider,
+  talentProvider,
+  anomalyProvider,
+  weeklyProvider,
 ];

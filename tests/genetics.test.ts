@@ -18,7 +18,7 @@ const locus = (id: string) => content.genes.get(id);
 /** Homozygous for the most common ("wild type") allele at every locus. */
 const normal = (): Genome =>
   Object.fromEntries(
-    content.genes.list.map((l) => {
+    content.genes.list.filter((l) => !l.requires).map((l) => {
       const common = [...l.alleles].sort((a, b) => b.weight - a.weight)[0]!.id;
       return [l.id, [common, common]];
     }),
@@ -141,7 +141,7 @@ describe('hidden genomes and sequencing', () => {
   it('new creatures have a full but hidden genome', () => {
     const g = makeGame();
     const c = g.state.creatures[0]!;
-    expect(Object.keys(c.genome).sort()).toEqual(content.genes.list.map((l) => l.id).sort());
+    expect(Object.keys(c.genome).sort()).toEqual(content.genes.list.filter((l) => !l.requires).map((l) => l.id).sort());
     expect(c.sequenced).toBe(false);
   });
 
@@ -165,7 +165,7 @@ describe('hidden genomes and sequencing', () => {
     const g = makeGame();
     const genome = normal();
     const first = catalogueGenome(g, genome);
-    expect(first).toHaveLength(content.genes.list.length);
+    expect(first).toHaveLength(content.genes.list.filter((l) => !l.requires).length);
     expect(catalogueGenome(g, genome)).toHaveLength(0);
   });
 
@@ -189,7 +189,7 @@ describe('hidden genomes and sequencing', () => {
     }
     const loaded = new Game({ content, balance, state: deserialize(JSON.stringify(raw)).state });
     const c = loaded.state.creatures[0]!;
-    expect(Object.keys(c.genome)).toHaveLength(content.genes.list.length);
+    expect(Object.keys(c.genome)).toHaveLength(content.genes.list.filter((l) => !l.requires).length);
     expect(c.splices).toBe(0);
   });
 });

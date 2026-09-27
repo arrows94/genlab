@@ -125,6 +125,31 @@ export interface Balance {
   automation: {
     intervalSec: number;
   };
+  tower: {
+    fightIntervalSec: number;
+    baseTeamSize: number;
+    maxRounds: number;
+    enemyBase: Record<string, number>;
+    /** Enemy stats × growth^(floor − 1). */
+    enemyGrowth: number;
+    bossEvery: number;
+    bossHpMult: number;
+    bossAtkMult: number;
+    strongMult: number;
+    weakMult: number;
+    /** Damage = atk × mult × defScale / (defScale + def). */
+    defScale: number;
+    tokensPerFloor: number;
+    tokenGrowthPerFloor: number;
+    catalystEvery: number;
+    alleleEvery: number;
+    leaderboardSize: number;
+    checkpointEvery: number;
+  };
+  perfection: {
+    /** Base chance for the "Schillernd" colour mutation (modified by `creature.shinyChance`). */
+    shinyChance: number;
+  };
   missions: {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */
@@ -142,4 +167,6 @@ export interface Balance {
     mutationChance: number;
   };
   prestige: Record<string, { divisor: number; exponent: number; minGain: number }>;
+  /** Weekly mutation: weeks since this epoch day decide the active rule. */
+  weekly: { epoch: string };
 }

@@ -15,7 +15,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'lab';
+  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower';
   target: string;
 }
 
@@ -47,6 +47,8 @@ export interface Creature {
   sequenced: boolean;
   /** Gene splices already applied (limited per creature). */
   splices: number;
+  /** Rare colour mutation "Schillernd". */
+  shiny: boolean;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;
@@ -85,6 +87,25 @@ export interface AutomationState {
   lastRunMs: number;
 }
 
+export interface TowerRun {
+  floor: number;
+  team: number[];
+  elapsedMs: number;
+  startFloor: number;
+}
+
+export interface TowerState {
+  /** Selected team (creature ids). */
+  team: number[];
+  run: TowerRun | null;
+  /** Highest floor ever cleared. */
+  best: number;
+  autoRestart: boolean;
+  /** Personal leaderboard: best runs. */
+  leaderboard: { floor: number; team: string[]; at: number }[];
+  lastResult: { floor: number; win: boolean; log: string[] } | null;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -117,6 +138,12 @@ export interface GameState {
   automation: AutomationState;
   /** Capsules opened since the last pity-qualifying result, per capsule. */
   capsulePity: Record<string, number>;
+  tower: TowerState;
+  talents: Record<string, boolean>;
+  anomaly: { id: string } | null;
+  anomaliesCompleted: Record<string, boolean>;
+  /** Perfection hunt per species: perfect genome / shiny found. */
+  perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -143,6 +170,11 @@ export function createEmptyState(now: number, seed: number): GameState {
     prestige: {},
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, lastRunMs: 0 },
     capsulePity: {},
+    tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
+    talents: {},
+    anomaly: null,
+    anomaliesCompleted: {},
+    perfection: { perfect: {}, shiny: {} },
   };
 }
 

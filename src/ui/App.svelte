@@ -19,6 +19,10 @@
   import GeneticsTab from './components/GeneticsTab.svelte';
   import RecyclerTab from './components/RecyclerTab.svelte';
   import CreatureDetail from './components/CreatureDetail.svelte';
+  import TowerTab from './components/TowerTab.svelte';
+  import AeonTab from './components/AeonTab.svelte';
+  import AnomaliesTab from './components/AnomaliesTab.svelte';
+  import WeeklyBanner from './components/WeeklyBanner.svelte';
 
   /** Tab id (from FeatureDef.tab) → label + component. New systems register here. */
   const TABS: Record<string, { label: string; icon: string; component: Component }> = {
@@ -30,6 +34,9 @@
     research: { label: 'Forschung', icon: '📜', component: ResearchTab },
     market: { label: 'Markt', icon: '⚗️', component: MarketTab },
     recycler: { label: 'Recycler', icon: '♻️', component: RecyclerTab },
+    tower: { label: 'Turm', icon: '🗼', component: TowerTab },
+    anomalies: { label: 'Anomalien', icon: '🌀', component: AnomaliesTab },
+    aeon: { label: 'Äon', icon: '⏳', component: AeonTab },
     dex: { label: 'Dex', icon: '📖', component: DexTab },
     stats: { label: 'Statistik', icon: '📊', component: StatsTab },
     prestige: { label: 'Vererbung', icon: '♾️', component: PrestigeTab },
@@ -57,6 +64,8 @@
     </div>
     <ResourceBar />
   </header>
+
+  <WeeklyBanner />
 
   <nav>
     {#each tabs as t (t)}

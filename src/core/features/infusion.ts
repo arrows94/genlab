@@ -1,7 +1,7 @@
 
 import { toCost } from '../costs';
-import { findCreature, registerDex, removeCreature } from '../creatures';
-import { alleleDef } from '../genetics';
+import { checkPerfection, findCreature, registerDex, removeCreature } from '../creatures';
+import { activeLoci, alleleDef } from '../genetics';
 import { trySpend } from '../resources';
 import { checkUnlocks } from '../systems/unlocks';
 import type { AlleleDef, GeneLocusDef } from '../content/types';
@@ -52,7 +52,7 @@ export function alleleQuality(a: AlleleDef | undefined): number {
 export function bestTransfer(ctx: GameContext, target: Creature, victim: Creature): { locus: GeneLocusDef; slot: 0 | 1; allele: string; gain: number } | null {
   if (!target.sequenced || !victim.sequenced) return null;
   let best: { locus: GeneLocusDef; slot: 0 | 1; allele: string; gain: number } | null = null;
-  for (const locus of ctx.content.genes.list) {
+  for (const locus of activeLoci(ctx)) {
     const tp = target.genome[locus.id];
     const vp = victim.genome[locus.id];
     if (!tp || !vp) continue;
@@ -118,6 +118,7 @@ export function infuse(ctx: GameContext, targetId: number, victimIds: number[]):
   }
   target.infusion = { level: preview.newLevel, ep: preview.newEp };
   ctx.invalidate();
+  checkPerfection(ctx, target);
   ctx.bus.emit('infused', { targetId, victims: victims.length, ep: preview.ep, levelsGained: preview.newLevel - preview.level, transferred });
   checkUnlocks(ctx);
   return { ok: true };

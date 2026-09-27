@@ -2,7 +2,7 @@
   import { content } from '@content/index';
   import { dexKey } from '@core/state';
   import { dexCount } from '@core/queries';
-  import { familyTree } from '@core/features/dex';
+  import { familyTree, perfectionSummary } from '@core/features/dex';
   import { game, view } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
@@ -10,7 +10,7 @@
 
   const data = $derived.by(() => {
     view.frame;
-    return { dex: { ...game.state.dex }, count: dexCount(game), tree: familyTree(game) };
+    return { dex: { ...game.state.dex }, count: dexCount(game), tree: familyTree(game), perfection: perfectionSummary(game) };
   });
 
   const neutral = { pattern: 'none', eyes: 'round', horn: 'none' };
@@ -24,6 +24,13 @@
   </div>
 </div>
 
+<div class="panel perfection">
+  <b>Perfektions-Jagd</b>
+  <span title="Alle Loci reinerbig mit Top-Allelen (sequenziert)">✦ Perfekte Genome <span class="num">{data.perfection.perfect}/{data.perfection.species}</span></span>
+  <span title="Seltene Farbmutation">🌈 Schillernd <span class="num">{data.perfection.shiny}/{data.perfection.species}</span></span>
+  <span>👑 Mythische Endformen <span class="num">{data.perfection.mythic}/{data.perfection.mythicTotal}</span></span>
+</div>
+
 {#if mode === 'grid'}
   <div class="scroll panel">
     <table>
@@ -31,17 +38,21 @@
         <tr>
           <th>Art</th>
           {#each content.rarities.list as r (r.id)}<th style="color: {r.color}">{r.name}</th>{/each}
+          <th title="Perfektes Genom">✦</th>
+          <th title="Schillernd">🌈</th>
         </tr>
       </thead>
       <tbody>
         {#each data.tree as group (group.tier)}
-          <tr class="group"><td colspan={content.rarities.list.length + 1}>{group.name}</td></tr>
+          <tr class="group"><td colspan={content.rarities.list.length + 3}>{group.name}</td></tr>
           {#each group.nodes as n (n.species.id)}
             <tr>
               <td class="species" style="color: {content.elements.get(n.species.element).color}">{n.discovered || n.species.tier === 'base' ? n.species.name : '???'}</td>
               {#each content.rarities.list as r (r.id)}
                 <td class="cell" class:found={data.dex[dexKey(n.species.id, r.id)]} style="--c: {r.color}">{data.dex[dexKey(n.species.id, r.id)] ? '●' : '·'}</td>
               {/each}
+              <td class="cell" class:found={n.perfect} style="--c: var(--gold)">{n.perfect ? '✦' : '·'}</td>
+              <td class="cell" class:found={n.shiny} style="--c: #ff7ad9">{n.shiny ? '🌈' : '·'}</td>
             </tr>
           {/each}
         {/each}
@@ -84,6 +95,7 @@
 {/if}
 
 <style>
+  .perfection { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: 0.5rem 0.8rem; margin-bottom: 0.75rem; font-size: 0.85rem; }
   .head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   .head h2 { margin: 0; }
   .switch { display: flex; gap: 0.3rem; }

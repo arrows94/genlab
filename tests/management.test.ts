@@ -23,7 +23,7 @@ function richGame(seed = 21, overrides = {}) {
 }
 
 const normal = (): Genome =>
-  Object.fromEntries(content.genes.list.map((l) => {
+  Object.fromEntries(content.genes.list.filter((l) => !l.requires).map((l) => {
     const common = [...l.alleles].sort((a, b) => b.weight - a.weight)[0]!.id;
     return [l.id, [common, common]];
   })) as Genome;

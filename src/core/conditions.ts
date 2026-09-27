@@ -27,6 +27,12 @@ export function checkCondition(state: GameState, c: Condition): boolean {
     }
     case 'prestigeCount':
       return (state.prestige[c.layer]?.count ?? 0) >= c.count;
+    case 'talent':
+      return state.talents?.[c.talent] === true;
+    case 'towerFloor':
+      return Math.max(state.tower?.best ?? 0, state.tower?.run?.floor ?? 0) >= c.floor;
+    case 'anomaly':
+      return state.anomaliesCompleted?.[c.anomaly] === true;
     case 'geneLibrary':
       return Object.keys(state.geneLibrary ?? {}).length >= c.count;
     case 'all':

@@ -25,6 +25,9 @@ export interface TreeNode {
   discovered: boolean;
   /** Number of rarities found. */
   rarities: number;
+  /** Perfection hunt: perfect genome / shiny seen for this species. */
+  perfect: boolean;
+  shiny: boolean;
   origins: OriginView[];
 }
 
@@ -41,6 +44,25 @@ function recipeRequirements(ctx: GameContext, r: HybridRecipeDef): string[] {
     out.push(`Allel ${locus.alleles.find((a) => a.id === req.allele!.allele)?.name} (${locus.name})`);
   }
   return out;
+}
+
+export interface PerfectionSummary {
+  perfect: number;
+  shiny: number;
+  mythic: number;
+  species: number;
+  mythicTotal: number;
+}
+
+export function perfectionSummary(ctx: GameContext): PerfectionSummary {
+  const mythics = ctx.content.species.list.filter((s) => s.tier === 'mythic');
+  return {
+    perfect: Object.keys(ctx.state.perfection.perfect).length,
+    shiny: Object.keys(ctx.state.perfection.shiny).length,
+    mythic: mythics.filter((s) => isSpeciesDiscovered(ctx, s.id)).length,
+    species: ctx.content.species.list.length,
+    mythicTotal: mythics.length,
+  };
 }
 
 export function familyTree(ctx: GameContext): { tier: SpeciesTier; name: string; nodes: TreeNode[] }[] {
@@ -85,6 +107,8 @@ export function familyTree(ctx: GameContext): { tier: SpeciesTier; name: string;
           species: s,
           discovered: isSpeciesDiscovered(ctx, s.id),
           rarities: ctx.content.rarities.list.filter((r) => ctx.state.dex[`${s.id}:${r.id}`]).length,
+          perfect: ctx.state.perfection.perfect[s.id] === true,
+          shiny: ctx.state.perfection.shiny[s.id] === true,
           origins,
         };
       }),

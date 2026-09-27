@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { findCreature } from '../creatures';
+import { checkPerfection, findCreature } from '../creatures';
 import { alleleDef, libraryHas, rollAllele } from '../genetics';
 import { trySpend } from '../resources';
 import type { Cost } from '../costs';
@@ -61,6 +61,7 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
     c.genome[locusId] = pair;
   }
   ctx.invalidate();
+  checkPerfection(ctx, c);
   ctx.bus.emit('spliced', { creatureId, locus: locusId, success, scrambledLocus });
   return { ok: true };
 }

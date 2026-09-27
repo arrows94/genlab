@@ -14,6 +14,7 @@ import { species } from './species';
 import { stats } from './stats';
 import { upgrades } from './upgrades';
 import { capsules } from './capsules';
+import { anomalies, talents, weeklyMutations } from './endgame';
 
 export { balance } from './balance';
 
@@ -36,6 +37,9 @@ export const contentData: ContentData = {
   achievements,
   prestigeLayers,
   capsules,
+  talents,
+  anomalies,
+  weeklyMutations,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

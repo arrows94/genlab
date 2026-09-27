@@ -21,6 +21,9 @@ export type Condition =
   | { type: 'dex'; species?: string; rarity?: string; count?: number }
   | { type: 'prestigeCount'; layer: string; count: number }
   | { type: 'geneLibrary'; count: number }
+  | { type: 'talent'; talent: string }
+  | { type: 'towerFloor'; floor: number }
+  | { type: 'anomaly'; anomaly: string }
   | { type: 'all'; of: Condition[] }
   | { type: 'any'; of: Condition[] };
 
@@ -90,6 +93,8 @@ export interface AlleleDef {
   color: string;
   /** Visual effect when expressed (phenotype is always visible, genotype only after sequencing). */
   visual?: AlleleVisual;
+  /** Target allele for the "perfect genome" (Perfektions-Jagd). */
+  top?: boolean;
 }
 
 export interface AlleleVisual {
@@ -107,6 +112,8 @@ export interface GeneLocusDef {
   description: string;
   category: 'stat' | 'trait' | 'visual';
   alleles: AlleleDef[];
+  /** Locus only exists while this holds (e.g. an Äon talent). */
+  requires?: Condition;
 }
 
 export type AbilityScope = 'self' | 'job' | 'global';
@@ -187,6 +194,8 @@ export interface UpgradeDef {
   unlocksFeatures?: string[];
   /** Hybrid recipe hints revealed per level bought. */
   grantsHints?: number;
+  /** Diminishing returns for infinite research: modifiers scale with level^power (default 1). */
+  levelPower?: number;
   requires?: Condition;
 }
 
@@ -262,8 +271,10 @@ export interface PrestigeLayerDef {
   /** Resource awarded by the reset. */
   currency: string;
   feature: string;
-  /** Resources whose "earned this run" total feeds the gain formula. */
+  /** Resources feeding the gain formula. */
   gainFrom: string[];
+  /** 'earned' = earned this run (default), 'owned' = currently owned (e.g. heritage points for Äon). */
+  gainSource?: 'earned' | 'owned';
   /** Modifiers granted per currency point owned. */
   modifiersPerPoint: ModifierDef[];
   resets: {
@@ -277,6 +288,46 @@ export interface PrestigeLayerDef {
     dex: boolean;
     features: boolean;
   };
+}
+
+export interface TalentDef {
+  id: string;
+  name: string;
+  description: string;
+  /** Row in the talent tree (1 = root). */
+  tier: number;
+  /** Cost in the Äon currency. */
+  cost: number;
+  /** All listed talents must be owned first. */
+  requires: string[];
+  modifiers: ModifierDef[];
+  /** Features that stay unlocked across every reset. */
+  unlocksFeatures?: string[];
+  /** Resources granted after each reset. */
+  onReset?: ResourceAmounts;
+}
+
+export interface AnomalyDef {
+  id: string;
+  name: string;
+  description: string;
+  /** Rule changes while the anomaly runs. */
+  modifiers: ModifierDef[];
+  rules?: { noPotions?: boolean };
+  /** Completion goal (checked on the anomaly run). */
+  goal: Condition;
+  goalText: string;
+  /** Permanent bonus after completion. */
+  reward: ModifierDef[];
+  rewardText: string;
+  requires?: Condition;
+}
+
+export interface WeeklyMutationDef {
+  id: string;
+  name: string;
+  description: string;
+  modifiers: ModifierDef[];
 }
 
 export interface CapsuleDef {
@@ -314,6 +365,9 @@ export interface ContentData {
   achievements: AchievementDef[];
   prestigeLayers: PrestigeLayerDef[];
   capsules: CapsuleDef[];
+  talents: TalentDef[];
+  anomalies: AnomalyDef[];
+  weeklyMutations: WeeklyMutationDef[];
 }
 
 export interface Registry<T extends { id: string }> {

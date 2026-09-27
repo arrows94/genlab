@@ -100,6 +100,18 @@ function wireEvents(g: Game): void {
     toast(parts.join(' · '), e.transferred.length > 0 ? 'rare' : 'info');
   });
   g.bus.on('breakthrough', (e) => toast(`💥 Durchbruch! Neue Seltenheit: ${content.rarities.get(e.rarity).name}`, 'rare', 6000));
+  g.bus.on('towerFloor', (e) => {
+    if (e.allele) {
+      const locus = content.genes.get(e.allele.locus);
+      toast(`🗼 Etage ${e.floor}: seltenes Allel ${locus.alleles.find((a) => a.id === e.allele!.allele)?.name} (${locus.name}) für die Genbibliothek!`, 'rare', 6000);
+    } else if (e.win && e.floor % 10 === 0) toast(`🗼 Etage ${e.floor} bezwungen! ${amounts(e.rewards)}`, 'rare');
+  });
+  g.bus.on('towerRunEnded', (e) => toast(`🗼 Turm-Lauf beendet auf Etage ${e.floor}.`, 'info'));
+  g.bus.on('talentBought', (e) => toast(`⏳ Talent gelernt: ${content.talents.get(e.talent).name}`, 'rare'));
+  g.bus.on('anomalyStarted', (e) => toast(`🌀 Anomalie „${content.anomalies.get(e.anomaly).name}“ beginnt!`, 'unlock'));
+  g.bus.on('anomalyCompleted', (e) => toast(`🌀 Anomalie gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
+  g.bus.on('perfectGenome', (e) => toast(`✦ Perfektes Genom: ${content.species.get(e.species).name}!`, 'rare', 7000));
+  g.bus.on('shiny', (e) => toast(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare', 7000));
   g.bus.on('recipeHinted', (e) => {
     toast(`📜 Hinweis auf eine Kreuzung: „${content.recipes.get(e.recipe).hint}“`, 'unlock', 6000);
     markUnseen('dex');

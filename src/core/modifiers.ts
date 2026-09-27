@@ -45,7 +45,8 @@ export const MODIFIER_ROOTS = [
   'splicing', // splicing.instability, splicing.cost
   'infusion',
   'capsule', // capsule.fragmentYield
-  'tower',
+  'tower', // tower.damage, tower.elementDamage
+  'element', // element.<id>.production
   'creature',
 ] as const;
 

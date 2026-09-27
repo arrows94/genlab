@@ -115,6 +115,32 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 - `maxLevel: null` ergibt eine unendliche Forschung.
 - `unlocksFeatures: ['…']` schaltet ab Stufe 1 Systeme frei.
 
+## Endgame-Inhalte
+
+`src/content/endgame.ts`:
+
+```ts
+// Äon-Talent: Mechanik statt nur Prozente
+{ id: 'twinBirth', name: 'Zwillingsgeburten', tier: 2, cost: 3, requires: ['aeonHarvest'],
+  description: '15 % Chance auf Zwillinge.', modifiers: [{ target: 'breeding.twinChance', op: 'add', value: 0.15 }] },
+
+// Anomalie: Regeln + Ziel + dauerhafte Belohnung
+{ id: 'famine', name: 'Hungersnot', description: 'Halbe Nahrungsproduktion.',
+  modifiers: [{ target: 'production.food', op: 'mult', value: 0.5 }],
+  goal: { type: 'resourceEarned', resource: 'food', amount: 150000 }, goalText: '150.000 Nahrung verdienen',
+  reward: [{ target: 'production.food', op: 'pct', value: 0.2 }], rewardText: '+20 % Nahrung' },
+
+// Wochen-Mutation: wird per Kalenderwoche ausgewählt
+{ id: 'iceAge', name: 'Eiszeit', description: 'Eis-Kreaturen +50 % Ertrag.',
+  modifiers: [{ target: 'element.ice.production', op: 'pct', value: 0.5 }] },
+```
+
+- Talente können `unlocksFeatures` (bleiben über jeden Reset) und `onReset` (Startressourcen) haben.
+- Ein Gen-Locus mit `requires: { type: 'talent', talent: '…' }` existiert erst mit dem Talent – vorhandene Kreaturen bekommen ihn automatisch.
+- Allele mit `top: true` definieren das „perfekte Genom“ der Perfektions-Jagd.
+- Unendliche Forschung: `category: 'infinite'`, `maxLevel: null` und `levelPower` (< 1 = abnehmender Ertrag).
+- Turm-Gegner, Belohnungen und Kontrollpunkte stehen in `balance.ts` unter `tower`.
+
 ## Weitere Inhaltsarten
 
 | Datei | Inhalt |

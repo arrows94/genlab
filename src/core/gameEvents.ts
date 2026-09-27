@@ -20,6 +20,13 @@ export interface GameEvents {
   potionUsed: { potion: string; creatureId: number | null };
   sequenced: { creatureId: number };
   recipeHinted: { recipe: string };
+  towerFloor: { floor: number; win: boolean; rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null };
+  towerRunEnded: { floor: number };
+  talentBought: { talent: string };
+  anomalyStarted: { anomaly: string };
+  anomalyCompleted: { anomaly: string };
+  perfectGenome: { creatureId: number; species: string };
+  shiny: { creatureId: number; species: string };
   sold: { count: number; value: Record<string, Decimal> };
   recycled: { count: number; fragments: Decimal };
   infused: { targetId: number; victims: number; ep: number; levelsGained: number; transferred: { locus: string; allele: string }[] };

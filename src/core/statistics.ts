@@ -52,6 +52,12 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
       inc('breakthroughs');
       record('record.rarity', getCtx().content.rarities.get(e.rarity).order);
     }),
+    bus.on('towerFloor', (e) => {
+      if (e.win) record('record.towerFloor', e.floor);
+    }),
+    bus.on('anomalyCompleted', () => inc('anomaliesCompleted')),
+    bus.on('perfectGenome', () => inc('perfectGenomes')),
+    bus.on('shiny', () => inc('shinies')),
     bus.on('capsuleOpened', (e) => {
       inc('capsulesOpened');
       if (e.pity) inc('capsulePity');

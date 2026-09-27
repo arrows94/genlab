@@ -182,6 +182,41 @@ export const upgrades: UpgradeDef[] = [
     cost: { essence: 30 }, costGrowth: 2, maxLevel: 10,
     modifiers: [{ target: 'capsule.fragmentYield', op: 'pct', value: 0.15 }],
   },
+  // --- Genom-Turm (Turm-Marken) ---
+  {
+    id: 'battleDrill', name: 'Kampfdrill', category: 'research', requires: { type: 'feature', feature: 'tower' },
+    description: '+10 % Schaden im Genom-Turm.',
+    cost: { towerTokens: 20 }, costGrowth: 1.5, maxLevel: 10,
+    modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.1 }],
+  },
+  {
+    id: 'towerRoutine', name: 'Turm-Routine', category: 'research', requires: { type: 'feature', feature: 'tower' },
+    description: 'Nach einer Niederlage startet das Team automatisch ab dem letzten Kontrollpunkt neu.',
+    cost: { towerTokens: 150 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['towerAuto'],
+  },
+  // --- Unendliche Forschung (ohne Maximalstufe, abnehmender Ertrag) ---
+  {
+    id: 'geneticMastery', name: 'Genetische Meisterschaft', category: 'infinite', requires: { type: 'feature', feature: 'infiniteResearch' },
+    description: '+5 % auf alle Werte (abnehmend: Stufe^0,7).',
+    cost: { essence: 500 }, costGrowth: 1.25, maxLevel: null, levelPower: 0.7,
+    modifiers: [
+      { target: 'stat.hp', op: 'pct', value: 0.05 }, { target: 'stat.atk', op: 'pct', value: 0.05 },
+      { target: 'stat.def', op: 'pct', value: 0.05 }, { target: 'stat.spd', op: 'pct', value: 0.05 },
+    ],
+  },
+  {
+    id: 'bountifulHarvest', name: 'Überfluss', category: 'infinite', requires: { type: 'feature', feature: 'infiniteResearch' },
+    description: '+10 % Nahrung und Gold (abnehmend: Stufe^0,7).',
+    cost: { gold: 20000 }, costGrowth: 1.3, maxLevel: null, levelPower: 0.7,
+    modifiers: [{ target: 'production.food', op: 'pct', value: 0.1 }, { target: 'production.gold', op: 'pct', value: 0.1 }],
+  },
+  {
+    id: 'towerTraining', name: 'Turmtraining', category: 'infinite', requires: { type: 'feature', feature: 'tower' },
+    description: '+5 % Turm-Schaden (abnehmend: Stufe^0,8).',
+    cost: { towerTokens: 40 }, costGrowth: 1.2, maxLevel: null, levelPower: 0.8,
+    modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.05 }],
+  },
   // --- über den Dex freigeschaltet ---
   {
     id: 'legendaryHeritage', name: 'Legendäres Erbgut', category: 'research', requires: { type: 'feature', feature: 'legendaryHeritage' },
