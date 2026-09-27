@@ -6,15 +6,32 @@
   const LABELS: Record<string, string> = {
     clicks: 'Sammel-Klicks',
     creaturesObtained: 'Kreaturen erhalten',
+    hatched: 'Geschlüpft',
+    wildFound: 'Wilde Kreaturen gefunden',
+    'creatures.capsule': 'Aus Kapseln',
     dexEntries: 'Dex-Einträge',
     upgradesBought: 'Forschungen gekauft',
+    sequenced: 'Genome sequenziert',
+    evolved: 'Evolutionen',
+    infused: 'Kreaturen infundiert',
+    breakthroughs: 'Durchbrüche',
+    sold: 'Verkauft',
+    recycled: 'Recycelt',
+    capsulesOpened: 'Kapseln geöffnet',
+    potionsUsed: 'Tränke benutzt',
+    'completed.mission': 'Erkundungen',
   };
 
   const data = $derived.by(() => {
     view.frame;
     return {
       playTime: game.state.simTimeMs,
-      stats: Object.entries(game.state.statistics).filter(([k]) => LABELS[k]),
+      stats: Object.keys(LABELS).filter((k) => game.state.statistics[k]).map((k) => [k, game.state.statistics[k]!] as const),
+      records: [
+        ['Höchste Generation', String(game.state.statistics['record.generation'] ?? 0)],
+        ['Beste Seltenheit', content.rarities.list.find((r) => r.order === (game.state.statistics['record.rarity'] ?? 0))?.name ?? '–'],
+        ['Höchste Infusion', `+${game.state.statistics['record.infusion'] ?? 0}`],
+      ] as const,
       earned: Object.entries(game.state.earnedTotal),
       achievements: content.achievements.list.map((a) => ({ def: a, done: !!game.state.achievements[a.id] })),
     };
@@ -28,6 +45,12 @@
     <dl>
       <dt>Spielzeit</dt><dd class="num">{formatDuration(data.playTime)}</dd>
       {#each data.stats as [k, v] (k)}<dt>{LABELS[k]}</dt><dd class="num">{formatNumber(v)}</dd>{/each}
+    </dl>
+  </article>
+  <article class="panel">
+    <h3>Rekorde</h3>
+    <dl>
+      {#each data.records as [k, v] (k)}<dt>{k}</dt><dd class="num">{v}</dd>{/each}
     </dl>
   </article>
   <article class="panel">

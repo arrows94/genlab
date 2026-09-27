@@ -20,6 +20,12 @@ export interface GameEvents {
   potionUsed: { potion: string; creatureId: number | null };
   sequenced: { creatureId: number };
   recipeHinted: { recipe: string };
+  sold: { count: number; value: Record<string, Decimal> };
+  recycled: { count: number; fragments: Decimal };
+  infused: { targetId: number; victims: number; ep: number; levelsGained: number; transferred: { locus: string; allele: string }[] };
+  breakthrough: { creatureId: number; rarity: string };
+  capsuleOpened: { capsule: string; creatureId: number; rarity: string; pity: boolean };
+  stableFull: { lost: number; value: Record<string, Decimal> };
   evolved: { creatureId: number; from: string; to: string };
   alleleCatalogued: { locus: string; allele: string };
   spliced: { creatureId: number; locus: string; success: boolean; scrambledLocus: string | null };

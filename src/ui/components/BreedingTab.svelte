@@ -10,6 +10,8 @@
   import CostLabel from './CostLabel.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import BreedingPlanner from './BreedingPlanner.svelte';
+  import { setAutoBreed } from '@core/features/automation';
+  import { stableCapacity, stableFree } from '@core/features/stable';
 
   let parentA = $state<number | null>(null);
   let parentB = $state<number | null>(null);
@@ -24,6 +26,11 @@
     return {
       a,
       b,
+      stableFree: stableFree(game),
+      stableCap: stableCapacity(game),
+      automaton: game.state.features['autoBreed'] === true,
+      autoBreed: game.state.automation.autoBreed,
+      ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
       eggs: eggs(game).map((p) => {
         const d = p.data as EggData;
@@ -53,7 +60,26 @@
   }
 </script>
 
-<h2>Brutstation <span class="muted num">{data.eggs.length}/{data.slots} Nester</span></h2>
+<h2>Brutstation <span class="muted num">{data.eggs.length}/{data.slots} Nester · Stall {data.stableCap - data.stableFree}/{data.stableCap}</span></h2>
+
+{#if data.automaton}
+  <div class="panel auto">
+    <b>🤖 Zuchtautomat</b>
+    <label><input type="checkbox" checked={data.autoBreed.enabled} onchange={(e) => act(setAutoBreed(game, e.currentTarget.checked, data.autoBreed.rule, data.autoBreed.species))} /> aktiv</label>
+    <label>Züchte immer die zwei besten für
+      <select value={data.autoBreed.rule} onchange={(e) => act(setAutoBreed(game, data.autoBreed.enabled, e.currentTarget.value, data.autoBreed.species))}>
+        <option value="power">Gesamtstärke</option>
+        {#each content.stats.list as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+      </select>
+    </label>
+    <label>Art
+      <select value={data.autoBreed.species ?? ''} onchange={(e) => act(setAutoBreed(game, data.autoBreed.enabled, data.autoBreed.rule, e.currentTarget.value || null))}>
+        <option value="">beliebig</option>
+        {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+      </select>
+    </label>
+  </div>
+{/if}
 
 <div class="grid">
   {#each data.eggs as egg (egg.id)}
@@ -96,4 +122,5 @@
   article:has(:global(.planner)) { grid-column: 1 / -1; }
   button { width: 100%; }
   .hint { margin-top: 1rem; }
+  .auto { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
 </style>

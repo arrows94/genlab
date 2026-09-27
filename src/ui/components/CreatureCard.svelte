@@ -9,7 +9,13 @@
   import { expressedAppearance } from '@core/genetics';
   import type { Snippet } from 'svelte';
 
-  let { creature, children }: { creature: Creature; children?: Snippet } = $props();
+  let { creature, children, selectable = false, selected = false, onselect }: {
+    creature: Creature;
+    children?: Snippet;
+    selectable?: boolean;
+    selected?: boolean;
+    onselect?: () => void;
+  } = $props();
 
   const species = $derived(content.species.get(creature.speciesId));
   const rarity = $derived(content.rarities.get(creature.rarity));
@@ -21,6 +27,10 @@
   const look = $derived.by(() => {
     view.frame;
     return expressedAppearance(game, creature);
+  });
+  const infusion = $derived.by(() => {
+    view.frame;
+    return creature.infusion?.level ?? 0;
   });
   const sequenced = $derived.by(() => {
     view.frame;
@@ -51,21 +61,24 @@
   }
 </script>
 
-<article class="card" class:glow={rarity.glow} style="--rarity: {rarity.color}; --element: {element.color}">
+<article class="card" class:glow={rarity.glow} class:selected style="--rarity: {rarity.color}; --element: {element.color}">
   <header>
+    {#if selectable}
+      <input type="checkbox" checked={selected} onchange={() => onselect?.()} aria-label="Auswählen" />
+    {/if}
     <span class="rarity">{rarity.name}</span>
     <button class="lock" title={creature.locked ? 'Favorit (gesperrt)' : 'Als Favorit sperren'} onclick={() => act(toggleLock(game, creature.id))}>
       {creature.locked ? '★' : '☆'}
     </button>
   </header>
-  <div class="art"><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} /></div>
+  <button class="art" title="Details" onclick={() => (view.detail = creature.id)}><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} /></button>
   {#if editing}
     <form onsubmit={(e) => { e.preventDefault(); commit(); }}>
       <!-- svelte-ignore a11y_autofocus -->
       <input bind:value={draft} maxlength="20" autofocus onblur={commit} />
     </form>
   {:else}
-    <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}</button>
+    <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
   {/if}
   <div class="meta">
     <span class="element">{element.name}</span>
@@ -108,7 +121,10 @@
   header { display: flex; justify-content: space-between; align-items: center; }
   .rarity { color: var(--rarity); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
   .lock { background: none; border: none; padding: 0.1rem 0.3rem; color: var(--gold); font-size: 1.1rem; }
-  .art { display: flex; justify-content: center; background: radial-gradient(circle, color-mix(in srgb, var(--element) 18%, transparent), transparent 70%); border-radius: 50%; }
+  .card.selected { outline: 2px solid var(--teal); outline-offset: 2px; }
+  header input { margin-right: auto; accent-color: var(--teal); width: 1.1rem; height: 1.1rem; }
+  .plus { color: var(--gold); font-weight: 700; }
+  .art { border: none; padding: 0; cursor: pointer; display: flex; justify-content: center; background: radial-gradient(circle, color-mix(in srgb, var(--element) 18%, transparent), transparent 70%); border-radius: 50%; }
   .name { background: none; border: none; padding: 0; font-weight: 700; font-size: 1.05rem; text-align: left; }
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
   .element { color: var(--element); }

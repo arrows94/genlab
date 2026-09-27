@@ -50,7 +50,7 @@ export class Game implements GameContext {
     this.balance = opts.balance;
     this.systems = opts.systems ?? DEFAULT_SYSTEMS;
     this.providers = opts.providers ?? DEFAULT_PROVIDERS;
-    attachStatistics(this.bus, () => this._state);
+    attachStatistics(this.bus, () => this);
     if (opts.state) {
       this.setState(opts.state);
       ensureGenomes(this);

@@ -16,7 +16,7 @@ export const balance: Balance = {
     summaryMinSec: 60,
   },
   start: {
-    resources: { food: 0, gold: 0, essence: 0, catalyst: 0, heritage: 0 },
+    resources: { food: 0, gold: 0, essence: 0, catalyst: 0, fragments: 0, heritage: 0 },
     species: 'emberpup',
     rarity: 'common',
   },
@@ -69,6 +69,43 @@ export const balance: Balance = {
   },
   hybrids: {
     hintChancePerHour: 0.4,
+  },
+  stable: {
+    baseCapacity: 20,
+  },
+  sell: {
+    valueByRarity: {
+      common: { gold: 10 },
+      uncommon: { gold: 30 },
+      rare: { gold: 90, essence: 1 },
+      epic: { gold: 300, essence: 5 },
+      legendary: { gold: 1000, essence: 20 },
+      mythic: { gold: 5000, essence: 100 },
+    },
+    perGeneration: 0.1,
+  },
+  infusion: {
+    epByRarity: { common: 10, uncommon: 25, rare: 60, epic: 150, legendary: 400, mythic: 1000 },
+    epPerGeneration: 0.1,
+    maxLevel: 10,
+    levelEpBase: 20,
+    levelEpGrowth: 1.7,
+    statPerLevel: 0.05,
+    alleleTransferChance: 0.05,
+    breakthroughCost: {
+      common: { catalyst: 1, essence: 50 },
+      uncommon: { catalyst: 2, essence: 150 },
+      rare: { catalyst: 4, essence: 400 },
+      epic: { catalyst: 8, essence: 1200 },
+    },
+    maxBreakthroughRarity: 'legendary',
+  },
+  recycler: {
+    fragmentsByRarity: { common: 1, uncommon: 3, rare: 8, epic: 25, legendary: 80, mythic: 250 },
+    perGeneration: 0.05,
+  },
+  automation: {
+    intervalSec: 5,
   },
   missions: {
     baseCamps: 1,

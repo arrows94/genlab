@@ -6,6 +6,7 @@ import { makeGame } from './helpers';
 
 function expeditionGame(seed = 1) {
   const g = makeGame(seed);
+  g.invalidate();
   unlockFeature(g, 'expedition');
   g.state.resources.food = D(1e5);
   return g;
@@ -39,6 +40,7 @@ describe('expeditions', () => {
 
   it('finds wild creatures at the mission wild chance', () => {
     const g = expeditionGame(3);
+    g.state.upgrades.stableExpansion = 100; // room for every find
     g.state.resources.food = D(1e9);
     const c = g.state.creatures[0]!;
     let found = 0;

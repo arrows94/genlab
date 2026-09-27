@@ -3,12 +3,13 @@ import { inheritAbilities } from '../abilities';
 import { createCreature, creatureModifiers, findCreature } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
+import { stableFree } from './stable';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Appearance, Creature, StatBlock } from '../state';
+import type { AncestorInfo, Appearance, Creature, StatBlock } from '../state';
 
 export const EGG = 'egg';
 
@@ -71,6 +72,7 @@ export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature 
   // Working creatures are pulled from their building automatically.
   if ((a.job && a.job.kind !== 'building') || (b.job && b.job.kind !== 'building')) return { ok: false, reason: 'Beide Kreaturen müssen frei sein.' };
   if (eggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (stableFree(ctx) <= 0) return { ok: false, reason: 'Der Stall ist voll.' };
   return { ok: true };
 }
 
@@ -119,6 +121,17 @@ export function inheritAppearance(ctx: GameContext, a: Creature, b: Creature): A
   };
 }
 
+/** Pedigree snapshot: the creature plus its own parents (grandparents of the child). */
+function snapshot(c: Creature): AncestorInfo {
+  return {
+    name: c.name,
+    speciesId: c.speciesId,
+    rarity: c.rarity,
+    generation: c.generation,
+    parents: c.ancestry?.map((p) => ({ ...p, parents: null })) ?? null,
+  };
+}
+
 registerProcessHandler(EGG, {
   complete(ctx, proc) {
     const data = proc.data as EggData;
@@ -139,6 +152,7 @@ registerProcessHandler(EGG, {
       appearance: inheritAppearance(ctx, a, b),
       abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
       genome: inheritGenome(ctx, a.genome, b.genome, mutation),
+      ancestry: [snapshot(a), snapshot(b)],
       source: 'hatch',
     });
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });

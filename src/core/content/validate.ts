@@ -229,6 +229,23 @@ export function validateContent(data: ContentData): string[] {
     if (l.resets.resources.includes(l.currency)) issues.push(`${w}: darf die eigene Währung nicht zurücksetzen`);
     mods(`${w}.modifiersPerPoint`, l.modifiersPerPoint);
   }
+  for (const c of data.capsules) {
+    const w = at('capsules', c.id);
+    amounts(`${w}.cost`, c.cost);
+    ref(`${w}.feature`, 'features', c.feature);
+    ref(`${w}.pity.minRarity`, 'rarities', c.pity.minRarity);
+    num(`${w}.pity.threshold`, c.pity.threshold, 1);
+    for (const [r, v] of Object.entries(c.rarityWeights)) {
+      ref(`${w}.rarityWeights`, 'rarities', r);
+      num(`${w}.rarityWeights.${r}`, v, 0);
+    }
+    if (!Object.values(c.rarityWeights).some((v) => v > 0)) issues.push(`${w}.rarityWeights: mindestens ein Gewicht > 0`);
+    const pityOrder = data.rarities.find((r) => r.id === c.pity.minRarity)?.order ?? 0;
+    if (!Object.entries(c.rarityWeights).some(([r, v]) => v > 0 && (data.rarities.find((x) => x.id === r)?.order ?? -1) >= pityOrder)) {
+      issues.push(`${w}.pity: keine Seltenheit ≥ ${c.pity.minRarity} mit Gewicht > 0`);
+    }
+    for (const [tier, v] of Object.entries(c.tierWeights)) num(`${w}.tierWeights.${tier}`, v, 0);
+  }
   if (data.rarities.length === 0) issues.push('rarities: mindestens eine Seltenheit nötig');
 
   return issues;

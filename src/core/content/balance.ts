@@ -92,6 +92,39 @@ export interface Balance {
     /** Recipe hint chance per hour of expedition (scaled by mission length, capped at 1). */
     hintChancePerHour: number;
   };
+  stable: {
+    /** Base creature capacity (modified by `slots.stable`). */
+    baseCapacity: number;
+  };
+  sell: {
+    /** Resources per sold creature by rarity. */
+    valueByRarity: Record<string, Record<string, number>>;
+    /** +x per generation above 1. */
+    perGeneration: number;
+  };
+  infusion: {
+    epByRarity: Record<string, number>;
+    epPerGeneration: number;
+    maxLevel: number;
+    /** EP needed for level L: base × growth^(L−1). */
+    levelEpBase: number;
+    levelEpGrowth: number;
+    /** Stat bonus per infusion level (all stats, pct). */
+    statPerLevel: number;
+    /** Chance per sequenced victim to pass on a better allele. */
+    alleleTransferChance: number;
+    /** Breakthrough cost by the creature's current rarity. */
+    breakthroughCost: Record<string, Record<string, number>>;
+    /** Highest rarity reachable by breakthrough. */
+    maxBreakthroughRarity: string;
+  };
+  recycler: {
+    fragmentsByRarity: Record<string, number>;
+    perGeneration: number;
+  };
+  automation: {
+    intervalSec: number;
+  };
   missions: {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */

@@ -13,6 +13,7 @@ import { resources } from './resources';
 import { species } from './species';
 import { stats } from './stats';
 import { upgrades } from './upgrades';
+import { capsules } from './capsules';
 
 export { balance } from './balance';
 
@@ -34,6 +35,7 @@ export const contentData: ContentData = {
   features,
   achievements,
   prestigeLayers,
+  capsules,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

@@ -2,6 +2,8 @@ import { canAfford } from './costs';
 import { nextUpgradeCost, upgradeAvailable } from './actions';
 import type { GameContext } from './context';
 import type { UpgradeDef } from './content/types';
+import type { Creature } from './state';
+import { creatureModifiers, creaturePower, effectiveStats } from './creatures';
 
 /** Read-only helpers for the UI (keeps rules out of components). */
 
@@ -33,4 +35,118 @@ export function dexCount(ctx: GameContext): { found: number; total: number } {
     found: Object.keys(ctx.state.dex).length,
     total: ctx.content.species.list.length * ctx.content.rarities.list.length,
   };
+}
+
+// --- Creature list: filter & sort (Kreaturenliste) ---
+
+export interface CreatureFilter {
+  search: string;
+  species: string | null;
+  element: string | null;
+  rarity: string | null;
+  /** all | idle | working | busy (nest/mission) | locked */
+  status: 'all' | 'idle' | 'working' | 'busy' | 'locked';
+  /** Only sequenced creatures carrying this allele. */
+  allele: { locus: string; allele: string } | null;
+}
+
+export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'power' | 'name' | `stat:${string}`;
+
+export const EMPTY_FILTER: CreatureFilter = { search: '', species: null, element: null, rarity: null, status: 'all', allele: null };
+
+export function filterCreatures(ctx: GameContext, f: CreatureFilter): Creature[] {
+  const q = f.search.trim().toLowerCase();
+  return ctx.state.creatures.filter((c) => {
+    const species = ctx.content.species.get(c.speciesId);
+    if (q && !c.name.toLowerCase().includes(q) && !species.name.toLowerCase().includes(q)) return false;
+    if (f.species && c.speciesId !== f.species) return false;
+    if (f.element && species.element !== f.element) return false;
+    if (f.rarity && c.rarity !== f.rarity) return false;
+    if (f.status === 'idle' && c.job !== null) return false;
+    if (f.status === 'working' && c.job?.kind !== 'building') return false;
+    if (f.status === 'busy' && !(c.job && c.job.kind !== 'building')) return false;
+    if (f.status === 'locked' && !c.locked) return false;
+    if (f.allele && !(c.sequenced && c.genome[f.allele.locus]?.includes(f.allele.allele))) return false;
+    return true;
+  });
+}
+
+export function sortCreatures(ctx: GameContext, list: Creature[], sort: CreatureSort): Creature[] {
+  const rarity = (c: Creature) => ctx.content.rarities.get(c.rarity).order;
+  const out = [...list];
+  if (sort.startsWith('stat:')) {
+    const stat = sort.slice(5);
+    const cache = new Map(out.map((c) => [c.id, effectiveStats(ctx, c)[stat] ?? 0]));
+    return out.sort((a, b) => cache.get(b.id)! - cache.get(a.id)!);
+  }
+  switch (sort) {
+    case 'newest':
+      return out.sort((a, b) => b.id - a.id);
+    case 'oldest':
+      return out.sort((a, b) => a.id - b.id);
+    case 'rarity':
+      return out.sort((a, b) => rarity(b) - rarity(a) || b.generation - a.generation);
+    case 'generation':
+      return out.sort((a, b) => b.generation - a.generation || rarity(b) - rarity(a));
+    case 'name':
+      return out.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    case 'power': {
+      const cache = new Map(out.map((c) => [c.id, creaturePower(ctx, c)]));
+      return out.sort((a, b) => cache.get(b.id)! - cache.get(a.id)!);
+    }
+  }
+  return out;
+}
+
+/** Human readable name for a modifier source id (bonus breakdown). */
+export function sourceLabel(ctx: GameContext, source: string): string {
+  const [kind, rest = ''] = source.split(':');
+  const id = rest.split('#')[0] ?? '';
+  const name = <T extends { id: string; name: string }>(reg: { has(id: string): boolean; get(id: string): T }, key: string) => (reg.has(key) ? reg.get(key).name : key);
+  switch (kind) {
+    case 'upgrade':
+      return `Forschung: ${name(ctx.content.upgrades, id)}`;
+    case 'achievement':
+      return `Erfolg: ${name(ctx.content.achievements, id)}`;
+    case 'prestige':
+      return `Vererbung`;
+    case 'dex':
+      return 'Monster-Dex';
+    case 'buff':
+      return `Trank: ${name(ctx.content.potions, id)}`;
+    case 'ability':
+      return `Fähigkeit: ${name(ctx.content.abilities, id)}`;
+    case 'gene': {
+      const [locus = '', allele = ''] = rest.split(':');
+      const def = ctx.content.genes.has(locus) ? ctx.content.genes.get(locus) : null;
+      return `Gen: ${def?.alleles.find((a) => a.id === allele)?.name ?? allele} (${def?.name ?? locus})`;
+    }
+    case 'boost':
+      return 'Kraftfutter';
+    case 'infusion':
+      return 'Infusion';
+    default:
+      return source;
+  }
+}
+
+export interface StatBreakdown {
+  stat: string;
+  base: number;
+  rarityMult: number;
+  final: number;
+  parts: { label: string; op: string; value: number }[];
+}
+
+/** Per-stat bonus breakdown for the creature detail view. */
+export function statBreakdown(ctx: GameContext, c: Creature): StatBreakdown[] {
+  const mods = creatureModifiers(ctx, c);
+  const final = effectiveStats(ctx, c);
+  return ctx.content.stats.list.map((s) => ({
+    stat: s.id,
+    base: c.stats[s.id] ?? 0,
+    rarityMult: ctx.balance.rarity.statMultiplier[c.rarity] ?? 1,
+    final: final[s.id] ?? 0,
+    parts: mods.breakdown(`stat.${s.id}`).map((m) => ({ label: sourceLabel(ctx, m.source), op: m.op, value: m.value })),
+  }));
 }

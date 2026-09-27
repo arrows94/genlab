@@ -6,6 +6,7 @@ import { jobCount, jobSlots } from '@core/systems/production';
 import { visibleUpgrades } from '@core/queries';
 import { creaturePower } from '@core/creatures';
 import type { Game } from '@core/game';
+import { canConsume, sell, stableFree } from '@core/features/stable';
 
 export interface TimelineEntry {
   min: number;
@@ -34,6 +35,12 @@ export function playBot(g: Game, minutes: number, clicksPerSec = 2): TimelineEnt
       .filter((x) => x.cost && canAfford(g.state, x.cost))
       .sort((a, b) => sum(a.cost!) - sum(b.cost!));
     if (affordable[0]) buyUpgrade(g, affordable[0].u.id);
+
+    // Stable management: sell the weakest spare creatures when nearly full.
+    if (stableFree(g) <= 1) {
+      const spare = g.state.creatures.filter((c) => canConsume(g, c)).sort((a, b) => creaturePower(g, a) - creaturePower(g, b));
+      if (spare.length > 0) sell(g, spare.slice(0, 3).map((c) => c.id));
+    }
 
     // Breeding: the two strongest available creatures; if too expensive, the cheapest (lowest generation) pair.
     if (g.state.features.breeding && eggs(g).length < nestSlots(g)) {

@@ -25,6 +25,10 @@ export const view = $state({
   offline: null as OfflineReport | null,
   /** Unseen results per tab (badge), cleared when the tab is opened. */
   unseen: {} as Record<string, number>,
+  /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
+  muteDex: false,
+  /** Creature shown in the detail view. */
+  detail: null as number | null,
   loadError: null as string | null,
 });
 
@@ -62,7 +66,7 @@ function wireEvents(g: Game): void {
   });
   g.bus.on('achievementUnlocked', (e) => toast(`🏆 ${content.achievements.get(e.achievement).name}`, 'rare'));
   g.bus.on('dexDiscovered', (e) => {
-    if (g.state.creatures.length > 1)
+    if (g.state.creatures.length > 1 && !view.muteDex)
       toast(`📖 Neu im Dex: ${content.species.get(e.species).name} (${content.rarities.get(e.rarity).name})`, 'info');
   });
   g.bus.on('prestige', () => toast('🧬 Vererbung abgeschlossen!', 'rare'));
@@ -84,6 +88,18 @@ function wireEvents(g: Game): void {
     toast(`🧬 Genom entschlüsselt: ${c?.name ?? '?'}`, 'info');
     markUnseen('genetics');
   });
+  const amounts = (v: Record<string, { toString(): string }>) =>
+    Object.entries(v).map(([r, a]) => `+${formatNumber(a.toString())} ${content.resources.get(r).icon}`).join(' ');
+  g.bus.on('sold', (e) => toast(`💰 ${e.count} verkauft: ${amounts(e.value)}`));
+  g.bus.on('recycled', (e) => toast(`♻️ ${e.count} recycelt: +${formatNumber(e.fragments)} 🧩`));
+  g.bus.on('stableFull', (e) => toast(`🏠 Stall voll – wilde Kreatur freigelassen (${amounts(e.value)})`, 'error'));
+  g.bus.on('infused', (e) => {
+    const parts = [`🔮 Infusion: +${formatNumber(e.ep)} EP`];
+    if (e.levelsGained > 0) parts.push(`Stufe +${e.levelsGained}`);
+    for (const t of e.transferred) parts.push(`Allel ${content.genes.get(t.locus).alleles.find((a) => a.id === t.allele)?.name} übertragen!`);
+    toast(parts.join(' · '), e.transferred.length > 0 ? 'rare' : 'info');
+  });
+  g.bus.on('breakthrough', (e) => toast(`💥 Durchbruch! Neue Seltenheit: ${content.rarities.get(e.rarity).name}`, 'rare', 6000));
   g.bus.on('recipeHinted', (e) => {
     toast(`📜 Hinweis auf eine Kreuzung: „${content.recipes.get(e.recipe).hint}“`, 'unlock', 6000);
     markUnseen('dex');

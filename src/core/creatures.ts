@@ -3,7 +3,7 @@ import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
 import { genomeModifiers, rollGenome } from './genetics';
 import type { GameContext } from './context';
-import { dexKey, type Appearance, type Creature, type Genome, type StatBlock } from './state';
+import { dexKey, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
 export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
 
@@ -22,6 +22,7 @@ export interface CreateCreatureOptions {
   abilities?: string[];
   /** Omitted → rolled wild genome (hidden until sequenced). */
   genome?: Genome;
+  ancestry?: AncestorInfo[] | null;
   source?: CreatureSource;
 }
 
@@ -65,6 +66,8 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,
+    ancestry: opts.ancestry ?? null,
+    infusion: { level: 0, ep: 0 },
     job: null,
     locked: false,
     bornAt: state.simTimeMs,
@@ -103,6 +106,10 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
   }
   for (const [stat, value] of Object.entries(c.boosts ?? {})) {
     if (value) out.push({ target: `stat.${stat}`, op: 'pct', value, source: 'boost' });
+  }
+  const infusionLevel = c.infusion?.level ?? 0;
+  if (infusionLevel > 0) {
+    for (const s of ctx.content.stats.list) out.push({ target: `stat.${s.id}`, op: 'pct', value: infusionLevel * ctx.balance.infusion.statPerLevel, source: 'infusion' });
   }
   if (c.genome) out.push(...genomeModifiers(ctx, c.genome));
   return out;

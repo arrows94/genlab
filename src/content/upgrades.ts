@@ -144,6 +144,44 @@ export const upgrades: UpgradeDef[] = [
     cost: { essence: 30, gold: 800 }, costGrowth: 1.8, maxLevel: 8,
     modifiers: [{ target: 'breeding.hybridChance', op: 'pct', value: 0.05 }], grantsHints: 1,
   },
+  // --- Management & Verwertung ---
+  {
+    id: 'stableExpansion', name: 'Stall-Ausbau', category: 'research', requires: breeding,
+    description: '+10 Plätze im Stall.',
+    cost: { food: 300, gold: 100 }, costGrowth: 2.2, maxLevel: 15,
+    modifiers: [{ target: 'slots.stable', op: 'add', value: 10 }],
+  },
+  {
+    id: 'appraiser', name: 'Gutachter', category: 'research', requires: breeding,
+    description: '+20 % Verkaufserlös.',
+    cost: { gold: 400 }, costGrowth: 2.5, maxLevel: 5,
+    modifiers: [{ target: 'creature.sellValue', op: 'pct', value: 0.2 }],
+  },
+  {
+    id: 'workPlanner', name: 'Arbeitsplaner', category: 'research', requires: mine,
+    description: 'Verteilt Kreaturen automatisch nach bester Eignung auf die Anlagen.',
+    cost: { gold: 800 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['autoAssign'],
+  },
+  {
+    id: 'breedingAutomaton', name: 'Zuchtautomat', category: 'research',
+    requires: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'statistic', statistic: 'hatched', amount: 40 }] },
+    description: 'Brütet automatisch nach einer Regel (z. B. immer die zwei stärksten).',
+    cost: { essence: 150, gold: 4000 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['autoBreed'],
+  },
+  {
+    id: 'infusionBooster', name: 'Infusionsbeschleuniger', category: 'research', requires: { type: 'feature', feature: 'infusion' },
+    description: '+10 % Infusions-EP.',
+    cost: { essence: 40 }, costGrowth: 2, maxLevel: 10,
+    modifiers: [{ target: 'infusion.ep', op: 'pct', value: 0.1 }],
+  },
+  {
+    id: 'recyclerEfficiency', name: 'Effizienter Recycler', category: 'research', requires: { type: 'feature', feature: 'recycler' },
+    description: '+15 % Gen-Fragmente.',
+    cost: { essence: 30 }, costGrowth: 2, maxLevel: 10,
+    modifiers: [{ target: 'capsule.fragmentYield', op: 'pct', value: 0.15 }],
+  },
   // --- über den Dex freigeschaltet ---
   {
     id: 'legendaryHeritage', name: 'Legendäres Erbgut', category: 'research', requires: { type: 'feature', feature: 'legendaryHeritage' },

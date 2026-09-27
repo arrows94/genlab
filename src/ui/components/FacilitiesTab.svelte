@@ -4,6 +4,7 @@
   import { formatNumber } from '@core/format';
   import { jobCount, jobSlots } from '@core/systems/production';
   import { game, view, act } from '../store.svelte';
+  import { autoAssign, setAutoAssign } from '@core/features/automation';
 
   const data = $derived.by(() => {
     view.frame;
@@ -18,11 +19,18 @@
         rate: rates[b.produces],
       }));
     const idle = game.state.creatures.filter((c) => c.job === null);
-    return { buildings, idle };
+    return { buildings, idle, planner: game.state.features['autoAssign'] === true, auto: game.state.automation.autoAssign };
   });
 </script>
 
 <h2>Anlagen</h2>
+{#if data.planner}
+  <div class="panel planner">
+    <b>🗂️ Arbeitsplaner</b>
+    <button class="primary" onclick={() => act(autoAssign(game))}>Jetzt optimal verteilen</button>
+    <label><input type="checkbox" checked={data.auto} onchange={(e) => act(setAutoAssign(game, e.currentTarget.checked))} /> automatisch (alle {game.balance.automation.intervalSec} s)</label>
+  </div>
+{/if}
 <div class="grid">
   {#each data.buildings as b (b.def.id)}
     <article class="panel">
@@ -50,4 +58,5 @@
   li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
   li button { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
   select { width: 100%; }
+  .planner { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; }
 </style>

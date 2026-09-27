@@ -44,7 +44,7 @@ export const MODIFIER_ROOTS = [
   'sequencing', // sequencing.time
   'splicing', // splicing.instability, splicing.cost
   'infusion',
-  'capsule',
+  'capsule', // capsule.fragmentYield
   'tower',
   'creature',
 ] as const;

@@ -7,3 +7,6 @@ import './expedition';
 import './market';
 import './sequencing';
 import './splicing';
+import './infusion';
+import './recycler';
+import './automation';

@@ -4,6 +4,7 @@ import { grant, trySpend } from '../resources';
 import { toCost } from '../costs';
 import { checkCondition } from '../conditions';
 import { revealHint } from './hybrids';
+import { stableFree } from './stable';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -87,7 +88,17 @@ registerProcessHandler(MISSION, {
     let wildCreatureId: number | null = null;
     if (ctx.rng.chance(wildChance(ctx, missionId))) {
       const pool = missionSpecies(ctx, missionId);
-      if (pool.length > 0) wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), source: 'wild' }).id;
+      if (pool.length > 0 && stableFree(ctx) > 0) wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), source: 'wild' }).id;
+      else if (pool.length > 0) {
+        // Stable full: the wild creature is released; the player gets its sell value in gold.
+        const value = ctx.balance.sell.valueByRarity['common'] ?? {};
+        const out: Record<string, Decimal> = {};
+        for (const [res, v] of Object.entries(value)) {
+          out[res] = D(v);
+          grant(ctx, res, v, 'stableFull');
+        }
+        ctx.bus.emit('stableFull', { lost: 1, value: out });
+      }
     }
     if (ctx.state.features['hybrids'] && ctx.rng.chance(hintChance(ctx, missionId))) revealHint(ctx);
     ctx.bus.emit('missionCompleted', { missionId, creatureId, rewards, wildCreatureId });

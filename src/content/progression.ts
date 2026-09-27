@@ -18,14 +18,22 @@ export const features: FeatureDef[] = [
   { id: 'mine', name: 'Mine', hint: 'Die Mine ist offen – Angriff bringt Gold.' },
   { id: 'expedition', name: 'Erkundung', tab: 'expedition', hint: 'Schicke Kreaturen auf Erkundung – vielleicht findest du wilde Artgenossen.', condition: { type: 'resourceEarned', resource: 'gold', amount: 40 } },
   { id: 'biolab', name: 'Bio-Labor', hint: 'Im Bio-Labor entsteht Essenz. Tempo erhöht den Ertrag.' },
-  { id: 'infusion', name: 'Infusion', hint: 'Verstärke Kreaturen mit Artgenossen.' },
+  {
+    id: 'infusion', name: 'Infusion', hint: 'Infusion freigeschaltet: Eine Kreatur kann Artgenossen aufnehmen und wird stärker (Detailansicht öffnen).',
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'creatureCount', count: 12 }] },
+  },
   { id: 'sequencing', name: 'Sequenzierlabor', tab: 'genetics', hint: 'Das Sequenzierlabor ist bereit: Entschlüssele Genome mit Essenz und plane gezielte Zuchten.', condition: { type: 'resourceEarned', resource: 'essence', amount: 5 } },
   { id: 'splicing', name: 'Gen-Splicing', hint: 'Gen-Splicing möglich: Übertrage Allele aus der Genbibliothek – mit Risiko.' },
   { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 25 } },
-  { id: 'recycler', name: 'Gen-Recycler', hint: 'Zerlege Kreaturen in Gen-Fragmente.' },
+  {
+    id: 'recycler', name: 'Gen-Recycler', tab: 'recycler', hint: 'Der Gen-Recycler zerlegt überzählige Kreaturen in Fragmente – und aus Fragmenten werden Gen-Kapseln.',
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'sold', amount: 10 }, { type: 'resourceEarned', resource: 'essence', amount: 60 }] },
+  },
+  { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
+  { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter.' },
   {
     id: 'hybrids', name: 'Hybride', hint: 'Hybride entdeckt! Bestimmte Artkombinationen können neue Arten hervorbringen. Hinweise gibt es durch Forschung und Erkundung.',
-    condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'hatched', amount: 30 }] },
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'recycler' }, { type: 'statistic', statistic: 'hatched', amount: 45 }, { type: 'resourceEarned', resource: 'essence', amount: 130 }] },
   },
   { id: 'evolution', name: 'Evolution', hint: 'Ein Evolutionskristall! Manche Arten können sich damit weiterentwickeln.', condition: { type: 'resourceEarned', resource: 'catalyst', amount: 1 } },
   { id: 'dex', name: 'Monster-Dex', tab: 'dex', hint: 'Der Monster-Dex sammelt deine Entdeckungen.', condition: { type: 'creatureCount', count: 2 } },
@@ -72,6 +80,10 @@ export const achievements: AchievementDef[] = [
   ].map((species) => ({ type: 'dex' as const, species })) }, modifiers: [{ target: 'mission.wildChance', op: 'add', value: 0.05 }] },
   { id: 'firstEvolution', name: 'Metamorphose', description: 'Erste Evolution.', condition: { type: 'statistic', statistic: 'evolved', amount: 1 }, modifiers: [{ target: 'stat.hp', op: 'pct', value: 0.05 }] },
   { id: 'mythicForm', name: 'Mythos', description: 'Eine mythische Endform erreicht.', condition: { type: 'any', of: ['phoenix', 'leviathan', 'worldtree', 'chronodrake'].map((species) => ({ type: 'dex' as const, species })) }, modifiers: [{ target: 'production.essence', op: 'pct', value: 0.25 }] },
+  { id: 'trader', name: 'Händler', description: '50 Kreaturen verkauft.', condition: { type: 'statistic', statistic: 'sold', amount: 50 }, modifiers: [{ target: 'creature.sellValue', op: 'pct', value: 0.1 }] },
+  { id: 'fullyInfused', name: 'Vollendet', description: 'Eine Kreatur auf Infusionsstufe +10 gebracht.', condition: { type: 'statistic', statistic: 'record.infusion', amount: 10 }, modifiers: [{ target: 'infusion.ep', op: 'pct', value: 0.1 }] },
+  { id: 'breakthrough', name: 'Durchbruch', description: 'Eine Seltenheit per Durchbruch erhöht.', condition: { type: 'statistic', statistic: 'breakthroughs', amount: 1 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.05 }] },
+  { id: 'capsuleCollector', name: 'Kapselsammler', description: '50 Gen-Kapseln geöffnet.', condition: { type: 'statistic', statistic: 'capsulesOpened', amount: 50 }, modifiers: [{ target: 'capsule.fragmentYield', op: 'pct', value: 0.1 }] },
   { id: 'firstHeir', name: 'Erbe angetreten', description: 'Erste Vererbung abgeschlossen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, modifiers: [{ target: 'offline.capHours', op: 'add', value: 1 }] },
 ];
 

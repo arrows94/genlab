@@ -17,6 +17,8 @@
   import ExpeditionTab from './components/ExpeditionTab.svelte';
   import MarketTab from './components/MarketTab.svelte';
   import GeneticsTab from './components/GeneticsTab.svelte';
+  import RecyclerTab from './components/RecyclerTab.svelte';
+  import CreatureDetail from './components/CreatureDetail.svelte';
 
   /** Tab id (from FeatureDef.tab) → label + component. New systems register here. */
   const TABS: Record<string, { label: string; icon: string; component: Component }> = {
@@ -27,6 +29,7 @@
     genetics: { label: 'Genlabor', icon: '🔬', component: GeneticsTab },
     research: { label: 'Forschung', icon: '📜', component: ResearchTab },
     market: { label: 'Markt', icon: '⚗️', component: MarketTab },
+    recycler: { label: 'Recycler', icon: '♻️', component: RecyclerTab },
     dex: { label: 'Dex', icon: '📖', component: DexTab },
     stats: { label: 'Statistik', icon: '📊', component: StatsTab },
     prestige: { label: 'Vererbung', icon: '♾️', component: PrestigeTab },
@@ -70,6 +73,7 @@
   </main>
 </div>
 
+<CreatureDetail />
 <Toasts />
 <OfflineModal />
 

@@ -12,13 +12,14 @@ const showTimeline = !!(globalThis as { process?: { env: Record<string, string |
 describe('early game pacing (bot)', () => {
   const g = makeGame(2024);
   const timeline = playBot(g, 60);
+  const pacingMinutes = 60;
   if (showTimeline) console.log(Object.entries(g.state.earned).map(([k, v]) => `${k}: ${v.toFixed(0)}`).join(', '), g.state.creatures.length);
   if (showTimeline) console.log(timeline.map((t) => `${t.min.toFixed(1).padStart(5)} min  ${t.what}`).join('\n'));
 
   const unlockedAt = (f: string) => timeline.find((t) => t.what === `Freigeschaltet: ${f}`)?.min;
 
   it('unlocks systems in the intended order within the first hour', () => {
-    const order = ['farm', 'research', 'breeding', 'mine', 'expedition', 'biolab', 'sequencing', 'market'];
+    const order = ['farm', 'research', 'breeding', 'mine', 'expedition', 'biolab', 'infusion', 'sequencing', 'market', 'recycler', 'hybrids'];
     const times = order.map(unlockedAt);
     times.forEach((t, i) => expect(t, order[i]).toBeDefined());
     for (let i = 1; i < times.length; i++) expect(times[i]!, `${order[i]} nach ${order[i - 1]}`).toBeGreaterThanOrEqual(times[i - 1]!);

@@ -279,6 +279,22 @@ export interface PrestigeLayerDef {
   };
 }
 
+export interface CapsuleDef {
+  id: string;
+  name: string;
+  description: string;
+  cost: ResourceAmounts;
+  feature: string;
+  /** Rarity weights (shown openly as percentages). Rarity modifiers do not apply. */
+  rarityWeights: Record<string, number>;
+  /** Species tier weights; a tier without eligible species is skipped. */
+  tierWeights: Partial<Record<SpeciesTier, number>>;
+  /** Player picks an element; only species of that element can drop. */
+  elementChoice?: boolean;
+  /** After `threshold − 1` capsules without ≥ `minRarity`, the next one is guaranteed. */
+  pity: { threshold: number; minRarity: string };
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -297,6 +313,7 @@ export interface ContentData {
   features: FeatureDef[];
   achievements: AchievementDef[];
   prestigeLayers: PrestigeLayerDef[];
+  capsules: CapsuleDef[];
 }
 
 export interface Registry<T extends { id: string }> {

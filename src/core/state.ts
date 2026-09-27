@@ -19,6 +19,15 @@ export interface CreatureJob {
   target: string;
 }
 
+/** Snapshot of an ancestor (kept even after the ancestor is sold). */
+export interface AncestorInfo {
+  name: string;
+  speciesId: string;
+  rarity: string;
+  generation: number;
+  parents: AncestorInfo[] | null;
+}
+
 export interface Creature {
   id: number;
   speciesId: string;
@@ -39,6 +48,10 @@ export interface Creature {
   /** Gene splices already applied (limited per creature). */
   splices: number;
   parents: [number, number] | null;
+  /** Parents and grandparents as snapshots for the pedigree view. */
+  ancestry: AncestorInfo[] | null;
+  /** Infusion level (+1 … +10) and collected EP towards the next level. */
+  infusion: { level: number; ep: number };
   job: CreatureJob | null;
   locked: boolean;
   bornAt: number;
@@ -63,6 +76,13 @@ export interface Buff {
   modifiers: ModifierDef[];
   /** Creature-bound buff; `null` = global. */
   creatureId: number | null;
+}
+
+export interface AutomationState {
+  autoAssign: boolean;
+  autoBreed: { enabled: boolean; rule: string; species: string | null };
+  /** Sim time of the last automation run. */
+  lastRunMs: number;
 }
 
 export interface GameState {
@@ -94,6 +114,9 @@ export interface GameState {
   /** Free-form counters (hatched, collected, missions ...). */
   statistics: Record<string, number>;
   prestige: Record<string, { count: number }>;
+  automation: AutomationState;
+  /** Capsules opened since the last pity-qualifying result, per capsule. */
+  capsulePity: Record<string, number>;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -118,6 +141,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, lastRunMs: 0 },
+    capsulePity: {},
   };
 }
 
