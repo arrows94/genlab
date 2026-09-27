@@ -9,8 +9,9 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import { expressedAppearance } from '@core/genetics';
   import { findCreature } from '@core/creatures';
+  import { viewState } from '../viewState.svelte';
 
-  let element = $state('fire');
+  const recycler = viewState.recycler;
   let results = $state<CapsuleResult[] | null>(null);
   let revealing = $state(false);
 
@@ -31,7 +32,7 @@
   function open(id: string, count: number) {
     const def = content.capsules.get(id);
     view.muteDex = true;
-    const res = openCapsules(game, id, count, def.elementChoice ? element : null);
+    const res = openCapsules(game, id, count, def.elementChoice ? recycler.element : null);
     view.muteDex = false;
     refresh();
     if (!res.ok) {
@@ -65,7 +66,7 @@
       <h3>💊 {cap.def.name}</h3>
       <p class="muted small">{cap.def.description}</p>
       {#if cap.def.elementChoice}
-        <select bind:value={element}>
+        <select bind:value={recycler.element}>
           {#each content.elements.list as e (e.id)}<option value={e.id}>{e.name}</option>{/each}
         </select>
       {/if}
