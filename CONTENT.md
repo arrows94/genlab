@@ -114,6 +114,8 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 },
 ```
 
+Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
+
 ## Neues Upgrade / neue Forschung
 
 `src/content/upgrades.ts`:

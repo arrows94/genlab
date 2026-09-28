@@ -231,6 +231,11 @@ export interface MissionDef {
   /** resource → [min, max] */
   rewards: Record<string, [number, number]>;
   wildChance: number;
+  /**
+   * Guaranteed find (long journeys): the wild creature has at least this
+   * rarity and always finds a place, even in a full stable.
+   */
+  wildMinRarity?: string;
 }
 
 export interface DexRewardDef {

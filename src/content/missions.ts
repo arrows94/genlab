@@ -20,4 +20,18 @@ export const missions: MissionDef[] = [
     requires: { type: 'upgradeLevel', upgrade: 'cartographer', level: 6 },
     rewards: { gold: [500, 1500], catalyst: [1, 3] }, wildChance: 0.5, species: ['prismin', 'lumifly', 'ferrox'],
   },
+  // Tagesreisen – after the first inheritance: a camp and a creature are gone for half a day
+  // or a whole day, in exchange for a guaranteed rare find from every base species.
+  {
+    id: 'mistmoor', name: 'Nebelmoor', description: 'Tagesreise: Im Nebel verbergen sich seltene Kreaturen aller Elemente.', durationSec: 12 * 3600, cost: { food: 3000 },
+    requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+    rewards: { essence: [60, 150], catalyst: [2, 4], fragments: [10, 30] }, wildChance: 1, wildMinRarity: 'rare',
+    species: ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox', 'toxling', 'prismin'],
+  },
+  {
+    id: 'cloudridge', name: 'Wolkengrat', description: 'Tagesreise: Ein ganzer Tag über den Wolken – dort leben nur prächtige Exemplare.', durationSec: 24 * 3600, cost: { food: 12000 },
+    requires: { type: 'prestigeCount', layer: 'inheritance', count: 2 },
+    rewards: { essence: [150, 400], catalyst: [4, 8], fragments: [30, 80] }, wildChance: 1, wildMinRarity: 'epic',
+    species: ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox', 'toxling', 'prismin'],
+  },
 ];

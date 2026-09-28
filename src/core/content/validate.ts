@@ -204,6 +204,7 @@ export function validateContent(data: ContentData): string[] {
     amounts(`${w}.cost`, m.cost);
     num(`${w}.wildChance`, m.wildChance, 0, 1);
     m.species?.forEach((s) => ref(`${w}.species`, 'species', s));
+    ref(`${w}.wildMinRarity`, 'rarities', m.wildMinRarity);
     cond(`${w}.requires`, m.requires);
     for (const [res, range] of Object.entries(m.rewards)) {
       ref(`${w}.rewards`, 'resources', res);

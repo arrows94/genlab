@@ -12,7 +12,7 @@
   import { processRemainingMs } from '@core/systems/processes';
   import type { Condition } from '@core/content/types';
   import type { Creature } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
@@ -36,7 +36,11 @@
     frostpeak: { x: 560, y: 138, icon: '❄️', color: '#80deea' },
     shadowwood: { x: 318, y: 222, icon: '🦇', color: '#9575cd' },
     crystalcaves: { x: 490, y: 222, icon: '💠', color: '#f48fb1' },
+    mistmoor: { x: 405, y: 162, icon: '🌫️', color: '#a5b4c8' },
+    cloudridge: { x: 575, y: 42, icon: '☁️', color: '#e1bee7' },
   };
+  /** Journeys (Tagesreisen) take half a day or more. */
+  const JOURNEY_MS = 12 * 3_600_000;
   function place(id: string, i: number) {
     return layout[id] ?? { x: 140 + ((i * 97) % 440), y: 60 + ((i * 53) % 170), icon: '🧭', color: '#2fd3c4' };
   }
@@ -64,6 +68,7 @@
   }
   function lockText(cond: Condition | undefined): string {
     if (cond?.type === 'upgradeLevel') return `${content.upgrades.get(cond.upgrade).name} Stufe ${cond.level}`;
+    if (cond?.type === 'prestigeCount') return `nach der ${cond.count}. ${content.prestigeLayers.get(cond.layer).name}`;
     return 'noch nicht erschlossen';
   }
   const seen = (speciesId: string) => Object.keys(game.state.dex).some((k) => k.startsWith(`${speciesId}:`));
@@ -92,6 +97,8 @@
       def,
       pos: place(sel, content.missions.list.indexOf(def)),
       duration: missionDurationMs(game, sel),
+      journey: missionDurationMs(game, sel) >= JOURNEY_MS,
+      minRarity: def.wildMinRarity ? content.rarities.get(def.wildMinRarity) : null,
       wild: wildChance(game, sel),
       hint: game.state.features['hybrids'] ? hintChance(game, sel) : 0,
       species: missionSpecies(game, sel).map((id) => ({ s: content.species.get(id), seen: seen(id) })),
@@ -106,9 +113,12 @@
   function select(id: string) {
     if (missionAvailable(game, id)) viewState.expedition.region = id;
   }
-  function send() {
-    if (chosen === null) return;
-    if (act(startMission(game, chosen, data.sel))) chosen = null;
+  async function send() {
+    const c = data.chosenCreature;
+    if (!c) return;
+    // Journeys bind a creature and a camp for a long time – make that a conscious choice.
+    if (data.journey && !(await ask(`${c.name} ist ${formatDuration(data.duration)} unterwegs und fehlt so lange bei Arbeit, Zucht und Turm. Losschicken?`, { ok: 'Losschicken' }))) return;
+    if (act(startMission(game, c.id, data.sel))) chosen = null;
   }
 </script>
 
@@ -243,11 +253,14 @@
     </div>
 
     <div class="facts">
+      {#if data.journey}<span class="fact journey">🌙 Tagesreise</span>{/if}
       <span class="fact">⏱ <b class="num">{formatDuration(data.duration)}</b></span>
       <span class="fact">🐾 <b class="num">{formatPercent(data.wild, 0)}</b> wilde Kreatur</span>
+      {#if data.minRarity}<span class="fact" style="color: {data.minRarity.color}">✦ mindestens {data.minRarity.name}</span>{/if}
       {#if data.hint > 0}<span class="fact">📜 <b class="num">{formatPercent(data.hint, 0)}</b> Rezepthinweis</span>{/if}
     </div>
     <div class="meter" title="Chance auf eine wilde Kreatur"><div style="width: {data.wild * 100}%"></div></div>
+    {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.</p>{/if}
 
     <h4>Beute {#if data.chosenCreature}<span class="small muted">mit {data.chosenCreature.name} (×{formatNumber(data.factor, { decimals: 2 })})</span>{/if}</h4>
     <div class="loot">
@@ -383,6 +396,7 @@
   }
   .facts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .fact { padding: 0.15rem 0.55rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
+  .fact.journey { border-color: var(--violet); color: #d7c6ff; }
   .meter { height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; margin: 0.45rem 0 0.2rem; }
   .meter div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--rc)); }
   h4 { margin: 0.7rem 0 0.35rem; font-size: 0.9rem; }

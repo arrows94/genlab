@@ -3,6 +3,7 @@ import { createCreature, effectiveStats, findCreature } from '../creatures';
 import { grant, trySpend } from '../resources';
 import { toCost } from '../costs';
 import { checkCondition } from '../conditions';
+import { rarityWeights, rollRarity } from '../rarity';
 import { revealHint } from './hybrids';
 import { stableFree } from './stable';
 import { registerProcessHandler, startProcess } from '../systems/processes';
@@ -57,6 +58,16 @@ export function missionRewardFactor(ctx: GameContext, creature: Creature | undef
   return ctx.mods().apply('mission.reward', 1) * (1 + speed * ctx.balance.missions.statScaling);
 }
 
+/** Rarity with the usual (modified) weights, but at least `min`. */
+export function rollMinRarity(ctx: GameContext, min: string): string {
+  const floor = ctx.content.rarities.get(min).order;
+  const weights: Record<string, number> = {};
+  for (const [id, w] of Object.entries(rarityWeights(ctx.content, ctx.balance, ctx.mods()))) {
+    if (ctx.content.rarities.get(id).order >= floor && w > 0) weights[id] = w;
+  }
+  return Object.keys(weights).length > 0 ? rollRarity(ctx.rng, weights) : min;
+}
+
 export function startMission(ctx: GameContext, creatureId: number, missionId: string): ActionResult {
   if (!ctx.state.features['expedition']) return { ok: false, reason: 'Erkundung ist noch nicht freigeschaltet.' };
   if (!missionAvailable(ctx, missionId)) return { ok: false, reason: 'Dieses Gebiet ist noch nicht erschlossen.' };
@@ -94,7 +105,12 @@ registerProcessHandler(MISSION, {
     let wildCreatureId: number | null = null;
     if (ctx.rng.chance(wildChance(ctx, missionId))) {
       const pool = missionSpecies(ctx, missionId);
-      if (pool.length > 0 && stableFree(ctx) > 0) wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), source: 'wild' }).id;
+      // A guaranteed find (journeys) always joins, even above the stable capacity.
+      const guaranteed = def.wildMinRarity !== undefined;
+      if (pool.length > 0 && (guaranteed || stableFree(ctx) > 0)) {
+        const rarity = def.wildMinRarity ? rollMinRarity(ctx, def.wildMinRarity) : undefined;
+        wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), rarity, source: 'wild' }).id;
+      }
       else if (pool.length > 0) {
         // Stable full: the wild creature is released; the player gets its sell value in gold.
         const value = ctx.balance.sell.valueByRarity['common'] ?? {};

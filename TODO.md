@@ -105,12 +105,14 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Schritt 2 – Lange Projekte neben den kurzen (nicht statt der kurzen)
 
-- [ ] **Tagesreise** (12–24 h) mit garantiert seltenen Funden
+- [x] **Tagesreise** (12–24 h) mit garantiert seltenen Funden
+      (Nebelmoor 12 h ab Selten nach der 1. Vererbung, Wolkengrat 24 h ab Episch nach der 2.)
 - [ ] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
       (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“)
 - [ ] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
 - [ ] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
 - [ ] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
+      (Tagesreisen belegen bereits ein Camp und die Kreatur)
       („beste Kreatur eine Woche wegschicken oder im Turm einsetzen?“)
 
 ## Schritt 3 – Beschäftigung „in der Zwischenzeit“
