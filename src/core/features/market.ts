@@ -42,7 +42,8 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
     const bonus = def.statBonus ?? 0;
     if ((c!.boosts[stat] ?? 0) + bonus > ctx.balance.market.maxBoostsPerStat * bonus + 1e-9) return { ok: false, reason: 'Dieser Wert ist bereits voll gestärkt.' };
   }
-  if (def.kind === 'timeSkip' && ctx.state.processes.length === 0) return { ok: false, reason: 'Es laufen keine Vorgänge.' };
+  const shortMs = ctx.balance.timeCrystals.longProjectHours * 3_600_000;
+  if (def.kind === 'timeSkip' && !ctx.state.processes.some((p) => p.durationMs < shortMs)) return { ok: false, reason: 'Es laufen keine kurzen Vorgänge – lange Projekte brauchen Zeitkristalle.' };
   if (!trySpend(ctx, potionCost(ctx, potionId, creatureId))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
 
   switch (def.kind) {
@@ -58,7 +59,7 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
       addBuff(ctx, def.id, def.modifiers ?? [], (def.durationSec ?? 0) * 1000);
       break;
     case 'timeSkip':
-      skipProcessTime(ctx, (def.skipSec ?? 0) * 1000);
+      skipProcessTime(ctx, (def.skipSec ?? 0) * 1000, shortMs);
       break;
   }
   ctx.bus.emit('potionUsed', { potion: def.id, creatureId: c?.id ?? null });

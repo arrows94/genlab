@@ -122,7 +122,9 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 - [x] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
 - [x] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
       (Treue-Kalender mit 7 Stufen, rückt pro Abholung vor statt pro Kalendertag)
-- [ ] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
+- [x] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
+      (Aufträge ab Stufe 3, Tagesbelohnung Tag 7, Turm-Rekord alle 25 Etagen; −4 h pro Kristall.
+      Der Markt-Trank heißt jetzt Zeittrank und wirkt nur noch auf Vorgänge unter 1 h)
 
 ## Schritt 4 – Große Ziele
 

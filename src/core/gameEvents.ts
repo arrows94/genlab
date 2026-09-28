@@ -14,6 +14,7 @@ export interface GameEvents {
   contractCompleted: { template: string; creatureId: number; level: number };
   deepSequenced: { creatureId: number; latent: string | null; awakened: boolean };
   dailyClaimed: { step: number };
+  timeCrystalUsed: { processId: number; kind: string };
   voyageReturned: { destination: string };
   voyageResolved: { destination: string; decision: string; option: number; creatureId: number | null };
   buffExpired: { buffId: number; source: string };

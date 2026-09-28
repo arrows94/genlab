@@ -13,6 +13,7 @@
   import DnaHelix from './DnaHelix.svelte';
   import DnaSequence from './DnaSequence.svelte';
   import SplicingBench from './SplicingBench.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
 
   let toSequence = $state<number | null>(null);
   let inspect = $state<number | null>(null);
@@ -65,7 +66,7 @@
       <div class="running" class:deep={r.deep}>
         <span>{r.name}{#if r.deep}<span class="small deep-tag">&ensp;· Tiefensequenzierung</span>{/if}</span>
         <DnaHelix progress={r.progress} pairs={14} width={180} height={30} />
-        <span class="num small muted">noch {formatDuration(r.remaining)}</span>
+        <span class="num small muted">noch {formatDuration(r.remaining)} <CrystalSkip process={game.state.processes.find((p) => p.id === r.id)} /></span>
       </div>
     {/each}
     {#if data.used < data.slots}

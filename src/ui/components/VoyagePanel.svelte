@@ -14,6 +14,7 @@
   import type { Creature } from '@core/state';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CostLabel from './CostLabel.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
@@ -49,6 +50,7 @@
       duration: voyageDurationMs(game),
       running: proc
         ? {
+            proc,
             progress: Math.min(1, proc.elapsedMs / proc.durationMs),
             remaining: processRemainingMs(game, proc),
             team: (proc.data as VoyageData).team.map((id) => findCreature(game, id)).filter((c): c is Creature => !!c),
@@ -131,6 +133,7 @@
         <span class="member"><CreatureSvg appearance={look(c)} shape={sp.shape} tier={sp.tier} size={34} /><small>{c.name}</small></span>
       {/each}
       <span class="small num muted">noch {formatDuration(data.running.remaining)}</span>
+      <CrystalSkip process={data.running.proc} />
     </div>
     <div class="track" title="{formatPercent(data.running.progress, 0)} der Reise">
       <div class="fill" style="width: {data.running.progress * 100}%"></div>

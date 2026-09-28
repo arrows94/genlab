@@ -44,9 +44,9 @@ export function processRemainingMs(ctx: GameContext, p: Process): number {
   return Math.max(0, (p.durationMs - p.elapsedMs) / speed);
 }
 
-/** Skips time on all running processes (time crystal). */
-export function skipProcessTime(ctx: GameContext, ms: number): void {
-  for (const p of ctx.state.processes) p.elapsedMs = Math.min(p.durationMs, p.elapsedMs + ms);
+/** Skips time on running processes shorter than `maxDurationMs` (Zeittrank: only short ones). */
+export function skipProcessTime(ctx: GameContext, ms: number, maxDurationMs = Infinity): void {
+  for (const p of ctx.state.processes) if (p.durationMs < maxDurationMs) p.elapsedMs = Math.min(p.durationMs, p.elapsedMs + ms);
 }
 
 export const processSystem: System = {

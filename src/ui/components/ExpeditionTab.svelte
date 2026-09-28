@@ -17,6 +17,7 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
   import VoyagePanel from './VoyagePanel.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
   import { runningVoyage, type VoyageData } from '@core/features/voyage';
 
   /**
@@ -92,7 +93,7 @@
     const chosenCreature = chosen !== null ? findCreature(game, chosen) : undefined;
     const vp = runningVoyage(game);
     const voyage = vp
-      ? { dest: content.voyageDestinations.get((vp.data as VoyageData).destination), progress: Math.min(1, vp.elapsedMs / vp.durationMs), remaining: processRemainingMs(game, vp), size: (vp.data as VoyageData).team.length }
+      ? { proc: vp, dest: content.voyageDestinations.get((vp.data as VoyageData).destination), progress: Math.min(1, vp.elapsedMs / vp.durationMs), remaining: processRemainingMs(game, vp), size: (vp.data as VoyageData).team.length }
       : null;
     return {
       slots: campSlots(game),
@@ -237,7 +238,7 @@
         <div class="camp-info">
           <b>🗺️ {data.voyage.dest.name}</b>
           <span class="small muted">Wochenexpedition · {data.voyage.size} {data.voyage.size === 1 ? 'Kreatur' : 'Kreaturen'}</span>
-          <span class="small num">noch {formatDuration(data.voyage.remaining)}</span>
+          <span class="small num">noch {formatDuration(data.voyage.remaining)} <CrystalSkip process={data.voyage.proc} /></span>
         </div>
       </article>
     {:else if r}
@@ -256,7 +257,7 @@
         <div class="camp-info">
           <b>{pos.icon} {r.mission.name}</b>
           <span class="small muted">{r.creature?.name ?? '?'} · {r.progress < 0.5 ? 'unterwegs' : 'auf dem Rückweg'}</span>
-          <span class="small num">noch {formatDuration(r.remaining)}</span>
+          <span class="small num">noch {formatDuration(r.remaining)} <CrystalSkip process={game.state.processes.find((p) => p.id === r.id)} /></span>
         </div>
       </article>
     {:else}

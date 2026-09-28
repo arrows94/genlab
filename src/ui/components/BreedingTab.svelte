@@ -17,6 +17,7 @@
   import DnaHelix from './DnaHelix.svelte';
   import EggSvg from './EggSvg.svelte';
   import BreedingPlanner from './BreedingPlanner.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -190,6 +191,7 @@
         <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
         <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
         <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span> {/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+        <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
       {:else}
         <span class="small muted">Freies Nest</span>
       {/if}

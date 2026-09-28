@@ -54,7 +54,7 @@ describe('market potions', () => {
     expect(g.mods().apply('production.gold', 1)).toBeCloseTo(1.5);
   });
 
-  it('Zeitkristall shortens running processes', () => {
+  it('Zeittrank shortens running short processes', () => {
     const g = marketGame();
     expect(usePotion(g, 'timeCrystal').ok).toBe(false);
     const p = startProcess(g, 'test-crystal', 1_000_000);

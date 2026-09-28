@@ -49,6 +49,14 @@ export interface Balance {
     /** With the Urgen talent: chance to awaken an Urgen allele. */
     primalAwaken: number;
   };
+  timeCrystals: {
+    /** Hours one crystal takes off a long project. */
+    skipHours: number;
+    /** Projects at least this long are "long": only crystals shorten them, potions don't. */
+    longProjectHours: number;
+    /** A crystal for every new tower record at a multiple of this floor. */
+    towerEvery: number;
+  };
   daily: {
     /**
      * Treue-Kalender: one step per claim (not per calendar day, so a break
