@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt.
 
 ## Höchste Wirkung
 
@@ -32,10 +32,11 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
 
 ## Auch lohnend
 
-- [ ] **Markt**
-  - [ ] Ladentresen mit Tränken als Flaschen-Grafik
-  - [ ] Zielkreatur per Kachel statt Menü wählen
-  - [ ] Aktive Effekte (Festmahl, Turbo-Trank) als Timer mit Restzeit
+- [x] **Markt**
+  - [x] Ladentresen mit Tränken als Flaschen-Grafik (Form je Trankart, Farbe als `color` in `potions.ts`)
+  - [x] Zielkreatur per Kachel statt Menü wählen (Turbo: Arbeiter mit Ertrag zuerst; Kraftfutter:
+        Wertewahl mit bisherigen Stärkungen als Pips)
+  - [x] Aktive Effekte (Festmahl, Turbo-Trank) als Timer mit Restzeit
 - [ ] **Monster-Dex**
   - [ ] Entdeckte Arten mit Bild, unbekannte als Silhouette
   - [ ] Fortschrittsring pro Kategorie

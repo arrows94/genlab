@@ -217,6 +217,8 @@ export interface PotionDef {
   name: string;
   description: string;
   kind: PotionKind;
+  /** Liquid colour of the bottle on the market shelf. */
+  color?: string;
   cost: ResourceAmounts;
   /** permanentStat: cost growth per use on the same creature. */
   costGrowth?: number;
