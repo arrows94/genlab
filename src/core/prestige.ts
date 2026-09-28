@@ -2,6 +2,7 @@ import { D, type Decimal } from './num';
 import { createCreature } from './creatures';
 import { grant } from './resources';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
+import { survivesReset } from './systems/processes';
 import type { PrestigeLayerDef } from './content/types';
 import type { GameContext } from './context';
 import type { ActionResult } from './actions';
@@ -32,12 +33,15 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   const r = layer.resets;
   for (const res of r.resources) s.resources[res] = D(ctx.balance.start.resources[res] ?? 0);
   s.earned = {};
+  // Travellers (Tagesreisen, Wochenexpedition) are not at home: they and their journey survive.
+  const kept = s.processes.filter((p) => survivesReset(ctx, p));
+  const away = new Set(kept.map((p) => String(p.id)));
   if (r.creatures) {
-    s.creatures = [];
+    s.creatures = s.creatures.filter((c) => c.job?.kind === 'mission' && away.has(c.job.target));
     s.tower.run = null;
     s.tower.team = [];
   }
-  if (r.processes) s.processes = [];
+  if (r.processes) s.processes = kept;
   if (r.buffs) s.buffs = [];
   if (r.dex) s.dex = {};
   if (r.features) s.features = {};
@@ -47,9 +51,33 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   }
   ctx.invalidate();
   applyTalentGuarantees(ctx);
-  if (s.creatures.length === 0) {
+  if (s.creatures.every((c) => c.job?.kind === 'mission')) {
     createCreature(ctx, { speciesId: ctx.balance.start.species, rarity: ctx.balance.start.rarity, source: 'start' });
   }
+}
+
+/**
+ * What a reset does to running projects, for the confirmation: travellers
+ * keep going, long work in the lab (≥ 1 h, e.g. deep sequencing, ritual
+ * eggs) is lost.
+ */
+export function resetImpact(ctx: GameContext): { travelling: number; lostLong: number } {
+  let travelling = 0;
+  let lostLong = 0;
+  for (const p of ctx.state.processes) {
+    if (survivesReset(ctx, p)) travelling++;
+    else if (p.durationMs >= 3_600_000) lostLong++;
+  }
+  return { travelling, lostLong };
+}
+
+/** Text for the confirmation dialog (empty when nothing long is running). */
+export function resetImpactText(ctx: GameContext): string {
+  const { travelling, lostLong } = resetImpact(ctx);
+  const parts: string[] = [];
+  if (lostLong > 0) parts.push(`${lostLong === 1 ? 'Ein langes Projekt im Labor geht' : `${lostLong} lange Projekte im Labor gehen`} verloren (z. B. Tiefensequenzierung, Brutritual).`);
+  if (travelling > 0) parts.push(`${travelling === 1 ? 'Eine Reise läuft' : `${travelling} Reisen laufen`} weiter – die Reisenden kommen in den neuen Durchlauf zurück.`);
+  return parts.join(' ');
 }
 
 /** Talent effects that must survive resets: permanent features and start resources. */

@@ -22,16 +22,17 @@ export const missions: MissionDef[] = [
   },
   // Tagesreisen – after the first inheritance: a camp and a creature are gone for half a day
   // or a whole day, in exchange for a guaranteed rare find from every base species.
+  // One team per journey at a time, so they cannot fill every camp (balancing with the bot).
   {
     id: 'mistmoor', name: 'Nebelmoor', description: 'Tagesreise: Im Nebel verbergen sich seltene Kreaturen aller Elemente.', durationSec: 12 * 3600, cost: { food: 3000 },
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
-    rewards: { essence: [60, 150], catalyst: [2, 4], fragments: [10, 30] }, wildChance: 1, wildMinRarity: 'rare',
+    rewards: { essence: [60, 150], catalyst: [2, 4], fragments: [10, 30] }, wildChance: 1, wildMinRarity: 'rare', maxConcurrent: 1,
     species: ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox', 'toxling', 'prismin'],
   },
   {
     id: 'cloudridge', name: 'Wolkengrat', description: 'Tagesreise: Ein ganzer Tag über den Wolken – dort leben nur prächtige Exemplare.', durationSec: 24 * 3600, cost: { food: 12000 },
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 2 },
-    rewards: { essence: [150, 400], catalyst: [4, 8], fragments: [30, 80] }, wildChance: 1, wildMinRarity: 'epic',
+    rewards: { essence: [150, 400], catalyst: [4, 8], fragments: [30, 80] }, wildChance: 1, wildMinRarity: 'epic', maxConcurrent: 1,
     species: ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox', 'toxling', 'prismin'],
   },
 ];

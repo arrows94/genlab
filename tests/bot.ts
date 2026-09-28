@@ -1,13 +1,14 @@
 import { assignJob, buyUpgrade, collect, nextUpgradeCost } from '@core/actions';
 import { canAfford } from '@core/costs';
 import { breedingCost, eggs, nestSlots, offspringGeneration, startBreeding } from '@core/features/breeding';
-import { campSlots, runningMissions, startMission } from '@core/features/expedition';
+import { campSlots, campsUsed, startMission } from '@core/features/expedition';
 import { jobCount, jobSlots } from '@core/systems/production';
 import { visibleUpgrades } from '@core/queries';
 import { creaturePower } from '@core/creatures';
 import type { Game } from '@core/game';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import { canConsume, sell, stableFree } from '@core/features/stable';
+import { useLongTermSystems } from './longrun';
 
 export interface TimelineEntry {
   min: number;
@@ -22,10 +23,16 @@ export interface BotOptions {
   clicksPerSec?: number;
   /** Perform an inheritance once the gain reaches this many heritage points. */
   prestigeAt?: number;
+  /** Also require the gain to be this share of the heritage already owned (later resets need more). */
+  prestigeGrowth?: number;
+  /** Use the long-term systems (contracts, journeys, voyages, rituals, deep sequencing). */
+  longTerm?: boolean;
+  /** Move the wall clock with the simulation (daily/weekly systems follow it). */
+  wallClock?: boolean;
 }
 
 export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}): TimelineEntry[] {
-  const { clicksPerSec = 2, prestigeAt = 0 } = typeof opts === 'number' ? { clicksPerSec: opts } : opts;
+  const { clicksPerSec = 2, prestigeAt = 0, prestigeGrowth = 0, longTerm = false, wallClock = false } = typeof opts === 'number' ? { clicksPerSec: opts } : opts;
   const timeline: TimelineEntry[] = [];
   const now = () => Math.round((g.state.simTimeMs / 60_000) * 10) / 10;
   g.bus.on('featureUnlocked', (e) => timeline.push({ min: now(), what: `Freigeschaltet: ${e.feature}` }));
@@ -68,8 +75,11 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
       }
     }
 
+    // Long-term systems first: they claim camps, nests and sequencers before the short loop.
+    if (longTerm && sec % 10 === 0) useLongTermSystems(g);
+
     // Missions: short missions whenever a camp is free and food allows.
-    if (g.state.features.expedition && runningMissions(g).length < campSlots(g)) {
+    if (g.state.features.expedition && campsUsed(g) < campSlots(g)) {
       const idle = g.state.creatures.find((c) => c.job === null);
       if (idle && g.state.resources.food!.gte(100)) startMission(g, idle.id, 'short');
     }
@@ -83,8 +93,13 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
       if (!idle || !open[0] || !assignJob(g, idle.id, open[0].id).ok) break;
     }
 
-    if (prestigeAt > 0 && g.state.features.inheritance && prestigeGain(g, 'inheritance').gte(prestigeAt)) performPrestige(g, 'inheritance');
+    if (prestigeAt > 0 && g.state.features.inheritance) {
+      const gain = prestigeGain(g, 'inheritance');
+      const owned = g.state.resources.heritage?.toNumber() ?? 0;
+      if (gain.gte(prestigeAt) && gain.gte(owned * prestigeGrowth)) performPrestige(g, 'inheritance');
+    }
 
+    if (wallClock) g.state.lastTickAt += 1000;
     g.advance(1000);
   }
   return timeline;

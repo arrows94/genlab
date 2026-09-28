@@ -59,7 +59,7 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [x] Belohnungen: Äon-Splitter, seltene Allele (Genproben)
   - [ ] Belohnung: kosmetische Muster (braucht neue Muster im Kreaturen-SVG)
   - [x] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
-  - [ ] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
+  - [x] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
 - [ ] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
   - [ ] 2–3 weitere Stufen mit spielverändernden Talenten (z. B. Eier verdoppeln Eltern-Fähigkeiten,
         Expeditionen bringen Hybride, Turm startet ab dem halben Rekord)
@@ -136,4 +136,5 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 - [ ] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
 - [ ] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen
-- [ ] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
+- [x] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
+      (`tests/longrun.ts`; Funde: Reisende überstehen jetzt Vererbungen, eine Tagesreise pro Region gleichzeitig)

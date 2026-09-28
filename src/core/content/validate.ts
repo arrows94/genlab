@@ -205,6 +205,7 @@ export function validateContent(data: ContentData): string[] {
     num(`${w}.wildChance`, m.wildChance, 0, 1);
     m.species?.forEach((s) => ref(`${w}.species`, 'species', s));
     ref(`${w}.wildMinRarity`, 'rarities', m.wildMinRarity);
+    if (m.maxConcurrent !== undefined) num(`${w}.maxConcurrent`, m.maxConcurrent, 1);
     cond(`${w}.requires`, m.requires);
     for (const [res, range] of Object.entries(m.rewards)) {
       ref(`${w}.rewards`, 'resources', res);

@@ -6,7 +6,7 @@ import { checkCondition } from '../conditions';
 import { rarityWeights, rollRarity } from '../rarity';
 import { revealHint } from './hybrids';
 import { stableFree } from './stable';
-import { registerProcessHandler, startProcess } from '../systems/processes';
+import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
@@ -17,6 +17,15 @@ export interface MissionData extends Record<string, unknown> {
   missionId: string;
   creatureId: number;
 }
+
+/** Missions of at least this length are Tagesreisen: they survive an inheritance. */
+export const JOURNEY_SEC = 12 * 3600;
+
+export function isJourney(ctx: GameContext, missionId: string): boolean {
+  return ctx.content.missions.has(missionId) && ctx.content.missions.get(missionId).durationSec >= JOURNEY_SEC;
+}
+
+registerResetSurvivor((ctx, p) => p.kind === MISSION && isJourney(ctx, (p.data as MissionData).missionId));
 
 export function campSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.camp', ctx.balance.missions.baseCamps));
@@ -86,6 +95,9 @@ export function startMission(ctx: GameContext, creatureId: number, missionId: st
   if (c.job && c.job.kind !== 'building') return { ok: false, reason: 'Die Kreatur ist beschäftigt.' };
   if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
   const def = ctx.content.missions.get(missionId);
+  if (def.maxConcurrent !== undefined && runningMissions(ctx).filter((p) => (p.data as MissionData).missionId === missionId).length >= def.maxConcurrent) {
+    return { ok: false, reason: 'Dorthin ist bereits ein Team unterwegs.' };
+  }
   if (!trySpend(ctx, toCost(def.cost))) return { ok: false, reason: 'Nicht genug Nahrung.' };
   const data: MissionData = { missionId, creatureId };
   const proc = startProcess(ctx, MISSION, missionDurationMs(ctx, missionId), data);

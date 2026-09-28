@@ -18,6 +18,19 @@ export function getProcessHandler(kind: string): ProcessHandler | undefined {
   return handlers.get(kind);
 }
 
+/**
+ * Processes that keep running through a prestige reset (travellers are not in
+ * the lab). Features register a predicate for their kinds.
+ */
+const resetSurvivors: ((ctx: GameContext, p: Process) => boolean)[] = [];
+export function registerResetSurvivor(test: (ctx: GameContext, p: Process) => boolean): void {
+  resetSurvivors.push(test);
+}
+
+export function survivesReset(ctx: GameContext, p: Process): boolean {
+  return resetSurvivors.some((test) => test(ctx, p));
+}
+
 export function startProcess(ctx: GameContext, kind: string, durationMs: number, data: Record<string, unknown> = {}): Process {
   const process: Process = { id: ctx.state.nextId++, kind, durationMs, elapsedMs: 0, data };
   ctx.state.processes.push(process);

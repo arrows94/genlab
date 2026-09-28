@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature } from '@core/creatures';
 import { startMission } from '@core/features/expedition';
+import { startDeepSequencing } from '@core/features/deepSequencing';
+import { revealGenome } from '@core/features/sequencing';
+import { performPrestige, resetImpactText } from '@core/prestige';
 import {
   optionRewards,
   pendingDecision,
@@ -147,5 +150,48 @@ describe('Wochenexpedition', () => {
     const old = JSON.parse(serialize(makeGame().state, NOW));
     delete old.state.voyage;
     expect(deserialize(JSON.stringify(old)).state.voyage).toEqual({ pending: null, nextBonus: 0 });
+  });
+});
+
+describe('long projects and inheritance', () => {
+  it('travellers keep going through an inheritance, lab work does not', () => {
+    const g = voyageGame();
+    unlockFeature(g, 'inheritance');
+    unlockFeature(g, 'sequencing');
+    g.state.prestige.inheritance = { count: 2 };
+    unlockFeature(g, 'deepSequencing');
+    g.state.resources.essence = D(1e6);
+    // Two camps: one for the voyage, one for a journey.
+    const camp = content.upgrades.list.find((u) => u.modifiers.some((m) => m.target === 'slots.camp'))!;
+    g.state.upgrades[camp.id] = 1;
+    g.invalidate();
+    const [, a, b, c] = g.state.creatures;
+    expect(startVoyage(g, [a!.id]).ok).toBe(true);
+    expect(startMission(g, b!.id, 'mistmoor').ok).toBe(true);
+    revealGenome(g, c!);
+    expect(startDeepSequencing(g, c!.id).ok).toBe(true);
+    g.state.earned.food = D(1e12);
+    g.state.earned.gold = D(1e12);
+
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    // Voyage and journey with their travellers survive, the deep sequencing (lab) is gone.
+    expect(g.state.processes.map((p) => p.kind).sort()).toEqual(['mission', 'voyage']);
+    expect(g.state.creatures.map((x) => x.id)).toEqual(expect.arrayContaining([a!.id, b!.id]));
+    expect(g.state.creatures.some((x) => x.id === c!.id)).toBe(false);
+    // A fresh start creature is at home.
+    expect(g.state.creatures.filter((x) => x.job === null)).toHaveLength(1);
+
+    g.simulateOffline(voyageDurationMs(g) + 1000);
+    expect(g.state.voyage.pending).not.toBeNull();
+    expect(g.state.creatures.find((x) => x.id === a!.id)?.job).toBeNull();
+  });
+});
+
+describe('reset impact text', () => {
+  it('names lost lab work and travellers', () => {
+    const g = voyageGame();
+    expect(resetImpactText(g)).toBe('');
+    expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
+    expect(resetImpactText(g)).toContain('Eine Reise läuft weiter');
   });
 });

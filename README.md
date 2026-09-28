@@ -83,6 +83,13 @@ tests/         Vitest-Tests für die Core-Logik
 GENLAB_TIMELINE=1 npx vitest run tests/progression.test.ts --silent=false
 ```
 
+`tests/longrun.test.ts` spielt mehrere Tage wie ein Idle-Spieler (3 Besuche à 20 Minuten pro Tag, dazwischen Offline-Fortschritt nach echter Uhr) und nutzt dabei Gen-Aufträge, Tagesreisen, Wochenexpedition, Brutrituale und Tiefensequenzierung (`tests/longrun.ts`). Geprüft wird, dass die Systeme genutzt werden und höchstens 25 % des Einkommens ausmachen. Die Tagestabelle und ein Zwei-Wochen-Lauf (dauert einige Minuten):
+
+```bash
+GENLAB_TIMELINE=1 npx vitest run tests/longrun.test.ts --silent=false
+GENLAB_LONGRUN=1 npx vitest run tests/longrun.test.ts --silent=false
+```
+
 Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 
 ## Stand

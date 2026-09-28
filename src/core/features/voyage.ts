@@ -3,7 +3,7 @@ import { createCreature, findCreature } from '../creatures';
 import { catalogueSamples } from '../genetics';
 import { grant, trySpend } from '../resources';
 import { hashSeed } from '../rng';
-import { registerProcessHandler, startProcess } from '../systems/processes';
+import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import { toCost } from '../costs';
 import type { VoyageDecisionDef, VoyageDestinationDef, VoyageEventDef } from '../content/types';
 import type { GameContext } from '../context';
@@ -23,6 +23,8 @@ import { mutationForWeek, weekIndex } from './weekly';
  */
 export const VOYAGE = 'voyage';
 registerCampProcess(VOYAGE);
+// The team is far away – an inheritance at home does not call it back.
+registerResetSurvivor((_ctx, p) => p.kind === VOYAGE);
 
 const DAY_MS = 86_400_000;
 

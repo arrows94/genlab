@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    campSlots, campsUsed, hintChance, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
+    campSlots, campsUsed, hintChance, isJourney, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
     type MissionData,
   } from '@core/features/expedition';
   import { processRemainingMs } from '@core/systems/processes';
@@ -41,8 +41,7 @@
     mistmoor: { x: 405, y: 162, icon: '🌫️', color: '#a5b4c8' },
     cloudridge: { x: 575, y: 42, icon: '☁️', color: '#e1bee7' },
   };
-  /** Journeys (Tagesreisen) take half a day or more. */
-  const JOURNEY_MS = 12 * 3_600_000;
+
   function place(id: string, i: number) {
     return layout[id] ?? { x: 140 + ((i * 97) % 440), y: 60 + ((i * 53) % 170), icon: '🧭', color: '#2fd3c4' };
   }
@@ -106,8 +105,9 @@
       def,
       pos: place(sel, content.missions.list.indexOf(def)),
       duration: missionDurationMs(game, sel),
-      journey: missionDurationMs(game, sel) >= JOURNEY_MS,
+      journey: isJourney(game, sel),
       minRarity: def.wildMinRarity ? content.rarities.get(def.wildMinRarity) : null,
+      regionFull: def.maxConcurrent !== undefined && running.filter((r) => r.missionId === sel).length >= def.maxConcurrent,
       wild: wildChance(game, sel),
       hint: game.state.features['hybrids'] ? hintChance(game, sel) : 0,
       species: missionSpecies(game, sel).map((id) => ({ s: content.species.get(id), seen: seen(id) })),
@@ -286,7 +286,7 @@
       {#if data.hint > 0}<span class="fact">📜 <b class="num">{formatPercent(data.hint, 0)}</b> Rezepthinweis</span>{/if}
     </div>
     <div class="meter" title="Chance auf eine wilde Kreatur"><div style="width: {data.wild * 100}%"></div></div>
-    {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.</p>{/if}
+    {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.{#if data.def.maxConcurrent} Nur {data.def.maxConcurrent === 1 ? 'ein Team' : `${data.def.maxConcurrent} Teams`} gleichzeitig.{/if}</p>{/if}
 
     <h4>Beute {#if data.chosenCreature}<span class="small muted">mit {data.chosenCreature.name} (×{formatNumber(data.factor, { decimals: 2 })})</span>{/if}</h4>
     <div class="loot">
@@ -338,7 +338,7 @@
         {/each}
       </div>
     {/if}
-    <button class="primary go" disabled={chosen === null || !data.affordable || data.used >= data.slots} onclick={send}>
+    <button class="primary go" disabled={chosen === null || !data.affordable || data.used >= data.slots || data.regionFull} onclick={send}>
       🧭 Nach {data.def.name} schicken · <CostLabel cost={data.cost} />
     </button>
   </article>

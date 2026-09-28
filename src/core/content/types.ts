@@ -236,6 +236,8 @@ export interface MissionDef {
    * rarity and always finds a place, even in a full stable.
    */
   wildMinRarity?: string;
+  /** Teams allowed on this mission at the same time (journeys: 1). */
+  maxConcurrent?: number;
 }
 
 export interface DexRewardDef {
