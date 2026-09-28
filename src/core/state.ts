@@ -115,6 +115,32 @@ export interface TowerState {
   } | null;
 }
 
+/** A concrete requirement of an offered Gen-Auftrag (parameters rolled). */
+export type ContractRequirement =
+  | { kind: 'expresses'; locus: string; allele: string }
+  | { kind: 'genotype'; locus: string; allele: string }
+  | { kind: 'element'; element: string }
+  | { kind: 'minTier'; tier: string }
+  | { kind: 'topLoci'; count: number; homozygous: boolean }
+  | { kind: 'minRarity'; rarity: string }
+  | { kind: 'minGeneration'; generation: number };
+
+export interface ContractOffer {
+  template: string;
+  requirements: ContractRequirement[];
+  done: boolean;
+}
+
+export interface ContractsState {
+  /** UTC day index of the current board (-1 = none yet). */
+  day: number;
+  offers: ContractOffer[];
+  /** Exchanges used today. */
+  rerolls: number;
+  /** Completed contracts ever (drives the contract level; survives every reset). */
+  completed: number;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -153,6 +179,7 @@ export interface GameState {
   anomaliesCompleted: Record<string, boolean>;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
+  contracts: ContractsState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -184,6 +211,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomaly: null,
     anomaliesCompleted: {},
     perfection: { perfect: {}, shiny: {} },
+    contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
   };
 }
 

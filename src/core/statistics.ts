@@ -58,6 +58,7 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
     bus.on('anomalyCompleted', () => inc('anomaliesCompleted')),
     bus.on('perfectGenome', () => inc('perfectGenomes')),
     bus.on('shiny', () => inc('shinies')),
+    bus.on('contractCompleted', () => inc('contracts')),
     bus.on('capsuleOpened', (e) => {
       inc('capsulesOpened');
       if (e.pity) inc('capsulePity');

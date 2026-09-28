@@ -15,6 +15,12 @@ export const balance: Balance = {
     capHours: 12,
     summaryMinSec: 60,
   },
+  contracts: {
+    offersPerDay: 3,
+    rerollsPerDay: 1,
+    levelThresholds: [0, 4, 12, 30, 60],
+    dayStartHourUtc: 4,
+  },
   notifications: {
     minDurationSec: 120,
     groupSec: 300,

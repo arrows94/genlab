@@ -20,6 +20,16 @@ export interface Balance {
     /** Offline summaries are only shown for absences longer than this. */
     summaryMinSec: number;
   };
+  contracts: {
+    /** Offers on the board per (UTC) day. */
+    offersPerDay: number;
+    /** Free exchanges of an open offer per day. */
+    rerollsPerDay: number;
+    /** Completed contracts needed for level 1, 2, 3 … */
+    levelThresholds: number[];
+    /** A new board appears at this hour (UTC) – 4 = early morning in Europe. */
+    dayStartHourUtc: number;
+  };
   notifications: {
     /** Only processes at least this long announce their end (no pings for 20 s eggs). */
     minDurationSec: number;

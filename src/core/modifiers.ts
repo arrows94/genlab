@@ -48,6 +48,7 @@ export const MODIFIER_ROOTS = [
   'tower', // tower.damage, tower.elementDamage
   'element', // element.<id>.production
   'creature',
+  'contracts', // contracts.reward
 ] as const;
 
 const TARGET_PATTERN = /^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9_*-]+)*$/;

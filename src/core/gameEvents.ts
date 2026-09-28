@@ -11,6 +11,7 @@ export interface GameEvents {
   dexDiscovered: { species: string; rarity: string };
   processStarted: { processId: number; kind: string };
   processCompleted: { processId: number; kind: string };
+  contractCompleted: { template: string; creatureId: number; level: number };
   buffExpired: { buffId: number; source: string };
   achievementUnlocked: { achievement: string };
   prestige: { layer: string; gain: Decimal };

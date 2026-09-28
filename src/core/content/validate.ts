@@ -269,6 +269,49 @@ export function validateContent(data: ContentData): string[] {
   }
   for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
   for (const g of data.genes) cond(`${at('genes', g.id)}.requires`, g.requires);
+  const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic'];
+  for (const t of data.contracts) {
+    const w = at('contracts', t.id);
+    text(`${w}.name`, t.name);
+    text(`${w}.client`, t.client);
+    num(`${w}.level`, t.level, 1);
+    num(`${w}.weight`, t.weight, 0);
+    cond(`${w}.requires`, t.requires);
+    if (!Array.isArray(t.requirements) || t.requirements.length === 0) issues.push(`${w}.requirements: mindestens eine Anforderung`);
+    (t.requirements ?? []).forEach((r, i) => {
+      const rw = `${w}.requirements[${i}]`;
+      switch (r.kind) {
+        case 'expresses':
+        case 'genotype': {
+          ref(rw, 'genes', r.locus);
+          const locus = r.locus ? data.genes.find((g) => g.id === r.locus) : undefined;
+          if (r.allele && !r.locus) issues.push(`${rw}: allele nur zusammen mit locus`);
+          if (locus && r.allele && !locus.alleles.some((a) => a.id === r.allele)) issues.push(`${rw}: unbekanntes Allel "${r.allele}" in ${locus.id}`);
+          break;
+        }
+        case 'element':
+          ref(rw, 'elements', r.element);
+          break;
+        case 'minTier':
+          if (!tiers.includes(r.tier)) issues.push(`${rw}: unbekannte Stufe "${r.tier}"`);
+          break;
+        case 'topLoci':
+          num(`${rw}.count`, r.count, 1, data.genes.filter((g) => g.alleles.some((a) => a.top)).length);
+          break;
+        case 'minRarity':
+          ref(rw, 'rarities', r.rarity);
+          break;
+        case 'minGeneration':
+          num(`${rw}.generation`, r.generation, 1);
+          break;
+        default:
+          issues.push(`${rw}: unbekannte Anforderung "${(r as { kind: string }).kind}"`);
+      }
+    });
+    amounts(`${w}.reward.resources`, t.reward.resources);
+    if (t.reward.minutes !== undefined) num(`${w}.reward.minutes`, t.reward.minutes, 0);
+    if (t.reward.alleleSamples !== undefined) num(`${w}.reward.alleleSamples`, t.reward.alleleSamples, 0);
+  }
   if (data.rarities.length === 0) issues.push('rarities: mindestens eine Seltenheit nötig');
 
   return issues;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
+  import { fulfillableCount } from '@core/features/contracts';
   import { game, view, init, openTab, save } from './store.svelte';
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
@@ -19,6 +20,7 @@
   import ExpeditionTab from './components/ExpeditionTab.svelte';
   import MarketTab from './components/MarketTab.svelte';
   import GeneticsTab from './components/GeneticsTab.svelte';
+  import ContractsTab from './components/ContractsTab.svelte';
   import RecyclerTab from './components/RecyclerTab.svelte';
   import CreatureDetail from './components/CreatureDetail.svelte';
   import TowerTab from './components/TowerTab.svelte';
@@ -33,6 +35,7 @@
     breeding: { label: 'Brutstation', icon: '🥚', component: BreedingTab },
     expedition: { label: 'Erkundung', icon: '🧭', component: ExpeditionTab },
     genetics: { label: 'Genlabor', icon: '🔬', component: GeneticsTab },
+    contracts: { label: 'Aufträge', icon: '📋', component: ContractsTab },
     research: { label: 'Forschung', icon: '📜', component: ResearchTab },
     market: { label: 'Markt', icon: '⚗️', component: MarketTab },
     recycler: { label: 'Recycler', icon: '♻️', component: RecyclerTab },
@@ -51,7 +54,7 @@
   });
   const badges = $derived.by((): Record<string, number> => {
     view.frame;
-    return { ...view.unseen, research: affordableUpgradeCount(game) };
+    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game) };
   });
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 

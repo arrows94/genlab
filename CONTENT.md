@@ -85,6 +85,23 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 
 Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die Werte auf das Profil der neuen Art um.
 
+## Neuer Gen-Auftrag
+
+`src/content/contracts.ts`: eine Vorlage für das tägliche Auftragsbrett. Offene Parameter werden pro Angebot gewürfelt – bevorzugt aus Allelen, die schon in der Genbibliothek stehen, und aus Arten, die im Dex entdeckt sind:
+
+```ts
+{
+  id: 'elementPure', name: 'Reine Linie', client: 'Tierpark Nordheim', level: 2, weight: 2,
+  requirements: [{ kind: 'element' }, { kind: 'genotype' }],
+  reward: { minutes: 25, resources: { essence: 50 } },
+},
+```
+
+- Anforderungen: `expresses` (Phänotyp zeigt ein Allel, optional `category`), `genotype` (reinerbig, optional `recessive: true`), `element`, `minTier`, `topLoci` (`count`, `homozygous`), `minRarity`, `minGeneration`. `locus`/`allele`/`element` können fest vorgegeben werden.
+- Gewürfelte Allele sind nie das häufigste ihres Locus (kein „Normal“), rezessive haben eine Wirkung.
+- `level` (1 …) schaltet sich über erfüllte Aufträge frei (`balance.contracts.levelThresholds`), `requires` ist eine zusätzliche Bedingung.
+- Belohnung: `minutes` = so viele Minuten der aktuellen Produktion, `resources` = feste Mengen (erst ab Freischaltung der Ressource), `alleleSamples` = seltenste fehlende Allele für die Genbibliothek. Alles skaliert mit `contracts.reward`-Modifiern.
+
 ## Neue Region (Erkundung)
 
 `src/content/missions.ts`: eine Mission mit `requires` (wann sie erscheint) und `species` (wer dort lebt):

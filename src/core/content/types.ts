@@ -346,6 +346,45 @@ export interface CapsuleDef {
   pity: { threshold: number; minRarity: string };
 }
 
+/**
+ * Gen-Auftrag requirement as written in the content. Parameters left out are
+ * rolled when a contract is offered (from the player's gene library and dex),
+ * so a few templates give many different contracts.
+ */
+export type ContractRequirementSpec =
+  /** The phenotype shows this allele (a rare, non-default one if rolled). */
+  | { kind: 'expresses'; category?: GeneLocusDef['category']; locus?: string; allele?: string }
+  /** Homozygous for this allele; `recessive` rolls a recessive allele (hidden in carriers). */
+  | { kind: 'genotype'; recessive?: boolean; locus?: string; allele?: string }
+  | { kind: 'element'; element?: string }
+  | { kind: 'minTier'; tier: SpeciesTier }
+  /** At least `count` loci with their top allele (expressed or homozygous). */
+  | { kind: 'topLoci'; count: number; homozygous: boolean }
+  | { kind: 'minRarity'; rarity: string }
+  | { kind: 'minGeneration'; generation: number };
+
+export interface ContractTemplateDef {
+  id: string;
+  name: string;
+  /** Who asks – flavour text on the card. */
+  client: string;
+  /** Contract level (1 …); higher levels unlock with completed contracts. */
+  level: number;
+  /** Relative frequency among the templates of the pool. */
+  weight: number;
+  /** Extra gate besides the level (e.g. hybrids unlocked). */
+  requires?: Condition;
+  requirements: ContractRequirementSpec[];
+  reward: {
+    /** Minutes of the current production of every produced resource. */
+    minutes?: number;
+    /** Fixed amounts; only granted once the resource's feature is unlocked. */
+    resources?: ResourceAmounts;
+    /** Missing alleles (rarest first) added to the gene library. */
+    alleleSamples?: number;
+  };
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -368,6 +407,7 @@ export interface ContentData {
   talents: TalentDef[];
   anomalies: AnomalyDef[];
   weeklyMutations: WeeklyMutationDef[];
+  contracts: ContractTemplateDef[];
 }
 
 export interface Registry<T extends { id: string }> {

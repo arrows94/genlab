@@ -53,11 +53,13 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
 
 ## Priorität
 
-- [ ] **Gen-Aufträge** (Favorit, zuerst umsetzen)
-  - [ ] Wechselnde Aufträge, z. B. „Wasser-Hybrid mit Genotyp K/K und T/T“, „3 dominante Top-Allele“
-  - [ ] Nutzen Zuchtplaner, Sequenzieren und Splicing gezielt
-  - [ ] Belohnungen: Äon-Splitter, seltene Allele, kosmetische Muster
-  - [ ] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
+- [x] **Gen-Aufträge** (Favorit, zuerst umsetzen)
+  - [x] Wechselnde Aufträge, z. B. „Wasser-Hybrid mit Genotyp K/K und T/T“, „3 dominante Top-Allele“
+  - [x] Nutzen Zuchtplaner, Sequenzieren und Splicing gezielt
+  - [x] Belohnungen: Äon-Splitter, seltene Allele (Genproben)
+  - [ ] Belohnung: kosmetische Muster (braucht neue Muster im Kreaturen-SVG)
+  - [x] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
+  - [ ] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
 - [ ] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
   - [ ] 2–3 weitere Stufen mit spielverändernden Talenten (z. B. Eier verdoppeln Eltern-Fähigkeiten,
         Expeditionen bringen Hybride, Turm startet ab dem halben Rekord)
@@ -113,7 +115,7 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Schritt 3 – Beschäftigung „in der Zwischenzeit“
 
-- [ ] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
+- [x] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
 - [ ] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
 - [ ] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
 
