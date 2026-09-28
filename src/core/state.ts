@@ -218,6 +218,24 @@ export interface WeeklyBossState {
   last: { damage: number; rounds: number } | null;
 }
 
+/** One finished prestige run (Vererbung, Äon) for the timeline. */
+export interface PrestigeLogEntry {
+  layer: string;
+  /** Wall clock of the reset. */
+  at: number;
+  /** Currency gained. */
+  gain: number;
+  /** Wall-clock length of the run that ended (since the previous reset or the start). */
+  runMs: number;
+}
+
+export interface MegaProjectState {
+  /** Finished construction stages. */
+  stage: number;
+  /** Paid into the current stage so far. */
+  paid: Record<string, Decimal>;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -261,6 +279,12 @@ export interface GameState {
   daily: DailyState;
   /** Großforschung: completed levels per project (never reset). */
   grandResearch: Record<string, number>;
+  /** Großprojekte: finished stages and what is paid into the current one (never reset). */
+  megaProjects: Record<string, MegaProjectState>;
+  /** Äon-Resonanz levels (never reset). */
+  resonance: Record<string, number>;
+  /** Recent prestige runs, oldest first (capped by `balance.prestigeLogSize`). */
+  prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
 }
 
@@ -298,6 +322,9 @@ export function createEmptyState(now: number, seed: number): GameState {
     voyage: { pending: null, nextBonus: 0 },
     daily: { day: -1, step: 0, claimed: 0 },
     grandResearch: {},
+    megaProjects: {},
+    resonance: {},
+    prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
   };
 }

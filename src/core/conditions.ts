@@ -33,6 +33,8 @@ export function checkCondition(state: GameState, c: Condition): boolean {
       return Math.max(state.tower?.best ?? 0, state.tower?.run?.floor ?? 0) >= c.floor;
     case 'anomaly':
       return state.anomaliesCompleted?.[c.anomaly] === true;
+    case 'megaProject':
+      return (state.megaProjects?.[c.project]?.stage ?? 0) >= c.stage;
     case 'geneLibrary':
       return Object.keys(state.geneLibrary ?? {}).length >= c.count;
     case 'all':

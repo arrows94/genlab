@@ -1,28 +1,34 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung.
 
 ## Höchste Wirkung
 
-- [ ] **Anlagen (Farm, Mine, Bio-Labor)**
-  - [ ] Jede Anlage als kleine Szene (wachsende Felder, Mineneingang mit Loren, Labor mit blubbernden Kolben)
-  - [ ] Zugewiesene Kreaturen sichtbar „bei der Arbeit“
-  - [ ] Plätze als Sockel (wie beim Turm-Team)
-  - [ ] Produktion pro Sekunde als Anzeige, aufsteigende Ertragszahlen
-  - [ ] Zuweisen per Kreaturen-Kachel statt Menü, mit Hinweis, welcher Wert den Ertrag steigert
-- [ ] **Forschung**
-  - [ ] Forschungsbaum nach Themen (Sammeln, Farm, Mine, Brut, Genetik, Turm)
-  - [ ] Abhängigkeiten zwischen Forschungen sichtbar machen
-  - [ ] Stufen als Pips statt „Stufe 0 / 10“
-  - [ ] Bezahlbare Forschungen hervorheben
-  - [ ] Eigener Bereich für die unendliche Forschung
-- [ ] **Vererbung (Prestige)**
-  - [ ] Übersicht: was verloren geht und was bleibt
-  - [ ] Gewinn als große Zahl
-  - [ ] Vorschau des Produktionsbonus vorher/nachher
-  - [ ] Zeitleiste der bisherigen Durchläufe
-  - [ ] Animation beim Vererben
+- [x] **Anlagen (Farm, Mine, Bio-Labor)**
+  - [x] Jede Anlage als kleine Szene (wachsende Felder, Mineneingang mit Loren, Labor mit blubbernden Kolben);
+        ohne Arbeiter steht die Szene ausgegraut still
+  - [x] Zugewiesene Kreaturen sichtbar „bei der Arbeit“ (hüpfen, hacken, schweben)
+  - [x] Plätze als Sockel (wie beim Turm-Team) mit Arbeitswert und Anteil am Ertrag
+  - [x] Produktion pro Sekunde als Anzeige, aufsteigende Ertragszahlen; Kopfzeile mit Kennzahlen
+  - [x] Zuweisen per Kreaturen-Kachel statt Menü, sortiert nach zusätzlichem Ertrag, mit Hinweis, welcher Wert ihn steigert
+- [x] **Forschung**
+  - [x] Forschungsbaum nach Themen (Sammeln, Farm, Mine, Bio-Labor, Brut, Erkundung, Genetik, Verwaltung,
+        Automatik, Turm) mit Themen-Filter
+  - [x] Abhängigkeiten zwischen Forschungen sichtbar machen (Baumlinien; der nächste Schritt erscheint gesperrt
+        mit „benötigt: …“ und Fortschritt, z. B. „40 Eier ausgebrütet (23/40)“)
+  - [x] Stufen als Pips statt „Stufe 0 / 10“ (ab 13 Stufen als Balken), aktuelle Wirkung (z. B. „×12,8“)
+  - [x] Bezahlbare Forschungen hervorheben (Rahmen, Zähler pro Thema, Filter „nur bezahlbare“,
+        Wartezeit bis bezahlbar aus der aktuellen Produktion)
+  - [x] Eigener Bereich für die unendliche Forschung
+- [x] **Vererbung (Prestige)**
+  - [x] Übersicht: was verloren geht und was bleibt (aus den Reset-Daten der Ebene abgeleitet)
+  - [x] Gewinn als große Zahl, mit Fortschritt bis zum nächsten Erbgut-Punkt
+  - [x] Vorschau des Produktionsbonus vorher/nachher
+  - [x] Zeitleiste der bisherigen Durchläufe (neu im Spielstand: `prestigeLog`, Äonen als Trenner;
+        ältere Durchläufe vor der Aufzeichnung werden nur gezählt)
+  - [x] Animation beim Vererben
+  - [ ] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab
 
 ## Auch lohnend
 
@@ -60,10 +66,15 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [ ] Belohnung: kosmetische Muster (braucht neue Muster im Kreaturen-SVG)
   - [x] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
   - [x] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
-- [ ] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
-  - [ ] 2–3 weitere Stufen mit spielverändernden Talenten (z. B. Eier verdoppeln Eltern-Fähigkeiten,
-        Expeditionen bringen Hybride, Turm startet ab dem halben Rekord)
-  - [ ] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag, damit Splitter immer etwas wert bleiben
+- [x] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
+  - [x] 2–3 weitere Stufen mit spielverändernden Talenten – Stufe 4 und 5, versiegelt bis zur Kuppel bzw.
+        Sternkarte des Äon-Observatoriums: Starke Blutlinie (Fähigkeiten sicher vererbt), Wilde Kreuzungen
+        (Erkundungen bringen entdeckte Hybride), Sturmlauf (Turm-Kämpfe halb so lang), Aufstrebende Brut
+        (15 % Chance auf eine Seltenheitsstufe mehr), Gelehrtenkreis (+1 Großforschungsplatz), Titanenjäger
+        (+1 Wochen-Boss-Angriff pro Tag). „Turm startet ab dem halben Rekord“ entfällt – die Kontrollpunkte
+        alle 10 Etagen starten schon näher am Rekord.
+  - [x] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag (Ernte, Erbgut, Gene, Kampf; Wirkung Stufe^0,7)
+  - [ ] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (der Bot spielt noch keinen Turm und kein Äon)
 - [ ] **Turm-Mechaniken vertiefen**
   - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
   - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
@@ -135,7 +146,9 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
       (ab Turm-Etage 10; 3 Angriffe pro Tag, bis zu 6 sammelbar; Belohnungen bei 10/25/50/75/100 %)
 - [x] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
       (Wochenexpedition und Wochen-Boss teilen das Element der Wochen-Mutation)
-- [ ] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
+- [x] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
+      (4 Bauphasen mit 12–48 h Bauzeit; Einzahlungen bleiben über jeden Neustart, auch kurz vor einem Äon;
+      öffnet Talentstufe 4 und 5 und die Äon-Resonanz. Kosten nach den Beständen des 14-Tage-Bots bemessen)
 
 ## Leitplanken
 

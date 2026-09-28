@@ -65,6 +65,24 @@ export function missionSpecies(ctx: GameContext, missionId: string): string[] {
   return def.species ?? ctx.content.species.list.filter((s) => s.wild).map((s) => s.id);
 }
 
+/** Discovered hybrids with a parent living in this region (Äon talent „Wilde Kreuzungen“). */
+export function wildHybridSpecies(ctx: GameContext, missionId: string): string[] {
+  const pool = new Set(missionSpecies(ctx, missionId));
+  const discovered = new Set(Object.keys(ctx.state.dex).map((key) => key.split(':')[0]));
+  const found = ctx.content.recipes.list.filter((r) => discovered.has(r.result) && r.parents.some((p) => pool.has(p)));
+  return [...new Set(found.map((r) => r.result))];
+}
+
+/** Species of a wild find: usually one living there, with the talent sometimes a hybrid. */
+function wildSpecies(ctx: GameContext, missionId: string, pool: string[]): string {
+  const chance = Math.min(1, ctx.mods().apply('mission.hybridChance', 0));
+  if (chance > 0) {
+    const hybrids = wildHybridSpecies(ctx, missionId);
+    if (hybrids.length > 0 && ctx.rng.chance(chance)) return ctx.rng.pick(hybrids);
+  }
+  return ctx.rng.pick(pool);
+}
+
 /** Chance to find a recipe hint: longer expeditions are more likely to find one. */
 export function hintChance(ctx: GameContext, missionId: string): number {
   const hours = ctx.content.missions.get(missionId).durationSec / 3600;
@@ -131,7 +149,7 @@ registerProcessHandler(MISSION, {
       const guaranteed = def.wildMinRarity !== undefined;
       if (pool.length > 0 && (guaranteed || stableFree(ctx) > 0)) {
         const rarity = def.wildMinRarity ? rollMinRarity(ctx, def.wildMinRarity) : undefined;
-        wildCreatureId = createCreature(ctx, { speciesId: ctx.rng.pick(pool), rarity, source: 'wild' }).id;
+        wildCreatureId = createCreature(ctx, { speciesId: wildSpecies(ctx, missionId, pool), rarity, source: 'wild' }).id;
       }
       else if (pool.length > 0) {
         // Stable full: the wild creature is released; the player gets its sell value in gold.

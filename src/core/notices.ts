@@ -5,6 +5,7 @@ import { MISSION, type MissionData } from './features/expedition';
 import { DEEP_SEQUENCE, SEQUENCE, type SequenceData } from './features/sequencing';
 import { VOYAGE, type VoyageData } from './features/voyage';
 import { GRAND_RESEARCH, type GrandResearchData } from './features/grandResearch';
+import { MEGA_PROJECT, type MegaProjectData } from './features/megaProjects';
 import { formatDuration } from './format';
 import type { Process } from './state';
 import { processRemainingMs } from './systems/processes';
@@ -65,6 +66,15 @@ const TEXTS: Record<string, NoticeText> = {
       return `„${ctx.content.grandResearch.get(d.project).name}“ Stufe ${d.level} ist erforscht.`;
     },
     many: (n) => `${n} Großforschungen sind abgeschlossen.`,
+  },
+  [MEGA_PROJECT]: {
+    title: 'Bauphase fertig 🏗️',
+    one: (ctx, p) => {
+      const d = p.data as MegaProjectData;
+      const def = ctx.content.megaProjects.get(d.project);
+      return `${def.name}: „${def.stages[d.stage - 1]?.name ?? 'Bauphase'}“ ist fertig gebaut.`;
+    },
+    many: (n) => `${n} Bauphasen sind fertig.`,
   },
   [DEEP_SEQUENCE]: {
     title: 'Tiefensequenzierung fertig 🔬',

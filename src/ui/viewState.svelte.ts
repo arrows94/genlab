@@ -13,6 +13,7 @@ interface ViewState {
   recycler: { element: string };
   expedition: { region: string };
   breeding: { species: string };
+  research: { theme: string; affordableOnly: boolean };
 }
 
 const defaults = (): ViewState => ({
@@ -21,6 +22,7 @@ const defaults = (): ViewState => ({
   recycler: { element: 'fire' },
   expedition: { region: 'short' },
   breeding: { species: '' },
+  research: { theme: '', affordableOnly: false },
 });
 
 function load(): ViewState {
@@ -35,6 +37,7 @@ function load(): ViewState {
       recycler: { ...base.recycler, ...saved.recycler },
       expedition: { ...base.expedition, ...saved.expedition },
       breeding: { ...base.breeding, ...saved.breeding },
+      research: { ...base.research, ...saved.research },
     };
   } catch {
     return base;

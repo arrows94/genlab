@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
-import { performPrestige, prestigeGain } from '@core/prestige';
+import { nextPrestigePoint, performPrestige, prestigeBonusPreview, prestigeGain, resetOverview } from '@core/prestige';
 import { unlockFeature } from '@core/systems/unlocks';
 import { createCreature } from '@core/creatures';
 import { startProcess } from '@core/systems/processes';
@@ -65,5 +65,47 @@ describe('prestige (Vererbung)', () => {
     const points = g.state.resources.heritage!.toNumber();
     expect(points).toBeGreaterThan(0);
     expect(g.mods().totals('production.food').pct).toBeCloseTo(pctBefore + 0.1 * points, 8);
+  });
+});
+
+describe('Vererbung overview', () => {
+  it('lists what is lost and what stays', () => {
+    const g = richGame();
+    const { lost, kept } = resetOverview(g, 'inheritance');
+    expect(lost.map((x) => x.label)).toEqual(expect.arrayContaining(['Nahrung', 'Gold', 'Kreaturen', 'Laufende Vorgänge']));
+    expect(kept.map((x) => x.label)).toEqual(expect.arrayContaining(['Essenz', 'Forschung']));
+    expect(lost.map((x) => x.label)).not.toContain('Forschung');
+  });
+
+  it('previews the production bonus before and after', () => {
+    const g = richGame();
+    g.state.resources.heritage = D(4);
+    const gain = prestigeGain(g, 'inheritance').toNumber();
+    const food = prestigeBonusPreview(g, 'inheritance').find((b) => b.target === 'production.food')!;
+    expect(food.before).toBeCloseTo(0.4);
+    expect(food.after).toBeCloseTo(0.1 * (4 + gain));
+  });
+
+  it('knows how much more is needed for the next point', () => {
+    const g = richGame();
+    g.state.earned.food = D(4.5e5); // between two points
+    const { needed, progress } = nextPrestigePoint(g, 'inheritance');
+    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeLessThan(1);
+    const now = prestigeGain(g, 'inheritance').toNumber();
+    g.state.earned.food = needed.sub(g.state.earned.gold!).add(1);
+    expect(prestigeGain(g, 'inheritance').toNumber()).toBe(now + 1);
+  });
+
+  it('records each run for the timeline', () => {
+    const g = richGame();
+    g.state.lastTickAt = g.state.createdAt + 3_600_000;
+    const gain = prestigeGain(g, 'inheritance').toNumber();
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(g.state.prestigeLog).toEqual([{ layer: 'inheritance', at: g.state.createdAt + 3_600_000, gain, runMs: 3_600_000 }]);
+    g.state.earned.food = D(1e6);
+    g.state.lastTickAt += 600_000;
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(g.state.prestigeLog[1]!.runMs).toBe(600_000);
   });
 });

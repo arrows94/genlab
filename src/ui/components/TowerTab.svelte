@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration } from '@core/format';
   import {
-    checkpoint, elementMultiplier, enemyFor, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    checkpoint, elementMultiplier, enemyFor, fightIntervalMs, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
@@ -70,7 +70,7 @@
     replay = { key, hp: fighters.map((f) => f.maxHp), step: 0, total: events.length, attacker: -1, target: -1, done: false };
     banner = null;
     popups = [];
-    const budget = game.balance.tower.fightIntervalSec * 1000 * 0.55;
+    const budget = fightIntervalMs(game) * 0.55;
     const stepMs = Math.max(110, Math.min(420, budget / Math.max(1, events.length)));
     const next = () => {
       if (!replay || replay.key !== key) return;
@@ -124,7 +124,7 @@
     const current = tw.run?.floor ?? cp;
     const nextFloor = current + 1;
     const enemy = enemyFor(game, nextFloor);
-    const interval = game.balance.tower.fightIntervalSec * 1000;
+    const interval = fightIntervalMs(game);
     const top = nextFloor + 3;
     const floors = [];
     for (let f = top; f >= Math.max(1, nextFloor - 4); f--) {
@@ -350,7 +350,7 @@
 
     <div class="controls">
       {#if data.tw.run}
-        <span class="small muted">Gestartet ab Etage {data.tw.run.startFloor} · Kampf alle {game.balance.tower.fightIntervalSec} s</span>
+        <span class="small muted">Gestartet ab Etage {data.tw.run.startFloor} · Kampf alle {fightIntervalMs(game) / 1000} s</span>
         <button class="danger" onclick={stop}>Lauf beenden</button>
       {:else}
         <button class="primary go" disabled={data.team.length === 0} onclick={() => act(startRun(game, true))}>▶ Start ab Etage {data.cp + 1}</button>

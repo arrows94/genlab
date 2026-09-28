@@ -1,4 +1,8 @@
-import type { AnomalyDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+
+/** Talent tiers 4 and 5 open with the stages of the Äon-Observatorium (Großprojekt). */
+const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
+const starMap = { type: 'megaProject', project: 'observatory', stage: 4 } as const;
 
 /** Äon talent tree – mechanics, not just percentages. */
 export const talents: TalentDef[] = [
@@ -23,6 +27,49 @@ export const talents: TalentDef[] = [
     modifiers: [{ target: 'offline.capHours', op: 'add', value: 12 }] },
   { id: 'aeonTeam2', name: 'Fünfter Kämpfer', tier: 3, cost: 5, requires: ['aeonTeam'], description: '+1 Platz im Turm-Team (5 insgesamt).',
     modifiers: [{ target: 'slots.tower', op: 'add', value: 1 }] },
+  // Tier 4 (Observatorium: Kuppel)
+  { id: 'bloodline', name: 'Starke Blutlinie', tier: 4, cost: 8, requires: ['shinyAura'], unlock: dome,
+    description: 'Nachkommen erben jede Fähigkeit ihrer Eltern sicher (sonst 50 % je Fähigkeit).',
+    modifiers: [{ target: 'breeding.abilityInherit', op: 'add', value: 1 }] },
+  { id: 'wildHybrids', name: 'Wilde Kreuzungen', tier: 4, cost: 8, requires: ['deepTime'], unlock: dome,
+    description: '30 % der wilden Funde auf Erkundungen sind Hybride – entdeckte Hybride, deren Rezept eine Art der Region enthält.',
+    modifiers: [{ target: 'mission.hybridChance', op: 'add', value: 0.3 }] },
+  { id: 'towerRush', name: 'Sturmlauf', tier: 4, cost: 8, requires: ['aeonTeam2'], unlock: dome,
+    description: 'Kämpfe im Genom-Turm dauern nur halb so lang – auch offline.',
+    modifiers: [{ target: 'tower.interval', op: 'mult', value: 0.5 }] },
+  // Tier 5 (Observatorium: Sternkarte)
+  { id: 'risingBrood', name: 'Aufstrebende Brut', tier: 5, cost: 12, requires: ['bloodline'], unlock: starMap,
+    description: '15 % Chance, dass ein Ei eine Seltenheitsstufe höher schlüpft.',
+    modifiers: [{ target: 'breeding.rarityUp', op: 'add', value: 0.15 }] },
+  { id: 'scholarCircle', name: 'Gelehrtenkreis', tier: 5, cost: 12, requires: ['wildHybrids'], unlock: starMap,
+    description: '+1 Platz für die Großforschung: zwei Projekte laufen gleichzeitig.',
+    modifiers: [{ target: 'slots.grandResearch', op: 'add', value: 1 }] },
+  { id: 'titanHunter', name: 'Titanenjäger', tier: 5, cost: 12, requires: ['towerRush'], unlock: starMap,
+    description: '+1 Angriff pro Tag auf den Wochen-Boss (Vorrat bis 8).',
+    modifiers: [{ target: 'tower.bossAttempts', op: 'add', value: 1 }] },
+];
+
+/**
+ * Äon-Resonanz: endless nodes after the Observatorium's star map. Each level
+ * costs more (`cost × costGrowth^level`) and adds less (`level^levelPower`).
+ */
+export const resonances: ResonanceDef[] = [
+  { id: 'harvestResonance', name: 'Ernte-Resonanz', icon: '🌾', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: starMap,
+    description: '+25 % Nahrung, Gold und Essenz (abnehmend).',
+    modifiers: [
+      { target: 'production.food', op: 'pct', value: 0.25 },
+      { target: 'production.gold', op: 'pct', value: 0.25 },
+      { target: 'production.essence', op: 'pct', value: 0.25 },
+    ] },
+  { id: 'heritageResonance', name: 'Erb-Resonanz', icon: '🧬', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: starMap,
+    description: '+15 % Erbgut aus jeder Vererbung (abnehmend).',
+    modifiers: [{ target: 'prestige.inheritance.gain', op: 'pct', value: 0.15 }] },
+  { id: 'geneResonance', name: 'Gen-Resonanz', icon: '🧪', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: starMap,
+    description: '+1 % Mutationschance und +10 % Hybrid-Chance (abnehmend).',
+    modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }, { target: 'breeding.hybridChance', op: 'pct', value: 0.1 }] },
+  { id: 'battleResonance', name: 'Kampf-Resonanz', icon: '⚔️', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: starMap,
+    description: '+20 % Schaden im Genom-Turm (abnehmend).',
+    modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.2 }] },
 ];
 
 /** Anomaly challenges: changed rules, a goal, and a permanent reward. */
