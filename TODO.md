@@ -1,16 +1,17 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen.
 
 ## Höchste Wirkung
 
-- [ ] **Anlagen (Farm, Mine, Bio-Labor)**
-  - [ ] Jede Anlage als kleine Szene (wachsende Felder, Mineneingang mit Loren, Labor mit blubbernden Kolben)
-  - [ ] Zugewiesene Kreaturen sichtbar „bei der Arbeit“
-  - [ ] Plätze als Sockel (wie beim Turm-Team)
-  - [ ] Produktion pro Sekunde als Anzeige, aufsteigende Ertragszahlen
-  - [ ] Zuweisen per Kreaturen-Kachel statt Menü, mit Hinweis, welcher Wert den Ertrag steigert
+- [x] **Anlagen (Farm, Mine, Bio-Labor)**
+  - [x] Jede Anlage als kleine Szene (wachsende Felder, Mineneingang mit Loren, Labor mit blubbernden Kolben);
+        ohne Arbeiter steht die Szene ausgegraut still
+  - [x] Zugewiesene Kreaturen sichtbar „bei der Arbeit“ (hüpfen, hacken, schweben)
+  - [x] Plätze als Sockel (wie beim Turm-Team) mit Arbeitswert und Anteil am Ertrag
+  - [x] Produktion pro Sekunde als Anzeige, aufsteigende Ertragszahlen; Kopfzeile mit Kennzahlen
+  - [x] Zuweisen per Kreaturen-Kachel statt Menü, sortiert nach zusätzlichem Ertrag, mit Hinweis, welcher Wert ihn steigert
 - [ ] **Forschung**
   - [ ] Forschungsbaum nach Themen (Sammeln, Farm, Mine, Brut, Genetik, Turm)
   - [ ] Abhängigkeiten zwischen Forschungen sichtbar machen
