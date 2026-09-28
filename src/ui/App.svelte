@@ -3,7 +3,7 @@
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
   import { fulfillableCount } from '@core/features/contracts';
   import { dailyAvailable } from '@core/features/daily';
-  import { game, view, init, openTab, save } from './store.svelte';
+  import { game, view, init, openTab } from './store.svelte';
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
@@ -30,6 +30,8 @@
   import AeonTab from './components/AeonTab.svelte';
   import AnomaliesTab from './components/AnomaliesTab.svelte';
   import WeeklyBanner from './components/WeeklyBanner.svelte';
+  import UpdateBanner from './components/UpdateBanner.svelte';
+  import WhatsNew from './components/WhatsNew.svelte';
 
   /** Tab id (from FeatureDef.tab) → label + component. New systems register here. */
   const TABS: Record<string, { label: string; icon: string; component: Component }> = {
@@ -116,12 +118,8 @@
 
 <CreatureDetail />
 <OfflineModal />
-{#if view.applyUpdate}
-  <div class="update panel">
-    <span>Eine neue Version von Genlab ist da.</span>
-    <button class="primary" onclick={() => { save(); view.applyUpdate?.(); }}>Jetzt aktualisieren</button>
-  </div>
-{/if}
+<WhatsNew />
+{#if view.applyUpdate}<UpdateBanner />{/if}
 {/if}
 <Toasts />
 <NotificationCenter />
@@ -129,10 +127,6 @@
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
 <style>
-  .update {
-    position: fixed; z-index: 15; left: 50%; transform: translateX(-50%); top: calc(0.5rem + env(safe-area-inset-top));
-    display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0.8rem; border-color: var(--violet); font-size: 0.9rem;
-  }
   .splash { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 0.5rem; color: var(--muted); }
   .app { max-width: 1100px; margin: 0 auto; padding: 0.75rem 1rem 6rem; }
   /* Sticky: the resources stay in view while the page scrolls. */
