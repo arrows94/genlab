@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex.
 
 ## Höchste Wirkung
 
@@ -37,10 +37,11 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
   - [x] Zielkreatur per Kachel statt Menü wählen (Turbo: Arbeiter mit Ertrag zuerst; Kraftfutter:
         Wertewahl mit bisherigen Stärkungen als Pips)
   - [x] Aktive Effekte (Festmahl, Turbo-Trank) als Timer mit Restzeit
-- [ ] **Monster-Dex**
-  - [ ] Entdeckte Arten mit Bild, unbekannte als Silhouette
-  - [ ] Fortschrittsring pro Kategorie
-  - [ ] Detailkarte beim Klick (Beschreibung, Herkunft: Hybrid-Rezept oder Region)
+- [x] **Monster-Dex**
+  - [x] Entdeckte Arten mit Bild, unbekannte als Silhouette (neue Ansicht „Sammlung“, Punkte je Seltenheit)
+  - [x] Fortschrittsring pro Kategorie (Gesamt, Basisarten, Hybride, Seltene Hybride, Mythische Endformen)
+  - [x] Detailkarte beim Klick (Beschreibung, Grundwerte, Seltenheiten, Herkunft: Hybrid-Rezept, Evolution
+        oder Region – noch nicht erschlossene Regionen bleiben „unbekannt“); aus allen drei Ansichten erreichbar
 - [ ] **Genlabor**
   - [ ] Sequenzierer als Maschine, die die DNA Stück für Stück entschlüsselt
   - [ ] Genbibliothek mit Sammelfortschritt pro Gen

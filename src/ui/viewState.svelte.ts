@@ -9,7 +9,8 @@ const KEY = 'genlab.view';
 
 interface ViewState {
   list: { filter: CreatureFilter; sort: CreatureSort; alleleKey: string; showFilters: boolean };
-  dex: { mode: 'grid' | 'tree' };
+  /** Dex view; the key replaced the old `mode` so everyone starts on the new gallery once. */
+  dex: { view: 'cards' | 'table' | 'tree' };
   recycler: { element: string };
   expedition: { region: string };
   breeding: { species: string };
@@ -18,7 +19,7 @@ interface ViewState {
 
 const defaults = (): ViewState => ({
   list: { filter: { ...EMPTY_FILTER }, sort: 'newest', alleleKey: '', showFilters: false },
-  dex: { mode: 'grid' },
+  dex: { view: 'cards' },
   recycler: { element: 'fire' },
   expedition: { region: 'short' },
   breeding: { species: '' },
@@ -33,7 +34,7 @@ function load(): ViewState {
     const saved = JSON.parse(raw) as Partial<ViewState>;
     return {
       list: { ...base.list, ...saved.list, filter: { ...base.list.filter, ...saved.list?.filter } },
-      dex: { ...base.dex, ...saved.dex },
+      dex: { view: ['cards', 'table', 'tree'].includes(saved.dex?.view ?? '') ? saved.dex!.view : base.dex.view },
       recycler: { ...base.recycler, ...saved.recycler },
       expedition: { ...base.expedition, ...saved.expedition },
       breeding: { ...base.breeding, ...saved.breeding },
