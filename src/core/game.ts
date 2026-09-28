@@ -13,7 +13,7 @@ import { DEFAULT_SYSTEMS, type System } from './systems';
 import { checkUnlocks } from './systems/unlocks';
 import { createCreature } from './creatures';
 import { productionRates } from './systems/production';
-import { advanceTimers } from './systems/timers';
+import { advanceTimers, offlineCapMs } from './systems/timers';
 import { ensureGenomes } from './genetics';
 import './features';
 
@@ -126,7 +126,7 @@ export class Game implements GameContext {
   }
 
   offlineCapMs(): number {
-    return this.mods().apply('offline.capHours', this.balance.offline.capHours) * 3_600_000;
+    return offlineCapMs(this);
   }
 
   /**

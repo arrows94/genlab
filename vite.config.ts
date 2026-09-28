@@ -35,6 +35,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         cleanupOutdatedCaches: true,
+        // Opens the game when a reminder is tapped (see src/ui/platform/notify.ts).
+        importScripts: ['sw-notify.js'],
       },
     }),
   ],

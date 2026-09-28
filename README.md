@@ -27,6 +27,8 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 | Android | [Capacitor 8](https://capacitorjs.com) (`android/`) | `npm run android` (öffnet Android Studio) | `android.yml`: bei Tag `v*` oder manuell → Debug-APK als Artefakt |
 | iOS | Capacitor (`ios/`) | `npm run ios` (öffnet Xcode, nur auf dem Mac) | – (braucht Mac + Apple-Developer-Konto) |
 
+**Benachrichtigungen** (Optionen, standardmäßig aus): Die Handy-Apps planen beim Wechsel in den Hintergrund lokale Benachrichtigungen beim System (Capacitor Local Notifications, ohne Server) – z. B. „Expedition zurück“ oder „Offline-Maximum erreicht“. Im Browser/PWA erscheinen sie nur, solange der Tab im Hintergrund geöffnet bleibt; Tauri hat keine. Planung in `core/notices.ts`, Plattform in `ui/platform/notify.ts`.
+
 **Spielstände:** Browser und Desktop speichern im `localStorage` (bei Tauri dauerhaft im App-Profil). Die Handy-Apps nutzen Capacitor Preferences (Android SharedPreferences, iOS UserDefaults), weil das System den WebView-Speicher löschen kann; ein vorhandener Browser-Spielstand wird beim ersten Start übernommen. Export/Import (Optionen) funktioniert überall – so lässt sich ein Spielstand zwischen Geräten umziehen.
 
 ### Einmalige Einrichtung

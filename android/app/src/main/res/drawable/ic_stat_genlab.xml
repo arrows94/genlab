@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon for notifications (monochrome silhouette of the app icon). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="28"
+        android:strokeLineCap="round"
+        android:pathData="M96,120 C176,200 336,200 416,120 M96,200 C176,120 336,120 416,200" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M136,356 C130,270 190,222 256,222 C322,222 382,270 376,356 C372,414 322,440 256,440 C190,440 140,414 136,356 Z M188,320 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z M272,320 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+</vector>

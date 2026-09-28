@@ -15,6 +15,10 @@ export const balance: Balance = {
     capHours: 12,
     summaryMinSec: 60,
   },
+  notifications: {
+    minDurationSec: 120,
+    groupSec: 300,
+  },
   start: {
     resources: { food: 0, gold: 0, essence: 0, catalyst: 0, fragments: 0, heritage: 0, towerTokens: 0, aeonShards: 0 },
     species: 'emberpup',

@@ -1,0 +1,102 @@
+import type { GameContext } from './context';
+import { findCreature } from './creatures';
+import { EGG, type EggData } from './features/breeding';
+import { MISSION, type MissionData } from './features/expedition';
+import { SEQUENCE, type SequenceData } from './features/sequencing';
+import { formatDuration } from './format';
+import type { Process } from './state';
+import { processRemainingMs } from './systems/processes';
+import { productionRates } from './systems/production';
+import { offlineCapMs } from './systems/timers';
+
+/**
+ * Reminders for the time the player is away ("Deine Expedition ist zurück!").
+ * Pure planning: the UI hands the result to the platform (local notifications
+ * in the app, browser notifications in the PWA) when the game goes to the
+ * background and cancels them when it comes back.
+ */
+export interface Notice {
+  /** Wall-clock time (ms) when the notice is due. */
+  at: number;
+  /** Process kind, or `offlineCap` for the end of offline production. */
+  kind: string;
+  title: string;
+  body: string;
+}
+
+interface NoticeText {
+  title: string;
+  /** Text for a single finished process. */
+  one: (ctx: GameContext, p: Process) => string;
+  /** Text for several finished processes of this kind. */
+  many: (n: number) => string;
+}
+
+/** Process kinds that announce their end; new long projects add an entry here. */
+const TEXTS: Record<string, NoticeText> = {
+  [MISSION]: {
+    title: 'Expedition zurück 🧭',
+    one: (ctx, p) => {
+      const d = p.data as MissionData;
+      const who = findCreature(ctx, d.creatureId)?.name ?? 'Deine Kreatur';
+      return `${who} ist aus „${ctx.content.missions.get(d.missionId).name}“ zurückgekehrt.`;
+    },
+    many: (n) => `${n} Expeditionen sind zurückgekehrt.`,
+  },
+  [EGG]: {
+    title: 'Ei geschlüpft 🥚',
+    one: (ctx, p) => {
+      const [a, b] = (p.data as EggData).parents.map((id) => findCreature(ctx, id)?.name ?? '?');
+      return `Das Ei von ${a} und ${b} ist geschlüpft.`;
+    },
+    many: (n) => `${n} Eier sind geschlüpft.`,
+  },
+  [SEQUENCE]: {
+    title: 'Sequenzierung fertig 🧬',
+    one: (ctx, p) => `Das Genom von ${findCreature(ctx, (p.data as SequenceData).creatureId)?.name ?? 'deiner Kreatur'} ist entschlüsselt.`,
+    many: (n) => `${n} Genome sind entschlüsselt.`,
+  },
+};
+
+/**
+ * Notices due while the player is away, sorted by time. Short processes are
+ * skipped, and completions of the same kind close together are merged into
+ * one notice at the time the last of them finishes.
+ */
+export function plannedNotices(ctx: GameContext, now = ctx.state.lastTickAt): Notice[] {
+  const cfg = ctx.balance.notifications;
+  const due = ctx.state.processes
+    .filter((p) => TEXTS[p.kind] && p.durationMs >= cfg.minDurationSec * 1000)
+    .map((p) => ({ p, at: now + processRemainingMs(ctx, p) }))
+    .sort((x, y) => x.at - y.at);
+
+  const notices: Notice[] = [];
+  const groups = new Map<string, { first: number; items: typeof due }>();
+  const flush = (kind: string) => {
+    const g = groups.get(kind);
+    if (!g) return;
+    const text = TEXTS[kind]!;
+    const last = g.items[g.items.length - 1]!;
+    notices.push({ at: last.at, kind, title: text.title, body: g.items.length === 1 ? text.one(ctx, last.p) : text.many(g.items.length) });
+    groups.delete(kind);
+  };
+  for (const item of due) {
+    const g = groups.get(item.p.kind);
+    if (g && item.at - g.first > cfg.groupSec * 1000) flush(item.p.kind);
+    const open = groups.get(item.p.kind);
+    if (open) open.items.push(item);
+    else groups.set(item.p.kind, { first: item.at, items: [item] });
+  }
+  for (const kind of [...groups.keys()]) flush(kind);
+
+  const capMs = offlineCapMs(ctx);
+  if (Object.values(productionRates(ctx)).some((r) => r.gt(0))) {
+    notices.push({
+      at: now + capMs,
+      kind: 'offlineCap',
+      title: 'Dein Labor ruht 💤',
+      body: `Die Produktion hat ihr Offline-Maximum von ${formatDuration(capMs)} erreicht. Schau vorbei, damit es weitergeht.`,
+    });
+  }
+  return notices.sort((x, y) => x.at - y.at);
+}

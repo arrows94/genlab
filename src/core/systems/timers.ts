@@ -3,6 +3,11 @@ import type { Buff, Process } from '../state';
 import { expireBuffs } from './buffs';
 import { completeProcesses } from './processes';
 
+/** Offline cap for the full simulation (production, automation, tower …). */
+export function offlineCapMs(ctx: GameContext): number {
+  return ctx.mods().apply('offline.capHours', ctx.balance.offline.capHours) * 3_600_000;
+}
+
 /** Tolerance for floating point drift when a timer lands exactly on its end. */
 const EPSILON_MS = 1e-3;
 

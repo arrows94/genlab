@@ -3,9 +3,12 @@ import { Game, type OfflineReport } from '@core/game';
 import { deserialize, exportSave, importSave, serialize, type SaveStorage } from '@core/save';
 import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
+import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
 import { registerPwa } from './platform/pwa';
 import { setupNative } from './platform/native';
+import { cancelNotices, scheduleNotices } from './platform/notify';
+import { prefs } from './prefs.svelte';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -233,6 +236,17 @@ export function hardReset(): void {
   refresh();
 }
 
+/** Going to the background: save and plan reminders for the time away. */
+function toBackground(): void {
+  save();
+  if (prefs.notifications) scheduleNotices(plannedNotices(game, Date.now()));
+}
+
+/** Back in the foreground: the reminders are no longer needed. */
+function toForeground(): void {
+  cancelNotices();
+}
+
 let started = false;
 /** Loads the save (async on native platforms), then starts the game loop. */
 export async function init(): Promise<void> {
@@ -242,12 +256,15 @@ export async function init(): Promise<void> {
   view.ready = true;
   refresh();
   startLoop();
+  // Leftovers from the last session (the app was closed while notices were pending).
+  cancelNotices();
   void registerPwa((apply) => (view.applyUpdate = apply)).catch(() => {
     /* offline cache is optional */
   });
   void setupNative({
-    save,
+    save: toBackground,
     resume: () => {
+      toForeground();
       const r = game.update(Date.now());
       if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
       refresh();
@@ -289,8 +306,11 @@ function startLoop(): void {
   setInterval(save, balance.sim.autosaveSec * 1000);
   // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
-    else game.update(Date.now());
+    if (document.visibilityState === 'hidden') toBackground();
+    else {
+      toForeground();
+      game.update(Date.now());
+    }
   });
   window.addEventListener('beforeunload', save);
 }

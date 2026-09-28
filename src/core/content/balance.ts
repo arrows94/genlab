@@ -20,6 +20,12 @@ export interface Balance {
     /** Offline summaries are only shown for absences longer than this. */
     summaryMinSec: number;
   };
+  notifications: {
+    /** Only processes at least this long announce their end (no pings for 20 s eggs). */
+    minDurationSec: number;
+    /** Same-kind completions within this window share one notification. */
+    groupSec: number;
+  };
   start: {
     resources: ResourceAmounts;
     species: string;
