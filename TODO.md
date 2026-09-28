@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor.
 
 ## Höchste Wirkung
 
@@ -42,9 +42,10 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
   - [x] Fortschrittsring pro Kategorie (Gesamt, Basisarten, Hybride, Seltene Hybride, Mythische Endformen)
   - [x] Detailkarte beim Klick (Beschreibung, Grundwerte, Seltenheiten, Herkunft: Hybrid-Rezept, Evolution
         oder Region – noch nicht erschlossene Regionen bleiben „unbekannt“); aus allen drei Ansichten erreichbar
-- [ ] **Genlabor**
-  - [ ] Sequenzierer als Maschine, die die DNA Stück für Stück entschlüsselt
-  - [ ] Genbibliothek mit Sammelfortschritt pro Gen
+- [x] **Genlabor**
+  - [x] Sequenzierer als Maschine, die die DNA Stück für Stück entschlüsselt (Scan-Kammer, Bildschirm mit
+        Loci-Liste; die Allele selbst erscheinen erst am Ende; Tiefensequenzierung violett; Ziel per Kachel)
+  - [x] Genbibliothek mit Sammelfortschritt pro Gen (gruppiert nach Werte/Eigenschaften/Aussehen, seltene Allele ★)
 
 ## Kleinigkeiten quer durchs Spiel
 
