@@ -300,6 +300,13 @@ export function validateContent(data: ContentData): string[] {
       amounts(`${ow}.resources`, o.resources);
     });
   }
+  for (const t of data.latentTraits) {
+    const w = at('latentTraits', t.id);
+    text(`${w}.name`, t.name);
+    num(`${w}.weight`, t.weight, 0);
+    if (!['self', 'job', 'global'].includes(t.scope)) issues.push(`${w}.scope: ungültig "${t.scope}"`);
+    mods(`${w}.modifiers`, t.modifiers);
+  }
   for (const r of data.breedingRituals) {
     const w = at('breedingRituals', r.id);
     text(`${w}.name`, r.name);

@@ -12,6 +12,7 @@ export interface GameEvents {
   processStarted: { processId: number; kind: string };
   processCompleted: { processId: number; kind: string };
   contractCompleted: { template: string; creatureId: number; level: number };
+  deepSequenced: { creatureId: number; latent: string | null; awakened: boolean };
   voyageReturned: { destination: string };
   voyageResolved: { destination: string; decision: string; option: number; creatureId: number | null };
   buffExpired: { buffId: number; source: string };

@@ -111,7 +111,8 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
       (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“) – Team bis 3, belegt ein Camp, ab der 2. Vererbung
 - [x] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
       (Kreuzungsritual 4 h, Edelbrut 8 h, Meisterbrut 24 h)
-- [ ] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
+- [x] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
+      (Erbanlagen: verborgen, vererbbar, erst nach Aufdeckung wirksam; mit „Urgene“ kann ein Urgen-Allel erwachen)
 - [x] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
       (Reisen belegen Camp und Kreaturen, Brutrituale Nest und Eltern)
       („beste Kreatur eine Woche wegschicken oder im Turm einsetzen?“)

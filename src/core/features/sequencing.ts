@@ -14,6 +14,8 @@ import type { Creature } from '../state';
  * (only a sample goes into the lab).
  */
 export const SEQUENCE = 'sequence';
+/** Tiefensequenzierung shares the sequencer slots (see deepSequencing.ts). */
+export const DEEP_SEQUENCE = 'deepSequence';
 
 export interface SequenceData extends Record<string, unknown> {
   creatureId: number;
@@ -23,12 +25,13 @@ export function sequencerSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.sequencer', ctx.balance.genetics.sequencing.baseSlots));
 }
 
-export function runningSequencing(ctx: GameContext) {
-  return ctx.state.processes.filter((p) => p.kind === SEQUENCE);
+/** Sequencer slots in use: normal and deep sequencing. */
+export function sequencerUsed(ctx: GameContext): number {
+  return ctx.state.processes.filter((p) => p.kind === SEQUENCE || p.kind === DEEP_SEQUENCE).length;
 }
 
 export function isBeingSequenced(ctx: GameContext, creatureId: number): boolean {
-  return runningSequencing(ctx).some((p) => (p.data as SequenceData).creatureId === creatureId);
+  return ctx.state.processes.some((p) => (p.kind === SEQUENCE || p.kind === DEEP_SEQUENCE) && (p.data as SequenceData).creatureId === creatureId);
 }
 
 export function sequencingCost(ctx: GameContext, c: Creature): Cost {
@@ -49,7 +52,7 @@ export function startSequencing(ctx: GameContext, creatureId: number): ActionRes
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   if (c.sequenced) return { ok: false, reason: 'Genom ist bereits entschlüsselt.' };
   if (isBeingSequenced(ctx, creatureId)) return { ok: false, reason: 'Wird bereits sequenziert.' };
-  if (runningSequencing(ctx).length >= sequencerSlots(ctx)) return { ok: false, reason: 'Alle Sequenzierer sind belegt.' };
+  if (sequencerUsed(ctx) >= sequencerSlots(ctx)) return { ok: false, reason: 'Alle Sequenzierer sind belegt.' };
   if (!trySpend(ctx, sequencingCost(ctx, c))) return { ok: false, reason: 'Nicht genug Essenz.' };
   const data: SequenceData = { creatureId };
   startProcess(ctx, SEQUENCE, sequencingTimeMs(ctx), data);

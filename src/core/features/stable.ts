@@ -5,7 +5,7 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import { EGG } from './breeding';
-import { SEQUENCE, type SequenceData } from './sequencing';
+import { isBeingSequenced } from './sequencing';
 
 /** Stable (Stall): limited creature capacity, upgradable. */
 export function stableCapacity(ctx: GameContext): number {
@@ -25,7 +25,7 @@ export function stableFree(ctx: GameContext): number {
  */
 export function canConsume(ctx: GameContext, c: Creature): boolean {
   if (c.locked || c.job !== null) return false;
-  return !ctx.state.processes.some((p) => p.kind === SEQUENCE && (p.data as SequenceData).creatureId === c.id);
+  return !isBeingSequenced(ctx, c.id);
 }
 
 export function consumeBlocker(ctx: GameContext, c: Creature): string | null {

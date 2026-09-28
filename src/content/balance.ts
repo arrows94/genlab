@@ -27,6 +27,14 @@ export const balance: Balance = {
     events: 6,
     cost: { food: 20000, gold: 5000 },
   },
+  deepSequencing: {
+    hours: 8,
+    cost: { essence: 250 },
+    latentChance: 0.35,
+    latentInherit: 0.5,
+    latentMutation: 0.1,
+    primalAwaken: 0.25,
+  },
   notifications: {
     minDurationSec: 120,
     groupSec: 300,

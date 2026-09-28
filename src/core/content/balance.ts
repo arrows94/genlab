@@ -37,6 +37,18 @@ export interface Balance {
     events: number;
     cost: ResourceAmounts;
   };
+  deepSequencing: {
+    hours: number;
+    cost: ResourceAmounts;
+    /** Share of new (wild, start, capsule) creatures that carry an Erbanlage. */
+    latentChance: number;
+    /** Chance per parent to pass its Erbanlage on (hidden or not). */
+    latentInherit: number;
+    /** Chance for a new Erbanlage when none was inherited. */
+    latentMutation: number;
+    /** With the Urgen talent: chance to awaken an Urgen allele. */
+    primalAwaken: number;
+  };
   notifications: {
     /** Only processes at least this long announce their end (no pings for 20 s eggs). */
     minDurationSec: number;

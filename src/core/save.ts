@@ -6,7 +6,7 @@ import { createEmptyState, type GameState } from './state';
  * `MIGRATIONS[oldVersion]` (old → old+1) whenever the state shape changes in
  * a way `mergeDefaults` cannot fix on its own (renames, restructures).
  */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -36,6 +36,11 @@ export const MIGRATIONS: Record<number, Migration> = {
   4: (s) => ({
     ...s,
     creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ shiny: false, ...c })),
+  }),
+  // v5 → v6: Erbanlagen (deep sequencing). Missing traits are rolled on load by `ensureLatentTraits`.
+  5: (s) => ({
+    ...s,
+    creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ deepSequenced: false, ...c })),
   }),
 };
 

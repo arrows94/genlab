@@ -1,6 +1,6 @@
 import { D } from '../num';
 import { inheritAbilities } from '../abilities';
-import { createCreature, creatureModifiers, findCreature } from '../creatures';
+import { createCreature, creatureModifiers, findCreature, inheritLatent } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { checkCondition } from '../conditions';
 import { rarityWeights, rollRarity } from '../rarity';
@@ -190,6 +190,7 @@ registerProcessHandler(EGG, {
     const child = createCreature(ctx, {
       speciesId,
       rarity,
+      latent: inheritLatent(ctx, a, b, ctx.state.nextId),
       name: nameFor(),
       generation: data.generation,
       parents: data.parents,
@@ -209,6 +210,7 @@ registerProcessHandler(EGG, {
       const twin = createCreature(ctx, {
         speciesId,
         rarity: ritual ? rollRarity(ctx.rng, eggRarityWeights(ctx, ritual)) : undefined,
+        latent: inheritLatent(ctx, a, b, ctx.state.nextId),
         name: nameFor(),
         generation: data.generation,
         parents: data.parents,

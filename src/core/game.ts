@@ -11,7 +11,7 @@ import { createEmptyState, type GameState } from './state';
 import { attachStatistics } from './statistics';
 import { DEFAULT_SYSTEMS, type System } from './systems';
 import { checkUnlocks } from './systems/unlocks';
-import { createCreature } from './creatures';
+import { createCreature, ensureLatentTraits } from './creatures';
 import { productionRates } from './systems/production';
 import { advanceTimers, offlineCapMs } from './systems/timers';
 import { ensureGenomes } from './genetics';
@@ -58,6 +58,7 @@ export class Game implements GameContext {
     if (opts.state) {
       this.setState(opts.state);
       ensureGenomes(this);
+      ensureLatentTraits(this);
     } else this.setState(newGameState(this, opts.now ?? Date.now(), opts.seed ?? Math.floor(Math.random() * 2 ** 32)));
   }
 
@@ -81,6 +82,7 @@ export class Game implements GameContext {
   loadState(state: GameState): void {
     this.setState(state);
     ensureGenomes(this);
+    ensureLatentTraits(this);
   }
 
   mods(): ModifierSet {

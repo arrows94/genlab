@@ -116,6 +116,19 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 
 Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
 
+## Erbanlage (verborgene Eigenschaft)
+
+`src/content/latent.ts`: starke Eigenschaften, die etwa jede dritte Kreatur verborgen trägt (`balance.deepSequencing.latentChance`). Sie werden vererbt, auch solange sie verborgen sind, und wirken erst nach einer Tiefensequenzierung.
+
+```ts
+{ id: 'goldNose', name: 'Goldnase', weight: 3, scope: 'job', description: '+40 % Gold bei der Arbeit.',
+  modifiers: [{ target: 'production.gold', op: 'pct', value: 0.4 }] },
+```
+
+- `scope` wie bei Fähigkeiten: `self`, `job` (nur bei der Arbeit) oder `global`.
+- `weight` = Häufigkeit unter den Trägern. Vererbung und Neuwurf stehen in `balance.deepSequencing`.
+- Erbanlagen nutzen einen eigenen, pro Spielstand und Kreatur festen Zufall – neue Einträge verändern keine anderen Würfe.
+
 ## Brutritual (Besondere Brut)
 
 `src/content/rituals.ts`: langsame Brutarten mit besseren Chancen. Das normale Ei bleibt unverändert.

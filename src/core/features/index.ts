@@ -11,3 +11,4 @@ import './infusion';
 import './recycler';
 import './automation';
 import './voyage';
+import './deepSequencing';

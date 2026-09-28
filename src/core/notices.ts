@@ -2,7 +2,7 @@ import type { GameContext } from './context';
 import { findCreature } from './creatures';
 import { EGG, type EggData } from './features/breeding';
 import { MISSION, type MissionData } from './features/expedition';
-import { SEQUENCE, type SequenceData } from './features/sequencing';
+import { DEEP_SEQUENCE, SEQUENCE, type SequenceData } from './features/sequencing';
 import { VOYAGE, type VoyageData } from './features/voyage';
 import { formatDuration } from './format';
 import type { Process } from './state';
@@ -56,6 +56,11 @@ const TEXTS: Record<string, NoticeText> = {
     title: 'Wochenexpedition zurück 🗺️',
     one: (ctx, p) => `Das Team ist aus „${ctx.content.voyageDestinations.get((p.data as VoyageData).destination).name}“ zurück – eine Entscheidung wartet.`,
     many: (n) => `${n} Wochenexpeditionen sind zurück.`,
+  },
+  [DEEP_SEQUENCE]: {
+    title: 'Tiefensequenzierung fertig 🔬',
+    one: (ctx, p) => `Das Erbgut von ${findCreature(ctx, (p.data as SequenceData).creatureId)?.name ?? 'deiner Kreatur'} ist bis ins Letzte entschlüsselt.`,
+    many: (n) => `${n} Tiefensequenzierungen sind fertig.`,
   },
   [SEQUENCE]: {
     title: 'Sequenzierung fertig 🧬',

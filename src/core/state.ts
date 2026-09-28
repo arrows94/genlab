@@ -45,6 +45,10 @@ export interface Creature {
   /** Number of permanent boosts used on this creature (drives their cost). */
   boostUses: number;
   sequenced: boolean;
+  /** Erbanlage (latent trait id) – hidden until `deepSequenced`; null = none. */
+  latent: string | null;
+  /** Deep sequencing done: the Erbanlage is known and active. */
+  deepSequenced: boolean;
   /** Gene splices already applied (limited per creature). */
   splices: number;
   /** Rare colour mutation "Schillernd". */

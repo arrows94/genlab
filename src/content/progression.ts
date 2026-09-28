@@ -49,6 +49,10 @@ export const features: FeatureDef[] = [
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   {
+    id: 'deepSequencing', name: 'Tiefensequenzierung', hint: 'Tiefensequenzierung: Manche Kreaturen tragen eine verborgene Erbanlage. Das Genlabor kann sie in acht Stunden aufdecken – und damit wecken.',
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'prestigeCount', layer: 'inheritance', count: 1 }] },
+  },
+  {
     id: 'specialBreeding', name: 'Besondere Brut', hint: 'Besondere Brut: Rituale in der Brutstation dauern Stunden, bringen aber seltenere Nachkommen und mehr Hybride.',
     condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
   },

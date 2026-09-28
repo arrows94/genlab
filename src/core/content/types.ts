@@ -390,6 +390,21 @@ export interface ContractTemplateDef {
   };
 }
 
+/**
+ * Erbanlage: a hidden, strong trait some creatures carry. It is inherited
+ * even while hidden and only takes effect once a deep sequencing reveals it.
+ */
+export interface LatentTraitDef {
+  id: string;
+  name: string;
+  description: string;
+  /** Relative frequency among creatures that carry a trait. */
+  weight: number;
+  /** Like abilities: self, job (while working) or global. */
+  scope: 'self' | 'job' | 'global';
+  modifiers: ModifierDef[];
+}
+
 /** Besondere Brut: a slow breeding ritual with better odds (the normal egg stays quick). */
 export interface BreedingRitualDef {
   id: string;
@@ -488,6 +503,7 @@ export interface ContentData {
   voyageEvents: VoyageEventDef[];
   voyageDecisions: VoyageDecisionDef[];
   breedingRituals: BreedingRitualDef[];
+  latentTraits: LatentTraitDef[];
 }
 
 export interface Registry<T extends { id: string }> {

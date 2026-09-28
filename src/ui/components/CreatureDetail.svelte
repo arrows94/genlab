@@ -1,5 +1,6 @@
 <script lang="ts">
   import { content } from '@content/index';
+  import { activeLatent } from '@core/creatures';
   import { findCreature } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
@@ -106,6 +107,15 @@
         <section>
           <h3>Genom {#if !c.sequenced}<span class="muted small">(unbekannt)</span>{/if}</h3>
           <DnaSequence genome={c.genome} known={c.sequenced} detailed />
+          {#if game.state.features['deepSequencing']}
+            {@const latent = activeLatent(game, c)}
+            <p class="latent">
+              <b>Erbanlage:</b>
+              {#if latent}<span class="lname">{latent.name}</span> <span class="muted small">{latent.description}</span>
+              {:else if c.deepSequenced}<span class="muted">keine</span>
+              {:else}<span class="muted">??? – nur die Tiefensequenzierung im Genlabor deckt sie auf.</span>{/if}
+            </p>
+          {/if}
 
           <h3>Stammbaum</h3>
           {#if c.ancestry}
@@ -163,4 +173,6 @@
     header { flex-direction: column; align-items: center; text-align: center; }
     .actions { justify-content: center; }
   }
+  .latent { margin: 0.5rem 0 0; font-size: 0.9rem; }
+  .latent .lname { color: var(--gold); font-weight: 700; }
 </style>
