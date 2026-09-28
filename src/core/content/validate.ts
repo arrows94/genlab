@@ -192,6 +192,7 @@ export function validateContent(data: ContentData): string[] {
     mods(`${w}.modifiers`, u.modifiers);
     u.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
     cond(`${w}.requires`, u.requires);
+    ref(`${w}.theme`, 'researchThemes', u.theme);
     if (u.grantsHints !== undefined) num(`${w}.grantsHints`, u.grantsHints, 0);
   }
   for (const p of data.potions) {
@@ -318,6 +319,7 @@ export function validateContent(data: ContentData): string[] {
     cond(`${w}.requires`, r.requires);
     mods(`${w}.modifiers`, r.modifiers);
   }
+  for (const t of data.researchThemes) text(`${at('researchThemes', t.id)}.name`, t.name);
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);

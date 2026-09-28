@@ -199,6 +199,15 @@ export interface UpgradeDef {
   /** Diminishing returns for infinite research: modifiers scale with level^power (default 1). */
   levelPower?: number;
   requires?: Condition;
+  /** Branch of the research tree (`researchThemes` id). */
+  theme?: string;
+}
+
+/** A branch of the research tree (Sammeln, Farm, Mine …). */
+export interface ResearchThemeDef {
+  id: string;
+  name: string;
+  icon: string;
 }
 
 export type PotionKind = 'permanentStat' | 'creatureBuff' | 'globalBuff' | 'timeSkip';
@@ -575,6 +584,7 @@ export interface ContentData {
   grandResearch: GrandResearchDef[];
   resonances: ResonanceDef[];
   megaProjects: MegaProjectDef[];
+  researchThemes: ResearchThemeDef[];
 }
 
 export interface Registry<T extends { id: string }> {

@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung.
 
 ## Höchste Wirkung
 
@@ -12,12 +12,15 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen.
   - [x] Plätze als Sockel (wie beim Turm-Team) mit Arbeitswert und Anteil am Ertrag
   - [x] Produktion pro Sekunde als Anzeige, aufsteigende Ertragszahlen; Kopfzeile mit Kennzahlen
   - [x] Zuweisen per Kreaturen-Kachel statt Menü, sortiert nach zusätzlichem Ertrag, mit Hinweis, welcher Wert ihn steigert
-- [ ] **Forschung**
-  - [ ] Forschungsbaum nach Themen (Sammeln, Farm, Mine, Brut, Genetik, Turm)
-  - [ ] Abhängigkeiten zwischen Forschungen sichtbar machen
-  - [ ] Stufen als Pips statt „Stufe 0 / 10“
-  - [ ] Bezahlbare Forschungen hervorheben
-  - [ ] Eigener Bereich für die unendliche Forschung
+- [x] **Forschung**
+  - [x] Forschungsbaum nach Themen (Sammeln, Farm, Mine, Bio-Labor, Brut, Erkundung, Genetik, Verwaltung,
+        Automatik, Turm) mit Themen-Filter
+  - [x] Abhängigkeiten zwischen Forschungen sichtbar machen (Baumlinien; der nächste Schritt erscheint gesperrt
+        mit „benötigt: …“ und Fortschritt, z. B. „40 Eier ausgebrütet (23/40)“)
+  - [x] Stufen als Pips statt „Stufe 0 / 10“ (ab 13 Stufen als Balken), aktuelle Wirkung (z. B. „×12,8“)
+  - [x] Bezahlbare Forschungen hervorheben (Rahmen, Zähler pro Thema, Filter „nur bezahlbare“,
+        Wartezeit bis bezahlbar aus der aktuellen Produktion)
+  - [x] Eigener Bereich für die unendliche Forschung
 - [ ] **Vererbung (Prestige)**
   - [ ] Übersicht: was verloren geht und was bleibt
   - [ ] Gewinn als große Zahl

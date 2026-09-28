@@ -204,7 +204,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 
 ```ts
 {
-  id: 'goldenShovels', name: 'Goldene Schaufeln', category: 'research',
+  id: 'goldenShovels', name: 'Goldene Schaufeln', category: 'research', theme: 'mine',
   description: '+20 % Goldproduktion.',
   requires: { type: 'feature', feature: 'mine' },
   cost: { gold: 300 }, costGrowth: 1.8, maxLevel: 10,
@@ -214,6 +214,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 
 - Kosten pro Stufe: `cost × costGrowth^Stufe` (Rabatte über `cost.upgrade`-Modifier).
 - `maxLevel: null` ergibt eine unendliche Forschung.
+- `theme` ordnet die Forschung einem Ast des Forschungsbaums zu (`researchThemes` in derselben Datei: Sammeln, Farm, Mine …). Forschungen, deren `requires` ein Feature verlangt, das eine andere Forschung per `unlocksFeatures` freischaltet, hängen im Baum unter dieser Forschung.
 - `unlocksFeatures: ['…']` schaltet ab Stufe 1 Systeme frei.
 
 ## Endgame-Inhalte

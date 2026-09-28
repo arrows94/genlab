@@ -12,7 +12,7 @@ import { evolutions, recipes } from './recipes';
 import { resources } from './resources';
 import { species } from './species';
 import { stats } from './stats';
-import { upgrades } from './upgrades';
+import { researchThemes, upgrades } from './upgrades';
 import { capsules } from './capsules';
 import { anomalies, resonances, talents, weeklyMutations } from './endgame';
 import { megaProjects } from './megaProjects';
@@ -55,6 +55,7 @@ export const contentData: ContentData = {
   grandResearch,
   resonances,
   megaProjects,
+  researchThemes,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */
