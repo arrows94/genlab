@@ -19,6 +19,7 @@ import { contracts } from './contracts';
 import { voyageDecisions, voyageDestinations, voyageEvents } from './voyages';
 import { breedingRituals } from './rituals';
 import { latentTraits } from './latent';
+import { grandResearch } from './grandResearch';
 
 export { balance } from './balance';
 
@@ -50,6 +51,7 @@ export const contentData: ContentData = {
   voyageDecisions,
   breedingRituals,
   latentTraits,
+  grandResearch,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

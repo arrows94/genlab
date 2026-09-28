@@ -35,6 +35,9 @@ export const balance: Balance = {
     latentMutation: 0.1,
     primalAwaken: 0.25,
   },
+  grandResearch: {
+    baseSlots: 1,
+  },
   timeCrystals: {
     skipHours: 4,
     longProjectHours: 1,

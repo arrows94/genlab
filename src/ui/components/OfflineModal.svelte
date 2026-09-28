@@ -8,6 +8,7 @@
     mission: (n) => (n === 1 ? '1 Expedition zurückgekehrt' : `${n} Expeditionen zurückgekehrt`),
     egg: (n) => (n === 1 ? '1 Ei geschlüpft' : `${n} Eier geschlüpft`),
     deepSequence: (n) => (n === 1 ? '1 Tiefensequenzierung fertig' : `${n} Tiefensequenzierungen fertig`),
+    grandResearch: (n) => (n === 1 ? '1 Großforschung abgeschlossen' : `${n} Großforschungen abgeschlossen`),
     voyage: () => 'Die Wochenexpedition ist zurück – eine Entscheidung wartet',
     sequence: (n) => (n === 1 ? '1 Genom sequenziert' : `${n} Genome sequenziert`),
   };

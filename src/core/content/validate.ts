@@ -301,6 +301,17 @@ export function validateContent(data: ContentData): string[] {
       amounts(`${ow}.resources`, o.resources);
     });
   }
+  for (const r of data.grandResearch) {
+    const w = at('grandResearch', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.hours`, r.hours, 0.01);
+    num(`${w}.hoursGrowth`, r.hoursGrowth, 1);
+    num(`${w}.maxLevel`, r.maxLevel, 1);
+    num(`${w}.costGrowth`, r.costGrowth, 1);
+    amounts(`${w}.cost`, r.cost);
+    cond(`${w}.requires`, r.requires);
+    mods(`${w}.modifiers`, r.modifiers);
+  }
   for (const t of data.latentTraits) {
     const w = at('latentTraits', t.id);
     text(`${w}.name`, t.name);

@@ -4,6 +4,7 @@
   import { findCreature } from '@core/creatures';
   import { formatDuration } from '@core/format';
   import { DEEP_SEQUENCE, SEQUENCE, isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
+  import { setAutoSequence } from '@core/features/automation';
   import { deepSequencingBlocker, deepSequencingCost, deepSequencingTimeMs, startDeepSequencing } from '@core/features/deepSequencing';
   import { activeLoci, libraryHas } from '@core/genetics';
   import { processRemainingMs } from '@core/systems/processes';
@@ -41,6 +42,8 @@
       libraryTotal,
       splicing: game.state.features['splicing'] === true,
       deepOn: game.state.features['deepSequencing'] === true,
+      robot: game.state.features['autoSequence'] === true,
+      robotOn: game.state.automation.autoSequence,
       deepCandidates: game.state.creatures.filter((c) => !deepSequencingBlocker(game, c)),
       deepCost: deepSequencingCost(game),
       deepTime: deepSequencingTimeMs(game),
@@ -62,6 +65,12 @@
 <section class="grid two">
   <article class="panel">
     <h3>🔬 Sequenzierlabor <span class="muted num">{data.used}/{data.slots}</span></h3>
+    {#if data.robot}
+      <label class="robot" class:on={data.robotOn}>
+        <input type="checkbox" checked={data.robotOn} onchange={(e) => act(setAutoSequence(game, e.currentTarget.checked))} />
+        <span>🤖 Sequenzier-Roboter <span class="small muted">– stärkste unbekannte Genome zuerst</span></span>
+      </label>
+    {/if}
     {#each data.running as r (r.id)}
       <div class="running" class:deep={r.deep}>
         <span>{r.name}{#if r.deep}<span class="small deep-tag">&ensp;· Tiefensequenzierung</span>{/if}</span>
@@ -138,6 +147,8 @@
   button { width: 100%; }
   .running { display: grid; gap: 0.2rem; margin-bottom: 0.6rem; }
   .deep-tag { color: var(--violet); }
+  .robot { display: flex; gap: 0.45rem; align-items: center; margin-bottom: 0.5rem; padding: 0.3rem 0.5rem; border-radius: 8px; border: 1px solid var(--line); font-size: 0.9rem; }
+  .robot.on { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
   .deep-panel { border-color: color-mix(in srgb, var(--violet) 45%, var(--line)); }
   .inspect { margin-top: 0.6rem; }
   .loci { display: grid; gap: 0.5rem; }

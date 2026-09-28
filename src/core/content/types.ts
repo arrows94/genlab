@@ -407,6 +407,26 @@ export interface LatentTraitDef {
   modifiers: ModifierDef[];
 }
 
+/**
+ * Großforschung: slow projects (hours to days) on their own research slot
+ * with large, permanent bonuses. Levels survive every reset.
+ */
+export interface GrandResearchDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Duration of level 1 in hours; each further level takes `hoursGrowth` times longer. */
+  hours: number;
+  hoursGrowth: number;
+  maxLevel: number;
+  cost: ResourceAmounts;
+  costGrowth: number;
+  requires?: Condition;
+  /** Applied once per completed level. */
+  modifiers: ModifierDef[];
+}
+
 /** Besondere Brut: a slow breeding ritual with better odds (the normal egg stays quick). */
 export interface BreedingRitualDef {
   id: string;
@@ -506,6 +526,7 @@ export interface ContentData {
   voyageDecisions: VoyageDecisionDef[];
   breedingRituals: BreedingRitualDef[];
   latentTraits: LatentTraitDef[];
+  grandResearch: GrandResearchDef[];
 }
 
 export interface Registry<T extends { id: string }> {

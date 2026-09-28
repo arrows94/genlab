@@ -38,6 +38,7 @@ export const features: FeatureDef[] = [
     condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'sold', amount: 10 }, { type: 'resourceEarned', resource: 'essence', amount: 60 }] },
   },
   { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
+  { id: 'autoSequence', name: 'Sequenzier-Roboter', hint: 'Der Sequenzier-Roboter ist bereit: Im Genlabor einschalten, dann entschlüsselt er neue Genome von selbst.' },
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter.' },
   {
     id: 'hybrids', name: 'Hybride', hint: 'Hybride entdeckt! Bestimmte Artkombinationen können neue Arten hervorbringen. Hinweise gibt es durch Forschung und Erkundung.',
@@ -52,6 +53,10 @@ export const features: FeatureDef[] = [
   { id: 'towerAuto', name: 'Turm-Routine', hint: 'Dein Team startet nach einer Niederlage automatisch neu.' },
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  {
+    id: 'grandResearch', name: 'Großforschung', hint: 'Großforschung: Im Forschungs-Tab laufen jetzt Projekte über Stunden und Tage – mit großen Boni, die jede Vererbung überdauern.',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+  },
   {
     id: 'deepSequencing', name: 'Tiefensequenzierung', hint: 'Tiefensequenzierung: Manche Kreaturen tragen eine verborgene Erbanlage. Das Genlabor kann sie in acht Stunden aufdecken – und damit wecken.',
     condition: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'prestigeCount', layer: 'inheritance', count: 1 }] },

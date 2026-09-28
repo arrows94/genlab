@@ -49,6 +49,10 @@ export interface Balance {
     /** With the Urgen talent: chance to awaken an Urgen allele. */
     primalAwaken: number;
   };
+  grandResearch: {
+    /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
+    baseSlots: number;
+  };
   timeCrystals: {
     /** Hours one crystal takes off a long project. */
     skipHours: number;

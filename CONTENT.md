@@ -116,6 +116,20 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 
 Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
 
+## Großforschung
+
+`src/content/grandResearch.ts`: Projekte für den eigenen Forschungsplatz.
+
+```ts
+{ id: 'expeditionNetwork', name: 'Expeditionsnetz', icon: '🏕️', hours: 12, hoursGrowth: 2, maxLevel: 2,
+  description: '+1 Camp pro Stufe.', cost: { essence: 500, gold: 30000 }, costGrowth: 4,
+  modifiers: [{ target: 'slots.camp', op: 'add', value: 1 }] },
+```
+
+- Dauer der Stufe n: `hours × hoursGrowth^(n−1)`, Kosten: `cost × costGrowth^(n−1)`.
+- `modifiers` wirken einmal pro erreichter Stufe. Stufen werden nie zurückgesetzt.
+- Mehr gleichzeitige Projekte über den Modifier `slots.grandResearch`.
+
 ## Erbanlage (verborgene Eigenschaft)
 
 `src/content/latent.ts`: starke Eigenschaften, die etwa jede dritte Kreatur verborgen trägt (`balance.deepSequencing.latentChance`). Sie werden vererbt, auch solange sie verborgen sind, und wirken erst nach einer Tiefensequenzierung.

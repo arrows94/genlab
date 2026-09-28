@@ -183,6 +183,13 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [], unlocksFeatures: ['autoBreed'],
   },
   {
+    id: 'autoSequencer', name: 'Sequenzier-Roboter', category: 'research',
+    requires: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'statistic', statistic: 'sequenced', amount: 5 }] },
+    description: 'Sequenziert automatisch die stärksten unbekannten Genome, sobald ein Sequenzierer frei ist (Schalter im Genlabor).',
+    cost: { essence: 120, gold: 3000 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['autoSequence'],
+  },
+  {
     id: 'infusionBooster', name: 'Infusionsbeschleuniger', category: 'research', requires: { type: 'feature', feature: 'infusion' },
     description: '+10 % Infusions-EP.',
     cost: { essence: 40 }, costGrowth: 2, maxLevel: 10,

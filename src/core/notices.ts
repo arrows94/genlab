@@ -4,6 +4,7 @@ import { EGG, type EggData } from './features/breeding';
 import { MISSION, type MissionData } from './features/expedition';
 import { DEEP_SEQUENCE, SEQUENCE, type SequenceData } from './features/sequencing';
 import { VOYAGE, type VoyageData } from './features/voyage';
+import { GRAND_RESEARCH, type GrandResearchData } from './features/grandResearch';
 import { formatDuration } from './format';
 import type { Process } from './state';
 import { processRemainingMs } from './systems/processes';
@@ -56,6 +57,14 @@ const TEXTS: Record<string, NoticeText> = {
     title: 'Wochenexpedition zurück 🗺️',
     one: (ctx, p) => `Das Team ist aus „${ctx.content.voyageDestinations.get((p.data as VoyageData).destination).name}“ zurück – eine Entscheidung wartet.`,
     many: (n) => `${n} Wochenexpeditionen sind zurück.`,
+  },
+  [GRAND_RESEARCH]: {
+    title: 'Großforschung abgeschlossen 📜',
+    one: (ctx, p) => {
+      const d = p.data as GrandResearchData;
+      return `„${ctx.content.grandResearch.get(d.project).name}“ Stufe ${d.level} ist erforscht.`;
+    },
+    many: (n) => `${n} Großforschungen sind abgeschlossen.`,
   },
   [DEEP_SEQUENCE]: {
     title: 'Tiefensequenzierung fertig 🔬',

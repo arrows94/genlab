@@ -128,8 +128,9 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Schritt 4 – Große Ziele
 
-- [ ] **Großforschung**: eigener Forschungsplatz mit Laufzeiten von Stunden bis Tagen für große Boni
-      (Sofort-Forschungen bleiben)
+- [x] **Großforschung**: eigener Forschungsplatz mit Laufzeiten von Stunden bis Tagen für große Boni
+      (Sofort-Forschungen bleiben) – 7 Projekte, Stufen bleiben über Vererbung und Äon
+- [x] Forschung „Sequenzier-Roboter“: sequenziert automatisch die stärksten unbekannten Genome
 - [ ] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
 - [ ] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
       (Ziel der Wochenexpedition folgt bereits dem Element der Wochen-Mutation; Wochen-Boss fehlt noch)

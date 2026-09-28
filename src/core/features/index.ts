@@ -13,3 +13,4 @@ import './automation';
 import './voyage';
 import './deepSequencing';
 import './daily';
+import './grandResearch';

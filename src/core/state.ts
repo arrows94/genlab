@@ -87,6 +87,8 @@ export interface Buff {
 export interface AutomationState {
   autoAssign: boolean;
   autoBreed: { enabled: boolean; rule: string; species: string | null };
+  /** Sequenzier-Roboter: sequence the strongest unknown genomes into free slots. */
+  autoSequence: boolean;
   /** Sim time of the last automation run. */
   lastRunMs: number;
 }
@@ -210,6 +212,8 @@ export interface GameState {
   contracts: ContractsState;
   voyage: VoyageState;
   daily: DailyState;
+  /** Großforschung: completed levels per project (never reset). */
+  grandResearch: Record<string, number>;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -234,7 +238,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, lastRunMs: 0 },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
     talents: {},
@@ -244,6 +248,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },
     daily: { day: -1, step: 0, claimed: 0 },
+    grandResearch: {},
   };
 }
 

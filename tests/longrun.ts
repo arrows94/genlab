@@ -8,6 +8,7 @@ import { campSlots, campsUsed, missionAvailable, startMission } from '@core/feat
 import { sequencerSlots, sequencerUsed, sequencingCost, startSequencing, isBeingSequenced } from '@core/features/sequencing';
 import { consumeBlocker } from '@core/features/stable';
 import { claimDaily, dailyAvailable } from '@core/features/daily';
+import { grandAvailable, grandCost, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@core/features/voyage';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
@@ -22,6 +23,14 @@ import { playBot } from './bot';
 export function useLongTermSystems(g: Game): void {
   const free = (c: Creature) => c.job === null || c.job.kind === 'building';
   const fastest = () => g.state.creatures.filter(free).sort((a, b) => (effectiveStats(g, b).spd ?? 0) - (effectiveStats(g, a).spd ?? 0));
+
+  // Großforschung: the cheapest open project whenever the slot is free.
+  if (g.state.features.grandResearch && runningGrandResearch(g).length < grandSlots(g)) {
+    const open = g.content.grandResearch.list
+      .filter((d) => grandAvailable(g, d) && grandLevel(g, d.id) < d.maxLevel && canAfford(g.state, grandCost(g, d)))
+      .sort((a, b) => a.hours - b.hours);
+    if (open[0]) startGrandResearch(g, open[0].id);
+  }
 
   // Tagesbelohnung: claimed at the first check-in of the day.
   if (dailyAvailable(g)) claimDaily(g);
