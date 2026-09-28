@@ -131,9 +131,10 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 - [x] **Großforschung**: eigener Forschungsplatz mit Laufzeiten von Stunden bis Tagen für große Boni
       (Sofort-Forschungen bleiben) – 7 Projekte, Stufen bleiben über Vererbung und Äon
 - [x] Forschung „Sequenzier-Roboter“: sequenziert automatisch die stärksten unbekannten Genome
-- [ ] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
-- [ ] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
-      (Ziel der Wochenexpedition folgt bereits dem Element der Wochen-Mutation; Wochen-Boss fehlt noch)
+- [x] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
+      (ab Turm-Etage 10; 3 Angriffe pro Tag, bis zu 6 sammelbar; Belohnungen bei 10/25/50/75/100 %)
+- [x] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
+      (Wochenexpedition und Wochen-Boss teilen das Element der Wochen-Mutation)
 - [ ] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
 
 ## Leitplanken

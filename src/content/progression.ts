@@ -54,6 +54,10 @@ export const features: FeatureDef[] = [
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   {
+    id: 'weeklyBoss', name: 'Wochen-Boss', hint: 'Ein Wochen-Boss erscheint im Genom-Turm! Greife ihn jeden Tag an – der Schaden sammelt sich über die ganze Woche.',
+    condition: { type: 'towerFloor', floor: 10 },
+  },
+  {
     id: 'grandResearch', name: 'Großforschung', hint: 'Großforschung: Im Forschungs-Tab laufen jetzt Projekte über Stunden und Tage – mit großen Boni, die jede Vererbung überdauern.',
     condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
   },

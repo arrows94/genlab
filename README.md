@@ -68,6 +68,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Wochen-Boss | `core/features/weeklyBoss.ts`, `balance.weeklyBoss` | Ein Titan pro Woche im Turm (Element wie Wochenexpedition und Wochen-Mutation, Stärke nach Turm-Rekord); Angriffe mit dem Turm-Team, Schaden sammelt sich, Belohnungen in Stufen. |
 | Großforschung | `core/features/grandResearch.ts`, `content/grandResearch.ts` | Eigener Forschungsplatz mit Projekten über Stunden bis Tage (Nester, Camps, Sequenzierer, Offline-Zeit, Produktion …); Stufen bleiben über jeden Reset, laufende Projekte forschen weiter. |
 | Zeitkristalle | `core/features/timeCrystals.ts`, `balance.timeCrystals` | Knappe Währung (Aufträge ab Stufe 3, Tagesbelohnung, Turm-Meilensteine); verkürzt ein langes Projekt (ab 1 h) um 4 h. Der Zeittrank im Markt wirkt nur auf kurze Vorgänge. |
 | Tagesbelohnung | `core/features/daily.ts`, `balance.daily` | Einmal pro Tag im Labor; der Treue-Kalender (7 Stufen) rückt pro Abholung vor, eine Pause setzt nichts zurück. Belohnungen wachsen mit der Produktion (`core/rewards.ts`). |

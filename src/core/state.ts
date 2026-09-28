@@ -171,6 +171,23 @@ export interface DailyState {
   claimed: number;
 }
 
+export interface WeeklyBossState {
+  /** Week index of the current boss (-1 = none yet). */
+  week: number;
+  /** Contract day of the last attempt refill. */
+  day: number;
+  species: string;
+  element: string;
+  /** Floor the boss is built from (tower record at the start of the week). */
+  floor: number;
+  maxHp: number;
+  damage: number;
+  /** Reward tiers already paid out this week. */
+  tiers: number;
+  attempts: number;
+  last: { damage: number; rounds: number } | null;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -214,6 +231,7 @@ export interface GameState {
   daily: DailyState;
   /** Großforschung: completed levels per project (never reset). */
   grandResearch: Record<string, number>;
+  weeklyBoss: WeeklyBossState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -249,6 +267,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     voyage: { pending: null, nextBonus: 0 },
     daily: { day: -1, step: 0, claimed: 0 },
     grandResearch: {},
+    weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
   };
 }
 

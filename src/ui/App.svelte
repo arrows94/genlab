@@ -57,7 +57,7 @@
     view.frame;
     // A voyage waiting for its decision counts as news in the expedition tab.
     const voyage = game.state.voyage.pending ? 1 : 0;
-    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0) };
+    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0), tower: (view.unseen.tower ?? 0) + (game.state.features['weeklyBoss'] && game.state.tower.team.length > 0 && game.state.weeklyBoss.damage < game.state.weeklyBoss.maxHp ? game.state.weeklyBoss.attempts : 0) };
   });
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 

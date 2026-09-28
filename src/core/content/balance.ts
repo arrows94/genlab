@@ -49,6 +49,19 @@ export interface Balance {
     /** With the Urgen talent: chance to awaken an Urgen allele. */
     primalAwaken: number;
   };
+  weeklyBoss: {
+    /** The boss is built like the enemy of this floor (at least `minFloor`) from the tower record. */
+    minFloor: number;
+    /** Boss HP = enemy HP × this. Calibrated with a team that just holds its record: ~2.5–3.5 % per attempt, so a week (21 attempts) reaches 50–75 % and a growing team 100 %. */
+    hpMult: number;
+    atkMult: number;
+    /** Rounds per attempt (the boss never dies inside one attempt). */
+    rounds: number;
+    attemptsPerDay: number;
+    maxAttempts: number;
+    /** Rewards when the total damage reaches `at` × boss HP (in order). */
+    tiers: { at: number; rewards: ResourceAmounts }[];
+  };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
     baseSlots: number;

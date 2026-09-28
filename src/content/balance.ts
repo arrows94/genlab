@@ -38,6 +38,21 @@ export const balance: Balance = {
   grandResearch: {
     baseSlots: 1,
   },
+  weeklyBoss: {
+    minFloor: 10,
+    hpMult: 25,
+    atkMult: 1.5,
+    rounds: 30,
+    attemptsPerDay: 3,
+    maxAttempts: 6,
+    tiers: [
+      { at: 0.1, rewards: { towerTokens: 30 } },
+      { at: 0.25, rewards: { towerTokens: 60, catalyst: 2 } },
+      { at: 0.5, rewards: { towerTokens: 120, timeCrystals: 1 } },
+      { at: 0.75, rewards: { towerTokens: 200, catalyst: 5 } },
+      { at: 1, rewards: { towerTokens: 400, timeCrystals: 2, aeonShards: 1 } },
+    ],
+  },
   timeCrystals: {
     skipHours: 4,
     longProjectHours: 1,
