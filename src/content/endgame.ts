@@ -7,8 +7,8 @@ export const talents: TalentDef[] = [
     modifiers: [{ target: 'production.food', op: 'pct', value: 0.5 }, { target: 'production.gold', op: 'pct', value: 0.5 }] },
   { id: 'aeonMemory', name: 'Erinnerung', tier: 1, cost: 1, requires: [], description: 'Jeder Neustart beginnt mit 1.000 Nahrung und 500 Gold.',
     modifiers: [], onReset: { food: 1000, gold: 500 } },
-  { id: 'aeonAutomation', name: 'Ewige Automatik', tier: 1, cost: 2, requires: [], description: 'Arbeitsplaner und Zuchtautomat bleiben dauerhaft freigeschaltet.',
-    modifiers: [], unlocksFeatures: ['autoAssign', 'autoBreed'] },
+  { id: 'aeonAutomation', name: 'Ewige Automatik', tier: 1, cost: 2, requires: [], description: 'Arbeitsplaner, Zuchtautomat, Sequenzier-Roboter und Recycling-Automat bleiben dauerhaft freigeschaltet.',
+    modifiers: [], unlocksFeatures: ['autoAssign', 'autoBreed', 'autoSequence', 'autoRecycle'] },
   // Tier 2
   { id: 'twinBirth', name: 'Zwillingsgeburten', tier: 2, cost: 3, requires: ['aeonHarvest'], description: '15 % Chance, dass ein Ei Zwillinge hervorbringt.',
     modifiers: [{ target: 'breeding.twinChance', op: 'add', value: 0.15 }] },

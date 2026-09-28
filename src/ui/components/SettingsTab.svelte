@@ -3,6 +3,7 @@
   import { formatDuration, formatNumber } from '@core/format';
   import { exportText, importText, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
+  import { cancelNotices, notificationsNeedOpenTab, notificationsSupported, requestNotifyPermission } from '../platform/notify';
 
   let text = $state('');
   let fileInput: HTMLInputElement | undefined = $state();
@@ -46,6 +47,21 @@
     const t = text;
     if (t.trim() && (await ask('Aktuellen Spielstand durch den Import ersetzen?', { ok: 'Ersetzen', danger: true }))) importText(t);
   }
+  async function toggleNotifications(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    if (!input.checked) {
+      updatePrefs({ notifications: false });
+      cancelNotices();
+      return;
+    }
+    if (await requestNotifyPermission()) {
+      updatePrefs({ notifications: true });
+      toast('Benachrichtigungen aktiviert.');
+    } else {
+      input.checked = false;
+      toast('Benachrichtigungen sind blockiert – bitte in den System- bzw. Browser-Einstellungen erlauben.', 'error', 6000);
+    }
+  }
   async function doReset() {
     if ((await ask('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden.', { ok: 'Löschen', danger: true })) && (await ask('Ganz sicher? Exportiere vorher ein Backup!', { ok: 'Endgültig löschen', danger: true }))) hardReset();
   }
@@ -71,6 +87,22 @@
       <input type="checkbox" checked={prefs.reduceMotion} onchange={(e) => updatePrefs({ reduceMotion: e.currentTarget.checked })} />
       <span>Weniger Animationen</span>
     </label>
+  </article>
+
+  <article class="panel">
+    <h3>Benachrichtigungen</h3>
+    {#if notificationsSupported()}
+      <label class="opt check">
+        <input type="checkbox" checked={prefs.notifications} onchange={toggleNotifications} />
+        <span>Erinnern, wenn etwas fertig ist</span>
+      </label>
+      <p class="small muted">
+        Expeditionen zurück, Eier geschlüpft, Sequenzierung fertig – und wenn die Offline-Produktion ihr Maximum erreicht hat.
+        {#if notificationsNeedOpenTab()}Im Browser nur, solange der Tab im Hintergrund geöffnet bleibt.{/if}
+      </p>
+    {:else}
+      <p class="small muted">Auf dieser Plattform nicht verfügbar.</p>
+    {/if}
   </article>
 
   <article class="panel">

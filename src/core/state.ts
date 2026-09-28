@@ -45,6 +45,10 @@ export interface Creature {
   /** Number of permanent boosts used on this creature (drives their cost). */
   boostUses: number;
   sequenced: boolean;
+  /** Erbanlage (latent trait id) – hidden until `deepSequenced`; null = none. */
+  latent: string | null;
+  /** Deep sequencing done: the Erbanlage is known and active. */
+  deepSequenced: boolean;
   /** Gene splices already applied (limited per creature). */
   splices: number;
   /** Rare colour mutation "Schillernd". */
@@ -113,6 +117,8 @@ export interface AutomationState {
   autoAssign: boolean;
   autoBreed: AutoBreedConfig;
   autoRecycle: AutoRecycleConfig;
+  /** Sequenzier-Roboter: sequence the strongest unknown genomes into free slots. */
+  autoSequence: boolean;
   /** Sim time of the last automation run. */
   lastRunMs: number;
 }
@@ -143,6 +149,73 @@ export interface TowerState {
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
   } | null;
+}
+
+/** A concrete requirement of an offered Gen-Auftrag (parameters rolled). */
+export type ContractRequirement =
+  | { kind: 'expresses'; locus: string; allele: string }
+  | { kind: 'genotype'; locus: string; allele: string }
+  | { kind: 'element'; element: string }
+  | { kind: 'minTier'; tier: string }
+  | { kind: 'topLoci'; count: number; homozygous: boolean }
+  | { kind: 'minRarity'; rarity: string }
+  | { kind: 'minGeneration'; generation: number };
+
+export interface ContractOffer {
+  template: string;
+  requirements: ContractRequirement[];
+  done: boolean;
+}
+
+export interface ContractsState {
+  /** UTC day index of the current board (-1 = none yet). */
+  day: number;
+  offers: ContractOffer[];
+  /** Exchanges used today. */
+  rerolls: number;
+  /** Completed contracts ever (drives the contract level; survives every reset). */
+  completed: number;
+}
+
+/** A voyage that came back and waits for the player's decision. */
+export interface VoyageReturn {
+  destination: string;
+  team: number[];
+  events: string[];
+  loot: Record<string, Decimal>;
+  alleleSamples: number;
+  decision: string;
+}
+
+export interface VoyageState {
+  pending: VoyageReturn | null;
+  /** Loot bonus carried to the next voyage (from a decision). */
+  nextBonus: number;
+}
+
+export interface DailyState {
+  /** Contract day of the last claim (-1 = never). */
+  day: number;
+  /** Next step of the Treue-Kalender (0 …). */
+  step: number;
+  claimed: number;
+}
+
+export interface WeeklyBossState {
+  /** Week index of the current boss (-1 = none yet). */
+  week: number;
+  /** Contract day of the last attempt refill. */
+  day: number;
+  species: string;
+  element: string;
+  /** Floor the boss is built from (tower record at the start of the week). */
+  floor: number;
+  maxHp: number;
+  damage: number;
+  /** Reward tiers already paid out this week. */
+  tiers: number;
+  attempts: number;
+  last: { damage: number; rounds: number } | null;
 }
 
 export interface GameState {
@@ -183,6 +256,12 @@ export interface GameState {
   anomaliesCompleted: Record<string, boolean>;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
+  contracts: ContractsState;
+  voyage: VoyageState;
+  daily: DailyState;
+  /** Großforschung: completed levels per project (never reset). */
+  grandResearch: Record<string, number>;
+  weeklyBoss: WeeklyBossState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -208,13 +287,18 @@ export function createEmptyState(now: number, seed: number): GameState {
     statistics: {},
     prestige: {},
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
-      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, lastRunMs: 0 },
+      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
     perfection: { perfect: {}, shiny: {} },
+    contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
+    voyage: { pending: null, nextBonus: 0 },
+    daily: { day: -1, step: 0, claimed: 0 },
+    grandResearch: {},
+    weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
   };
 }
 

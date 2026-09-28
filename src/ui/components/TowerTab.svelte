@@ -11,6 +11,7 @@
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import WeeklyBossPanel from './WeeklyBossPanel.svelte';
 
   /**
    * Genom-Turm: tower column with the floors around the team, an arena that
@@ -237,6 +238,8 @@
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
   </div>
 </header>
+
+{#if game.state.features['weeklyBoss']}<WeeklyBossPanel />{/if}
 
 <div class="stage">
   <!-- Tower column -->

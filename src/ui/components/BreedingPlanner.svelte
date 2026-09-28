@@ -3,17 +3,18 @@
   import { formatNumber, formatPercent } from '@core/format';
   import { breedingPreview } from '@core/features/planner';
   import type { Creature } from '@core/state';
+  import type { BreedingRitualDef } from '@core/content/types';
   import { game, view } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
   /** Visual breeding planner: species bars, rarity strip, stat ranges vs. parents, gene outcomes. */
-  let { a, b }: { a: Creature; b: Creature } = $props();
+  let { a, b, ritual }: { a: Creature; b: Creature; ritual?: BreedingRitualDef } = $props();
 
   const neutral = { pattern: 'none', eyes: 'round', horn: 'none' };
 
   const preview = $derived.by(() => {
     view.frame;
-    return breedingPreview(game, a, b);
+    return breedingPreview(game, a, b, ritual);
   });
   // Parent marks use base stats like the predicted range (both before rarity and bonuses).
   const stats = $derived.by(() => {

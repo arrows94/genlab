@@ -53,11 +53,13 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
 
 ## Priorität
 
-- [ ] **Gen-Aufträge** (Favorit, zuerst umsetzen)
-  - [ ] Wechselnde Aufträge, z. B. „Wasser-Hybrid mit Genotyp K/K und T/T“, „3 dominante Top-Allele“
-  - [ ] Nutzen Zuchtplaner, Sequenzieren und Splicing gezielt
-  - [ ] Belohnungen: Äon-Splitter, seltene Allele, kosmetische Muster
-  - [ ] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
+- [x] **Gen-Aufträge** (Favorit, zuerst umsetzen)
+  - [x] Wechselnde Aufträge, z. B. „Wasser-Hybrid mit Genotyp K/K und T/T“, „3 dominante Top-Allele“
+  - [x] Nutzen Zuchtplaner, Sequenzieren und Splicing gezielt
+  - [x] Belohnungen: Äon-Splitter, seltene Allele (Genproben)
+  - [ ] Belohnung: kosmetische Muster (braucht neue Muster im Kreaturen-SVG)
+  - [x] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
+  - [x] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
 - [ ] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
   - [ ] 2–3 weitere Stufen mit spielverändernden Talenten (z. B. Eier verdoppeln Eltern-Fähigkeiten,
         Expeditionen bringen Hybride, Turm startet ab dem halben Rekord)
@@ -95,37 +97,49 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Schritt 1 – Technische Grundlage (zuerst)
 
-- [ ] Lange Projekte laufen nach echter Uhrzeit, unabhängig von der Offline-Grenze
+- [x] Lange Projekte laufen nach echter Uhrzeit, unabhängig von der Offline-Grenze
       (die Grenze gilt nur noch für die laufende Produktion von Nahrung/Gold)
-- [ ] Benachrichtigungen in der Handy-App (Capacitor Local Notifications, ohne Server),
+- [x] Benachrichtigungen in der Handy-App (Capacitor Local Notifications, ohne Server),
       z. B. „Deine Expedition ist zurück!“; optional Browser-Benachrichtigungen in der PWA
+  - [ ] Auf echtem Android-/iOS-Gerät testen (Statusleisten-Icon, Erlaubnis-Dialog, Zustellung nach App-Schließen)
 
 ## Schritt 2 – Lange Projekte neben den kurzen (nicht statt der kurzen)
 
-- [ ] **Tagesreise** (12–24 h) mit garantiert seltenen Funden
-- [ ] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
-      (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“)
-- [ ] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
-- [ ] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
-- [ ] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
+- [x] **Tagesreise** (12–24 h) mit garantiert seltenen Funden
+      (Nebelmoor 12 h ab Selten nach der 1. Vererbung, Wolkengrat 24 h ab Episch nach der 2.)
+- [x] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
+      (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“) – Team bis 3, belegt ein Camp, ab der 2. Vererbung
+- [x] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
+      (Kreuzungsritual 4 h, Edelbrut 8 h, Meisterbrut 24 h)
+- [x] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
+      (Erbanlagen: verborgen, vererbbar, erst nach Aufdeckung wirksam; mit „Urgene“ kann ein Urgen-Allel erwachen)
+- [x] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
+      (Reisen belegen Camp und Kreaturen, Brutrituale Nest und Eltern)
       („beste Kreatur eine Woche wegschicken oder im Turm einsetzen?“)
 
 ## Schritt 3 – Beschäftigung „in der Zwischenzeit“
 
-- [ ] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
-- [ ] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
-- [ ] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
+- [x] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
+- [x] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
+      (Treue-Kalender mit 7 Stufen, rückt pro Abholung vor statt pro Kalendertag)
+- [x] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
+      (Aufträge ab Stufe 3, Tagesbelohnung Tag 7, Turm-Rekord alle 25 Etagen; −4 h pro Kristall.
+      Der Markt-Trank heißt jetzt Zeittrank und wirkt nur noch auf Vorgänge unter 1 h)
 
 ## Schritt 4 – Große Ziele
 
-- [ ] **Großforschung**: eigener Forschungsplatz mit Laufzeiten von Stunden bis Tagen für große Boni
-      (Sofort-Forschungen bleiben)
-- [ ] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
-- [ ] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
+- [x] **Großforschung**: eigener Forschungsplatz mit Laufzeiten von Stunden bis Tagen für große Boni
+      (Sofort-Forschungen bleiben) – 7 Projekte, Stufen bleiben über Vererbung und Äon
+- [x] Forschung „Sequenzier-Roboter“: sequenziert automatisch die stärksten unbekannten Genome
+- [x] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
+      (ab Turm-Etage 10; 3 Angriffe pro Tag, bis zu 6 sammelbar; Belohnungen bei 10/25/50/75/100 %)
+- [x] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
+      (Wochenexpedition und Wochen-Boss teilen das Element der Wochen-Mutation)
 - [ ] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
 
 ## Leitplanken
 
 - [ ] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
 - [ ] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen
-- [ ] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
+- [x] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
+      (`tests/longrun.ts`; Funde: Reisende überstehen jetzt Vererbungen, eine Tagesreise pro Region gleichzeitig)

@@ -20,6 +20,73 @@ export interface Balance {
     /** Offline summaries are only shown for absences longer than this. */
     summaryMinSec: number;
   };
+  contracts: {
+    /** Offers on the board per (UTC) day. */
+    offersPerDay: number;
+    /** Free exchanges of an open offer per day. */
+    rerollsPerDay: number;
+    /** Completed contracts needed for level 1, 2, 3 … */
+    levelThresholds: number[];
+    /** A new board appears at this hour (UTC) – 4 = early morning in Europe. */
+    dayStartHourUtc: number;
+  };
+  voyage: {
+    days: number;
+    maxTeam: number;
+    /** Events on the way (one per day, spread over the voyage). */
+    events: number;
+    cost: ResourceAmounts;
+  };
+  deepSequencing: {
+    hours: number;
+    cost: ResourceAmounts;
+    /** Share of new (wild, start, capsule) creatures that carry an Erbanlage. */
+    latentChance: number;
+    /** Chance per parent to pass its Erbanlage on (hidden or not). */
+    latentInherit: number;
+    /** Chance for a new Erbanlage when none was inherited. */
+    latentMutation: number;
+    /** With the Urgen talent: chance to awaken an Urgen allele. */
+    primalAwaken: number;
+  };
+  weeklyBoss: {
+    /** The boss is built like the enemy of this floor (at least `minFloor`) from the tower record. */
+    minFloor: number;
+    /** Boss HP = enemy HP × this. Calibrated with a team that just holds its record: ~2.5–3.5 % per attempt, so a week (21 attempts) reaches 50–75 % and a growing team 100 %. */
+    hpMult: number;
+    atkMult: number;
+    /** Rounds per attempt (the boss never dies inside one attempt). */
+    rounds: number;
+    attemptsPerDay: number;
+    maxAttempts: number;
+    /** Rewards when the total damage reaches `at` × boss HP (in order). */
+    tiers: { at: number; rewards: ResourceAmounts }[];
+  };
+  grandResearch: {
+    /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
+    baseSlots: number;
+  };
+  timeCrystals: {
+    /** Hours one crystal takes off a long project. */
+    skipHours: number;
+    /** Projects at least this long are "long": only crystals shorten them, potions don't. */
+    longProjectHours: number;
+    /** A crystal for every new tower record at a multiple of this floor. */
+    towerEvery: number;
+  };
+  daily: {
+    /**
+     * Treue-Kalender: one step per claim (not per calendar day, so a break
+     * costs nothing); after the last step it starts over.
+     */
+    rewards: { minutes?: number; resources?: ResourceAmounts; alleleSamples?: number }[];
+  };
+  notifications: {
+    /** Only processes at least this long announce their end (no pings for 20 s eggs). */
+    minDurationSec: number;
+    /** Same-kind completions within this window share one notification. */
+    groupSec: number;
+  };
   start: {
     resources: ResourceAmounts;
     species: string;

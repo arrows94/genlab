@@ -6,16 +6,19 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    campSlots, hintChance, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
+    campSlots, campsUsed, hintChance, isJourney, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
     type MissionData,
   } from '@core/features/expedition';
   import { processRemainingMs } from '@core/systems/processes';
   import type { Condition } from '@core/content/types';
   import type { Creature } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
+  import VoyagePanel from './VoyagePanel.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
+  import { runningVoyage, type VoyageData } from '@core/features/voyage';
 
   /**
    * Expeditions as a world map: regions are nodes around the camp, running
@@ -36,7 +39,10 @@
     frostpeak: { x: 560, y: 138, icon: '❄️', color: '#80deea' },
     shadowwood: { x: 318, y: 222, icon: '🦇', color: '#9575cd' },
     crystalcaves: { x: 490, y: 222, icon: '💠', color: '#f48fb1' },
+    mistmoor: { x: 405, y: 162, icon: '🌫️', color: '#a5b4c8' },
+    cloudridge: { x: 575, y: 42, icon: '☁️', color: '#e1bee7' },
   };
+
   function place(id: string, i: number) {
     return layout[id] ?? { x: 140 + ((i * 97) % 440), y: 60 + ((i * 53) % 170), icon: '🧭', color: '#2fd3c4' };
   }
@@ -64,6 +70,7 @@
   }
   function lockText(cond: Condition | undefined): string {
     if (cond?.type === 'upgradeLevel') return `${content.upgrades.get(cond.upgrade).name} Stufe ${cond.level}`;
+    if (cond?.type === 'prestigeCount') return `nach der ${cond.count}. ${content.prestigeLayers.get(cond.layer).name}`;
     return 'noch nicht erschlossen';
   }
   const seen = (speciesId: string) => Object.keys(game.state.dex).some((k) => k.startsWith(`${speciesId}:`));
@@ -84,14 +91,24 @@
       .sort((a, b) => b.spd - a.spd)
       .slice(0, 40);
     const chosenCreature = chosen !== null ? findCreature(game, chosen) : undefined;
+    const vp = runningVoyage(game);
+    const voyage = vp
+      ? { proc: vp, dest: content.voyageDestinations.get((vp.data as VoyageData).destination), progress: Math.min(1, vp.elapsedMs / vp.durationMs), remaining: processRemainingMs(game, vp), size: (vp.data as VoyageData).team.length }
+      : null;
     return {
       slots: campSlots(game),
+      used: campsUsed(game),
+      voyage,
+      voyageOn: game.state.features['voyage'] === true,
       running,
       regions,
       sel,
       def,
       pos: place(sel, content.missions.list.indexOf(def)),
       duration: missionDurationMs(game, sel),
+      journey: isJourney(game, sel),
+      minRarity: def.wildMinRarity ? content.rarities.get(def.wildMinRarity) : null,
+      regionFull: def.maxConcurrent !== undefined && running.filter((r) => r.missionId === sel).length >= def.maxConcurrent,
       wild: wildChance(game, sel),
       hint: game.state.features['hybrids'] ? hintChance(game, sel) : 0,
       species: missionSpecies(game, sel).map((id) => ({ s: content.species.get(id), seen: seen(id) })),
@@ -106,15 +123,18 @@
   function select(id: string) {
     if (missionAvailable(game, id)) viewState.expedition.region = id;
   }
-  function send() {
-    if (chosen === null) return;
-    if (act(startMission(game, chosen, data.sel))) chosen = null;
+  async function send() {
+    const c = data.chosenCreature;
+    if (!c) return;
+    // Journeys bind a creature and a camp for a long time – make that a conscious choice.
+    if (data.journey && !(await ask(`${c.name} ist ${formatDuration(data.duration)} unterwegs und fehlt so lange bei Arbeit, Zucht und Turm. Losschicken?`, { ok: 'Losschicken' }))) return;
+    if (act(startMission(game, c.id, data.sel))) chosen = null;
   }
 </script>
 
 <header class="head">
   <h2>🧭 Erkundung</h2>
-  <span class="muted num">{data.running.length}/{data.slots} Camps belegt</span>
+  <span class="muted num">{data.used}/{data.slots} Camps belegt</span>
 </header>
 
 <!-- World map -->
@@ -204,9 +224,24 @@
 
 <!-- Camps -->
 <div class="camps">
-  {#each Array.from({ length: data.slots }, (_, i) => i) as i (i)}
+  {#each Array.from({ length: Math.max(data.slots, data.used) }, (_, i) => i) as i (i)}
     {@const r = data.running[i]}
-    {#if r}
+    {#if !r && data.voyage && i === data.running.length}
+      <article class="camp-card" style="--rc: {content.elements.get(data.voyage.dest.element).color}">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 48 48" width="48" height="48" class="ring">
+            <circle cx="24" cy="24" r="20" class="track" />
+            <circle cx="24" cy="24" r="20" class="fill" stroke-dasharray={RING} stroke-dashoffset={RING * (1 - data.voyage.progress)} />
+          </svg>
+          <span class="avatar">{data.voyage.dest.icon}</span>
+        </div>
+        <div class="camp-info">
+          <b>🗺️ {data.voyage.dest.name}</b>
+          <span class="small muted">Wochenexpedition · {data.voyage.size} {data.voyage.size === 1 ? 'Kreatur' : 'Kreaturen'}</span>
+          <span class="small num">noch {formatDuration(data.voyage.remaining)} <CrystalSkip process={data.voyage.proc} /></span>
+        </div>
+      </article>
+    {:else if r}
       {@const pos = place(r.missionId, content.missions.list.indexOf(r.mission))}
       <article class="camp-card" style="--rc: {pos.color}">
         <div class="ring-wrap">
@@ -222,7 +257,7 @@
         <div class="camp-info">
           <b>{pos.icon} {r.mission.name}</b>
           <span class="small muted">{r.creature?.name ?? '?'} · {r.progress < 0.5 ? 'unterwegs' : 'auf dem Rückweg'}</span>
-          <span class="small num">noch {formatDuration(r.remaining)}</span>
+          <span class="small num">noch {formatDuration(r.remaining)} <CrystalSkip process={game.state.processes.find((p) => p.id === r.id)} /></span>
         </div>
       </article>
     {:else}
@@ -230,6 +265,8 @@
     {/if}
   {/each}
 </div>
+
+{#if data.voyageOn}<VoyagePanel />{/if}
 
 <div class="lower">
   <!-- Selected region -->
@@ -243,11 +280,14 @@
     </div>
 
     <div class="facts">
+      {#if data.journey}<span class="fact journey">🌙 Tagesreise</span>{/if}
       <span class="fact">⏱ <b class="num">{formatDuration(data.duration)}</b></span>
       <span class="fact">🐾 <b class="num">{formatPercent(data.wild, 0)}</b> wilde Kreatur</span>
+      {#if data.minRarity}<span class="fact" style="color: {data.minRarity.color}">✦ mindestens {data.minRarity.name}</span>{/if}
       {#if data.hint > 0}<span class="fact">📜 <b class="num">{formatPercent(data.hint, 0)}</b> Rezepthinweis</span>{/if}
     </div>
     <div class="meter" title="Chance auf eine wilde Kreatur"><div style="width: {data.wild * 100}%"></div></div>
+    {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.{#if data.def.maxConcurrent} Nur {data.def.maxConcurrent === 1 ? 'ein Team' : `${data.def.maxConcurrent} Teams`} gleichzeitig.{/if}</p>{/if}
 
     <h4>Beute {#if data.chosenCreature}<span class="small muted">mit {data.chosenCreature.name} (×{formatNumber(data.factor, { decimals: 2 })})</span>{/if}</h4>
     <div class="loot">
@@ -277,7 +317,7 @@
       <h3>Wer geht los?</h3>
       <span class="small muted">💨 Tempo erhöht die Beute</span>
     </div>
-    {#if data.running.length >= data.slots}
+    {#if data.used >= data.slots}
       <p class="muted small">Alle Camps sind belegt.</p>
     {:else}
       <div class="tiles">
@@ -299,7 +339,7 @@
         {/each}
       </div>
     {/if}
-    <button class="primary go" disabled={chosen === null || !data.affordable || data.running.length >= data.slots} onclick={send}>
+    <button class="primary go" disabled={chosen === null || !data.affordable || data.used >= data.slots || data.regionFull} onclick={send}>
       🧭 Nach {data.def.name} schicken · <CostLabel cost={data.cost} />
     </button>
   </article>
@@ -383,6 +423,7 @@
   }
   .facts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .fact { padding: 0.15rem 0.55rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
+  .fact.journey { border-color: var(--violet); color: #d7c6ff; }
   .meter { height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; margin: 0.45rem 0 0.2rem; }
   .meter div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--rc)); }
   h4 { margin: 0.7rem 0 0.35rem; font-size: 0.9rem; }

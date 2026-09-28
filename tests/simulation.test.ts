@@ -96,6 +96,54 @@ describe('offline progress', () => {
     expect(g.state.statistics['completed.test-egg']).toBe(1);
   });
 
+  it('finishes long processes by the real clock while production stays capped', () => {
+    const H = 3_600_000;
+    const capped = farmingGame();
+    capped.simulateOffline(12 * H);
+    const g = farmingGame();
+    registerProcessHandler('test-journey', { complete: () => {} });
+    startProcess(g, 'test-journey', 3 * 24 * H);
+    const report = g.simulateOffline(4 * 24 * H);
+    expect(g.state.processes).toHaveLength(0);
+    expect(report.completed).toEqual({ 'test-journey': 1 });
+    expect(report.simulatedMs).toBe(12 * H);
+    expect(g.state.resources.food!.toNumber()).toBeCloseTo(capped.state.resources.food!.toNumber(), 6);
+  });
+
+  it('advances unfinished processes by the whole absence', () => {
+    const g = makeGame();
+    registerProcessHandler('test-week', { complete: () => {} });
+    const p = startProcess(g, 'test-week', 7 * 24 * 3_600_000);
+    const report = g.simulateOffline(2 * 24 * 3_600_000);
+    expect(p.elapsedMs).toBe(2 * 24 * 3_600_000);
+    expect(report.completed).toEqual({});
+  });
+
+  it('applies speed buffs beyond the cap only while they last', () => {
+    const H = 3_600_000;
+    const g = makeGame();
+    registerProcessHandler('test-slow', { complete: () => {} });
+    const p = startProcess(g, 'test-slow', 40 * H);
+    addBuff(g, 'haste', [{ target: 'process.test-slow.speed', op: 'mult', value: 2 }], 16 * H);
+    // 12 h capped + 4 h beyond, both at double speed (32 h), then 7 h at normal speed.
+    g.simulateOffline(23 * H);
+    expect(p.elapsedMs).toBeCloseTo(39 * H, 0);
+    expect(g.state.buffs).toHaveLength(0);
+    g.simulateOffline(H);
+    expect(g.state.processes).toHaveLength(0);
+  });
+
+  it('does not chain new processes beyond the cap', () => {
+    const H = 3_600_000;
+    const g = makeGame();
+    registerProcessHandler('test-chain', { complete: (ctx) => void startProcess(ctx, 'test-chain', 30 * H) });
+    startProcess(g, 'test-chain', 30 * H);
+    const report = g.simulateOffline(5 * 24 * H);
+    expect(report.completed).toEqual({ 'test-chain': 1 });
+    expect(g.state.processes).toHaveLength(1);
+    expect(g.state.processes[0]!.elapsedMs).toBe(0);
+  });
+
   it('respects process speed modifiers', () => {
     const g = makeGame();
     registerProcessHandler('test-fast', { complete: () => {} });

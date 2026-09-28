@@ -163,6 +163,20 @@ export function libraryHas(ctx: GameContext, locus: string, allele: string): boo
   return ctx.state.geneLibrary[`${locus}:${allele}`] === true;
 }
 
+/** Alleles still missing in the gene library, rarest first (gene samples fill these). */
+export function missingAlleles(ctx: GameContext): { locus: string; allele: string }[] {
+  const out: { locus: string; allele: string; weight: number }[] = [];
+  for (const locus of activeLoci(ctx)) {
+    for (const a of locus.alleles) if (!libraryHas(ctx, locus.id, a.id)) out.push({ locus: locus.id, allele: a.id, weight: a.weight });
+  }
+  return out.sort((x, y) => x.weight - y.weight).map(({ locus, allele }) => ({ locus, allele }));
+}
+
+/** Adds the rarest missing alleles to the gene library. */
+export function catalogueSamples(ctx: GameContext, count: number): void {
+  for (const { locus, allele } of missingAlleles(ctx).slice(0, Math.max(0, count))) catalogueGenome(ctx, { [locus]: [allele, allele] });
+}
+
 /** Normalised genotype key (sorted by dominance, then id): "K/k". */
 export function genotypeKey(locus: GeneLocusDef, pair: readonly [string, string]): string {
   const sorted = [...pair].sort((x, y) => {

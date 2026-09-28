@@ -3,7 +3,9 @@
   import { canAfford } from '@core/costs';
   import { findCreature } from '@core/creatures';
   import { formatDuration } from '@core/format';
-  import { isBeingSequenced, runningSequencing, sequencerSlots, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
+  import { DEEP_SEQUENCE, SEQUENCE, isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
+  import { setAutoSequence } from '@core/features/automation';
+  import { deepSequencingBlocker, deepSequencingCost, deepSequencingTimeMs, startDeepSequencing } from '@core/features/deepSequencing';
   import { activeLoci, libraryHas } from '@core/genetics';
   import { processRemainingMs } from '@core/systems/processes';
   import { game, view, act } from '../store.svelte';
@@ -12,9 +14,11 @@
   import DnaHelix from './DnaHelix.svelte';
   import DnaSequence from './DnaSequence.svelte';
   import SplicingBench from './SplicingBench.svelte';
+  import CrystalSkip from './CrystalSkip.svelte';
 
   let toSequence = $state<number | null>(null);
   let inspect = $state<number | null>(null);
+  let toDeep = $state<number | null>(null);
 
   const data = $derived.by(() => {
     view.frame;
@@ -22,8 +26,10 @@
     const libraryTotal = activeLoci(game).reduce((n, l) => n + l.alleles.length, 0);
     return {
       slots: sequencerSlots(game),
-      running: runningSequencing(game).map((p) => ({
+      used: sequencerUsed(game),
+      running: game.state.processes.filter((p) => p.kind === SEQUENCE || p.kind === DEEP_SEQUENCE).map((p) => ({
         id: p.id,
+        deep: p.kind === DEEP_SEQUENCE,
         name: findCreature(game, (p.data as SequenceData).creatureId)?.name ?? '?',
         progress: p.elapsedMs / p.durationMs,
         remaining: processRemainingMs(game, p),
@@ -35,6 +41,12 @@
       libraryCount: Object.keys(game.state.geneLibrary).length,
       libraryTotal,
       splicing: game.state.features['splicing'] === true,
+      deepOn: game.state.features['deepSequencing'] === true,
+      robot: game.state.features['autoSequence'] === true,
+      robotOn: game.state.automation.autoSequence,
+      deepCandidates: game.state.creatures.filter((c) => !deepSequencingBlocker(game, c)),
+      deepCost: deepSequencingCost(game),
+      deepTime: deepSequencingTimeMs(game),
     };
   });
 
@@ -52,15 +64,21 @@
 
 <section class="grid two">
   <article class="panel">
-    <h3>🔬 Sequenzierlabor <span class="muted num">{data.running.length}/{data.slots}</span></h3>
+    <h3>🔬 Sequenzierlabor <span class="muted num">{data.used}/{data.slots}</span></h3>
+    {#if data.robot}
+      <label class="robot" class:on={data.robotOn}>
+        <input type="checkbox" checked={data.robotOn} onchange={(e) => act(setAutoSequence(game, e.currentTarget.checked))} />
+        <span>🤖 Sequenzier-Roboter <span class="small muted">– stärkste unbekannte Genome zuerst</span></span>
+      </label>
+    {/if}
     {#each data.running as r (r.id)}
-      <div class="running">
-        <span>{r.name}</span>
+      <div class="running" class:deep={r.deep}>
+        <span>{r.name}{#if r.deep}<span class="small deep-tag">&ensp;· Tiefensequenzierung</span>{/if}</span>
         <DnaHelix progress={r.progress} pairs={14} width={180} height={30} />
-        <span class="num small muted">noch {formatDuration(r.remaining)}</span>
+        <span class="num small muted">noch {formatDuration(r.remaining)} <CrystalSkip process={game.state.processes.find((p) => p.id === r.id)} /></span>
       </div>
     {/each}
-    {#if data.running.length < data.slots}
+    {#if data.used < data.slots}
       <CreaturePicker creatures={data.unsequenced} bind:value={toSequence} placeholder="Unbekanntes Genom wählen …" />
       <p class="small muted">Dauer {formatDuration(data.time)}. Die Kreatur arbeitet währenddessen weiter.</p>
       <button class="primary" disabled={!data.cost || !canAfford(game.state, data.cost)} onclick={() => toSequence !== null && act(startSequencing(game, toSequence)) && (toSequence = null)}>
@@ -80,6 +98,24 @@
     {/if}
   </article>
 </section>
+
+{#if data.deepOn}
+  <section class="panel deep-panel">
+    <h3>🧿 Tiefensequenzierung</h3>
+    <p class="small muted">
+      Manche Kreaturen tragen eine verborgene <b>Erbanlage</b> – stark, vererbbar, aber erst wirksam, wenn sie aufgedeckt ist.
+      Die Tiefensequenzierung dauert {formatDuration(data.deepTime)} und belegt einen Sequenzierer.{#if game.state.talents['ancientGenes']} Dabei kann ein schlummerndes Urgen erwachen.{/if}
+    </p>
+    {#if data.used >= data.slots}
+      <p class="small muted">Alle Sequenzierer sind belegt.</p>
+    {:else}
+      <CreaturePicker creatures={data.deepCandidates} bind:value={toDeep} placeholder="Sequenzierte Kreatur wählen …" />
+      <button class="primary" disabled={toDeep === null || !canAfford(game.state, data.deepCost)} onclick={() => toDeep !== null && act(startDeepSequencing(game, toDeep)) && (toDeep = null)}>
+        Tief sequenzieren · <CostLabel cost={data.deepCost} />
+      </button>
+    {/if}
+  </section>
+{/if}
 
 <section class="panel library">
   <h3>📚 Genbibliothek <span class="muted num">{data.libraryCount}/{data.libraryTotal}</span></h3>
@@ -110,6 +146,10 @@
   .small { font-size: 0.85rem; margin: 0.35rem 0; }
   button { width: 100%; }
   .running { display: grid; gap: 0.2rem; margin-bottom: 0.6rem; }
+  .deep-tag { color: var(--violet); }
+  .robot { display: flex; gap: 0.45rem; align-items: center; margin-bottom: 0.5rem; padding: 0.3rem 0.5rem; border-radius: 8px; border: 1px solid var(--line); font-size: 0.9rem; }
+  .robot.on { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
+  .deep-panel { border-color: color-mix(in srgb, var(--violet) 45%, var(--line)); }
   .inspect { margin-top: 0.6rem; }
   .loci { display: grid; gap: 0.5rem; }
   .locus { display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem; align-items: center; }

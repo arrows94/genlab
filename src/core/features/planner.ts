@@ -1,8 +1,9 @@
 import type { GameContext } from '../context';
 import type { Creature } from '../state';
 import { activeLoci, genotypeDistribution, phenotypeLabel } from '../genetics';
-import { rarityChances, rarityWeights } from '../rarity';
-import { mutationChance } from './breeding';
+import { rarityChances } from '../rarity';
+import type { BreedingRitualDef } from '../content/types';
+import { eggRarityWeights, mutationChance } from './breeding';
 import { hybridChance, isRecipeDiscovered, recipeMatches } from './hybrids';
 
 /**
@@ -24,7 +25,7 @@ export interface BreedingPreview {
   mutationChance: number;
 }
 
-export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): BreedingPreview {
+export function breedingPreview(ctx: GameContext, a: Creature, b: Creature, ritual?: BreedingRitualDef): BreedingPreview {
   const known = a.sequenced && b.sequenced;
   const loci: LocusPreview[] = activeLoci(ctx).map((locus) => {
     const pa = a.genome[locus.id];
@@ -44,7 +45,7 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): Bre
   if (ctx.state.features['hybrids']) {
     for (const r of ctx.content.recipes.list) {
       if (!recipeMatches(ctx, r, a, b)) continue;
-      const p = remaining * hybridChance(ctx, r);
+      const p = remaining * Math.min(1, hybridChance(ctx, r) * (ritual?.hybridMult ?? 1));
       species.push({ id: isRecipeDiscovered(ctx, r) ? r.result : null, p });
       remaining -= p;
     }
@@ -62,9 +63,9 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): Bre
 
   return {
     species,
-    rarity: rarityChances(rarityWeights(ctx.content, ctx.balance, ctx.mods())),
+    rarity: rarityChances(eggRarityWeights(ctx, ritual)),
     loci,
     stats,
-    mutationChance: mutationChance(ctx),
+    mutationChance: mutationChance(ctx, ritual),
   };
 }

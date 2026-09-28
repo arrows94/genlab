@@ -5,6 +5,7 @@
   import { formatNumber } from '@core/format';
   import { visibleUpgrades } from '@core/queries';
   import { game, view, act } from '../store.svelte';
+  import GrandResearchPanel from './GrandResearchPanel.svelte';
 
   const toRows = (category: 'research' | 'infinite') =>
     visibleUpgrades(game, category).map((u) => {
@@ -19,6 +20,8 @@
     ].filter((s) => s.rows.length > 0);
   });
 </script>
+
+{#if game.state.features['grandResearch']}<GrandResearchPanel />{/if}
 
 {#each sections as section (section.title)}
 <h2>{section.title}</h2>

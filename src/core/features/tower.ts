@@ -266,8 +266,11 @@ export function fightNextFloor(ctx: GameContext): void {
     return;
   }
   run.floor = floor;
+  const record = floor > tw.best;
   tw.best = Math.max(tw.best, floor);
   const { rewards, allele } = floorRewards(ctx, floor);
+  // Milestone records (first time only, the best floor survives every reset) give a time crystal.
+  if (record && floor % ctx.balance.timeCrystals.towerEvery === 0) rewards['timeCrystals'] = D(1);
   for (const [res, v] of Object.entries(rewards)) grant(ctx, res, v, 'tower');
   ctx.bus.emit('towerFloor', { floor, win: true, rewards, allele });
 }

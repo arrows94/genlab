@@ -183,6 +183,13 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [], unlocksFeatures: ['autoBreed'],
   },
   {
+    id: 'autoSequencer', name: 'Sequenzier-Roboter', category: 'research',
+    requires: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'statistic', statistic: 'sequenced', amount: 5 }] },
+    description: 'Sequenziert automatisch die stärksten unbekannten Genome, sobald ein Sequenzierer frei ist (Schalter im Genlabor).',
+    cost: { essence: 120, gold: 3000 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['autoSequence'],
+  },
+  {
     id: 'recyclerAutomaton', name: 'Recycling-Automat', category: 'research',
     requires: { type: 'all', of: [{ type: 'feature', feature: 'recycler' }, { type: 'statistic', statistic: 'recycled', amount: 25 }] },
     description: 'Recycelt überzählige Kreaturen automatisch nach deinen Regeln.',

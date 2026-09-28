@@ -13,6 +13,13 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'never',
   },
+  plugins: {
+    LocalNotifications: {
+      // Monochrome status bar icon (android/app/src/main/res/drawable/ic_stat_genlab.xml).
+      smallIcon: 'ic_stat_genlab',
+      iconColor: '#2fd3c4',
+    },
+  },
 };
 
 export default config;

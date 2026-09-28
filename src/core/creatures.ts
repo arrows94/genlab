@@ -3,6 +3,8 @@ import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
 import { genomeModifiers, isPerfectGenome, rollGenome } from './genetics';
 import type { GameContext } from './context';
+import type { LatentTraitDef } from './content/types';
+import { Rng } from './rng';
 import { dexKey, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
 export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
@@ -27,6 +29,8 @@ export interface CreateCreatureOptions {
   shiny?: boolean;
   /** Omitted → the species name. */
   name?: string;
+  /** Erbanlage; omitted → rolled with `deepSequencing.latentChance`. */
+  latent?: string | null;
   source?: CreatureSource;
 }
 
@@ -66,6 +70,8 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     abilities: opts.abilities ?? rollStartingAbilities(ctx),
     genome: opts.genome ?? rollGenome(ctx),
     sequenced: false,
+    latent: opts.latent !== undefined ? opts.latent : rollLatent(ctx, state.nextId - 1),
+    deepSequenced: false,
     splices: 0,
     shiny: opts.shiny ?? ctx.rng.chance(Math.min(1, ctx.mods().apply('creature.shinyChance', balance.perfection.shinyChance))),
     boosts: {},
@@ -114,6 +120,47 @@ export function findCreature(ctx: GameContext, id: number): Creature | undefined
   return ctx.state.creatures.find((c) => c.id === id);
 }
 
+/**
+ * Erbanlagen use their own seeded RNG (save + creature id), so adding them
+ * does not shift the game's random sequence.
+ */
+export function latentRng(ctx: GameContext, creatureId: number): Rng {
+  return Rng.fromSeed(`latent:${ctx.state.createdAt}:${creatureId}`);
+}
+
+/** A new Erbanlage (or none) for a creature without inherited traits. */
+export function rollLatent(ctx: GameContext, creatureId: number, chance = ctx.balance.deepSequencing.latentChance, rng = latentRng(ctx, creatureId)): string | null {
+  const list = ctx.content.latentTraits.list.filter((t) => t.weight > 0);
+  if (list.length === 0 || !rng.chance(chance)) return null;
+  const weights: Record<string, number> = {};
+  for (const t of list) weights[t.id] = t.weight;
+  return rng.weighted(weights);
+}
+
+/**
+ * Offspring Erbanlage: each parent passes its trait on with `latentInherit`
+ * (even while it is still hidden), otherwise a small chance for a new one.
+ */
+export function inheritLatent(ctx: GameContext, a: Creature, b: Creature, childId: number): string | null {
+  const cfg = ctx.balance.deepSequencing;
+  const rng = latentRng(ctx, childId);
+  for (const p of rng.chance(0.5) ? [a, b] : [b, a]) if (p.latent && rng.chance(cfg.latentInherit)) return p.latent;
+  return rollLatent(ctx, childId, cfg.latentMutation, rng);
+}
+
+/** Old saves: creatures from before Erbanlagen get their roll (seeded, so stable per save). */
+export function ensureLatentTraits(ctx: GameContext): void {
+  for (const c of ctx.state.creatures) {
+    if (c.latent === undefined) c.latent = rollLatent(ctx, c.id);
+    if (c.deepSequenced === undefined) c.deepSequenced = false;
+  }
+}
+
+/** The creature's Erbanlage once it is revealed (deep sequencing), else null. */
+export function activeLatent(ctx: GameContext, c: Creature): LatentTraitDef | null {
+  return c.deepSequenced && c.latent && ctx.content.latentTraits.has(c.latent) ? ctx.content.latentTraits.get(c.latent) : null;
+}
+
 /** Modifiers that apply to one creature only (abilities, creature buffs, potion boosts, alleles). */
 export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModifier[] {
   const out: SourcedModifier[] = [];
@@ -140,6 +187,8 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
     for (const s of ctx.content.stats.list) out.push({ target: `stat.${s.id}`, op: 'pct', value: infusionLevel * ctx.balance.infusion.statPerLevel, source: 'infusion' });
   }
   if (c.genome) out.push(...genomeModifiers(ctx, c.genome));
+  const latent = activeLatent(ctx, c);
+  if (latent && latent.scope !== 'global') for (const m of latent.modifiers) out.push({ ...m, source: `latent:${latent.id}` });
   return out;
 }
 

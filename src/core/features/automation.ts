@@ -12,6 +12,7 @@ import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
 import { canConsume, sell, stableFree } from './stable';
+import { isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, startSequencing } from './sequencing';
 
 /**
  * Automation (unlockable): auto-assign jobs by best fit and auto-breeding
@@ -219,6 +220,29 @@ export function autoBreedOnce(ctx: GameContext): boolean {
   return startBreeding(ctx, plan.a.id, plan.b.id).ok;
 }
 
+/**
+ * Sequenzier-Roboter: fills free sequencer slots with the strongest
+ * unsequenced creatures it can afford. Returns how many it started.
+ */
+export function autoSequenceOnce(ctx: GameContext): number {
+  let started = 0;
+  const queue = ctx.state.creatures
+    .filter((c) => !c.sequenced && !isBeingSequenced(ctx, c.id))
+    .sort((a, b) => creaturePower(ctx, b) - creaturePower(ctx, a));
+  for (const c of queue) {
+    if (sequencerUsed(ctx) >= sequencerSlots(ctx)) break;
+    if (!canAfford(ctx.state, sequencingCost(ctx, c))) break;
+    if (startSequencing(ctx, c.id).ok) started++;
+  }
+  return started;
+}
+
+export function setAutoSequence(ctx: GameContext, enabled: boolean): ActionResult {
+  if (!ctx.state.features['autoSequence']) return { ok: false, reason: 'Der Sequenzier-Roboter ist noch nicht erforscht.' };
+  ctx.state.automation.autoSequence = enabled;
+  return { ok: true };
+}
+
 export function setAutoAssign(ctx: GameContext, enabled: boolean): ActionResult {
   if (!ctx.state.features['autoAssign']) return { ok: false, reason: 'Der Arbeitsplaner ist noch nicht freigeschaltet.' };
   ctx.state.automation.autoAssign = enabled;
@@ -261,5 +285,6 @@ export const automationSystem: System = {
     if (a.autoRecycle.enabled && ctx.state.features['autoRecycle']) autoRecycleOnce(ctx);
     if (a.autoBreed.enabled && ctx.state.features['autoBreed']) autoBreedOnce(ctx);
     if (a.autoAssign && ctx.state.features['autoAssign']) autoAssign(ctx);
+    if (a.autoSequence && ctx.state.features['autoSequence']) autoSequenceOnce(ctx);
   },
 };

@@ -23,6 +23,14 @@ export const features: FeatureDef[] = [
     condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'creatureCount', count: 12 }] },
   },
   { id: 'sequencing', name: 'Sequenzierlabor', tab: 'genetics', hint: 'Das Sequenzierlabor ist bereit: Entschlüssele Genome mit Essenz und plane gezielte Zuchten.', condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'resourceEarned', resource: 'essence', amount: 5 }] } },
+  {
+    id: 'daily', name: 'Tagesbelohnung', hint: 'Tagesbelohnung: Hol dir jeden Tag im Labor ein Geschenk ab. Eine Pause kostet nichts – der Kalender wartet auf dich.',
+    condition: { type: 'feature', feature: 'breeding' },
+  },
+  {
+    id: 'contracts', name: 'Gen-Aufträge', tab: 'contracts', hint: 'Gen-Aufträge: Züchter suchen Kreaturen mit bestimmten Genen. Jeden Tag gibt es neue Aufträge.',
+    condition: { type: 'statistic', statistic: 'sequenced', amount: 1 },
+  },
   { id: 'splicing', name: 'Gen-Splicing', hint: 'Gen-Splicing möglich: Übertrage Allele aus der Genbibliothek – mit Risiko.' },
   { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 25 } },
   {
@@ -30,6 +38,7 @@ export const features: FeatureDef[] = [
     condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'sold', amount: 10 }, { type: 'resourceEarned', resource: 'essence', amount: 60 }] },
   },
   { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
+  { id: 'autoSequence', name: 'Sequenzier-Roboter', hint: 'Der Sequenzier-Roboter ist bereit: Im Genlabor einschalten, dann entschlüsselt er neue Genome von selbst.' },
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter.' },
   { id: 'autoRecycle', name: 'Recycling-Automat', hint: 'Der Recycling-Automat zerlegt überzählige Kreaturen nach deinen Regeln (Gen-Recycler).' },
   {
@@ -45,6 +54,26 @@ export const features: FeatureDef[] = [
   { id: 'towerAuto', name: 'Turm-Routine', hint: 'Dein Team startet nach einer Niederlage automatisch neu.' },
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  {
+    id: 'weeklyBoss', name: 'Wochen-Boss', hint: 'Ein Wochen-Boss erscheint im Genom-Turm! Greife ihn jeden Tag an – der Schaden sammelt sich über die ganze Woche.',
+    condition: { type: 'towerFloor', floor: 10 },
+  },
+  {
+    id: 'grandResearch', name: 'Großforschung', hint: 'Großforschung: Im Forschungs-Tab laufen jetzt Projekte über Stunden und Tage – mit großen Boni, die jede Vererbung überdauern.',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+  },
+  {
+    id: 'deepSequencing', name: 'Tiefensequenzierung', hint: 'Tiefensequenzierung: Manche Kreaturen tragen eine verborgene Erbanlage. Das Genlabor kann sie in acht Stunden aufdecken – und damit wecken.',
+    condition: { type: 'all', of: [{ type: 'feature', feature: 'sequencing' }, { type: 'prestigeCount', layer: 'inheritance', count: 1 }] },
+  },
+  {
+    id: 'specialBreeding', name: 'Besondere Brut', hint: 'Besondere Brut: Rituale in der Brutstation dauern Stunden, bringen aber seltenere Nachkommen und mehr Hybride.',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+  },
+  {
+    id: 'voyage', name: 'Wochenexpedition', hint: 'Wochenexpedition möglich: Schicke ein Team für sieben Tage auf große Fahrt (Erkundung).',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 },
+  },
   { id: 'anomalies', name: 'Anomalien', tab: 'anomalies', hint: 'Anomalien entdeckt: Durchläufe mit besonderen Regeln und dauerhaften Belohnungen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 } },
   {
     id: 'aeon', name: 'Äon', tab: 'aeon', hint: 'Das Äon ruft: Ein tieferer Neustart für Äon-Splitter und einen eigenen Talentbaum.',
@@ -80,6 +109,8 @@ export const achievements: AchievementDef[] = [
   { id: 'librarian', name: 'Bibliothekar', description: '12 Allele katalogisiert.', condition: { type: 'geneLibrary', count: 12 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'archivist', name: 'Archivar', description: '20 Allele katalogisiert.', condition: { type: 'geneLibrary', count: 20 }, modifiers: [{ target: 'cost.sequencing', op: 'pct', value: -0.2 }] },
   { id: 'completeLibrary', name: 'Lebendes Archiv', description: 'Alle Allele katalogisiert.', condition: { type: 'geneLibrary', count: 26 }, modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.05 }] },
+  { id: 'contractor', name: 'Auftragszüchter', description: '10 Gen-Aufträge erfüllt.', condition: { type: 'statistic', statistic: 'contracts', amount: 10 }, modifiers: [{ target: 'contracts.reward', op: 'pct', value: 0.1 }] },
+  { id: 'geneBroker', name: 'Genmakler', description: '50 Gen-Aufträge erfüllt.', condition: { type: 'statistic', statistic: 'contracts', amount: 50 }, modifiers: [{ target: 'contracts.reward', op: 'pct', value: 0.25 }] },
   { id: 'firstHybrid', name: 'Kreuzung geglückt', description: 'Einen Hybriden entdeckt.', condition: { type: 'any', of: [
     { type: 'dex', species: 'steamling' }, { type: 'dex', species: 'magmole' }, { type: 'dex', species: 'stormhawk' }, { type: 'dex', species: 'mossgolem' },
     { type: 'dex', species: 'glacierfin' }, { type: 'dex', species: 'duskmoth' }, { type: 'dex', species: 'rustling' }, { type: 'dex', species: 'venomvine' },

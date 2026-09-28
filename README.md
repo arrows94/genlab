@@ -27,6 +27,8 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 | Android | [Capacitor 8](https://capacitorjs.com) (`android/`) | `npm run android` (öffnet Android Studio) | `android.yml`: bei Tag `v*` oder manuell → Debug-APK als Artefakt |
 | iOS | Capacitor (`ios/`) | `npm run ios` (öffnet Xcode, nur auf dem Mac) | – (braucht Mac + Apple-Developer-Konto) |
 
+**Benachrichtigungen** (Optionen, standardmäßig aus): Die Handy-Apps planen beim Wechsel in den Hintergrund lokale Benachrichtigungen beim System (Capacitor Local Notifications, ohne Server) – z. B. „Expedition zurück“ oder „Offline-Maximum erreicht“. Im Browser/PWA erscheinen sie nur, solange der Tab im Hintergrund geöffnet bleibt; Tauri hat keine. Planung in `core/notices.ts`, Plattform in `ui/platform/notify.ts`.
+
 **Spielstände:** Browser und Desktop speichern im `localStorage` (bei Tauri dauerhaft im App-Profil). Die Handy-Apps nutzen Capacitor Preferences (Android SharedPreferences, iOS UserDefaults), weil das System den WebView-Speicher löschen kann; ein vorhandener Browser-Spielstand wird beim ersten Start übernommen. Export/Import (Optionen) funktioniert überall – so lässt sich ein Spielstand zwischen Geräten umziehen.
 
 ### Einmalige Einrichtung
@@ -40,7 +42,7 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 
 ## Spielen
 
-Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern und auf einem anderen Gerät wieder einspielen.
+Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern und auf einem anderen Gerät wieder einspielen.
 
 ## Architektur
 
@@ -59,13 +61,21 @@ tests/         Vitest-Tests für die Core-Logik
 | Inhalte + Validierung | `core/content/types.ts`, `core/content/validate.ts` | Jede Inhaltsart hat ein Interface; beim Start werden IDs, Querverweise, Modifier-Ziele und Bedingungen geprüft. Fehler → lesbare Liste, z. B. `species[emberpup].element: unbekannte elements-id "lava"`. |
 | Balancing | `content/balance.ts` | Alle Tuning-Zahlen (Tick, Offline-Cap, Wahrscheinlichkeiten, Prestige-Formel …). |
 | Modifier-System | `core/modifiers.ts`, `core/providers.ts` | `(Basis + Σadd) × (1 + Σpct) × Πmult` pro Ziel (`production.gold`, `breeding.time` …). Jede Bonusquelle ist ein Provider; neue Boni = neue Daten. |
-| Simulation | `core/game.ts` | Feste Zeitschritte (`tickMs`). Offline-Fortschritt nutzt dieselbe `step()`-Funktion mit gröberen Schritten, gedeckelt (12 h + `offline.capHours`). |
+| Simulation | `core/game.ts` | Feste Zeitschritte (`tickMs`). Offline-Fortschritt nutzt dieselbe `step()`-Funktion mit gröberen Schritten, gedeckelt (12 h + `offline.capHours`). Laufende Prozesse und Buffs folgen darüber hinaus der echten Uhrzeit (`systems/timers.ts`), ohne Produktion und ohne neue Ketten. |
 | Zeitprozesse | `core/systems/processes.ts` | Generische Prozesse (Ei, Mission, Sequenzierung …) mit Handler je `kind`. |
 | Event-Bus | `core/events.ts`, `core/gameEvents.ts` | Typisierte Events; Statistiken, Erfolge und UI-Toasts hängen sich an. |
 | Speichern | `core/save.ts` | Versionierte Spielstände (`saveVersion` + Migrationen), Default-Merge für neue Felder, Export/Import als Text (`GENLAB1:…`), austauschbarer `SaveStorage`. |
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Wochen-Boss | `core/features/weeklyBoss.ts`, `balance.weeklyBoss` | Ein Titan pro Woche im Turm (Element wie Wochenexpedition und Wochen-Mutation, Stärke nach Turm-Rekord); Angriffe mit dem Turm-Team, Schaden sammelt sich, Belohnungen in Stufen. |
+| Großforschung | `core/features/grandResearch.ts`, `content/grandResearch.ts` | Eigener Forschungsplatz mit Projekten über Stunden bis Tage (Nester, Camps, Sequenzierer, Offline-Zeit, Produktion …); Stufen bleiben über jeden Reset, laufende Projekte forschen weiter. |
+| Zeitkristalle | `core/features/timeCrystals.ts`, `balance.timeCrystals` | Knappe Währung (Aufträge ab Stufe 3, Tagesbelohnung, Turm-Meilensteine); verkürzt ein langes Projekt (ab 1 h) um 4 h. Der Zeittrank im Markt wirkt nur auf kurze Vorgänge. |
+| Tagesbelohnung | `core/features/daily.ts`, `balance.daily` | Einmal pro Tag im Labor; der Treue-Kalender (7 Stufen) rückt pro Abholung vor, eine Pause setzt nichts zurück. Belohnungen wachsen mit der Produktion (`core/rewards.ts`). |
+| Gen-Aufträge | `core/features/contracts.ts`, `content/contracts.ts` | Tägliches Auftragsbrett (Seed aus Spielstand + Tag, kein Server). Vorlagen mit offenen Parametern werden aus Genbibliothek und Dex gewürfelt; erfüllte Aufträge heben die Auftragsstufe. |
+| Erbanlagen | `core/features/deepSequencing.ts`, `content/latent.ts` | Verborgene, vererbbare Eigenschaften (etwa jede dritte Kreatur); die Tiefensequenzierung (8 h, Sequenzierer-Platz) deckt sie auf und aktiviert sie. |
+| Besondere Brut | `core/features/breeding.ts`, `content/rituals.ts` | Brutrituale (4–24 h) mit höherer Hybrid-Chance, Mindestseltenheit oder mehr Mutation; belegen Nest und Eltern. |
+| Wochenexpedition | `core/features/voyage.ts`, `content/voyages.ts` | 7-Tage-Reise mit Team (bis 3), Ereignissen pro Tag und einer Entscheidung bei der Rückkehr. Ziel wechselt wöchentlich und folgt dem Element der Wochen-Mutation. |
 | Endgame | `core/features/tower.ts`, `talents.ts`, `anomalies.ts`, `weekly.ts` | Turm als System (läuft offline weiter), Talente/Anomalien/Wochen-Mutation als Modifier-Provider. |
 | Genetik | `core/genetics.ts` | Ausprägung (dominant/rezessiv/kodominant), Mendel-Vererbung, Genom-Modifier, sichtbarer Phänotyp. Neue Gene in alten Spielständen werden beim Laden automatisch ergänzt. |
 
@@ -75,6 +85,13 @@ tests/         Vitest-Tests für die Core-Logik
 
 ```bash
 GENLAB_TIMELINE=1 npx vitest run tests/progression.test.ts --silent=false
+```
+
+`tests/longrun.test.ts` spielt mehrere Tage wie ein Idle-Spieler (3 Besuche à 20 Minuten pro Tag, dazwischen Offline-Fortschritt nach echter Uhr) und nutzt dabei Gen-Aufträge, Tagesreisen, Wochenexpedition, Brutrituale und Tiefensequenzierung (`tests/longrun.ts`). Geprüft wird, dass die Systeme genutzt werden und höchstens 25 % des Einkommens ausmachen. Die Tagestabelle und ein Zwei-Wochen-Lauf (dauert einige Minuten):
+
+```bash
+GENLAB_TIMELINE=1 npx vitest run tests/longrun.test.ts --silent=false
+GENLAB_LONGRUN=1 npx vitest run tests/longrun.test.ts --silent=false
 ```
 
 Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).

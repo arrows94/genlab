@@ -231,6 +231,13 @@ export interface MissionDef {
   /** resource → [min, max] */
   rewards: Record<string, [number, number]>;
   wildChance: number;
+  /**
+   * Guaranteed find (long journeys): the wild creature has at least this
+   * rarity and always finds a place, even in a full stable.
+   */
+  wildMinRarity?: string;
+  /** Teams allowed on this mission at the same time (journeys: 1). */
+  maxConcurrent?: number;
 }
 
 export interface DexRewardDef {
@@ -346,6 +353,151 @@ export interface CapsuleDef {
   pity: { threshold: number; minRarity: string };
 }
 
+/**
+ * Gen-Auftrag requirement as written in the content. Parameters left out are
+ * rolled when a contract is offered (from the player's gene library and dex),
+ * so a few templates give many different contracts.
+ */
+export type ContractRequirementSpec =
+  /** The phenotype shows this allele (a rare, non-default one if rolled). */
+  | { kind: 'expresses'; category?: GeneLocusDef['category']; locus?: string; allele?: string }
+  /** Homozygous for this allele; `recessive` rolls a recessive allele (hidden in carriers). */
+  | { kind: 'genotype'; recessive?: boolean; locus?: string; allele?: string }
+  | { kind: 'element'; element?: string }
+  | { kind: 'minTier'; tier: SpeciesTier }
+  /** At least `count` loci with their top allele (expressed or homozygous). */
+  | { kind: 'topLoci'; count: number; homozygous: boolean }
+  | { kind: 'minRarity'; rarity: string }
+  | { kind: 'minGeneration'; generation: number };
+
+export interface ContractTemplateDef {
+  id: string;
+  name: string;
+  /** Who asks – flavour text on the card. */
+  client: string;
+  /** Contract level (1 …); higher levels unlock with completed contracts. */
+  level: number;
+  /** Relative frequency among the templates of the pool. */
+  weight: number;
+  /** Extra gate besides the level (e.g. hybrids unlocked). */
+  requires?: Condition;
+  requirements: ContractRequirementSpec[];
+  reward: {
+    /** Minutes of the current production of every produced resource. */
+    minutes?: number;
+    /** Fixed amounts; only granted once the resource's feature is unlocked. */
+    resources?: ResourceAmounts;
+    /** Missing alleles (rarest first) added to the gene library. */
+    alleleSamples?: number;
+  };
+}
+
+/**
+ * Erbanlage: a hidden, strong trait some creatures carry. It is inherited
+ * even while hidden and only takes effect once a deep sequencing reveals it.
+ */
+export interface LatentTraitDef {
+  id: string;
+  name: string;
+  description: string;
+  /** Relative frequency among creatures that carry a trait. */
+  weight: number;
+  /** Like abilities: self, job (while working) or global. */
+  scope: 'self' | 'job' | 'global';
+  modifiers: ModifierDef[];
+}
+
+/**
+ * Großforschung: slow projects (hours to days) on their own research slot
+ * with large, permanent bonuses. Levels survive every reset.
+ */
+export interface GrandResearchDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Duration of level 1 in hours; each further level takes `hoursGrowth` times longer. */
+  hours: number;
+  hoursGrowth: number;
+  maxLevel: number;
+  cost: ResourceAmounts;
+  costGrowth: number;
+  requires?: Condition;
+  /** Applied once per completed level. */
+  modifiers: ModifierDef[];
+}
+
+/** Besondere Brut: a slow breeding ritual with better odds (the normal egg stays quick). */
+export interface BreedingRitualDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Fixed breeding time in hours (replaces the normal time). */
+  hours: number;
+  /** Extra cost on top of the normal breeding cost. */
+  cost: ResourceAmounts;
+  requires?: Condition;
+  /** Multiplies every hybrid recipe chance. */
+  hybridMult?: number;
+  /** The offspring has at least this rarity. */
+  minRarity?: string;
+  /** Extra weight for rare and better (0.5 = +50 %). */
+  rarityBoost?: number;
+  /** Added to the mutation chance. */
+  mutationAdd?: number;
+}
+
+/** Wochenexpedition: destination of a week (picked by the week, themed by the weekly mutation). */
+export interface VoyageDestinationDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  element: string;
+  /** Species that can join the team at the return. */
+  species: string[];
+  /** resource → [min, max] before team and event factors */
+  rewards: Record<string, [number, number]>;
+}
+
+/** Something that happens on one day of the voyage; applied at the return. */
+export interface VoyageEventDef {
+  id: string;
+  text: string;
+  weight: number;
+  effect: {
+    /** Loot change, e.g. -0.1 = −10 %. */
+    lootPct?: number;
+    resources?: ResourceAmounts;
+    alleleSamples?: number;
+    /** Reveals a hybrid recipe hint (once hybrids are unlocked). */
+    hint?: boolean;
+  };
+}
+
+export interface VoyageOptionDef {
+  label: string;
+  description: string;
+  /** Share of the loot the player keeps (1 = all). */
+  lootFactor: number;
+  /** A creature of the destination joins (ignores the stable capacity). */
+  creature?: { minRarity: string };
+  resources?: ResourceAmounts;
+  /** Loot bonus for the next voyage, e.g. 0.5 = +50 %. */
+  nextBonus?: number;
+  /** Permanent boost to every stat of each team member, e.g. 0.05 = +5 %. */
+  teamBoost?: number;
+}
+
+/** The choice waiting at the return of a voyage. */
+export interface VoyageDecisionDef {
+  id: string;
+  text: string;
+  weight: number;
+  options: [VoyageOptionDef, VoyageOptionDef];
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -368,6 +520,13 @@ export interface ContentData {
   talents: TalentDef[];
   anomalies: AnomalyDef[];
   weeklyMutations: WeeklyMutationDef[];
+  contracts: ContractTemplateDef[];
+  voyageDestinations: VoyageDestinationDef[];
+  voyageEvents: VoyageEventDef[];
+  voyageDecisions: VoyageDecisionDef[];
+  breedingRituals: BreedingRitualDef[];
+  latentTraits: LatentTraitDef[];
+  grandResearch: GrandResearchDef[];
 }
 
 export interface Registry<T extends { id: string }> {

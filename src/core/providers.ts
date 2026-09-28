@@ -1,9 +1,11 @@
 import { D } from './num';
 import { ModifierSet } from './modifiers';
 import type { GameContext } from './context';
+import { activeLatent } from './creatures';
 import { talentProvider } from './features/talents';
 import { anomalyProvider } from './features/anomalies';
 import { weeklyProvider } from './features/weekly';
+import { grandResearchProvider } from './features/grandResearch';
 
 /**
  * A modifier provider contributes modifiers from one part of the state.
@@ -57,6 +59,8 @@ export const globalAbilityProvider: ModifierProvider = (ctx, into) => {
       const def = ctx.content.abilities.has(id) ? ctx.content.abilities.get(id) : null;
       if (def?.scope === 'global') into.addAll(`ability:${id}#${c.id}`, def.modifiers);
     }
+    const latent = activeLatent(ctx, c);
+    if (latent?.scope === 'global') into.addAll(`latent:${latent.id}#${c.id}`, latent.modifiers);
   }
 };
 
@@ -70,4 +74,5 @@ export const DEFAULT_PROVIDERS: ModifierProvider[] = [
   talentProvider,
   anomalyProvider,
   weeklyProvider,
+  grandResearchProvider,
 ];

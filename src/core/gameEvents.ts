@@ -11,6 +11,14 @@ export interface GameEvents {
   dexDiscovered: { species: string; rarity: string };
   processStarted: { processId: number; kind: string };
   processCompleted: { processId: number; kind: string };
+  contractCompleted: { template: string; creatureId: number; level: number };
+  deepSequenced: { creatureId: number; latent: string | null; awakened: boolean };
+  dailyClaimed: { step: number };
+  weeklyBossHit: { damage: number; total: number; defeated: boolean };
+  grandResearchDone: { project: string; level: number };
+  timeCrystalUsed: { processId: number; kind: string };
+  voyageReturned: { destination: string };
+  voyageResolved: { destination: string; decision: string; option: number; creatureId: number | null };
   buffExpired: { buffId: number; source: string };
   achievementUnlocked: { achievement: string };
   prestige: { layer: string; gain: Decimal };

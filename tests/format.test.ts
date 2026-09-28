@@ -31,6 +31,8 @@ describe('German number formatting', () => {
     expect(formatDuration(5_000)).toBe('5 s');
     expect(formatDuration(125_000)).toBe('2 min 5 s');
     expect(formatDuration(3_720_000)).toBe('1 h 2 min');
+    expect(formatDuration(30 * 3_600_000)).toBe('30 h 0 min');
+    expect(formatDuration(86 * 3_600_000 + 23 * 60_000)).toBe('3 d 14 h');
   });
 });
 

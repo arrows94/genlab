@@ -12,6 +12,7 @@
   import DnaHelix from './DnaHelix.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
   import CostLabel from './CostLabel.svelte';
+  import DailyCard from './DailyCard.svelte';
 
   // Filters live in viewState so they survive tab switches.
   const list = viewState.list;
@@ -75,6 +76,8 @@
     if (ids.length && (await ask(`${ids.length} Kreatur(en) recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, ids))) selected = new Set();
   }
 </script>
+
+{#if game.state.features['daily']}<DailyCard />{/if}
 
 <section class="panel collect">
   <div>

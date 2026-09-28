@@ -85,6 +85,23 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 
 Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die Werte auf das Profil der neuen Art um.
 
+## Neuer Gen-Auftrag
+
+`src/content/contracts.ts`: eine Vorlage für das tägliche Auftragsbrett. Offene Parameter werden pro Angebot gewürfelt – bevorzugt aus Allelen, die schon in der Genbibliothek stehen, und aus Arten, die im Dex entdeckt sind:
+
+```ts
+{
+  id: 'elementPure', name: 'Reine Linie', client: 'Tierpark Nordheim', level: 2, weight: 2,
+  requirements: [{ kind: 'element' }, { kind: 'genotype' }],
+  reward: { minutes: 25, resources: { essence: 50 } },
+},
+```
+
+- Anforderungen: `expresses` (Phänotyp zeigt ein Allel, optional `category`), `genotype` (reinerbig, optional `recessive: true`), `element`, `minTier`, `topLoci` (`count`, `homozygous`), `minRarity`, `minGeneration`. `locus`/`allele`/`element` können fest vorgegeben werden.
+- Gewürfelte Allele sind nie das häufigste ihres Locus (kein „Normal“), rezessive haben eine Wirkung.
+- `level` (1 …) schaltet sich über erfüllte Aufträge frei (`balance.contracts.levelThresholds`), `requires` ist eine zusätzliche Bedingung.
+- Belohnung: `minutes` = so viele Minuten der aktuellen Produktion, `resources` = feste Mengen (erst ab Freischaltung der Ressource), `alleleSamples` = seltenste fehlende Allele für die Genbibliothek. Alles skaliert mit `contracts.reward`-Modifiern.
+
 ## Neue Region (Erkundung)
 
 `src/content/missions.ts`: eine Mission mit `requires` (wann sie erscheint) und `species` (wer dort lebt):
@@ -96,6 +113,58 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
   rewards: { gold: [150, 400], catalyst: [0, 1] }, wildChance: 0.45, species: ['frostling', 'ferrox'],
 },
 ```
+
+Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
+
+## Großforschung
+
+`src/content/grandResearch.ts`: Projekte für den eigenen Forschungsplatz.
+
+```ts
+{ id: 'expeditionNetwork', name: 'Expeditionsnetz', icon: '🏕️', hours: 12, hoursGrowth: 2, maxLevel: 2,
+  description: '+1 Camp pro Stufe.', cost: { essence: 500, gold: 30000 }, costGrowth: 4,
+  modifiers: [{ target: 'slots.camp', op: 'add', value: 1 }] },
+```
+
+- Dauer der Stufe n: `hours × hoursGrowth^(n−1)`, Kosten: `cost × costGrowth^(n−1)`.
+- `modifiers` wirken einmal pro erreichter Stufe. Stufen werden nie zurückgesetzt.
+- Mehr gleichzeitige Projekte über den Modifier `slots.grandResearch`.
+
+## Erbanlage (verborgene Eigenschaft)
+
+`src/content/latent.ts`: starke Eigenschaften, die etwa jede dritte Kreatur verborgen trägt (`balance.deepSequencing.latentChance`). Sie werden vererbt, auch solange sie verborgen sind, und wirken erst nach einer Tiefensequenzierung.
+
+```ts
+{ id: 'goldNose', name: 'Goldnase', weight: 3, scope: 'job', description: '+40 % Gold bei der Arbeit.',
+  modifiers: [{ target: 'production.gold', op: 'pct', value: 0.4 }] },
+```
+
+- `scope` wie bei Fähigkeiten: `self`, `job` (nur bei der Arbeit) oder `global`.
+- `weight` = Häufigkeit unter den Trägern. Vererbung und Neuwurf stehen in `balance.deepSequencing`.
+- Erbanlagen nutzen einen eigenen, pro Spielstand und Kreatur festen Zufall – neue Einträge verändern keine anderen Würfe.
+
+## Brutritual (Besondere Brut)
+
+`src/content/rituals.ts`: langsame Brutarten mit besseren Chancen. Das normale Ei bleibt unverändert.
+
+```ts
+{ id: 'noble', name: 'Edelbrut', icon: '💠', hours: 8, description: '…', cost: { essence: 300 },
+  requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, minRarity: 'uncommon', rarityBoost: 2 },
+```
+
+- `hours` ersetzt die normale Brutzeit, `cost` kommt zu den normalen Kosten dazu.
+- Wirkungen: `hybridMult` (multipliziert jede Rezept-Chance), `minRarity` (Mindestseltenheit), `rarityBoost` (Gewicht für Selten und höher, 2 = dreifach), `mutationAdd`.
+- Der Zuchtplaner zeigt die Chancen mit dem gewählten Ritual; der Zuchtautomat nutzt nie Rituale.
+
+## Wochenexpedition
+
+`src/content/voyages.ts` enthält drei Listen:
+
+- `voyageDestinations`: Ziele mit `element`, `species` (wer sich anschließen kann) und `rewards` ([min, max] pro Teammitglied). Das Ziel der Woche folgt dem Element der Wochen-Mutation (`element.<id>.production`), sonst wird es per Woche gewürfelt.
+- `voyageEvents`: Ereignisse unterwegs (eines pro Tag) mit `effect`: `lootPct`, `resources`, `alleleSamples`, `hint`.
+- `voyageDecisions`: die Entscheidung bei der Rückkehr, genau zwei `options` mit `lootFactor` und optional `creature.minRarity`, `resources`, `nextBonus` (Beute der nächsten Reise) oder `teamBoost` (dauerhaft auf alle Werte der Teammitglieder).
+
+Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 
 ## Neues Upgrade / neue Forschung
 

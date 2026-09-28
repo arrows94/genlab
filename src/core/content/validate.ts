@@ -204,6 +204,8 @@ export function validateContent(data: ContentData): string[] {
     amounts(`${w}.cost`, m.cost);
     num(`${w}.wildChance`, m.wildChance, 0, 1);
     m.species?.forEach((s) => ref(`${w}.species`, 'species', s));
+    ref(`${w}.wildMinRarity`, 'rarities', m.wildMinRarity);
+    if (m.maxConcurrent !== undefined) num(`${w}.maxConcurrent`, m.maxConcurrent, 1);
     cond(`${w}.requires`, m.requires);
     for (const [res, range] of Object.entries(m.rewards)) {
       ref(`${w}.rewards`, 'resources', res);
@@ -269,6 +271,108 @@ export function validateContent(data: ContentData): string[] {
   }
   for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
   for (const g of data.genes) cond(`${at('genes', g.id)}.requires`, g.requires);
+  for (const d of data.voyageDestinations) {
+    const w = at('voyageDestinations', d.id);
+    text(`${w}.name`, d.name);
+    ref(`${w}.element`, 'elements', d.element);
+    if (d.species.length === 0) issues.push(`${w}.species: mindestens eine Art`);
+    d.species.forEach((s) => ref(`${w}.species`, 'species', s));
+    for (const [res, range] of Object.entries(d.rewards)) {
+      ref(`${w}.rewards`, 'resources', res);
+      if (!Array.isArray(range) || range.length !== 2 || range[0] > range[1]) issues.push(`${w}.rewards.${res}: [min, max] erwartet`);
+    }
+  }
+  for (const e of data.voyageEvents) {
+    const w = at('voyageEvents', e.id);
+    text(`${w}.text`, e.text);
+    num(`${w}.weight`, e.weight, 0);
+    amounts(`${w}.effect.resources`, e.effect.resources);
+  }
+  for (const d of data.voyageDecisions) {
+    const w = at('voyageDecisions', d.id);
+    text(`${w}.text`, d.text);
+    num(`${w}.weight`, d.weight, 0);
+    if (!Array.isArray(d.options) || d.options.length !== 2) issues.push(`${w}.options: genau zwei Optionen`);
+    (d.options ?? []).forEach((o, i) => {
+      const ow = `${w}.options[${i}]`;
+      text(`${ow}.label`, o.label);
+      num(`${ow}.lootFactor`, o.lootFactor, 0);
+      ref(`${ow}.creature.minRarity`, 'rarities', o.creature?.minRarity);
+      amounts(`${ow}.resources`, o.resources);
+    });
+  }
+  for (const r of data.grandResearch) {
+    const w = at('grandResearch', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.hours`, r.hours, 0.01);
+    num(`${w}.hoursGrowth`, r.hoursGrowth, 1);
+    num(`${w}.maxLevel`, r.maxLevel, 1);
+    num(`${w}.costGrowth`, r.costGrowth, 1);
+    amounts(`${w}.cost`, r.cost);
+    cond(`${w}.requires`, r.requires);
+    mods(`${w}.modifiers`, r.modifiers);
+  }
+  for (const t of data.latentTraits) {
+    const w = at('latentTraits', t.id);
+    text(`${w}.name`, t.name);
+    num(`${w}.weight`, t.weight, 0);
+    if (!['self', 'job', 'global'].includes(t.scope)) issues.push(`${w}.scope: ungültig "${t.scope}"`);
+    mods(`${w}.modifiers`, t.modifiers);
+  }
+  for (const r of data.breedingRituals) {
+    const w = at('breedingRituals', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.hours`, r.hours, 0.01);
+    amounts(`${w}.cost`, r.cost);
+    cond(`${w}.requires`, r.requires);
+    ref(`${w}.minRarity`, 'rarities', r.minRarity);
+    if (r.hybridMult !== undefined) num(`${w}.hybridMult`, r.hybridMult, 0);
+    if (r.rarityBoost !== undefined) num(`${w}.rarityBoost`, r.rarityBoost, 0);
+    if (r.mutationAdd !== undefined) num(`${w}.mutationAdd`, r.mutationAdd, 0, 1);
+  }
+  const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic'];
+  for (const t of data.contracts) {
+    const w = at('contracts', t.id);
+    text(`${w}.name`, t.name);
+    text(`${w}.client`, t.client);
+    num(`${w}.level`, t.level, 1);
+    num(`${w}.weight`, t.weight, 0);
+    cond(`${w}.requires`, t.requires);
+    if (!Array.isArray(t.requirements) || t.requirements.length === 0) issues.push(`${w}.requirements: mindestens eine Anforderung`);
+    (t.requirements ?? []).forEach((r, i) => {
+      const rw = `${w}.requirements[${i}]`;
+      switch (r.kind) {
+        case 'expresses':
+        case 'genotype': {
+          ref(rw, 'genes', r.locus);
+          const locus = r.locus ? data.genes.find((g) => g.id === r.locus) : undefined;
+          if (r.allele && !r.locus) issues.push(`${rw}: allele nur zusammen mit locus`);
+          if (locus && r.allele && !locus.alleles.some((a) => a.id === r.allele)) issues.push(`${rw}: unbekanntes Allel "${r.allele}" in ${locus.id}`);
+          break;
+        }
+        case 'element':
+          ref(rw, 'elements', r.element);
+          break;
+        case 'minTier':
+          if (!tiers.includes(r.tier)) issues.push(`${rw}: unbekannte Stufe "${r.tier}"`);
+          break;
+        case 'topLoci':
+          num(`${rw}.count`, r.count, 1, data.genes.filter((g) => g.alleles.some((a) => a.top)).length);
+          break;
+        case 'minRarity':
+          ref(rw, 'rarities', r.rarity);
+          break;
+        case 'minGeneration':
+          num(`${rw}.generation`, r.generation, 1);
+          break;
+        default:
+          issues.push(`${rw}: unbekannte Anforderung "${(r as { kind: string }).kind}"`);
+      }
+    });
+    amounts(`${w}.reward.resources`, t.reward.resources);
+    if (t.reward.minutes !== undefined) num(`${w}.reward.minutes`, t.reward.minutes, 0);
+    if (t.reward.alleleSamples !== undefined) num(`${w}.reward.alleleSamples`, t.reward.alleleSamples, 0);
+  }
   if (data.rarities.length === 0) issues.push('rarities: mindestens eine Seltenheit nötig');
 
   return issues;

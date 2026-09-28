@@ -1,14 +1,16 @@
 import { setNotation, type Notation } from '@core/format';
 
 /**
- * Per-device display preferences (not part of the save game): number
- * notation and reduced motion. Stored separately in localStorage.
+ * Per-device preferences (not part of the save game): number notation,
+ * reduced motion and notifications. Stored separately in localStorage.
  */
 const KEY = 'genlab.prefs';
 
 export const prefs = $state({
   notation: 'short' as Notation,
   reduceMotion: false,
+  /** Reminders while the game is in the background (needs the system permission). */
+  notifications: false,
 });
 
 function apply(): void {
