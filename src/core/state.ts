@@ -80,9 +80,25 @@ export interface Buff {
   creatureId: number | null;
 }
 
+/** Zuchtautomat settings. */
+export interface AutoBreedConfig {
+  enabled: boolean;
+  /** Goal: "power", a stat id, "hybrid", "dex", "allele", "abilities" or "cheap". */
+  rule: string;
+  species: string | null;
+  /** Target allele for the "allele" goal as "locus:allele". */
+  allele: string | null;
+  /** Max share of each owned resource a single egg may cost (1 = everything). */
+  budget: number;
+  /** When the stable is full: do nothing, or sell / recycle the weakest creature. */
+  cleanup: 'off' | 'sell' | 'recycle';
+  /** Highest rarity the cleanup may remove. */
+  cleanupMaxRarity: string;
+}
+
 export interface AutomationState {
   autoAssign: boolean;
-  autoBreed: { enabled: boolean; rule: string; species: string | null };
+  autoBreed: AutoBreedConfig;
   /** Sim time of the last automation run. */
   lastRunMs: number;
 }
@@ -177,7 +193,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, lastRunMs: 0 },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' }, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
     talents: {},
