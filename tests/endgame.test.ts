@@ -10,7 +10,7 @@ import { canConsume } from '@core/features/stable';
 import { startBreeding } from '@core/features/breeding';
 import { revealGenome } from '@core/features/sequencing';
 import { usePotion } from '@core/features/market';
-import { elementMultiplier, enemyFor, fighterFor, setTeam, simulateFight, startRun, teamSize } from '@core/features/tower';
+import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, simulateFight, startRun, teamSize } from '@core/features/tower';
 import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
 import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
@@ -93,6 +93,31 @@ describe('genome tower', () => {
     for (let i = 0; i < 25; i++) g.step(balance.tower.fightIntervalSec * 1000);
     expect(events[0]).not.toBeNull();
     expect(g.state.geneLibrary[`${events[0]!.locus}:${events[0]!.allele}`]).toBe(true);
+  });
+
+  it('fights record replay events consistent with the outcome', () => {
+    const g = endgame();
+    const team = [champion(g, 30), champion(g, 30, 'bubbloon')].map((c) => fighterFor(g, c));
+    const r = simulateFight(g, team, enemyFor(g, 5), Rng.fromSeed(3));
+    expect(r.fighters.map((f) => f.team)).toEqual([true, true, false]);
+    expect(r.fighters[2]!.speciesId).toBe(enemyFor(g, 5).speciesId);
+    expect(r.events.length).toBeGreaterThan(0);
+    expect(r.events.length).toBeLessThanOrEqual(40);
+    for (const e of r.events) {
+      expect(r.fighters[e.a]!.team).not.toBe(r.fighters[e.t]!.team);
+      expect(e.hp).toBeGreaterThanOrEqual(0);
+    }
+    if (r.win && r.events.length < 40) expect(r.events.at(-1)!.hp).toBe(0);
+  });
+
+  it('reward preview matches the floor schedule without side effects', () => {
+    const g = endgame();
+    const library = { ...g.state.geneLibrary };
+    expect(floorRewardInfo(g, 1).tokens.toNumber()).toBe(balance.tower.tokensPerFloor);
+    expect(floorRewardInfo(g, 10)).toMatchObject({ boss: true, checkpoint: true, catalyst: 1 });
+    expect(floorRewardInfo(g, 25).allele).toBe(true);
+    expect(floorRewardInfo(g, 7)).toMatchObject({ boss: false, catalyst: 0, allele: false });
+    expect(g.state.geneLibrary).toEqual(library);
   });
 
   it('team size is limited and grows with talents', () => {

@@ -17,6 +17,8 @@ import type { System } from '../systems/types';
 
 export interface Fighter {
   name: string;
+  /** Species (for the arena artwork). */
+  speciesId: string;
   element: string;
   hp: number;
   maxHp: number;
@@ -43,8 +45,10 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
   const boss = floor % t.bossEvery === 0;
   const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * (boss ? t.bossHpMult : 1));
   const names = ctx.content.species.list.filter((s) => s.element === element);
+  const species = rng.pick(names.length ? names : ctx.content.species.list);
   return {
-    name: `${boss ? 'Boss: ' : ''}${rng.pick(names.length ? names : ctx.content.species.list).name}`,
+    name: `${boss ? 'Boss: ' : ''}${species.name}`,
+    speciesId: species.id,
     element,
     hp,
     maxHp: hp,
@@ -63,6 +67,7 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
   const global = ctx.mods();
   return {
     name: c.name,
+    speciesId: c.speciesId,
     element: ctx.content.species.get(c.speciesId).element,
     hp: s.hp ?? 1,
     maxHp: s.hp ?? 1,
@@ -88,36 +93,77 @@ export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): 
   return Math.max(1, Math.round(att.atk * att.power * elem * (scale / (scale + def.def)) * rng.range(0.9, 1.1)));
 }
 
+/** One hit of a fight: attacker/target are indices into `[...team, enemy]`. */
+export interface FightEvent {
+  a: number;
+  t: number;
+  dmg: number;
+  /** Target HP after the hit. */
+  hp: number;
+  /** Element multiplier of the hit (>1 super effective, <1 resisted). */
+  m: number;
+}
+
+/** Snapshot of a fighter for replaying a fight in the UI. */
+export interface FighterSnapshot {
+  name: string;
+  speciesId: string;
+  element: string;
+  maxHp: number;
+  team: boolean;
+}
+
+export interface FightResult {
+  win: boolean;
+  rounds: number;
+  log: string[];
+  fighters: FighterSnapshot[];
+  events: FightEvent[];
+}
+
+const maxEvents = 40;
+
 /** Simulates one floor. Team HP is full at the start of every floor. */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng): { win: boolean; rounds: number; log: string[] } {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng): FightResult {
   const log: string[] = [];
-  const all = [...team, enemy].sort((a, b) => b.spd - a.spd);
+  const events: FightEvent[] = [];
+  const order = [...team, enemy];
+  const fighters = order.map((f) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team }));
+  const hit = (att: Fighter, target: Fighter, dmg: number) => {
+    if (events.length < maxEvents) {
+      events.push({ a: order.indexOf(att), t: order.indexOf(target), dmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, att.element, target.element) });
+    }
+  };
+  const all = [...order].sort((a, b) => b.spd - a.spd);
+  const done = (win: boolean, rounds: number) => ({ win, rounds, log, fighters, events });
   for (let round = 1; round <= ctx.balance.tower.maxRounds; round++) {
     for (const f of all) {
       if (f.hp <= 0) continue;
       if (f.team) {
         const dmg = damage(ctx, f, enemy, rng);
         enemy.hp -= dmg;
+        hit(f, enemy, dmg);
         if (log.length < 12) log.push(`${f.name} trifft für ${dmg}`);
         if (enemy.hp <= 0) {
           log.push(`${enemy.name} besiegt (Runde ${round})`);
-          return { win: true, rounds: round, log };
+          return done(true, round);
         }
       } else {
         const alive = team.filter((t) => t.hp > 0);
         const target = rng.pick(alive);
         const dmg = damage(ctx, f, target, rng);
         target.hp -= dmg;
+        hit(f, target, dmg);
         if (log.length < 12) log.push(`${f.name} trifft ${target.name} für ${dmg}`);
         if (team.every((t) => t.hp <= 0)) {
           log.push(`Team besiegt (Runde ${round})`);
-          return { win: false, rounds: round, log };
+          return done(false, round);
         }
       }
     }
   }
   log.push('Zeit abgelaufen');
-  return { win: false, rounds: ctx.balance.tower.maxRounds, log };
+  return done(false, ctx.balance.tower.maxRounds);
 }
 
 export function checkpoint(ctx: GameContext): number {
@@ -166,6 +212,27 @@ export function endRun(ctx: GameContext): void {
   ctx.bus.emit('towerRunEnded', { floor: run.floor });
 }
 
+/** Rare alleles a tower reward can still add to the gene library. */
+function missingRareAlleles(ctx: GameContext): { locus: string; allele: string }[] {
+  return activeLoci(ctx).flatMap((l) => l.alleles.filter((a) => a.weight <= 10 && !libraryHas(ctx, l.id, a.id)).map((a) => ({ locus: l.id, allele: a.id })));
+}
+
+/** Side-effect-free preview of what clearing a floor pays. */
+export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; checkpoint: boolean } {
+  const t = ctx.balance.tower;
+  const alleleFloor = floor % t.alleleEvery === 0;
+  const allele = alleleFloor && missingRareAlleles(ctx).length > 0;
+  let tokens = D(t.tokensPerFloor * (1 + t.tokenGrowthPerFloor * (floor - 1))).floor();
+  if (alleleFloor && !allele) tokens = tokens.mul(2);
+  return {
+    tokens,
+    catalyst: floor % t.catalystEvery === 0 ? 1 + Math.floor(floor / (t.catalystEvery * 5)) : 0,
+    allele,
+    boss: floor % t.bossEvery === 0,
+    checkpoint: floor % t.checkpointEvery === 0,
+  };
+}
+
 function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null } {
   const t = ctx.balance.tower;
   const rewards: Record<string, Decimal> = {};
@@ -174,7 +241,7 @@ function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string
   let allele: { locus: string; allele: string } | null = null;
   if (floor % t.alleleEvery === 0) {
     // A rare allele for the gene library (if one is still missing).
-    const missing = activeLoci(ctx).flatMap((l) => l.alleles.filter((a) => a.weight <= 10 && !libraryHas(ctx, l.id, a.id)).map((a) => ({ locus: l.id, allele: a.id })));
+    const missing = missingRareAlleles(ctx);
     if (missing.length > 0) {
       allele = ctx.rng.pick(missing);
       catalogueGenome(ctx, { [allele.locus]: [allele.allele, allele.allele] });
@@ -192,7 +259,7 @@ export function fightNextFloor(ctx: GameContext): void {
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
   const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemyFor(ctx, floor), ctx.rng);
-  tw.lastResult = { floor, win: result.win, log: result.log };
+  tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, at: ctx.state.lastTickAt };
   if (!result.win) {
     ctx.bus.emit('towerFloor', { floor, win: false, rewards: {}, allele: null });
     endRun(ctx);
