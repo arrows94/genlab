@@ -41,10 +41,12 @@ export const view = $state({
   detail: null as number | null,
   loadError: null as string | null,
   /** Recent expedition returns (newest first) for the expedition log. */
+  /** Recently hatched creature ids (newest first) for the nest row. */
+  hatchlings: [] as { id: number; key: number }[],
   returns: [] as { id: number; missionId: string; creatureId: number; rewards: [string, string][]; wildSpecies: string | null }[],
 });
 
-let returnId = 0;
+let listId = 0;
 
 let toastId = 0;
 export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500): void {
@@ -98,6 +100,7 @@ function wireEvents(g: Game): void {
       const hybrid = species.tier !== 'base';
       toast(`${hybrid ? '🧪 Hybrid' : '🐣 Geschlüpft'}: ${c.name} (${species.name}, ${rarity.name})`, rarity.order >= 3 || hybrid ? 'rare' : 'info', hybrid ? 6000 : 3500);
     }
+    view.hatchlings = [{ id: e.creatureId, key: ++listId }, ...view.hatchlings].slice(0, 4);
     markUnseen('breeding');
   });
   g.bus.on('sequenced', (e) => {
@@ -149,7 +152,7 @@ function wireEvents(g: Game): void {
     const loot = Object.entries(e.rewards).map(([r, v]) => `+${formatNumber(v)} ${content.resources.get(r).icon}`).join(' ');
     const wild = e.wildCreatureId !== null ? g.state.creatures.find((x) => x.id === e.wildCreatureId) : null;
     view.returns = [
-      { id: ++returnId, missionId: e.missionId, creatureId: e.creatureId, rewards: Object.entries(e.rewards).map(([r, v]): [string, string] => [r, formatNumber(v)]), wildSpecies: wild?.speciesId ?? null },
+      { id: ++listId, missionId: e.missionId, creatureId: e.creatureId, rewards: Object.entries(e.rewards).map(([r, v]): [string, string] => [r, formatNumber(v)]), wildSpecies: wild?.speciesId ?? null },
       ...view.returns,
     ].slice(0, 6);
     toast(`🧭 ${content.missions.get(e.missionId).name}: ${loot}${wild ? ` · wild: ${content.species.get(wild.speciesId).name}!` : ''}`, wild ? 'rare' : 'info');

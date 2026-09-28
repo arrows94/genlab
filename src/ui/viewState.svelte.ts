@@ -12,6 +12,7 @@ interface ViewState {
   dex: { mode: 'grid' | 'tree' };
   recycler: { element: string };
   expedition: { region: string };
+  breeding: { species: string };
 }
 
 const defaults = (): ViewState => ({
@@ -19,6 +20,7 @@ const defaults = (): ViewState => ({
   dex: { mode: 'grid' },
   recycler: { element: 'fire' },
   expedition: { region: 'short' },
+  breeding: { species: '' },
 });
 
 function load(): ViewState {
@@ -32,6 +34,7 @@ function load(): ViewState {
       dex: { ...base.dex, ...saved.dex },
       recycler: { ...base.recycler, ...saved.recycler },
       expedition: { ...base.expedition, ...saved.expedition },
+      breeding: { ...base.breeding, ...saved.breeding },
     };
   } catch {
     return base;

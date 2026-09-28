@@ -1,48 +1,76 @@
 <script lang="ts">
+  import { scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
-  import { findCreature } from '@core/creatures';
-  import { formatDuration, formatPercent } from '@core/format';
+  import { creaturePower, findCreature } from '@core/creatures';
+  import { expressedAppearance } from '@core/genetics';
+  import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { breedingCost, breedingTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
-  import { game, view, act } from '../store.svelte';
-  import CreaturePicker from './CreaturePicker.svelte';
-  import CostLabel from './CostLabel.svelte';
-  import DnaHelix from './DnaHelix.svelte';
-  import BreedingPlanner from './BreedingPlanner.svelte';
   import { setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
+  import type { Creature } from '@core/state';
+  import { game, view, act } from '../store.svelte';
+  import { viewState } from '../viewState.svelte';
+  import CostLabel from './CostLabel.svelte';
+  import CreatureSvg from './CreatureSvg.svelte';
+  import DnaHelix from './DnaHelix.svelte';
+  import EggSvg from './EggSvg.svelte';
+  import BreedingPlanner from './BreedingPlanner.svelte';
+
+  /**
+   * Brutstation: a row of nests with eggs tinted by both parents (cracking
+   * near the end), fresh hatchlings, a pairing altar with two parent sockets
+   * and candidate tiles, and the visual breeding planner.
+   */
+
+  const twigs: [number, number, number, number][] = [[10, 24, 60, 14], [22, 32, 104, 20], [16, 16, 94, 30], [30, 30, 110, 22], [6, 20, 70, 32]];
 
   let parentA = $state<number | null>(null);
   let parentB = $state<number | null>(null);
+  let search = $state('');
 
   const data = $derived.by(() => {
     view.frame;
-    const available = game.state.creatures.filter((c) => c.job === null || c.job.kind === 'building');
     const a = parentA !== null ? findCreature(game, parentA) : undefined;
     const b = parentB !== null ? findCreature(game, parentB) : undefined;
     const generation = offspringGeneration(a, b);
     const cost = breedingCost(game, generation);
+    const q = search.trim().toLowerCase();
+    const filter = viewState.breeding.species;
+    const candidates = game.state.creatures
+      .filter((c) => c.job === null || c.job.kind === 'building')
+      .filter((c) => !filter || c.speciesId === filter)
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
+      .map((c) => ({ c, power: creaturePower(game, c) }))
+      .sort((x, y) => y.power - x.power)
+      .slice(0, 60);
+    const stableCap = stableCapacity(game);
+    const free = stableFree(game);
     return {
       a,
       b,
-      stableFree: stableFree(game),
-      stableCap: stableCapacity(game),
+      stableUsed: stableCap - free,
+      stableCap,
+      stableFull: free <= 0,
       automaton: game.state.features['autoBreed'] === true,
       autoBreed: game.state.automation.autoBreed,
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
       eggs: eggs(game).map((p) => {
         const d = p.data as EggData;
+        const parents = d.parents.map((id) => findCreature(game, id));
         return {
           id: p.id,
-          progress: p.elapsedMs / p.durationMs,
+          progress: Math.min(1, p.elapsedMs / p.durationMs),
           remaining: processRemainingMs(game, p),
-          names: d.parents.map((id) => findCreature(game, id)?.name ?? '?'),
+          parents,
+          hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
           generation: d.generation,
         };
       }),
-      available,
+      hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
+      candidates,
       cost,
       affordable: canAfford(game.state, cost),
       generation,
@@ -51,6 +79,18 @@
     };
   });
 
+  const nestsFull = $derived(data.eggs.length >= data.slots);
+
+  function look(c: Creature) {
+    return expressedAppearance(game, c);
+  }
+  function pick(id: number) {
+    if (parentA === id) parentA = null;
+    else if (parentB === id) parentB = null;
+    else if (parentA === null) parentA = id;
+    else if (parentB === null) parentB = id;
+    else parentB = id;
+  }
   function breed() {
     if (parentA === null || parentB === null) return;
     if (act(startBreeding(game, parentA, parentB))) {
@@ -60,13 +100,41 @@
   }
 </script>
 
-<h2>Brutstation <span class="muted num">{data.eggs.length}/{data.slots} Nester · Stall {data.stableCap - data.stableFree}/{data.stableCap}</span></h2>
+{#snippet socket(c: Creature | undefined, label: string, clear: () => void, color: string)}
+  {#if c}
+    {@const sp = content.species.get(c.speciesId)}
+    {@const rar = content.rarities.get(c.rarity)}
+    <button class="socket filled" style="--el: {content.elements.get(sp.element).color}; --mark: {color}" title="Entfernen" onclick={clear}>
+      <span class="x">×</span>
+      <CreatureSvg appearance={look(c)} shape={sp.shape} tier={sp.tier} size={84} shiny={c.shiny} />
+      <b class="pname">{c.name}</b>
+      <span class="small muted">{sp.name} · <span style="color: {rar.color}">{rar.name}</span></span>
+      <span class="small num muted">Gen {c.generation} · Σ {formatNumber(creaturePower(game, c))}{c.sequenced ? ' · 🧬' : ''}</span>
+    </button>
+  {:else}
+    <div class="socket empty" style="--mark: {color}">
+      <span class="plus">+</span>
+      <span class="small muted">{label}</span>
+    </div>
+  {/if}
+{/snippet}
+
+<header class="head">
+  <h2>🥚 Brutstation</h2>
+  <div class="kpis">
+    <span class="kpi"><b class="num">{data.eggs.length}/{data.slots}</b><small>Nester</small></span>
+    <span class="kpi" class:warn={data.stableFull}>
+      <b class="num">{data.stableUsed}/{data.stableCap}</b><small>Stall</small>
+      <span class="mini"><span style="width: {Math.min(100, (data.stableUsed / Math.max(1, data.stableCap)) * 100)}%"></span></span>
+    </span>
+    <span class="kpi"><b class="num">{formatPercent(data.mutation, 1)}</b><small>Mutation</small></span>
+  </div>
+</header>
 
 {#if data.automaton}
-  <div class="panel auto">
-    <b>🤖 Zuchtautomat</b>
-    <label><input type="checkbox" checked={data.autoBreed.enabled} onchange={(e) => act(setAutoBreed(game, e.currentTarget.checked, data.autoBreed.rule, data.autoBreed.species))} /> aktiv</label>
-    <label>Züchte immer die zwei besten für
+  <div class="panel auto" class:on={data.autoBreed.enabled}>
+    <label class="switch"><input type="checkbox" checked={data.autoBreed.enabled} onchange={(e) => act(setAutoBreed(game, e.currentTarget.checked, data.autoBreed.rule, data.autoBreed.species))} /> <b>🤖 Zuchtautomat</b></label>
+    <label>Züchtet die zwei besten für
       <select value={data.autoBreed.rule} onchange={(e) => act(setAutoBreed(game, data.autoBreed.enabled, e.currentTarget.value, data.autoBreed.species))}>
         <option value="power">Gesamtstärke</option>
         {#each content.stats.list as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
@@ -81,34 +149,129 @@
   </div>
 {/if}
 
-<div class="grid">
-  {#each data.eggs as egg (egg.id)}
-    <article class="panel egg" class:soon={egg.progress > 0.85}>
-      <h3><span class="eggicon">🥚</span> Ei · Gen {egg.generation}</h3>
-      <p class="muted small">{egg.names.join(' × ')}</p>
-      <DnaHelix progress={egg.progress} pairs={16} width={220} height={40} />
-      <p class="num small">noch {formatDuration(egg.remaining)}</p>
+<!-- Nests -->
+<div class="nests">
+  {#each Array.from({ length: data.slots }, (_, i) => i) as i (i)}
+    {@const egg = data.eggs[i]}
+    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85}>
+      <div class="egg-wrap">
+        {#if egg}
+          <span class="glow" style="--h: {egg.hues[0]}; opacity: {0.25 + egg.progress * 0.6}"></span>
+          <span class="egg"><EggSvg hueA={egg.hues[0]} hueB={egg.hues[1]} progress={egg.progress} size={52} /></span>
+        {:else}
+          <span class="egg"><EggSvg hueA={180} hueB={200} size={44} ghost /></span>
+        {/if}
+        <svg class="twigs" viewBox="0 0 120 40" aria-hidden="true">
+          <ellipse cx="60" cy="22" rx="52" ry="14" fill="#4a3320" />
+          <ellipse cx="60" cy="18" rx="40" ry="8" fill="#2b1d12" />
+          {#each twigs as [x1, y1, x2, y2], j (j)}
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#7a5433" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
+          {/each}
+        </svg>
+      </div>
+      {#if egg}
+        <div class="parents">
+          {#each egg.parents as p, j (j)}
+            {#if p}
+              {@const sp = content.species.get(p.speciesId)}
+              <span title={p.name}><CreatureSvg appearance={look(p)} shape={sp.shape} tier={sp.tier} size={24} /></span>
+            {/if}
+            {#if j === 0}<span class="times">×</span>{/if}
+          {/each}
+        </div>
+        <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
+        <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
+        <span class="small num"><span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+      {:else}
+        <span class="small muted">Freies Nest</span>
+      {/if}
     </article>
   {/each}
-
-  {#if data.eggs.length < data.slots}
-    <article class="panel">
-      <h3>Neues Ei</h3>
-      <div class="pick">
-        <CreaturePicker creatures={data.available.filter((c) => c.id !== parentB)} bind:value={parentA} placeholder="Elternteil 1 …" />
-        <CreaturePicker creatures={data.available.filter((c) => c.id !== parentA)} bind:value={parentB} placeholder="Elternteil 2 …" />
-      </div>
-      <p class="small muted">
-        Generation <span class="num">{data.generation}</span> · Brutzeit <span class="num">{formatDuration(data.time)}</span> · Mutation <span class="num">{formatPercent(data.mutation)}</span>
-      </p>
-      <p class="small muted">Arbeitende Eltern werden von ihrer Anlage abgezogen.</p>
-      <button class="primary" disabled={parentA === null || parentB === null || !data.affordable} onclick={breed}>
-        Brüten · <CostLabel cost={data.cost} />
-      </button>
-      {#if data.a && data.b}<BreedingPlanner a={data.a} b={data.b} />{/if}
-    </article>
-  {/if}
 </div>
+
+{#if data.hatchlings.length}
+  <div class="hatched">
+    <span class="small muted">Frisch geschlüpft:</span>
+    {#each data.hatchlings as h (h.key)}
+      {@const sp = content.species.get(h.c.speciesId)}
+      {@const rar = content.rarities.get(h.c.rarity)}
+      <button class="chick" class:hybrid={sp.tier !== 'base'} style="--rc: {rar.color}" title="Details" onclick={() => (view.detail = h.c.id)} in:scale={{ duration: 500, start: 0.3 }}>
+        <CreatureSvg appearance={look(h.c)} shape={sp.shape} tier={sp.tier} size={36} shiny={h.c.shiny} />
+        <span class="cname">{h.c.name}</span>
+        <span class="tiny" style="color: {rar.color}">{rar.name}{sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
+      </button>
+    {/each}
+  </div>
+{/if}
+
+<!-- Pairing altar -->
+<article class="panel altar">
+  <h3>Neues Ei</h3>
+  <div class="pair">
+    {@render socket(data.a, 'Elternteil 1', () => (parentA = null), 'var(--gold)')}
+    <div class="link">
+      {#if data.a && data.b}
+        <span class="egg preview"><EggSvg hueA={look(data.a).hue} hueB={look(data.b).hue} size={46} /></span>
+      {:else}
+        <span class="heart">❤</span>
+      {/if}
+      <DnaHelix progress={data.a && data.b ? 1 : data.a || data.b ? 0.5 : 0} pairs={10} width={90} height={26} />
+    </div>
+    {@render socket(data.b, 'Elternteil 2', () => (parentB = null), '#ff7ad9')}
+  </div>
+
+  <div class="facts">
+    <span class="fact">🧬 Gen <b class="num">{data.generation}</b></span>
+    <span class="fact">⏱ <b class="num">{formatDuration(data.time)}</b></span>
+    <span class="fact">✨ Mutation <b class="num">{formatPercent(data.mutation)}</b></span>
+  </div>
+  <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || nestsFull || data.stableFull} onclick={breed}>
+    🥚 Brüten · <CostLabel cost={data.cost} />
+  </button>
+  <p class="small muted note">
+    {#if nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
+  </p>
+
+  {#if data.a && data.b}
+    <details class="plan" open>
+      <summary><b>🔮 Zuchtplaner</b> <span class="small muted">Was kann schlüpfen?</span></summary>
+      <BreedingPlanner a={data.a} b={data.b} />
+    </details>
+  {/if}
+
+  <div class="cand-head">
+    <h4>Kandidaten</h4>
+    <div class="filters">
+      <input type="search" placeholder="Name oder Art …" bind:value={search} />
+      <select bind:value={viewState.breeding.species}>
+        <option value="">Alle Arten</option>
+        {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+      </select>
+    </div>
+  </div>
+  <div class="tiles">
+    {#each data.candidates as t (t.c.id)}
+      {@const sp = content.species.get(t.c.speciesId)}
+      {@const rar = content.rarities.get(t.c.rarity)}
+      <button
+        class="tile"
+        class:a={parentA === t.c.id}
+        class:b={parentB === t.c.id}
+        style="--el: {content.elements.get(sp.element).color}; --rc: {rar.color}"
+        title="{t.c.name} · {sp.name} · {rar.name}"
+        onclick={() => pick(t.c.id)}
+      >
+        <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
+        <span class="tname">{t.c.name}</span>
+        <span class="tiny num muted">Gen {t.c.generation} · Σ {formatNumber(t.power)}</span>
+        {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
+        {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
+      </button>
+    {:else}
+      <p class="muted small">Keine freien Kreaturen.</p>
+    {/each}
+  </div>
+</article>
 
 <p class="muted small hint">
   Nachwuchs erbt gemittelte Werte, Aussehen und Fähigkeiten der Eltern. Mutationen können Werte steigern oder neue Fähigkeiten bringen.
@@ -116,14 +279,97 @@
 </p>
 
 <style>
-  .small { font-size: 0.85rem; margin: 0.3rem 0; }
-  .pick { display: grid; gap: 0.4rem; margin-bottom: 0.4rem; }
-  .egg { display: flex; flex-direction: column; align-items: flex-start; }
-  .eggicon { display: inline-block; }
-  .soon .eggicon { animation: wobble 0.5s ease-in-out infinite; }
-  @keyframes wobble { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
-  article:has(:global(.planner)) { grid-column: 1 / -1; }
-  button { width: 100%; }
-  .hint { margin-top: 1rem; }
+  .small { font-size: 0.8rem; }
+  .tiny { font-size: 0.68rem; }
+
+  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .head h2 { margin: 0; }
+  .kpis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .kpi { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); min-width: 4.5rem; }
+  .kpi b { font-size: 1.05rem; }
+  .kpi small { color: var(--muted); font-size: 0.68rem; }
+  .kpi.warn { border-color: var(--danger); }
+  .mini { width: 100%; height: 3px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }
+  .mini span { display: block; height: 100%; background: var(--teal); }
+  .kpi.warn .mini span { background: var(--danger); }
+
   .auto { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+  .auto.on { border-color: var(--teal); box-shadow: 0 0 12px #2fd3c433; }
+
+  /* Nests */
+  .nests { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.6rem; }
+  .nest {
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.6rem 0.5rem; text-align: center;
+    border-radius: var(--radius); border: 1px dashed var(--line); background: var(--bg-2);
+  }
+  .nest.busy { border: 1px solid var(--line); background: radial-gradient(circle at 50% 30%, #f2c14e14, var(--panel) 70%); }
+  .nest.soon { border-color: var(--gold); }
+  .egg-wrap { position: relative; width: 120px; height: 86px; display: grid; justify-items: center; align-items: end; }
+  .twigs { position: absolute; bottom: 0; width: 120px; height: 40px; }
+  .egg { position: relative; z-index: 1; margin-bottom: 12px; transform-origin: 50% 90%; }
+  .glow { position: absolute; bottom: 10px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, hsl(var(--h) 80% 60% / 0.7), transparent 65%); }
+  .busy .egg { animation: rock 3s ease-in-out infinite; }
+  .soon .egg { animation: wobble 0.45s ease-in-out infinite; }
+  @keyframes rock { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; } }
+  @keyframes wobble { 0%, 100% { rotate: -9deg; } 50% { rotate: 9deg; } }
+  .parents { display: flex; align-items: center; gap: 0.2rem; }
+  .times { color: var(--muted); font-size: 0.8rem; }
+  .gen { color: var(--violet); }
+
+  .hatched { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem; }
+  .chick {
+    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem 0.2rem 0.3rem; border-radius: 99px;
+    border: 1px solid color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 10%, var(--bg-2));
+  }
+  .chick.hybrid { border-color: var(--violet); box-shadow: 0 0 10px #9b6bff66; }
+  .cname { font-weight: 600; font-size: 0.8rem; }
+
+  /* Altar */
+  .altar { margin-top: 0.75rem; }
+  .altar h3 { margin-top: 0; }
+  .pair { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.6rem; }
+  .socket {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
+    min-height: 11rem; padding: 0.5rem; border-radius: 14px; text-align: center;
+  }
+  .socket.empty { border: 2px dashed color-mix(in srgb, var(--mark) 50%, var(--line)); background: var(--bg-2); }
+  .socket.filled { border: 2px solid var(--mark); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--el) 22%, transparent), var(--bg-2) 70%); box-shadow: 0 0 14px color-mix(in srgb, var(--mark) 35%, transparent); }
+  .plus { font-size: 2rem; color: var(--mark); opacity: 0.7; }
+  .pname { font-size: 0.95rem; }
+  .x { position: absolute; top: 4px; right: 10px; color: var(--muted); font-size: 1.1rem; }
+  .socket.filled:hover .x { color: var(--danger); }
+  .link { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .heart { font-size: 1.6rem; color: #ff7a90; opacity: 0.6; }
+  .preview { margin: 0; animation: rock 2s ease-in-out infinite; }
+  .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; margin: 0.7rem 0 0.5rem; }
+  .fact { padding: 0.15rem 0.6rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
+  .go { width: 100%; background: linear-gradient(90deg, var(--petrol), #c26bd8); }
+  .note { text-align: center; margin: 0.3rem 0 0; }
+  .plan { margin-top: 0.6rem; padding: 0.5rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--violet) 6%, var(--bg-2)); }
+  .plan summary { cursor: pointer; }
+
+  .cand-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.4rem; margin: 0.9rem 0 0.4rem; }
+  .cand-head h4 { margin: 0; }
+  .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .filters input { width: 11rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
+  .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
+  .tile.a { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; }
+  .tile.b { border-color: #ff7ad9; box-shadow: 0 0 12px #ff7ad988; }
+  .tile.a::after, .tile.b::after { position: absolute; top: 2px; left: 6px; font-weight: 800; font-size: 0.75rem; }
+  .tile.a::after { content: '1'; color: var(--gold); }
+  .tile.b::after { content: '2'; color: #ff7ad9; }
+  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
+  .seq { position: absolute; top: 2px; right: 5px; font-size: 0.7rem; }
+  .work { position: absolute; top: 18px; right: 6px; font-size: 0.7rem; color: var(--muted); }
+  .hint { margin-top: 1rem; }
+
+  @media (max-width: 600px) {
+    .nests { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+    .pair { grid-template-columns: 1fr 1fr; }
+    .link { grid-column: 1 / -1; grid-row: 2; flex-direction: row; justify-content: center; }
+    .socket { min-height: 9rem; }
+    .socket :global(svg) { width: 64px; height: 64px; }
+    .filters input { width: 8rem; }
+  }
 </style>
