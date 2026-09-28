@@ -2,7 +2,7 @@
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
-  import { creaturePower, findCreature } from '@core/creatures';
+  import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { availableRituals, eggCost, eggTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
@@ -42,13 +42,17 @@
     const ritual = rituals.find((r) => r.id === ritualId);
     const cost = eggCost(game, generation, ritual);
     const q = search.trim().toLowerCase();
-    const filter = viewState.breeding.species;
-    const candidates = game.state.creatures
+    const { species: filter, rarity, sort } = viewState.breeding;
+    const pool = game.state.creatures
       .filter((c) => c.job === null || c.job.kind === 'building')
       .filter((c) => !filter || c.speciesId === filter)
+      .filter((c) => !rarity || c.rarity === rarity)
       .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
-      .map((c) => ({ c, power: creaturePower(game, c) }))
-      .sort((x, y) => y.power - x.power)
+      .map((c) => ({ c, power: creaturePower(game, c), key: sortKey(c) }));
+    // Chosen parents stay on top so they never scroll out of reach.
+    const chosenFirst = (x: { c: Creature }) => (x.c.id === parentA || x.c.id === parentB ? 0 : 1);
+    const candidates = pool
+      .sort((x, y) => chosenFirst(x) - chosenFirst(y) || compareCandidates(x, y))
       .slice(0, 60);
     const stableCap = stableCapacity(game);
     const free = stableFree(game);
@@ -80,6 +84,7 @@
       }),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
+      hidden: pool.length - candidates.length,
       cost,
       affordable: canAfford(game.state, cost),
       generation,
@@ -108,6 +113,29 @@
     abilities: 'Kreaturen mit den meisten und seltensten Fähigkeiten.',
     cheap: 'Die niedrigsten Generationen – billiger Nachwuchs für Infusion und Recycler.',
   };
+
+  const rarityOrder = (c: Creature) => content.rarities.get(c.rarity).order;
+  /** Secondary value for the chosen sort (stat sorts need the effective stats). */
+  function sortKey(c: Creature): number {
+    const sort = viewState.breeding.sort;
+    return sort.startsWith('stat:') ? (effectiveStats(game, c)[sort.slice(5)] ?? 0) : 0;
+  }
+  function compareCandidates(x: { c: Creature; power: number; key: number }, y: { c: Creature; power: number; key: number }): number {
+    const sort = viewState.breeding.sort;
+    if (sort.startsWith('stat:')) return y.key - x.key;
+    switch (sort) {
+      case 'rarity':
+        return rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
+      case 'generation':
+        return y.c.generation - x.c.generation || y.power - x.power;
+      case 'species':
+        return content.species.get(x.c.speciesId).name.localeCompare(content.species.get(y.c.speciesId).name, 'de') || rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
+      case 'name':
+        return x.c.name.localeCompare(y.c.name, 'de');
+      default:
+        return y.power - x.power;
+    }
+  }
 
   function setAuto(patch: Partial<AutoBreedConfig>) {
     act(setAutoBreed(game, patch));
@@ -345,6 +373,18 @@
         <option value="">Alle Arten</option>
         {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
       </select>
+      <select bind:value={viewState.breeding.rarity}>
+        <option value="">Alle Seltenheiten</option>
+        {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+      </select>
+      <select bind:value={viewState.breeding.sort} title="Sortierung">
+        <option value="power">↓ Gesamtstärke</option>
+        <option value="rarity">↓ Seltenheit</option>
+        <option value="generation">↓ Generation</option>
+        <option value="species">Art (A–Z)</option>
+        <option value="name">Name (A–Z)</option>
+        {#each content.stats.list as st (st.id)}<option value={`stat:${st.id}`}>↓ {st.name}</option>{/each}
+      </select>
     </div>
   </div>
   <div class="tiles">
@@ -361,7 +401,8 @@
       >
         <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
         <span class="tname">{t.c.name}</span>
-        <span class="tiny num muted">Gen {t.c.generation} · Σ {formatNumber(t.power)}</span>
+        {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
+        <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
         {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
         {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
       </button>
@@ -369,6 +410,7 @@
       <p class="muted small">Keine freien Kreaturen.</p>
     {/each}
   </div>
+  {#if data.hidden > 0}<p class="tiny muted more">… und {data.hidden} weitere – Suche oder Filter grenzen die Liste ein.</p>{/if}
 </article>
 
 <p class="muted small hint">
@@ -466,6 +508,8 @@
   .tile.a::after { content: '1'; color: var(--gold); }
   .tile.b::after { content: '2'; color: #ff7ad9; }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
+  .sp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .more { margin: 0.3rem 0 0; text-align: center; }
   .seq { position: absolute; top: 2px; right: 5px; font-size: 0.7rem; }
   .work { position: absolute; top: 18px; right: 6px; font-size: 0.7rem; color: var(--muted); }
   .hint { margin-top: 1rem; }
@@ -476,6 +520,7 @@
     .link { grid-column: 1 / -1; grid-row: 2; flex-direction: row; justify-content: center; }
     .socket { min-height: 9rem; }
     .socket :global(svg) { width: 64px; height: 64px; }
-    .filters input { width: 8rem; }
+    .filters input { width: 100%; }
+    .filters select { flex: 1 1 30%; min-width: 0; }
   }
 </style>

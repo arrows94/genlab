@@ -48,11 +48,13 @@ export interface CreatureFilter {
   status: 'all' | 'idle' | 'working' | 'busy' | 'locked';
   /** Only sequenced creatures carrying this allele. */
   allele: { locus: string; allele: string } | null;
+  /** Hide creatures that are away on an expedition (ignored when the status filter asks for busy ones). */
+  hideAway: boolean;
 }
 
 export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'power' | 'name' | `stat:${string}`;
 
-export const EMPTY_FILTER: CreatureFilter = { search: '', species: null, element: null, rarity: null, status: 'all', allele: null };
+export const EMPTY_FILTER: CreatureFilter = { search: '', species: null, element: null, rarity: null, status: 'all', allele: null, hideAway: false };
 
 export function filterCreatures(ctx: GameContext, f: CreatureFilter): Creature[] {
   const q = f.search.trim().toLowerCase();
@@ -66,6 +68,7 @@ export function filterCreatures(ctx: GameContext, f: CreatureFilter): Creature[]
     if (f.status === 'working' && c.job?.kind !== 'building') return false;
     if (f.status === 'busy' && !(c.job && c.job.kind !== 'building')) return false;
     if (f.status === 'locked' && !c.locked) return false;
+    if (f.hideAway && f.status !== 'busy' && c.job?.kind === 'mission') return false;
     if (f.allele && !(c.sequenced && c.genome[f.allele.locus]?.includes(f.allele.allele))) return false;
     return true;
   });

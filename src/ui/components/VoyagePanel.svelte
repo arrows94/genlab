@@ -13,13 +13,16 @@
   import { processRemainingMs } from '@core/systems/processes';
   import type { Creature } from '@core/state';
   import { game, view, act, ask, toast } from '../store.svelte';
+  import { viewState } from '../viewState.svelte';
+  import PickerExclude, { pickerAllows } from './PickerExclude.svelte';
   import CostLabel from './CostLabel.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
    * Wochenexpedition: plan (destination of the week + team), follow the
-   * voyage day by day, and decide at the return.
+   * voyage day by day, and decide at the return. Folded to one status line
+   * unless opened – a pending decision always shows.
    */
   let team = $state<number[]>([]);
   const look = (c: Creature) => expressedAppearance(game, c);
@@ -69,12 +72,19 @@
       chosen,
       factor,
       idle: game.state.creatures
-        .filter((c) => c.job === null || c.job.kind === 'building')
+        .filter((c) => (c.job === null || c.job.kind === 'building') && (team.includes(c.id) || pickerAllows(c)))
         .map((c) => ({ c, spd: effectiveStats(game, c).spd ?? 0, f: missionRewardFactor(game, c) }))
         .sort((a, b) => b.spd - a.spd)
         .slice(0, 30),
     };
   });
+
+  const open = $derived(viewState.expedition.voyageOpen || !!data.pending);
+  const status = $derived(
+    data.pending ? 'Das Team ist zurück – Entscheidung offen!'
+      : data.running ? `Unterwegs · noch ${formatDuration(data.running.remaining)}`
+      : `Bereit zur Planung · neues Ziel in ${formatDuration(data.weekLeft)}`,
+  );
 
   function toggle(id: number) {
     if (team.includes(id)) team = team.filter((x) => x !== id);
@@ -92,16 +102,19 @@
   }
 </script>
 
-<article class="panel voyage" style="--el: {content.elements.get(data.dest.element).color}">
-  <header class="vhead">
+<article class="panel voyage" class:closed={!open} class:alert={!!data.pending} style="--el: {content.elements.get(data.dest.element).color}">
+  <button class="vhead" aria-expanded={open} disabled={!!data.pending} onclick={() => (viewState.expedition.voyageOpen = !viewState.expedition.voyageOpen)}>
     <span class="dicon">{data.dest.icon}</span>
-    <div>
+    <div class="vtitle">
       <h3>🗺️ Wochenexpedition · {data.dest.name}</h3>
-      <p class="small muted">{data.dest.description}</p>
+      <p class="small muted">{open ? data.dest.description : status}</p>
     </div>
-  </header>
+    {#if !data.pending}<span class="chev">{open ? '▴' : '▾'}</span>{/if}
+  </button>
 
-  {#if data.pending}
+  {#if !open}
+    {#if data.running}<div class="track mini"><div class="fill" style="width: {data.running.progress * 100}%"></div></div>{/if}
+  {:else if data.pending}
     <!-- Return: events + decision -->
     <div class="back">
       <div class="team-row">
@@ -173,6 +186,7 @@
     {#if !data.campFree}
       <p class="small muted">Alle Camps sind belegt.</p>
     {:else}
+      <div><PickerExclude /></div>
       <div class="tiles">
         {#each data.idle as t (t.c.id)}
           {@const sp = content.species.get(t.c.speciesId)}
@@ -191,11 +205,17 @@
 </article>
 
 <style>
-  .voyage { margin-bottom: 1rem; border-color: color-mix(in srgb, var(--el) 45%, var(--line)); display: grid; gap: 0.6rem; }
-  .vhead { display: flex; gap: 0.7rem; align-items: center; }
+  .voyage { margin-top: 0.75rem; border-color: color-mix(in srgb, var(--el) 45%, var(--line)); display: grid; gap: 0.6rem; }
+  .voyage.closed { padding: 0.5rem 0.8rem; gap: 0.4rem; }
+  .voyage.alert { border-color: var(--gold); box-shadow: 0 0 14px #f2c14e33; }
+  .vhead { display: flex; gap: 0.7rem; align-items: center; width: 100%; padding: 0; border: 0; background: none; text-align: left; }
+  .vhead:disabled { opacity: 1; cursor: default; }
+  .vtitle { flex: 1; min-width: 0; }
   .vhead h3 { margin: 0; }
   .vhead p { margin: 0.15rem 0 0; }
-  .dicon { font-size: 2rem; width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); border: 1px solid var(--el); }
+  .chev { color: var(--muted); }
+  .closed .dicon { font-size: 1.4rem; width: 2.2rem; height: 2.2rem; }
+  .dicon { flex: none; font-size: 2rem; width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); border: 1px solid var(--el); }
   .small { font-size: 0.8rem; }
   .tiny { font-size: 0.66rem; }
   .facts, .loot, .natives, .team-row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
@@ -206,6 +226,7 @@
   .member small { font-size: 0.66rem; }
 
   .track { position: relative; height: 10px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); margin: 0.6rem 0 1rem; }
+  .track.mini { height: 5px; margin: 0; }
   .track .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--petrol), var(--el)); }
   .mark { position: absolute; top: 12px; transform: translateX(-50%); font-size: 0.65rem; color: var(--muted); }
   .mark.reached { color: var(--text); font-weight: 700; }

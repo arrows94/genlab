@@ -7,8 +7,8 @@
   import { formatNumber, formatPercent } from '@core/format';
   import { consumeBlocker } from '@core/features/stable';
   import {
-    batchInfusionVictims, breakthrough, breakthroughCost, breakthroughPartners, epForLevel, infuse, infusionCandidates, infusionEp,
-    infusionPreview, infusionProgress, maxInfusionLevel, nextRarity, statsAtInfusion,
+    breakthrough, breakthroughCost, breakthroughPartners, epForLevel, infuse, infusionCandidates, infusionEp,
+    infusionPreview, infusionProgress, maxInfusionLevel, nextRarity, pickInfusionVictims, statsAtInfusion, type InfusionPick,
   } from '@core/features/infusion';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
@@ -23,6 +23,9 @@
   let { creature }: { creature: Creature } = $props();
 
   let selected = $state<Set<number>>(new Set());
+  /** Quick selection settings: rarity limit and "only allele donors". */
+  let maxRarity = $state('common');
+  let donorsOnly = $state(false);
   let partner = $state<number | null>(null);
   let burst = $state<{ id: number; lines: string[]; color: string } | null>(null);
   let burstId = 0;
@@ -34,6 +37,7 @@
     const c = creature;
     const max = maxInfusionLevel(game);
     const level = c.infusion.level;
+    const order = (id: string) => content.rarities.get(id).order;
     const tiles = infusionCandidates(game, c).map((v) => ({
       v,
       ep: infusionEp(game, v),
@@ -41,7 +45,9 @@
       look: expressedAppearance(game, v),
       species: content.species.get(v.speciesId),
       rarity: content.rarities.get(v.rarity),
-    }));
+    }))
+      // Usable ones first, cheapest first – the same order the quick picks use.
+      .sort((x, y) => (x.blocker ? 1 : 0) - (y.blocker ? 1 : 0) || order(x.v.rarity) - order(y.v.rarity) || x.v.generation - y.v.generation);
     const chosen = tiles.filter((t) => selected.has(t.v.id) && !t.blocker).map((t) => t.v);
     const preview = chosen.length ? infusionPreview(game, c, chosen) : null;
     const next = nextRarity(game, c.rarity);
@@ -60,13 +66,20 @@
       incoming: preview ? (preview.newLevel > level ? 1 : infusionProgress(game, preview.newLevel, preview.newEp)) : 0,
       statsNow: statsAtInfusion(game, c, level),
       statsAfter: preview ? statsAtInfusion(game, c, preview.newLevel) : null,
-      commons: batchInfusionVictims(game, c, 'common').map((v) => v.id),
-      uncommons: batchInfusionVictims(game, c, 'uncommon').map((v) => v.id),
+      picks: {
+        all: quick(c, 'all'),
+        nextLevel: quick(c, 'nextLevel'),
+        maxLevel: quick(c, 'maxLevel'),
+      },
       next: next ? content.rarities.get(next) : null,
       partners: breakthroughPartners(game, c).map((p) => ({ p, blocker: consumeBlocker(game, p), look: expressedAppearance(game, p) })),
       btCost: breakthroughCost(game, c),
     };
   });
+
+  function quick(c: Creature, goal: InfusionPick['goal']): number[] {
+    return pickInfusionVictims(game, c, { maxRarity, goal, donorsOnly: donorsOnly && c.sequenced }).map((v) => v.id);
+  }
 
   function toggle(id: number) {
     const next = new Set(selected);
@@ -161,12 +174,26 @@
   {#if data.level < data.max}
     <div class="pick-head">
       <b class="small">Artgenossen aufnehmen</b>
-      <div class="quick">
-        <button disabled={!data.commons.length} onclick={() => (selected = new Set(data.commons))}>Alle Gewöhnlichen ({data.commons.length})</button>
-        <button disabled={!data.uncommons.length} onclick={() => (selected = new Set(data.uncommons))}>bis Ungewöhnlich ({data.uncommons.length})</button>
-        {#if selected.size}<button onclick={() => (selected = new Set())}>Leeren</button>{/if}
-      </div>
+      {#if selected.size}<button class="clear" onclick={() => (selected = new Set())}>Auswahl leeren ({selected.size})</button>{/if}
     </div>
+    <div class="quick">
+      <label>bis
+        <select bind:value={maxRarity}>
+          {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+        </select>
+      </label>
+      {#if creature.sequenced}
+        <label title="Nur sequenzierte Artgenossen, die ein besseres Allel weitergeben könnten"><input type="checkbox" bind:checked={donorsOnly} /> nur 🧬 Allel-Spender</label>
+      {/if}
+      <span class="qbtns">
+        <button disabled={!data.picks.nextLevel.length} title="Die günstigsten, bis die nächste Stufe erreicht ist" onclick={() => (selected = new Set(data.picks.nextLevel))}>Bis +{data.level + 1} ({data.picks.nextLevel.length})</button>
+        {#if data.max > data.level + 1}
+          <button disabled={!data.picks.maxLevel.length} title="Die günstigsten, bis zur Maximalstufe" onclick={() => (selected = new Set(data.picks.maxLevel))}>Bis +{data.max} ({data.picks.maxLevel.length})</button>
+        {/if}
+        <button disabled={!data.picks.all.length} onclick={() => (selected = new Set(data.picks.all))}>Alle ({data.picks.all.length})</button>
+      </span>
+    </div>
+    <p class="tiny muted hint">Günstigste zuerst. Favoriten, Schillernde und bereits infundierte werden nie automatisch gewählt.</p>
 
     {#if data.tiles.length === 0}
       <p class="muted small empty">Keine weiteren {data.species.name} vorhanden – brüte oder finde welche.</p>
@@ -268,8 +295,15 @@
   .stat.up b { color: var(--teal); }
 
   .pick-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
-  .quick { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-  .quick button { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
+  .clear { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
+  .quick { display: flex; gap: 0.35rem 0.7rem; flex-wrap: wrap; align-items: center; margin-top: 0.35rem; font-size: 0.78rem; }
+  .quick label { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .quick select { font-size: 0.78rem; padding: 0.2rem 0.35rem; }
+  .quick input { accent-color: var(--teal); margin: 0; }
+  .qbtns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .qbtns button { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
+  .tiny { font-size: 0.68rem; }
+  .hint { margin: 0.3rem 0 0; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.4rem; margin: 0.5rem 0; max-height: 15rem; overflow-y: auto; padding: 2px; }
   .tile {
     display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem; border-radius: 10px;

@@ -35,6 +35,7 @@
       sellValue: batchSellValue(game, chosen),
       fragments: game.state.features['recycler'] ? batchFragments(game, chosen) : null,
       species: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
+      away: game.state.creatures.filter((c) => c.job?.kind === 'mission').length,
       alleles: activeLoci(game).flatMap((l) => l.alleles.filter((a) => game.state.geneLibrary[`${l.id}:${a.id}`]).map((a) => ({ key: `${l.id}:${a.id}`, label: `${l.name}: ${a.name} (${a.symbol})` }))),
     };
   });
@@ -98,6 +99,13 @@
   <div class="head">
     <h2>Kreaturen <span class="num" class:full={data.total >= data.capacity}>{data.total}/{data.capacity}</span></h2>
     <div class="head-actions">
+      {#if data.away > 0 || list.filter.hideAway}
+        <button
+          class:active={list.filter.hideAway}
+          title={list.filter.hideAway ? 'Kreaturen auf Erkundung wieder anzeigen' : 'Kreaturen auf Erkundung ausblenden'}
+          onclick={() => (list.filter.hideAway = !list.filter.hideAway)}
+        >🧭 {list.filter.hideAway ? `${data.away} unterwegs ausgeblendet` : 'Unterwegs ausblenden'}</button>
+      {/if}
       <button class="filter-toggle" class:active={list.showFilters} onclick={() => (list.showFilters = !list.showFilters)}>Filter{activeFilters ? ` (${activeFilters})` : ''} ▾</button>
       <button class:active={selecting} onclick={() => { selecting = !selecting; selected = new Set(); }}>{selecting ? 'Auswahl beenden' : 'Auswählen'}</button>
     </div>
@@ -193,7 +201,8 @@
   .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: calc(var(--header-h, 0px) + 0.4rem); z-index: 5; }
   .small { font-size: 0.8rem; }
   .more { width: 100%; margin-top: 0.75rem; }
-  .head-actions { display: flex; gap: 0.4rem; }
+  .head { flex-wrap: wrap; gap: 0.4rem; }
+  .head-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .filter-toggle { display: none; }
   @media (max-width: 640px) {
     .toolbar select, .toolbar input { flex: 1 1 45%; }
