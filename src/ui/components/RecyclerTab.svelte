@@ -59,7 +59,7 @@
     view.muteDex = false;
     refresh();
     if (!res.ok) {
-      toast(res.reason, 'error');
+      toast(res.reason, 'error', 3500, false);
       return;
     }
     results = res.results;
