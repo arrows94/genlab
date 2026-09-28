@@ -103,7 +103,16 @@ export interface TowerState {
   autoRestart: boolean;
   /** Personal leaderboard: best runs. */
   leaderboard: { floor: number; team: string[]; at: number }[];
-  lastResult: { floor: number; win: boolean; log: string[] } | null;
+  lastResult: {
+    floor: number;
+    win: boolean;
+    log: string[];
+    /** Replay data for the arena (missing in older saves). */
+    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean }[];
+    events?: { a: number; t: number; dmg: number; hp: number; m: number }[];
+    /** Time of the fight (lastTickAt), so the UI replays each fight once. */
+    at?: number;
+  } | null;
 }
 
 export interface GameState {

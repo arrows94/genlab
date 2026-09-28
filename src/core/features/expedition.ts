@@ -8,6 +8,7 @@ import { stableFree } from './stable';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import type { Creature } from '../state';
 
 export const MISSION = 'mission';
 
@@ -50,6 +51,12 @@ export function hintChance(ctx: GameContext, missionId: string): number {
   return Math.min(1, hours * ctx.balance.hybrids.hintChancePerHour);
 }
 
+/** Loot multiplier for a creature: global bonuses × its speed. */
+export function missionRewardFactor(ctx: GameContext, creature: Creature | undefined): number {
+  const speed = creature ? (effectiveStats(ctx, creature).spd ?? 0) : 0;
+  return ctx.mods().apply('mission.reward', 1) * (1 + speed * ctx.balance.missions.statScaling);
+}
+
 export function startMission(ctx: GameContext, creatureId: number, missionId: string): ActionResult {
   if (!ctx.state.features['expedition']) return { ok: false, reason: 'Erkundung ist noch nicht freigeschaltet.' };
   if (!missionAvailable(ctx, missionId)) return { ok: false, reason: 'Dieses Gebiet ist noch nicht erschlossen.' };
@@ -73,8 +80,7 @@ registerProcessHandler(MISSION, {
     const c = findCreature(ctx, creatureId);
     if (c?.job?.kind === 'mission') c.job = null;
 
-    const speed = c ? (effectiveStats(ctx, c).spd ?? 0) : 0;
-    const factor = ctx.mods().apply('mission.reward', 1) * (1 + speed * ctx.balance.missions.statScaling);
+    const factor = missionRewardFactor(ctx, c);
     const rewards: Record<string, Decimal> = {};
     for (const [res, [min, max]] of Object.entries(def.rewards)) {
       // Stochastic rounding keeps the expected value for small integer rewards (0–1 crystals).

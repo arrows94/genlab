@@ -11,12 +11,16 @@ interface ViewState {
   list: { filter: CreatureFilter; sort: CreatureSort; alleleKey: string; showFilters: boolean };
   dex: { mode: 'grid' | 'tree' };
   recycler: { element: string };
+  expedition: { region: string };
+  breeding: { species: string };
 }
 
 const defaults = (): ViewState => ({
   list: { filter: { ...EMPTY_FILTER }, sort: 'newest', alleleKey: '', showFilters: false },
   dex: { mode: 'grid' },
   recycler: { element: 'fire' },
+  expedition: { region: 'short' },
+  breeding: { species: '' },
 });
 
 function load(): ViewState {
@@ -29,6 +33,8 @@ function load(): ViewState {
       list: { ...base.list, ...saved.list, filter: { ...base.list.filter, ...saved.list?.filter } },
       dex: { ...base.dex, ...saved.dex },
       recycler: { ...base.recycler, ...saved.recycler },
+      expedition: { ...base.expedition, ...saved.expedition },
+      breeding: { ...base.breeding, ...saved.breeding },
     };
   } catch {
     return base;
