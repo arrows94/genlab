@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SAVE_VERSION } from '@core/save';
   import { formatDuration, formatNumber } from '@core/format';
-  import { exportText, importText, hardReset, save, toast, view, game } from '../store.svelte';
+  import { exportText, importText, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
 
   let text = $state('');
@@ -42,11 +42,12 @@
     input.value = '';
     doImport();
   }
-  function doImport() {
-    if (text.trim() && confirm('Aktuellen Spielstand durch den Import ersetzen?')) importText(text);
+  async function doImport() {
+    const t = text;
+    if (t.trim() && (await ask('Aktuellen Spielstand durch den Import ersetzen?', { ok: 'Ersetzen', danger: true }))) importText(t);
   }
-  function doReset() {
-    if (confirm('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden.') && confirm('Ganz sicher? Exportiere vorher ein Backup!')) hardReset();
+  async function doReset() {
+    if ((await ask('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden.', { ok: 'Löschen', danger: true })) && (await ask('Ganz sicher? Exportiere vorher ein Backup!', { ok: 'Endgültig löschen', danger: true }))) hardReset();
   }
 </script>
 

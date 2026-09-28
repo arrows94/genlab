@@ -16,6 +16,14 @@ describe('save / load', () => {
     expect(state.rng).toEqual(g.state.rng);
   });
 
+  it('repairs references to creatures that no longer exist', () => {
+    const g = makeGame();
+    const id = g.state.creatures[0]!.id;
+    g.state.tower.team = [id, 4242];
+    const { state } = deserialize(serialize(g.state, NOW));
+    expect(state.tower.team).toEqual([id]);
+  });
+
   it('keeps the rng stream after loading', () => {
     const g = makeGame();
     const copy = makeGame();

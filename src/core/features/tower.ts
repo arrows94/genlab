@@ -174,9 +174,9 @@ export function checkpoint(ctx: GameContext): number {
 export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
   if (ctx.state.tower.run) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
-  const unique = [...new Set(ids)];
+  // Ids of creatures that no longer exist are dropped instead of blocking the change.
+  const unique = [...new Set(ids)].filter((id) => findCreature(ctx, id));
   if (unique.length > teamSize(ctx)) return { ok: false, reason: `Höchstens ${teamSize(ctx)} Kreaturen.` };
-  if (unique.some((id) => !findCreature(ctx, id))) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   ctx.state.tower.team = unique;
   return { ok: true };
 }

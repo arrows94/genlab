@@ -16,6 +16,7 @@ import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
 import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
 import { activeLoci } from '@core/genetics';
 import { splice } from '@core/features/splicing';
+import { sell } from '@core/features/stable';
 import type { Genome } from '@core/state';
 import { balance, content, makeGame, NOW } from './helpers';
 
@@ -118,6 +119,18 @@ describe('genome tower', () => {
     expect(floorRewardInfo(g, 25).allele).toBe(true);
     expect(floorRewardInfo(g, 7)).toMatchObject({ boss: false, catalyst: 0, allele: false });
     expect(g.state.geneLibrary).toEqual(library);
+  });
+
+  it('creatures that leave the game are removed from the team; stale ids never block changes', () => {
+    const g = endgame();
+    const [a, b, c] = [champion(g, 10), champion(g, 10), champion(g, 10)];
+    expect(setTeam(g, [a.id, b.id]).ok).toBe(true);
+    expect(sell(g, [b.id]).ok).toBe(true);
+    expect(g.state.tower.team).toEqual([a.id]);
+    // A save that still carries a missing id (older bug) can be edited.
+    g.state.tower.team = [a.id, 9999];
+    expect(setTeam(g, [a.id, 9999, c.id]).ok).toBe(true);
+    expect(g.state.tower.team).toEqual([a.id, c.id]);
   });
 
   it('team size is limited and grows with talents', () => {

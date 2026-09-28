@@ -7,7 +7,7 @@
   import { toggleLock } from '@core/actions';
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
   import { fragmentValue, recycle } from '@core/features/recycler';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaSequence from './DnaSequence.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
@@ -39,11 +39,13 @@
   function close() {
     view.detail = null;
   }
-  function doSell() {
-    if (c && confirm(`${c.name} verkaufen?`) && act(sell(game, [c.id]))) close();
+  async function doSell() {
+    const cur = c;
+    if (cur && (await ask(`${cur.name} verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, [cur.id]))) close();
   }
-  function doRecycle() {
-    if (c && confirm(`${c.name} recyceln?`) && act(recycle(game, [c.id]))) close();
+  async function doRecycle() {
+    const cur = c;
+    if (cur && (await ask(`${cur.name} recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, [cur.id]))) close();
   }
   function fmtMod(op: string, v: number) {
     if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;

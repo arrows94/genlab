@@ -4,6 +4,7 @@
   import { game, view, init, openTab, save } from './store.svelte';
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
+  import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toasts from './components/Toasts.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
   import DnaHelix from './components/DnaHelix.svelte';
@@ -114,6 +115,7 @@
 {/if}
 {/if}
 <Toasts />
+<ConfirmDialog />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
 <style>

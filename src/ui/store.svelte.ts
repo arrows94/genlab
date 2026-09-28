@@ -43,6 +43,8 @@ export const view = $state({
   /** Recent expedition returns (newest first) for the expedition log. */
   /** Recently hatched creature ids (newest first) for the nest row. */
   hatchlings: [] as { id: number; key: number }[],
+  /** Open in-game confirmation (replaces window.confirm, which browsers can block). */
+  confirm: null as { text: string; ok: string; danger: boolean; resolve: (yes: boolean) => void } | null,
   returns: [] as { id: number; missionId: string; creatureId: number; rewards: [string, string][]; wildSpecies: string | null }[],
 });
 
@@ -172,6 +174,24 @@ export function refresh(): void {
 }
 
 /** Runs an action and reports failures as a toast. */
+/**
+ * Asks for confirmation with an in-game dialog. `window.confirm` is not used:
+ * once a player tells the browser to suppress dialogs it silently returns
+ * false, which made selling/infusing impossible.
+ */
+export function ask(text: string, opts: { ok?: string; danger?: boolean } = {}): Promise<boolean> {
+  view.confirm?.resolve(false);
+  return new Promise((resolve) => {
+    view.confirm = { text, ok: opts.ok ?? 'OK', danger: opts.danger ?? false, resolve };
+  });
+}
+
+export function answer(yes: boolean): void {
+  const open = view.confirm;
+  view.confirm = null;
+  open?.resolve(yes);
+}
+
 export function act(result: ActionResult): boolean {
   if (!result.ok) toast(result.reason, 'error');
   refresh();

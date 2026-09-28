@@ -7,7 +7,7 @@
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments, recycle } from '@core/features/recycler';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
@@ -66,11 +66,13 @@
   function selectAllVisible() {
     selected = new Set(data.list.filter((c) => canConsume(game, c)).map((c) => c.id));
   }
-  function doSell() {
-    if (data.chosen.length && confirm(`${data.chosen.length} Kreatur(en) verkaufen?`) && act(sell(game, data.chosen.map((c) => c.id)))) selected = new Set();
+  async function doSell() {
+    const ids = data.chosen.map((c) => c.id);
+    if (ids.length && (await ask(`${ids.length} Kreatur(en) verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, ids))) selected = new Set();
   }
-  function doRecycle() {
-    if (data.chosen.length && confirm(`${data.chosen.length} Kreatur(en) recyceln?`) && act(recycle(game, data.chosen.map((c) => c.id)))) selected = new Set();
+  async function doRecycle() {
+    const ids = data.chosen.map((c) => c.id);
+    if (ids.length && (await ask(`${ids.length} Kreatur(en) recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, ids))) selected = new Set();
   }
 </script>
 

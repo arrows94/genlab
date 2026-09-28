@@ -1,7 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { abandonAnomaly, anomalyAvailable, startAnomaly } from '@core/features/anomalies';
-  import { game, view, act, save } from '../store.svelte';
+  import { game, view, act, save, ask } from '../store.svelte';
 
   const data = $derived.by(() => {
     view.frame;
@@ -11,8 +11,11 @@
     };
   });
 
-  function start(id: string) {
-    if (confirm('Anomalie starten? Das setzt deinen Lauf wie eine Vererbung zurück – ohne Erbgut-Gewinn.') && act(startAnomaly(game, id))) save();
+  async function start(id: string) {
+    if ((await ask('Anomalie starten? Das setzt deinen Lauf wie eine Vererbung zurück – ohne Erbgut-Gewinn.', { ok: 'Starten', danger: true })) && act(startAnomaly(game, id))) save();
+  }
+  async function abandon() {
+    if (await ask('Anomalie abbrechen? Es gibt keine Belohnung.', { ok: 'Abbrechen', danger: true })) act(abandonAnomaly(game));
   }
 </script>
 
@@ -28,7 +31,7 @@
       <p class="small reward"><b>Belohnung:</b> {a.rewardText}</p>
       {#if data.active === a.id}
         <p class="small live">▶ läuft gerade</p>
-        <button onclick={() => confirm('Anomalie abbrechen? Es gibt keine Belohnung.') && act(abandonAnomaly(game))}>Abbrechen</button>
+        <button onclick={abandon}>Abbrechen</button>
       {:else}
         <button class="primary" disabled={!!data.active || !available} onclick={() => start(a.id)}>{done ? 'Erneut spielen' : 'Starten'}</button>
       {/if}

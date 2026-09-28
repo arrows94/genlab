@@ -98,6 +98,12 @@ export function mergeDefaults<T>(defaults: T, loaded: unknown): T {
   return out as T;
 }
 
+/** Removes references to creatures that no longer exist (older saves could keep them). */
+function repairReferences(state: GameState): void {
+  const ids = new Set(state.creatures.map((c) => c.id));
+  state.tower.team = state.tower.team.filter((id) => ids.has(id));
+}
+
 export function deserialize(json: string, migrations: Record<number, Migration> = MIGRATIONS, target = SAVE_VERSION): { state: GameState; savedAt: number } {
   let envelope: SaveEnvelope;
   try {
@@ -108,6 +114,7 @@ export function deserialize(json: string, migrations: Record<number, Migration> 
   if (!envelope || typeof envelope !== 'object' || !('state' in envelope)) throw new SaveError('Spielstand hat ein unbekanntes Format.');
   const migrated = migrate(envelope, migrations, target);
   const state = mergeDefaults(createEmptyState(migrated.savedAt, 1), migrated.state);
+  repairReferences(state);
   return { state, savedAt: migrated.savedAt };
 }
 

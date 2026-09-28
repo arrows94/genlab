@@ -169,6 +169,8 @@ export function isBusy(c: Creature): boolean {
 
 export function removeCreature(ctx: GameContext, id: number, reason: string): void {
   ctx.state.creatures = ctx.state.creatures.filter((c) => c.id !== id);
+  // Drop stale references (e.g. an infused creature must not stay in the tower team).
+  ctx.state.tower.team = ctx.state.tower.team.filter((t) => t !== id);
   ctx.invalidate();
   ctx.bus.emit('creatureRemoved', { creatureId: id, reason });
 }
