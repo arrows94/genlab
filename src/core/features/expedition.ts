@@ -26,6 +26,16 @@ export function runningMissions(ctx: GameContext) {
   return ctx.state.processes.filter((p) => p.kind === MISSION);
 }
 
+/** Process kinds that occupy a camp (missions; the voyage registers itself). */
+const campKinds = new Set<string>([MISSION]);
+export function registerCampProcess(kind: string): void {
+  campKinds.add(kind);
+}
+
+export function campsUsed(ctx: GameContext): number {
+  return ctx.state.processes.filter((p) => campKinds.has(p.kind)).length;
+}
+
 export function missionDurationMs(ctx: GameContext, missionId: string): number {
   const def = ctx.content.missions.get(missionId);
   return Math.max(1000, ctx.mods().apply('mission.time', def.durationSec) * 1000);
@@ -74,7 +84,7 @@ export function startMission(ctx: GameContext, creatureId: number, missionId: st
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   if (c.job && c.job.kind !== 'building') return { ok: false, reason: 'Die Kreatur ist beschäftigt.' };
-  if (runningMissions(ctx).length >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
+  if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
   const def = ctx.content.missions.get(missionId);
   if (!trySpend(ctx, toCost(def.cost))) return { ok: false, reason: 'Nicht genug Nahrung.' };
   const data: MissionData = { missionId, creatureId };

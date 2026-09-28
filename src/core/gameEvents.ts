@@ -12,6 +12,8 @@ export interface GameEvents {
   processStarted: { processId: number; kind: string };
   processCompleted: { processId: number; kind: string };
   contractCompleted: { template: string; creatureId: number; level: number };
+  voyageReturned: { destination: string };
+  voyageResolved: { destination: string; decision: string; option: number; creatureId: number | null };
   buffExpired: { buffId: number; source: string };
   achievementUnlocked: { achievement: string };
   prestige: { layer: string; gain: Decimal };

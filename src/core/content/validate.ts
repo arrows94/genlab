@@ -270,6 +270,36 @@ export function validateContent(data: ContentData): string[] {
   }
   for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
   for (const g of data.genes) cond(`${at('genes', g.id)}.requires`, g.requires);
+  for (const d of data.voyageDestinations) {
+    const w = at('voyageDestinations', d.id);
+    text(`${w}.name`, d.name);
+    ref(`${w}.element`, 'elements', d.element);
+    if (d.species.length === 0) issues.push(`${w}.species: mindestens eine Art`);
+    d.species.forEach((s) => ref(`${w}.species`, 'species', s));
+    for (const [res, range] of Object.entries(d.rewards)) {
+      ref(`${w}.rewards`, 'resources', res);
+      if (!Array.isArray(range) || range.length !== 2 || range[0] > range[1]) issues.push(`${w}.rewards.${res}: [min, max] erwartet`);
+    }
+  }
+  for (const e of data.voyageEvents) {
+    const w = at('voyageEvents', e.id);
+    text(`${w}.text`, e.text);
+    num(`${w}.weight`, e.weight, 0);
+    amounts(`${w}.effect.resources`, e.effect.resources);
+  }
+  for (const d of data.voyageDecisions) {
+    const w = at('voyageDecisions', d.id);
+    text(`${w}.text`, d.text);
+    num(`${w}.weight`, d.weight, 0);
+    if (!Array.isArray(d.options) || d.options.length !== 2) issues.push(`${w}.options: genau zwei Optionen`);
+    (d.options ?? []).forEach((o, i) => {
+      const ow = `${w}.options[${i}]`;
+      text(`${ow}.label`, o.label);
+      num(`${ow}.lootFactor`, o.lootFactor, 0);
+      ref(`${ow}.creature.minRarity`, 'rarities', o.creature?.minRarity);
+      amounts(`${ow}.resources`, o.resources);
+    });
+  }
   const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic'];
   for (const t of data.contracts) {
     const w = at('contracts', t.id);

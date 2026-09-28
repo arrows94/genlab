@@ -1,13 +1,12 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { formatDuration } from '@core/format';
-  import { expressedAppearance } from '@core/genetics';
+  import { expressedAppearance, missingAlleles } from '@core/genetics';
   import {
     contractCandidates,
     contractLevel,
     contractReward,
     deliverContract,
-    missingAlleles,
     nextContractDay,
     nextLevelAt,
     requirementStatus,

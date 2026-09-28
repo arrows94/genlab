@@ -16,6 +16,7 @@ import { upgrades } from './upgrades';
 import { capsules } from './capsules';
 import { anomalies, talents, weeklyMutations } from './endgame';
 import { contracts } from './contracts';
+import { voyageDecisions, voyageDestinations, voyageEvents } from './voyages';
 
 export { balance } from './balance';
 
@@ -42,6 +43,9 @@ export const contentData: ContentData = {
   anomalies,
   weeklyMutations,
   contracts,
+  voyageDestinations,
+  voyageEvents,
+  voyageDecisions,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

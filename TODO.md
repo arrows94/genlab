@@ -107,8 +107,8 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 - [x] **Tagesreise** (12–24 h) mit garantiert seltenen Funden
       (Nebelmoor 12 h ab Selten nach der 1. Vererbung, Wolkengrat 24 h ab Episch nach der 2.)
-- [ ] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
-      (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“)
+- [x] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
+      (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“) – Team bis 3, belegt ein Camp, ab der 2. Vererbung
 - [ ] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
 - [ ] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
 - [ ] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
@@ -127,6 +127,7 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
       (Sofort-Forschungen bleiben)
 - [ ] **Wochen-Boss im Turm**: riesige KP, Schaden sammelt sich über die Woche, Belohnung nach Gesamtschaden
 - [ ] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
+      (Ziel der Wochenexpedition folgt bereits dem Element der Wochen-Mutation; Wochen-Boss fehlt noch)
 - [ ] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
 
 ## Leitplanken

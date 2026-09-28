@@ -21,6 +21,12 @@ export const balance: Balance = {
     levelThresholds: [0, 4, 12, 30, 60],
     dayStartHourUtc: 4,
   },
+  voyage: {
+    days: 7,
+    maxTeam: 3,
+    events: 6,
+    cost: { food: 20000, gold: 5000 },
+  },
   notifications: {
     minDurationSec: 120,
     groupSec: 300,

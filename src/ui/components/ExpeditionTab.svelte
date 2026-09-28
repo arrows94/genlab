@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    campSlots, hintChance, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
+    campSlots, campsUsed, hintChance, missionAvailable, missionDurationMs, missionRewardFactor, missionSpecies, runningMissions, startMission, wildChance,
     type MissionData,
   } from '@core/features/expedition';
   import { processRemainingMs } from '@core/systems/processes';
@@ -16,6 +16,8 @@
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
+  import VoyagePanel from './VoyagePanel.svelte';
+  import { runningVoyage, type VoyageData } from '@core/features/voyage';
 
   /**
    * Expeditions as a world map: regions are nodes around the camp, running
@@ -89,8 +91,15 @@
       .sort((a, b) => b.spd - a.spd)
       .slice(0, 40);
     const chosenCreature = chosen !== null ? findCreature(game, chosen) : undefined;
+    const vp = runningVoyage(game);
+    const voyage = vp
+      ? { dest: content.voyageDestinations.get((vp.data as VoyageData).destination), progress: Math.min(1, vp.elapsedMs / vp.durationMs), remaining: processRemainingMs(game, vp), size: (vp.data as VoyageData).team.length }
+      : null;
     return {
       slots: campSlots(game),
+      used: campsUsed(game),
+      voyage,
+      voyageOn: game.state.features['voyage'] === true,
       running,
       regions,
       sel,
@@ -124,7 +133,7 @@
 
 <header class="head">
   <h2>🧭 Erkundung</h2>
-  <span class="muted num">{data.running.length}/{data.slots} Camps belegt</span>
+  <span class="muted num">{data.used}/{data.slots} Camps belegt</span>
 </header>
 
 <!-- World map -->
@@ -214,9 +223,24 @@
 
 <!-- Camps -->
 <div class="camps">
-  {#each Array.from({ length: data.slots }, (_, i) => i) as i (i)}
+  {#each Array.from({ length: Math.max(data.slots, data.used) }, (_, i) => i) as i (i)}
     {@const r = data.running[i]}
-    {#if r}
+    {#if !r && data.voyage && i === data.running.length}
+      <article class="camp-card" style="--rc: {content.elements.get(data.voyage.dest.element).color}">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 48 48" width="48" height="48" class="ring">
+            <circle cx="24" cy="24" r="20" class="track" />
+            <circle cx="24" cy="24" r="20" class="fill" stroke-dasharray={RING} stroke-dashoffset={RING * (1 - data.voyage.progress)} />
+          </svg>
+          <span class="avatar">{data.voyage.dest.icon}</span>
+        </div>
+        <div class="camp-info">
+          <b>🗺️ {data.voyage.dest.name}</b>
+          <span class="small muted">Wochenexpedition · {data.voyage.size} {data.voyage.size === 1 ? 'Kreatur' : 'Kreaturen'}</span>
+          <span class="small num">noch {formatDuration(data.voyage.remaining)}</span>
+        </div>
+      </article>
+    {:else if r}
       {@const pos = place(r.missionId, content.missions.list.indexOf(r.mission))}
       <article class="camp-card" style="--rc: {pos.color}">
         <div class="ring-wrap">
@@ -240,6 +264,8 @@
     {/if}
   {/each}
 </div>
+
+{#if data.voyageOn}<VoyagePanel />{/if}
 
 <div class="lower">
   <!-- Selected region -->
@@ -290,7 +316,7 @@
       <h3>Wer geht los?</h3>
       <span class="small muted">💨 Tempo erhöht die Beute</span>
     </div>
-    {#if data.running.length >= data.slots}
+    {#if data.used >= data.slots}
       <p class="muted small">Alle Camps sind belegt.</p>
     {:else}
       <div class="tiles">
@@ -312,7 +338,7 @@
         {/each}
       </div>
     {/if}
-    <button class="primary go" disabled={chosen === null || !data.affordable || data.running.length >= data.slots} onclick={send}>
+    <button class="primary go" disabled={chosen === null || !data.affordable || data.used >= data.slots} onclick={send}>
       🧭 Nach {data.def.name} schicken · <CostLabel cost={data.cost} />
     </button>
   </article>

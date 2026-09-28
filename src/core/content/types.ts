@@ -390,6 +390,56 @@ export interface ContractTemplateDef {
   };
 }
 
+/** Wochenexpedition: destination of a week (picked by the week, themed by the weekly mutation). */
+export interface VoyageDestinationDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  element: string;
+  /** Species that can join the team at the return. */
+  species: string[];
+  /** resource → [min, max] before team and event factors */
+  rewards: Record<string, [number, number]>;
+}
+
+/** Something that happens on one day of the voyage; applied at the return. */
+export interface VoyageEventDef {
+  id: string;
+  text: string;
+  weight: number;
+  effect: {
+    /** Loot change, e.g. -0.1 = −10 %. */
+    lootPct?: number;
+    resources?: ResourceAmounts;
+    alleleSamples?: number;
+    /** Reveals a hybrid recipe hint (once hybrids are unlocked). */
+    hint?: boolean;
+  };
+}
+
+export interface VoyageOptionDef {
+  label: string;
+  description: string;
+  /** Share of the loot the player keeps (1 = all). */
+  lootFactor: number;
+  /** A creature of the destination joins (ignores the stable capacity). */
+  creature?: { minRarity: string };
+  resources?: ResourceAmounts;
+  /** Loot bonus for the next voyage, e.g. 0.5 = +50 %. */
+  nextBonus?: number;
+  /** Permanent boost to every stat of each team member, e.g. 0.05 = +5 %. */
+  teamBoost?: number;
+}
+
+/** The choice waiting at the return of a voyage. */
+export interface VoyageDecisionDef {
+  id: string;
+  text: string;
+  weight: number;
+  options: [VoyageOptionDef, VoyageOptionDef];
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -413,6 +463,9 @@ export interface ContentData {
   anomalies: AnomalyDef[];
   weeklyMutations: WeeklyMutationDef[];
   contracts: ContractTemplateDef[];
+  voyageDestinations: VoyageDestinationDef[];
+  voyageEvents: VoyageEventDef[];
+  voyageDecisions: VoyageDecisionDef[];
 }
 
 export interface Registry<T extends { id: string }> {

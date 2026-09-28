@@ -116,6 +116,16 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 
 Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
 
+## Wochenexpedition
+
+`src/content/voyages.ts` enthält drei Listen:
+
+- `voyageDestinations`: Ziele mit `element`, `species` (wer sich anschließen kann) und `rewards` ([min, max] pro Teammitglied). Das Ziel der Woche folgt dem Element der Wochen-Mutation (`element.<id>.production`), sonst wird es per Woche gewürfelt.
+- `voyageEvents`: Ereignisse unterwegs (eines pro Tag) mit `effect`: `lootPct`, `resources`, `alleleSamples`, `hint`.
+- `voyageDecisions`: die Entscheidung bei der Rückkehr, genau zwei `options` mit `lootFactor` und optional `creature.minRarity`, `resources`, `nextBonus` (Beute der nächsten Reise) oder `teamBoost` (dauerhaft auf alle Werte der Teammitglieder).
+
+Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
+
 ## Neues Upgrade / neue Forschung
 
 `src/content/upgrades.ts`:

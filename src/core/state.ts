@@ -141,6 +141,22 @@ export interface ContractsState {
   completed: number;
 }
 
+/** A voyage that came back and waits for the player's decision. */
+export interface VoyageReturn {
+  destination: string;
+  team: number[];
+  events: string[];
+  loot: Record<string, Decimal>;
+  alleleSamples: number;
+  decision: string;
+}
+
+export interface VoyageState {
+  pending: VoyageReturn | null;
+  /** Loot bonus carried to the next voyage (from a decision). */
+  nextBonus: number;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -180,6 +196,7 @@ export interface GameState {
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
+  voyage: VoyageState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -212,6 +229,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomaliesCompleted: {},
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
+    voyage: { pending: null, nextBonus: 0 },
   };
 }
 

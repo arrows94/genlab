@@ -30,6 +30,13 @@ export interface Balance {
     /** A new board appears at this hour (UTC) – 4 = early morning in Europe. */
     dayStartHourUtc: number;
   };
+  voyage: {
+    days: number;
+    maxTeam: number;
+    /** Events on the way (one per day, spread over the voyage). */
+    events: number;
+    cost: ResourceAmounts;
+  };
   notifications: {
     /** Only processes at least this long announce their end (no pings for 20 s eggs). */
     minDurationSec: number;

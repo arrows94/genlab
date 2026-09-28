@@ -7,6 +7,7 @@
   const COMPLETED: Record<string, (n: number) => string> = {
     mission: (n) => (n === 1 ? '1 Expedition zurückgekehrt' : `${n} Expeditionen zurückgekehrt`),
     egg: (n) => (n === 1 ? '1 Ei geschlüpft' : `${n} Eier geschlüpft`),
+    voyage: () => 'Die Wochenexpedition ist zurück – eine Entscheidung wartet',
     sequence: (n) => (n === 1 ? '1 Genom sequenziert' : `${n} Genome sequenziert`),
   };
 </script>

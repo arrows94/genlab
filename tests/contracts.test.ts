@@ -8,14 +8,13 @@ import {
   contractReward,
   deliverContract,
   fulfillableCount,
-  missingAlleles,
   nextContractDay,
   refreshContracts,
   requirementStatus,
   requirementText,
   rerollContract,
 } from '@core/features/contracts';
-import { activeLoci, libraryHas } from '@core/genetics';
+import { activeLoci, libraryHas, missingAlleles } from '@core/genetics';
 import { deserialize, serialize } from '@core/save';
 import type { ContractOffer, Genome } from '@core/state';
 import { unlockFeature } from '@core/systems/unlocks';

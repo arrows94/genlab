@@ -1,7 +1,7 @@
 import { D, type Decimal } from '../num';
 import { checkCondition } from '../conditions';
 import { findCreature, removeCreature } from '../creatures';
-import { activeLoci, catalogueGenome, expressLocus, libraryHas } from '../genetics';
+import { activeLoci, catalogueSamples, expressLocus, libraryHas } from '../genetics';
 import { grant } from '../resources';
 import { Rng } from '../rng';
 import { productionRates } from '../systems/production';
@@ -293,15 +293,6 @@ export function contractReward(ctx: GameContext, offer: ContractOffer): Record<s
   return out;
 }
 
-/** Alleles still missing in the gene library, rarest first. */
-export function missingAlleles(ctx: GameContext): { locus: string; allele: string }[] {
-  const out: { locus: string; allele: string; weight: number }[] = [];
-  for (const locus of activeLoci(ctx)) {
-    for (const a of locus.alleles) if (!libraryHas(ctx, locus.id, a.id)) out.push({ locus: locus.id, allele: a.id, weight: a.weight });
-  }
-  return out.sort((x, y) => x.weight - y.weight).map(({ locus, allele }) => ({ locus, allele }));
-}
-
 /** Hands a matching creature over: it leaves, the rewards arrive. */
 export function deliverContract(ctx: GameContext, slot: number, creatureId: number): ActionResult {
   if (!ctx.state.features['contracts']) return { ok: false, reason: 'Gen-Aufträge sind noch nicht freigeschaltet.' };
@@ -322,7 +313,7 @@ export function deliverContract(ctx: GameContext, slot: number, creatureId: numb
   const rewards = contractReward(ctx, offer);
   removeCreature(ctx, c.id, 'contract');
   for (const [res, amount] of Object.entries(rewards)) grant(ctx, res, amount, `contract:${template.id}`);
-  for (const { locus, allele } of missingAlleles(ctx).slice(0, template.reward.alleleSamples ?? 0)) catalogueGenome(ctx, { [locus]: [allele, allele] });
+  catalogueSamples(ctx, template.reward.alleleSamples ?? 0);
   offer.done = true;
   board.completed++;
   ctx.invalidate();

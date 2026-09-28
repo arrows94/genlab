@@ -54,7 +54,9 @@
   });
   const badges = $derived.by((): Record<string, number> => {
     view.frame;
-    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game) };
+    // A voyage waiting for its decision counts as news in the expedition tab.
+    const voyage = game.state.voyage.pending ? 1 : 0;
+    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage };
   });
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 

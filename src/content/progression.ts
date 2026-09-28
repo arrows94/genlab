@@ -48,6 +48,10 @@ export const features: FeatureDef[] = [
   { id: 'towerAuto', name: 'Turm-Routine', hint: 'Dein Team startet nach einer Niederlage automatisch neu.' },
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  {
+    id: 'voyage', name: 'Wochenexpedition', hint: 'Wochenexpedition möglich: Schicke ein Team für sieben Tage auf große Fahrt (Erkundung).',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 },
+  },
   { id: 'anomalies', name: 'Anomalien', tab: 'anomalies', hint: 'Anomalien entdeckt: Durchläufe mit besonderen Regeln und dauerhaften Belohnungen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 } },
   {
     id: 'aeon', name: 'Äon', tab: 'aeon', hint: 'Das Äon ruft: Ein tieferer Neustart für Äon-Splitter und einen eigenen Talentbaum.',

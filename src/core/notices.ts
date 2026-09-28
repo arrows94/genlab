@@ -3,6 +3,7 @@ import { findCreature } from './creatures';
 import { EGG, type EggData } from './features/breeding';
 import { MISSION, type MissionData } from './features/expedition';
 import { SEQUENCE, type SequenceData } from './features/sequencing';
+import { VOYAGE, type VoyageData } from './features/voyage';
 import { formatDuration } from './format';
 import type { Process } from './state';
 import { processRemainingMs } from './systems/processes';
@@ -50,6 +51,11 @@ const TEXTS: Record<string, NoticeText> = {
       return `Das Ei von ${a} und ${b} ist geschlüpft.`;
     },
     many: (n) => `${n} Eier sind geschlüpft.`,
+  },
+  [VOYAGE]: {
+    title: 'Wochenexpedition zurück 🗺️',
+    one: (ctx, p) => `Das Team ist aus „${ctx.content.voyageDestinations.get((p.data as VoyageData).destination).name}“ zurück – eine Entscheidung wartet.`,
+    many: (n) => `${n} Wochenexpeditionen sind zurück.`,
   },
   [SEQUENCE]: {
     title: 'Sequenzierung fertig 🧬',
