@@ -17,6 +17,7 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
   import VoyagePanel from './VoyagePanel.svelte';
+  import PickerExclude, { pickerAllows } from './PickerExclude.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
   import { runningVoyage, type VoyageData } from '@core/features/voyage';
 
@@ -86,7 +87,7 @@
     const sel = content.missions.has(viewState.expedition.region) && missionAvailable(game, viewState.expedition.region) ? viewState.expedition.region : 'short';
     const def = content.missions.get(sel);
     const idle = game.state.creatures
-      .filter((c) => c.job === null || c.job.kind === 'building')
+      .filter((c) => (c.job === null || c.job.kind === 'building') && (c.id === chosen || pickerAllows(c)))
       .map((c) => ({ c, spd: effectiveStats(game, c).spd ?? 0, factor: missionRewardFactor(game, c) }))
       .sort((a, b) => b.spd - a.spd)
       .slice(0, 40);
@@ -266,8 +267,6 @@
   {/each}
 </div>
 
-{#if data.voyageOn}<VoyagePanel />{/if}
-
 <div class="lower">
   <!-- Selected region -->
   <article class="panel region" style="--rc: {data.pos.color}">
@@ -320,6 +319,7 @@
     {#if data.used >= data.slots}
       <p class="muted small">Alle Camps sind belegt.</p>
     {:else}
+      <PickerExclude />
       <div class="tiles">
         {#each data.idle as t (t.c.id)}
           {@const sp = content.species.get(t.c.speciesId)}
@@ -344,6 +344,8 @@
     </button>
   </article>
 </div>
+
+{#if data.voyageOn}<VoyagePanel />{/if}
 
 <!-- Returns -->
 {#if view.returns.length}

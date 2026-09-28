@@ -40,7 +40,10 @@
     const idle = game.state.creatures.filter((c) => c.job === null).length;
     const used = buildings.reduce((n, b) => n + b.used, 0);
     const slots = buildings.reduce((n, b) => n + b.slots, 0);
-    return { buildings, idle, used, slots, planner: game.state.features['autoAssign'] === true, auto: game.state.automation.autoAssign };
+    // All facilities draw the same number of sockets so the cards line up;
+    // places a facility does not have yet are shown locked.
+    const grid = Math.max(0, ...buildings.map((b) => Math.max(b.slots, b.used)));
+    return { buildings, idle, used, slots, grid, planner: game.state.features['autoAssign'] === true, auto: game.state.automation.autoAssign };
   });
 
   /** Creatures that could work in the picked building, best gain first. */
@@ -156,6 +159,9 @@
             <span class="plus">+</span><span class="small">Zuweisen</span>
           </button>
         {/each}
+        {#each Array.from({ length: Math.max(0, data.grid - Math.max(b.slots, b.used)) }, (_, i) => i) as i (i)}
+          <span class="socket locked" title="Weitere Plätze gibt es über Forschung ({b.def.name}-Ausbau)."><span class="lock">🔒</span></span>
+        {/each}
       </div>
 
       {#if picking === b.def.id}
@@ -202,8 +208,8 @@
 
   .planner { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; }
 
-  .facilities { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); align-items: start; }
-  .facility { display: grid; gap: 0.5rem; border-color: color-mix(in srgb, var(--rc) 35%, var(--line)); }
+  .facilities { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); align-items: stretch; }
+  .facility { display: grid; gap: 0.5rem; align-content: start; border-color: color-mix(in srgb, var(--rc) 35%, var(--line)); }
   .title { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
   .title h3 { margin: 0; }
   .rate { font-size: 1.15rem; font-weight: 700; color: var(--rc); }
@@ -226,14 +232,18 @@
 
   .hint { margin: 0; }
 
-  .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 0.4rem; }
+  .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.8rem, 1fr)); gap: 0.4rem; }
   .socket {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem;
-    min-height: 6.4rem; border-radius: 12px; border: 2px dashed var(--line); background: var(--bg-2); color: var(--muted); padding: 0.3rem;
+    min-height: 6rem; border-radius: 12px; border: 2px dashed var(--line); background: var(--bg-2); color: var(--muted); padding: 0.3rem;
   }
   .socket.filled { border: 2px solid var(--el); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--el) 18%, transparent), var(--bg-2) 70%); color: var(--text); }
   .socket.filled::after { content: ''; position: absolute; left: 18%; right: 18%; bottom: 3px; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--el) 50%, transparent); }
   .socket.empty:hover, .socket.empty.open { border-color: var(--teal); color: var(--text); }
+  .socket.locked { border-style: dotted; background: transparent; opacity: 0.35; }
+  .lock { font-size: 0.9rem; filter: grayscale(1); }
+  /* One column: nothing to line up with, the placeholders would only cost space. */
+  @media (max-width: 720px) { .socket.locked { display: none; } }
   .plus { font-size: 1.4rem; line-height: 1; }
   .art { padding: 0; border: 0; background: none; line-height: 0; }
   .sname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 0.8rem; }

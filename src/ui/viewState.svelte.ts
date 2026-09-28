@@ -12,18 +12,24 @@ interface ViewState {
   /** Dex view; the key replaced the old `mode` so everyone starts on the new gallery once. */
   dex: { view: 'cards' | 'table' | 'tree' };
   recycler: { element: string };
-  expedition: { region: string };
-  breeding: { species: string };
-  research: { theme: string; affordableOnly: boolean };
+  /** Tagesbelohnung: calendar expanded (otherwise a single line). */
+  lab: { dailyOpen: boolean };
+  /** Creature pickers (missions, Wochenexpedition) can hide working creatures and favourites. */
+  expedition: { region: string; voyageOpen: boolean; hideWorking: boolean; hideLocked: boolean };
+  breeding: { species: string; rarity: string; sort: BreedingSort };
+  research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
 }
 
+export type BreedingSort = 'power' | 'rarity' | 'generation' | 'species' | 'name' | `stat:${string}`;
+
 const defaults = (): ViewState => ({
-  list: { filter: { ...EMPTY_FILTER }, sort: 'newest', alleleKey: '', showFilters: false },
+  list: { filter: { ...EMPTY_FILTER, hideAway: true }, sort: 'newest', alleleKey: '', showFilters: false },
   dex: { view: 'cards' },
   recycler: { element: 'fire' },
-  expedition: { region: 'short' },
-  breeding: { species: '' },
-  research: { theme: '', affordableOnly: false },
+  lab: { dailyOpen: false },
+  expedition: { region: 'short', voyageOpen: false, hideWorking: false, hideLocked: false },
+  breeding: { species: '', rarity: '', sort: 'power' },
+  research: { theme: '', affordableOnly: false, grandOpen: false },
 });
 
 function load(): ViewState {
@@ -36,6 +42,7 @@ function load(): ViewState {
       list: { ...base.list, ...saved.list, filter: { ...base.list.filter, ...saved.list?.filter } },
       dex: { view: ['cards', 'table', 'tree'].includes(saved.dex?.view ?? '') ? saved.dex!.view : base.dex.view },
       recycler: { ...base.recycler, ...saved.recycler },
+      lab: { ...base.lab, ...saved.lab },
       expedition: { ...base.expedition, ...saved.expedition },
       breeding: { ...base.breeding, ...saved.breeding },
       research: { ...base.research, ...saved.research },
@@ -54,7 +61,8 @@ export function activeListFilters(): number {
 }
 
 export function resetListFilters(): void {
-  viewState.list.filter = { ...EMPTY_FILTER };
+  // "Unterwegs ausblenden" is a display preference, not a filter – keep it.
+  viewState.list.filter = { ...EMPTY_FILTER, hideAway: viewState.list.filter.hideAway };
   viewState.list.alleleKey = '';
 }
 

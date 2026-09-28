@@ -1,6 +1,6 @@
 
 import { toCost } from '../costs';
-import { checkPerfection, effectiveStats, findCreature, registerDex, removeCreature } from '../creatures';
+import { checkPerfection, creaturePower, effectiveStats, findCreature, registerDex, removeCreature } from '../creatures';
 import { activeLoci, alleleDef } from '../genetics';
 import { trySpend } from '../resources';
 import { checkUnlocks } from '../systems/unlocks';
@@ -164,10 +164,42 @@ export function breakthrough(ctx: GameContext, targetId: number, partnerId: numb
 }
 
 
-/** "Alle Gewöhnlichen dieser Art": consumable same-species victims up to a rarity. */
-export function batchInfusionVictims(ctx: GameContext, target: Creature, maxRarity: string): Creature[] {
-  const max = ctx.content.rarities.get(maxRarity).order;
-  return infusionCandidates(ctx, target).filter((c) => canConsume(ctx, c) && ctx.content.rarities.get(c.rarity).order <= max);
+export interface InfusionPick {
+  /** Highest rarity that may be taken. */
+  maxRarity: string;
+  /** 'all' takes every match; the others stop as soon as the EP reach the next / the maximum level. */
+  goal: 'all' | 'nextLevel' | 'maxLevel';
+  /** Only sequenced victims that could pass on a better allele. */
+  donorsOnly?: boolean;
+}
+
+/**
+ * Quick selection for the infusion chamber: consumable same-species victims
+ * up to a rarity, cheapest first (rarity, generation, power). Shiny and
+ * infused creatures are never picked automatically – only by hand.
+ */
+export function pickInfusionVictims(ctx: GameContext, target: Creature, pick: InfusionPick): Creature[] {
+  const order = (id: string) => ctx.content.rarities.get(id).order;
+  const max = order(pick.maxRarity);
+  const power = new Map<number, number>();
+  const pool = infusionCandidates(ctx, target)
+    .filter((c) => canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && order(c.rarity) <= max)
+    .filter((c) => !pick.donorsOnly || bestTransfer(ctx, target, c) !== null);
+  for (const c of pool) power.set(c.id, creaturePower(ctx, c));
+  pool.sort((x, y) => order(x.rarity) - order(y.rarity) || x.generation - y.generation || power.get(x.id)! - power.get(y.id)!);
+  if (pick.goal === 'all') return pool;
+
+  const level = target.infusion.level;
+  const cap = maxInfusionLevel(ctx);
+  const goal = pick.goal === 'nextLevel' ? Math.min(level + 1, cap) : cap;
+  const out: Creature[] = [];
+  let ep = target.infusion.ep;
+  for (const v of pool) {
+    if (applyEp(ctx, level, ep).level >= goal) break;
+    out.push(v);
+    ep += infusionEp(ctx, v);
+  }
+  return out;
 }
 
 /** Progress towards the next level as 0–1 (1 at max level). */

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
-import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview } from '@core/features/infusion';
+import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
 import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, planAutoBreed, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
 import { breedingCost, startBreeding } from '@core/features/breeding';
@@ -138,6 +138,34 @@ describe('infusion', () => {
     target.sequenced = true;
     infuse(g, target.id, [victim.id]);
     expect(target.genome.strength).toEqual(['k', 'k']);
+  });
+
+  it('quick picks take the cheapest victims up to a rarity and stop at the goal level', () => {
+    const g = richGame();
+    const target = createCreature(g, { speciesId: 'pebblit', rarity: 'rare' });
+    const commons = Array.from({ length: 12 }, (_, i) => createCreature(g, { speciesId: 'pebblit', rarity: 'common', generation: 1 + (i % 3) }));
+    const uncommon = createCreature(g, { speciesId: 'pebblit', rarity: 'uncommon' });
+    const shiny = createCreature(g, { speciesId: 'pebblit', rarity: 'common' });
+    shiny.shiny = true;
+    const infused = createCreature(g, { speciesId: 'pebblit', rarity: 'common' });
+    infused.infusion = { level: 1, ep: 0 };
+    commons[0]!.locked = true;
+
+    const all = pickInfusionVictims(g, target, { maxRarity: 'common', goal: 'all' });
+    expect(all).toHaveLength(11);
+    expect(all).not.toContain(commons[0]);
+    expect(all).not.toContain(shiny);
+    expect(all).not.toContain(infused);
+    expect(all.map((c) => c.generation)).toEqual([...all.map((c) => c.generation)].sort((a, b) => a - b));
+    expect(pickInfusionVictims(g, target, { maxRarity: 'uncommon', goal: 'all' })).toContain(uncommon);
+
+    const next = pickInfusionVictims(g, target, { maxRarity: 'uncommon', goal: 'nextLevel' });
+    expect(infusionPreview(g, target, next).newLevel).toBe(1);
+    expect(infusionPreview(g, target, next.slice(0, -1)).newLevel).toBe(0);
+    const max = pickInfusionVictims(g, target, { maxRarity: 'uncommon', goal: 'maxLevel' });
+    expect(max.length).toBeGreaterThanOrEqual(next.length);
+
+    expect(pickInfusionVictims(g, target, { maxRarity: 'uncommon', goal: 'all', donorsOnly: true })).toEqual([]);
   });
 
   it('breakthrough at max level raises rarity, but never above legendary', () => {
@@ -465,6 +493,10 @@ describe('creature list queries', () => {
     expect(filterCreatures(g, { ...EMPTY_FILTER, allele: { locus: 'strength', allele: 'K' } })).not.toContain(b);
     b.sequenced = true;
     expect(filterCreatures(g, { ...EMPTY_FILTER, allele: { locus: 'strength', allele: 'K' } })).toContain(b);
+    a.job = { kind: 'mission', target: '1' };
+    expect(filterCreatures(g, { ...EMPTY_FILTER, hideAway: true })).not.toContain(a);
+    expect(filterCreatures(g, { ...EMPTY_FILTER, hideAway: true, status: 'busy' })).toContain(a);
+    a.job = null;
     expect(sortCreatures(g, [b, a], 'rarity')[0]).toBe(a);
     expect(sortCreatures(g, [a, b], 'newest')[0]).toBe(b);
     expect(sortCreatures(g, [b, a], 'generation')[0]).toBe(a);
