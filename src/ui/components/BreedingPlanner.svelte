@@ -1,6 +1,5 @@
 <script lang="ts">
   import { content } from '@content/index';
-  import { effectiveStats } from '@core/creatures';
   import { formatNumber, formatPercent } from '@core/format';
   import { breedingPreview } from '@core/features/planner';
   import type { Creature } from '@core/state';
@@ -16,14 +15,13 @@
     view.frame;
     return breedingPreview(game, a, b);
   });
+  // Parent marks use base stats like the predicted range (both before rarity and bonuses).
   const stats = $derived.by(() => {
     view.frame;
-    const sa = effectiveStats(game, a);
-    const sb = effectiveStats(game, b);
     return content.stats.list.map((s) => {
       const [lo, hi] = preview.stats[s.id] ?? [0, 0];
-      const pa = sa[s.id] ?? 0;
-      const pb = sb[s.id] ?? 0;
+      const pa = a.stats[s.id] ?? 0;
+      const pb = b.stats[s.id] ?? 0;
       const max = Math.max(1, hi, pa, pb) * 1.05;
       return { s, lo, hi, pa, pb, max };
     });
