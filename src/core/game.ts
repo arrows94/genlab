@@ -13,6 +13,7 @@ import { DEFAULT_SYSTEMS, type System } from './systems';
 import { checkUnlocks } from './systems/unlocks';
 import { createCreature } from './creatures';
 import { productionRates } from './systems/production';
+import { advanceTimers } from './systems/timers';
 import { ensureGenomes } from './genetics';
 import './features';
 
@@ -29,9 +30,12 @@ export interface GameOptions {
 
 export interface OfflineReport {
   requestedMs: number;
+  /** Fully simulated time (production, automation, tower …), capped. */
   simulatedMs: number;
   capMs: number;
   gained: Record<string, string>;
+  /** Finished processes by kind (expeditions, eggs …) – they follow the real clock, not the cap. */
+  completed: Record<string, number>;
 }
 
 export class Game implements GameContext {
@@ -125,12 +129,18 @@ export class Game implements GameContext {
     return this.mods().apply('offline.capHours', this.balance.offline.capHours) * 3_600_000;
   }
 
-  /** Offline progress: same `step` logic with coarser steps, capped. */
+  /**
+   * Offline progress: same `step` logic with coarser steps, capped. Time
+   * beyond the cap only advances running timers, so long projects still
+   * finish by the real clock while production stays capped.
+   */
   simulateOffline(elapsedMs: number): OfflineReport {
     const capMs = this.offlineCapMs();
     const simulatedMs = Math.min(elapsedMs, capMs);
     const before: Record<string, ReturnType<typeof D>> = {};
     for (const [k, v] of Object.entries(this._state.resources)) before[k] = v;
+    const completed: Record<string, number> = {};
+    const off = this.bus.on('processCompleted', ({ kind }) => (completed[kind] = (completed[kind] ?? 0) + 1));
 
     const stepMs = this.balance.sim.offlineStepMs;
     let remaining = simulatedMs;
@@ -139,6 +149,8 @@ export class Game implements GameContext {
       this.step(dt);
       remaining -= dt;
     }
+    advanceTimers(this, elapsedMs - simulatedMs);
+    off();
 
     const gained: Record<string, string> = {};
     for (const [k, v] of Object.entries(this._state.resources)) {
@@ -146,7 +158,7 @@ export class Game implements GameContext {
       if (diff.gt(0)) gained[k] = diff.toString();
     }
     this.bus.emit('offlineProgress', { requestedMs: elapsedMs, simulatedMs });
-    return { requestedMs: elapsedMs, simulatedMs, capMs, gained };
+    return { requestedMs: elapsedMs, simulatedMs, capMs, gained, completed };
   }
 
   productionRates() {

@@ -45,12 +45,17 @@ export const processSystem: System = {
       p.elapsedMs += dtMs * Math.max(0, mods.factor(`process.${p.kind}.speed`));
       if (p.elapsedMs >= p.durationMs) finished.push(p);
     }
-    if (finished.length === 0) return;
-    ctx.state.processes = ctx.state.processes.filter((p) => !finished.includes(p));
-    for (const p of finished) {
-      getProcessHandler(p.kind)?.complete(ctx, p);
-      ctx.bus.emit('processCompleted', { processId: p.id, kind: p.kind });
-    }
-    ctx.invalidate();
+    completeProcesses(ctx, finished);
   },
 };
+
+/** Removes finished processes and runs their completion handlers (in the given order). */
+export function completeProcesses(ctx: GameContext, finished: Process[]): void {
+  if (finished.length === 0) return;
+  ctx.state.processes = ctx.state.processes.filter((p) => !finished.includes(p));
+  for (const p of finished) {
+    getProcessHandler(p.kind)?.complete(ctx, p);
+    ctx.bus.emit('processCompleted', { processId: p.id, kind: p.kind });
+  }
+  ctx.invalidate();
+}

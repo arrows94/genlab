@@ -95,7 +95,7 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Schritt 1 – Technische Grundlage (zuerst)
 
-- [ ] Lange Projekte laufen nach echter Uhrzeit, unabhängig von der Offline-Grenze
+- [x] Lange Projekte laufen nach echter Uhrzeit, unabhängig von der Offline-Grenze
       (die Grenze gilt nur noch für die laufende Produktion von Nahrung/Gold)
 - [ ] Benachrichtigungen in der Handy-App (Capacitor Local Notifications, ohne Server),
       z. B. „Deine Expedition ist zurück!“; optional Browser-Benachrichtigungen in der PWA

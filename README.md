@@ -59,7 +59,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Inhalte + Validierung | `core/content/types.ts`, `core/content/validate.ts` | Jede Inhaltsart hat ein Interface; beim Start werden IDs, Querverweise, Modifier-Ziele und Bedingungen geprüft. Fehler → lesbare Liste, z. B. `species[emberpup].element: unbekannte elements-id "lava"`. |
 | Balancing | `content/balance.ts` | Alle Tuning-Zahlen (Tick, Offline-Cap, Wahrscheinlichkeiten, Prestige-Formel …). |
 | Modifier-System | `core/modifiers.ts`, `core/providers.ts` | `(Basis + Σadd) × (1 + Σpct) × Πmult` pro Ziel (`production.gold`, `breeding.time` …). Jede Bonusquelle ist ein Provider; neue Boni = neue Daten. |
-| Simulation | `core/game.ts` | Feste Zeitschritte (`tickMs`). Offline-Fortschritt nutzt dieselbe `step()`-Funktion mit gröberen Schritten, gedeckelt (12 h + `offline.capHours`). |
+| Simulation | `core/game.ts` | Feste Zeitschritte (`tickMs`). Offline-Fortschritt nutzt dieselbe `step()`-Funktion mit gröberen Schritten, gedeckelt (12 h + `offline.capHours`). Laufende Prozesse und Buffs folgen darüber hinaus der echten Uhrzeit (`systems/timers.ts`), ohne Produktion und ohne neue Ketten. |
 | Zeitprozesse | `core/systems/processes.ts` | Generische Prozesse (Ei, Mission, Sequenzierung …) mit Handler je `kind`. |
 | Event-Bus | `core/events.ts`, `core/gameEvents.ts` | Typisierte Events; Statistiken, Erfolge und UI-Toasts hängen sich an. |
 | Speichern | `core/save.ts` | Versionierte Spielstände (`saveVersion` + Migrationen), Default-Merge für neue Felder, Export/Import als Text (`GENLAB1:…`), austauschbarer `SaveStorage`. |

@@ -25,9 +25,14 @@ export const buffSystem: System = {
       b.remainingMs -= dtMs;
       if (b.remainingMs <= 0) expired.push(b);
     }
-    if (expired.length === 0) return;
-    ctx.state.buffs = ctx.state.buffs.filter((b) => !expired.includes(b));
-    ctx.invalidate();
-    for (const b of expired) ctx.bus.emit('buffExpired', { buffId: b.id, source: b.source });
+    expireBuffs(ctx, expired);
   },
 };
+
+/** Removes expired buffs and announces them. */
+export function expireBuffs(ctx: GameContext, expired: Buff[]): void {
+  if (expired.length === 0) return;
+  ctx.state.buffs = ctx.state.buffs.filter((b) => !expired.includes(b));
+  ctx.invalidate();
+  for (const b of expired) ctx.bus.emit('buffExpired', { buffId: b.id, source: b.source });
+}
