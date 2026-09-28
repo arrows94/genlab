@@ -15,6 +15,7 @@ import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
 import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
 import { activeLoci } from '@core/genetics';
+import { splice } from '@core/features/splicing';
 import type { Genome } from '@core/state';
 import { balance, content, makeGame, NOW } from './helpers';
 
@@ -287,5 +288,21 @@ describe('weekly mutation', () => {
     const before = g.productionRates().food!.toNumber();
     addBuff(g, 'iceTest', [{ target: 'element.ice.production', op: 'pct', value: 0.5 }], 1e9);
     expect(g.productionRates().food!.toNumber()).toBeGreaterThan(before);
+  });
+});
+
+describe('gated gene loci (Urgen) before the talent', () => {
+  it('never appear through splicing, not even via an unstable splice', () => {
+    const g = endgame(8, { genetics: { ...balance.genetics, splicing: { ...balance.genetics.splicing, instability: 1, maxPerCreature: 100 } } });
+    unlockFeature(g, 'splicing');
+    g.state.resources.essence = D(1e12);
+    g.state.resources.gold = D(1e12);
+    const c = createCreature(g, { speciesId: 'pebblit', rarity: 'common', genome: topGenome() });
+    c.sequenced = true;
+    g.state.geneLibrary['strength:k'] = true;
+    for (let i = 0; i < 60; i++) splice(g, c.id, 'strength', 0, i % 2 ? 'k' : 'Kt');
+    expect(c.genome.primal).toBeUndefined();
+    g.state.geneLibrary['primal:U'] = true;
+    expect(splice(g, c.id, 'primal', 0, 'U')).toEqual({ ok: false, reason: 'Unbekanntes Gen.' });
   });
 });

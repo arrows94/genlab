@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { content } from '@content/index';
-  import { alleleBases, alleleDef, phenotypeLabel } from '@core/genetics';
+  import { activeLoci, alleleBases, alleleDef, phenotypeLabel } from '@core/genetics';
+  import { game, view } from '../store.svelte';
   import type { Genome } from '@core/state';
 
   /**
@@ -10,8 +10,10 @@
    */
   let { genome, known, detailed = false }: { genome: Genome; known: boolean; detailed?: boolean } = $props();
 
-  const rows = $derived(
-    content.genes.list.map((locus) => {
+  // Only active loci: gated genes (Urgen) appear once their talent is learned.
+  const rows = $derived.by(() => {
+    view.frame;
+    return activeLoci(game).map((locus) => {
       const pair = genome[locus.id];
       const a = pair ? alleleDef(locus, pair[0]) : undefined;
       const b = pair ? alleleDef(locus, pair[1]) : undefined;
@@ -22,8 +24,8 @@
         phenotype: pair ? phenotypeLabel(locus, pair) : '',
         bases: pair ? alleleBases(pair[0], 3) + alleleBases(pair[1], 3) : '??????',
       };
-    }),
-  );
+    });
+  });
 </script>
 
 {#if detailed}

@@ -150,3 +150,24 @@ export function statBreakdown(ctx: GameContext, c: Creature): StatBreakdown[] {
     parts: mods.breakdown(`stat.${s.id}`).map((m) => ({ label: sourceLabel(ctx, m.source), op: m.op, value: m.value })),
   }));
 }
+
+/** Human readable modifier, e.g. "+20 % Angriff", "Brutzeit ×0,8". */
+export function describeModifier(ctx: GameContext, m: { target: string; op: string; value: number }): string {
+  const parts = m.target.split('.');
+  const label = (() => {
+    if (parts[0] === 'stat' && ctx.content.stats.has(parts[1] ?? '')) return ctx.content.stats.get(parts[1]!).name;
+    if (parts[0] === 'production' && ctx.content.resources.has(parts[1] ?? '')) return `${ctx.content.resources.get(parts[1]!).name}-Ertrag`;
+    const known: Record<string, string> = {
+      'breeding.time': 'Brutzeit',
+      'breeding.mutation': 'Mutationschance',
+      'tower.elementDamage': 'Element-Schaden (Turm)',
+      'tower.damage': 'Turm-Schaden',
+    };
+    return known[m.target] ?? m.target;
+  })();
+  const pct = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v * 1000) / 10} %`.replace('.', ',');
+  if (m.op === 'pct') return `${pct(m.value)} ${label}`;
+  if (m.op === 'mult') return `${label} ×${String(Math.round(m.value * 100) / 100).replace('.', ',')}`;
+  if (m.target === 'breeding.mutation') return `${pct(m.value)} ${label}`;
+  return `${m.value >= 0 ? '+' : ''}${m.value} ${label}`;
+}

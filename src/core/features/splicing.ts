@@ -1,11 +1,11 @@
 import { D } from '../num';
-import { checkPerfection, findCreature } from '../creatures';
-import { alleleDef, libraryHas, rollAllele } from '../genetics';
+import { checkPerfection, effectiveStats, findCreature } from '../creatures';
+import { activeLoci, alleleDef, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
 import { trySpend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature } from '../state';
+import type { Creature, StatBlock } from '../state';
 
 /**
  * Gene splicing: replace one allele of a sequenced creature with an allele
@@ -34,7 +34,7 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   if (!c.sequenced) return { ok: false, reason: 'Nur sequenzierte Kreaturen können verändert werden.' };
-  if (!ctx.content.genes.has(locusId)) return { ok: false, reason: 'Unbekanntes Gen.' };
+  if (!activeLoci(ctx).some((l) => l.id === locusId)) return { ok: false, reason: 'Unbekanntes Gen.' };
   const locus = ctx.content.genes.get(locusId);
   if (!alleleDef(locus, alleleId)) return { ok: false, reason: 'Unbekanntes Allel.' };
   if (!libraryHas(ctx, locusId, alleleId)) return { ok: false, reason: 'Dieses Allel fehlt in der Genbibliothek.' };
@@ -47,7 +47,8 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   let scrambledLocus: string | null = null;
   if (ctx.rng.chance(instabilityChance(ctx))) {
     success = false;
-    const others = ctx.content.genes.list.filter((l) => l.id !== locusId);
+    // Only loci that currently exist (the Urgen needs its Äon talent).
+    const others = activeLoci(ctx).filter((l) => l.id !== locusId);
     if (others.length > 0) {
       const other = ctx.rng.pick(others);
       const pair = c.genome[other.id] ?? [rollAllele(ctx, other), rollAllele(ctx, other)];
@@ -64,4 +65,35 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   checkPerfection(ctx, c);
   ctx.bus.emit('spliced', { creatureId, locus: locusId, success, scrambledLocus });
   return { ok: true };
+}
+
+export interface SplicePreview {
+  /** Allele currently in the chosen slot. */
+  current: string;
+  phenotypeBefore: string;
+  phenotypeAfter: string;
+  statsBefore: StatBlock;
+  statsAfter: StatBlock;
+  /** False when the new allele is masked (e.g. recessive next to a dominant one). */
+  visibleChange: boolean;
+}
+
+/** What a successful splice would change – for the splicing workbench. */
+export function splicePreview(ctx: GameContext, c: Creature, locusId: string, slot: 0 | 1, alleleId: string): SplicePreview | null {
+  const locus = activeLoci(ctx).find((l) => l.id === locusId);
+  const pair = c.genome[locusId];
+  if (!locus || !pair) return null;
+  const next: [string, string] = [pair[0], pair[1]];
+  next[slot] = alleleId;
+  const after = { ...c, genome: { ...c.genome, [locusId]: next } };
+  const phenotypeBefore = phenotypeLabel(locus, pair);
+  const phenotypeAfter = phenotypeLabel(locus, next);
+  return {
+    current: pair[slot],
+    phenotypeBefore,
+    phenotypeAfter,
+    statsBefore: effectiveStats(ctx, c),
+    statsAfter: effectiveStats(ctx, after),
+    visibleChange: phenotypeBefore !== phenotypeAfter,
+  };
 }

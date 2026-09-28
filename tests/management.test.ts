@@ -314,3 +314,15 @@ describe('pedigree, records and migration', () => {
     expect(state.automation.autoAssign).toBe(false);
   });
 });
+
+describe('infusion chamber helpers', () => {
+  it('reports progress and stats at other levels', async () => {
+    const { infusionProgress, statsAtInfusion, epForLevel } = await import('@core/features/infusion');
+    const g = richGame();
+    expect(infusionProgress(g, 0, epForLevel(g, 1) / 2)).toBeCloseTo(0.5);
+    expect(infusionProgress(g, 10, 0)).toBe(1);
+    const c = createCreature(g, { speciesId: 'pebblit', rarity: 'common', abilities: [], genome: normal(), stats: { hp: 100, atk: 100, def: 100, spd: 100 }, exactStats: true });
+    expect(statsAtInfusion(g, c, 4).atk).toBe(120);
+    expect(c.infusion.level).toBe(0);
+  });
+});

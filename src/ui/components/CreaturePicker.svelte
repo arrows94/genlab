@@ -2,12 +2,18 @@
   import { content } from '@content/index';
   import type { Creature } from '@core/state';
 
-  let { creatures, value = $bindable(null), placeholder = 'Kreatur wählen …' }: {
-    creatures: Creature[]; value?: number | null; placeholder?: string;
+  let { creatures, value = $bindable(null), placeholder = 'Kreatur wählen …', onchange }: {
+    creatures: Creature[]; value?: number | null; placeholder?: string; onchange?: (id: number | null) => void;
   } = $props();
 </script>
 
-<select value={value ?? ''} onchange={(e) => (value = e.currentTarget.value ? Number(e.currentTarget.value) : null)}>
+<select
+  value={value ?? ''}
+  onchange={(e) => {
+    value = e.currentTarget.value ? Number(e.currentTarget.value) : null;
+    onchange?.(value);
+  }}
+>
   <option value="">{placeholder}</option>
   {#each creatures as c (c.id)}
     <option value={c.id}>{c.name} · {content.species.get(c.speciesId).name} · {content.rarities.get(c.rarity).name} · Gen {c.generation}</option>

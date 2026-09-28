@@ -289,3 +289,30 @@ describe('gene splicing', () => {
     expect(rollGenome(makeGame(77))).toEqual(rollGenome(makeGame(77)));
   });
 });
+
+describe('splicing workbench helpers', () => {
+  it('previews phenotype and stat changes of a splice', async () => {
+    const { splicePreview } = await import('@core/features/splicing');
+    const g = makeGame();
+    const c = createCreature(g, { speciesId: 'pebblit', rarity: 'common', abilities: [], genome: normal(), stats: { hp: 100, atk: 100, def: 100, spd: 100 }, exactStats: true });
+    const p = splicePreview(g, c, 'strength', 0, 'Kt')!;
+    expect(p.current).toBe('k');
+    expect(p.phenotypeBefore).toBe('Normal');
+    expect(p.phenotypeAfter).toBe('Titanenkraft');
+    expect(p.statsBefore.atk).toBe(100);
+    expect(p.statsAfter.atk).toBe(145);
+    expect(p.visibleChange).toBe(true);
+    // Recessive allele next to the dominant one stays hidden.
+    c.genome.fertility = ['f', 'f'];
+    expect(splicePreview(g, c, 'fertility', 0, 'F')!.visibleChange).toBe(false);
+    expect(c.genome.strength).toEqual(['k', 'k']);
+  });
+
+  it('describes modifiers in German', async () => {
+    const { describeModifier } = await import('@core/queries');
+    const g = makeGame();
+    expect(describeModifier(g, { target: 'stat.atk', op: 'pct', value: 0.2 })).toBe('+20 % Angriff');
+    expect(describeModifier(g, { target: 'breeding.time', op: 'mult', value: 0.8 })).toBe('Brutzeit ×0,8');
+    expect(describeModifier(g, { target: 'production.gold', op: 'pct', value: 0.6 })).toBe('+60 % Gold-Ertrag');
+  });
+});
