@@ -9,6 +9,7 @@ import { registerPwa } from './platform/pwa';
 import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
+import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -18,7 +19,7 @@ import { prefs } from './prefs.svelte';
 export interface Toast {
   id: number;
   text: string;
-  kind: 'info' | 'unlock' | 'rare' | 'error';
+  kind: NoticeKind;
 }
 
 const storage: SaveStorage = createStorage();
@@ -54,7 +55,12 @@ export const view = $state({
 let listId = 0;
 
 let toastId = 0;
-export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500): void {
+/**
+ * Shows a short message. It is also kept in the notification center unless
+ * `log` is false (instant feedback to a click, e.g. "not enough resources").
+ */
+export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500, log = true): void {
+  if (log) record(text, kind);
   const t = { id: ++toastId, text, kind };
   view.toasts = [...view.toasts.slice(-4), t];
   setTimeout(() => (view.toasts = view.toasts.filter((x) => x.id !== t.id)), ms);
@@ -196,7 +202,7 @@ export function answer(yes: boolean): void {
 }
 
 export function act(result: ActionResult): boolean {
-  if (!result.ok) toast(result.reason, 'error');
+  if (!result.ok) toast(result.reason, 'error', 3500, false);
   refresh();
   return result.ok;
 }
@@ -204,6 +210,7 @@ export function act(result: ActionResult): boolean {
 export function save(): void {
   // Never overwrite the stored save with the placeholder state before loading finished.
   if (!view.ready) return;
+  saveInbox();
   storage.save(serialize(game.state)).then(
     () => (view.lastSaved = Date.now()),
     (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
@@ -252,6 +259,7 @@ let started = false;
 export async function init(): Promise<void> {
   if (started) return;
   started = true;
+  loadInbox();
   await loadSave();
   view.ready = true;
   refresh();
@@ -272,6 +280,7 @@ export async function init(): Promise<void> {
     // Close the topmost dialog; false = nothing open (app gets minimised).
     back: () => {
       if (view.detail !== null) view.detail = null;
+      else if (inbox.open) inbox.open = false;
       else if (view.offline) view.offline = null;
       else if (view.tab !== 'lab') view.tab = 'lab';
       else return false;

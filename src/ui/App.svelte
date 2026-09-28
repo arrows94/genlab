@@ -8,6 +8,8 @@
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toasts from './components/Toasts.svelte';
+  import NotificationBell from './components/NotificationBell.svelte';
+  import NotificationCenter from './components/NotificationCenter.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
   import DnaHelix from './components/DnaHelix.svelte';
   import LabTab from './components/LabTab.svelte';
@@ -88,6 +90,7 @@
     <div class="brand">
       <DnaHelix pairs={8} width={70} height={28} />
       <h1>Genlab</h1>
+      <NotificationBell />
     </div>
     <ResourceBar />
   </header>
@@ -121,6 +124,7 @@
 {/if}
 {/if}
 <Toasts />
+<NotificationCenter />
 <ConfirmDialog />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
@@ -163,7 +167,9 @@
   @media (max-width: 640px) {
     .app { padding: 0.5rem 0.6rem 5.5rem; }
     header { gap: 0.4rem; margin: -0.5rem -0.6rem 0.5rem; padding: calc(0.4rem + env(safe-area-inset-top)) 0.6rem 0.4rem; }
+    .brand { width: 100%; }
     .brand :global(svg) { display: none; }
+    .brand :global(.bell) { margin-left: auto; }
     h1 { font-size: 1.2rem; }
     nav {
       position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; margin: 0;
