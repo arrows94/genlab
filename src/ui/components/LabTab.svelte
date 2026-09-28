@@ -185,7 +185,7 @@
   .toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem; margin-bottom: 0.6rem; }
   .toolbar input { flex: 1 1 10rem; }
   .toolbar select { flex: 0 1 auto; }
-  .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: 0.4rem; z-index: 5; }
+  .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: calc(var(--header-h, 0px) + 0.4rem); z-index: 5; }
   .small { font-size: 0.8rem; }
   .more { width: 100%; margin-top: 0.75rem; }
   .head-actions { display: flex; gap: 0.4rem; }
