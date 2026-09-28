@@ -1,6 +1,7 @@
 import type { GameContext } from '../context';
 import type { HybridRecipeDef, SpeciesDef, SpeciesTier } from '../content/types';
 import { isRecipeDiscovered, isSpeciesDiscovered } from './hybrids';
+import { missionAvailable } from './expedition';
 
 /**
  * Read model for the dex family tree. What the player may see:
@@ -113,4 +114,41 @@ export function familyTree(ctx: GameContext): { tier: SpeciesTier; name: string;
         };
       }),
   }));
+}
+
+/** A place where a species lives in the wild (null name = region not yet opened). */
+export interface HabitatView {
+  kind: 'mission' | 'voyage';
+  id: string;
+  name: string | null;
+}
+
+/**
+ * Where a species can be found wild: expedition regions (explicit species
+ * list, or every wild species when a region has none) and voyage
+ * destinations. Regions the player cannot reach yet stay unnamed.
+ */
+export function speciesHabitats(ctx: GameContext, speciesId: string): HabitatView[] {
+  const s = ctx.content.species.get(speciesId);
+  const out: HabitatView[] = [];
+  for (const m of ctx.content.missions.list) {
+    const lives = m.species ? m.species.includes(speciesId) : s.wild;
+    if (lives) out.push({ kind: 'mission', id: m.id, name: missionAvailable(ctx, m.id) ? m.name : null });
+  }
+  for (const d of ctx.content.voyageDestinations.list) {
+    if (d.species.includes(speciesId)) out.push({ kind: 'voyage', id: d.id, name: ctx.state.features['voyage'] ? d.name : null });
+  }
+  return out;
+}
+
+/** Dex progress of one species tier: entries (species × rarity) and discovered species. */
+export function tierProgress(ctx: GameContext, tier: SpeciesTier): { entries: number; entriesTotal: number; species: number; speciesTotal: number } {
+  const list = ctx.content.species.list.filter((s) => s.tier === tier);
+  const rarities = ctx.content.rarities.list;
+  return {
+    entries: list.reduce((n, s) => n + rarities.filter((r) => ctx.state.dex[`${s.id}:${r.id}`]).length, 0),
+    entriesTotal: list.length * rarities.length,
+    species: list.filter((s) => isSpeciesDiscovered(ctx, s.id)).length,
+    speciesTotal: list.length,
+  };
 }

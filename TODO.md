@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor.
 
 ## Höchste Wirkung
 
@@ -32,17 +32,20 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
 
 ## Auch lohnend
 
-- [ ] **Markt**
-  - [ ] Ladentresen mit Tränken als Flaschen-Grafik
-  - [ ] Zielkreatur per Kachel statt Menü wählen
-  - [ ] Aktive Effekte (Festmahl, Turbo-Trank) als Timer mit Restzeit
-- [ ] **Monster-Dex**
-  - [ ] Entdeckte Arten mit Bild, unbekannte als Silhouette
-  - [ ] Fortschrittsring pro Kategorie
-  - [ ] Detailkarte beim Klick (Beschreibung, Herkunft: Hybrid-Rezept oder Region)
-- [ ] **Genlabor**
-  - [ ] Sequenzierer als Maschine, die die DNA Stück für Stück entschlüsselt
-  - [ ] Genbibliothek mit Sammelfortschritt pro Gen
+- [x] **Markt**
+  - [x] Ladentresen mit Tränken als Flaschen-Grafik (Form je Trankart, Farbe als `color` in `potions.ts`)
+  - [x] Zielkreatur per Kachel statt Menü wählen (Turbo: Arbeiter mit Ertrag zuerst; Kraftfutter:
+        Wertewahl mit bisherigen Stärkungen als Pips)
+  - [x] Aktive Effekte (Festmahl, Turbo-Trank) als Timer mit Restzeit
+- [x] **Monster-Dex**
+  - [x] Entdeckte Arten mit Bild, unbekannte als Silhouette (neue Ansicht „Sammlung“, Punkte je Seltenheit)
+  - [x] Fortschrittsring pro Kategorie (Gesamt, Basisarten, Hybride, Seltene Hybride, Mythische Endformen)
+  - [x] Detailkarte beim Klick (Beschreibung, Grundwerte, Seltenheiten, Herkunft: Hybrid-Rezept, Evolution
+        oder Region – noch nicht erschlossene Regionen bleiben „unbekannt“); aus allen drei Ansichten erreichbar
+- [x] **Genlabor**
+  - [x] Sequenzierer als Maschine, die die DNA Stück für Stück entschlüsselt (Scan-Kammer, Bildschirm mit
+        Loci-Liste; die Allele selbst erscheinen erst am Ende; Tiefensequenzierung violett; Ziel per Kachel)
+  - [x] Genbibliothek mit Sammelfortschritt pro Gen (gruppiert nach Werte/Eigenschaften/Aussehen, seltene Allele ★)
 
 ## Kleinigkeiten quer durchs Spiel
 
