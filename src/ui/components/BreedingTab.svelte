@@ -5,7 +5,7 @@
   import { creaturePower, findCreature } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { breedingCost, breedingTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
+  import { availableRituals, eggCost, eggTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
   import { setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
@@ -27,6 +27,8 @@
   const twigs: [number, number, number, number][] = [[10, 24, 60, 14], [22, 32, 104, 20], [16, 16, 94, 30], [30, 30, 110, 22], [6, 20, 70, 32]];
 
   let parentA = $state<number | null>(null);
+  /** Besondere Brut: chosen ritual (null = normal egg). */
+  let ritualId = $state<string | null>(null);
   let parentB = $state<number | null>(null);
   let search = $state('');
 
@@ -35,7 +37,9 @@
     const a = parentA !== null ? findCreature(game, parentA) : undefined;
     const b = parentB !== null ? findCreature(game, parentB) : undefined;
     const generation = offspringGeneration(a, b);
-    const cost = breedingCost(game, generation);
+    const rituals = availableRituals(game);
+    const ritual = rituals.find((r) => r.id === ritualId);
+    const cost = eggCost(game, generation, ritual);
     const q = search.trim().toLowerCase();
     const filter = viewState.breeding.species;
     const candidates = game.state.creatures
@@ -67,6 +71,7 @@
           parents,
           hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
           generation: d.generation,
+          ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
         };
       }),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
@@ -74,8 +79,11 @@
       cost,
       affordable: canAfford(game.state, cost),
       generation,
-      time: breedingTimeMs(game, generation, [a, b]),
-      mutation: mutationChance(game),
+      time: eggTimeMs(game, generation, [a, b], ritual),
+      mutation: mutationChance(game, ritual),
+      rituals,
+      ritual,
+      special: game.state.features['specialBreeding'] === true,
     };
   });
 
@@ -93,7 +101,7 @@
   }
   function breed() {
     if (parentA === null || parentB === null) return;
-    if (act(startBreeding(game, parentA, parentB))) {
+    if (act(startBreeding(game, parentA, parentB, data.ritual?.id))) {
       parentA = null;
       parentB = null;
     }
@@ -181,7 +189,7 @@
         </div>
         <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
         <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
-        <span class="small num"><span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span> {/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
       {:else}
         <span class="small muted">Freies Nest</span>
       {/if}
@@ -220,6 +228,20 @@
     {@render socket(data.b, 'Elternteil 2', () => (parentB = null), '#ff7ad9')}
   </div>
 
+  {#if data.special}
+    <div class="rituals" role="radiogroup" aria-label="Brutart">
+      <button class="ritual" class:on={!data.ritual} role="radio" aria-checked={!data.ritual} onclick={() => (ritualId = null)}>
+        <b>🥚 Normal</b><span class="tiny muted">schnell, normale Chancen</span>
+      </button>
+      {#each data.rituals as r (r.id)}
+        <button class="ritual" class:on={data.ritual?.id === r.id} role="radio" aria-checked={data.ritual?.id === r.id} title={r.description} onclick={() => (ritualId = r.id)}>
+          <b>{r.icon} {r.name}</b><span class="tiny muted">{r.hours} h · {r.description}</span>
+        </button>
+      {/each}
+    </div>
+    {#if data.ritual}<p class="small muted note">Nest und beide Eltern sind {data.ritual.hours} Stunden belegt.</p>{/if}
+  {/if}
+
   <div class="facts">
     <span class="fact">🧬 Gen <b class="num">{data.generation}</b></span>
     <span class="fact">⏱ <b class="num">{formatDuration(data.time)}</b></span>
@@ -235,7 +257,7 @@
   {#if data.a && data.b}
     <details class="plan" open>
       <summary><b>🔮 Zuchtplaner</b> <span class="small muted">Was kann schlüpfen?</span></summary>
-      <BreedingPlanner a={data.a} b={data.b} />
+      <BreedingPlanner a={data.a} b={data.b} ritual={data.ritual} />
     </details>
   {/if}
 
@@ -342,6 +364,10 @@
   .heart { font-size: 1.6rem; color: #ff7a90; opacity: 0.6; }
   .preview { margin: 0; animation: rock 2s ease-in-out infinite; }
   .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; margin: 0.7rem 0 0.5rem; }
+  .rituals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.35rem; margin-top: 0.7rem; }
+  .ritual { display: grid; gap: 0.15rem; text-align: left; padding: 0.4rem 0.55rem; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); }
+  .ritual.on { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
+  .ritual-tag { font-size: 0.9rem; }
   .fact { padding: 0.15rem 0.6rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
   .go { width: 100%; background: linear-gradient(90deg, var(--petrol), #c26bd8); }
   .note { text-align: center; margin: 0.3rem 0 0; }

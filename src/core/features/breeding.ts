@@ -2,6 +2,9 @@ import { D } from '../num';
 import { inheritAbilities } from '../abilities';
 import { createCreature, creatureModifiers, findCreature } from '../creatures';
 import { inheritGenome } from '../genetics';
+import { checkCondition } from '../conditions';
+import { rarityWeights, rollRarity } from '../rarity';
+import type { BreedingRitualDef } from '../content/types';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
 import { blendNames } from '../names';
@@ -17,6 +20,8 @@ export const EGG = 'egg';
 export interface EggData extends Record<string, unknown> {
   parents: [number, number];
   generation: number;
+  /** Besondere Brut: ritual id (missing = normal egg). */
+  ritual?: string;
 }
 
 export function nestSlots(ctx: GameContext): number {
@@ -62,8 +67,40 @@ export function breedingTimeMs(ctx: GameContext, generation: number, parents: (C
   return Math.max(1000, seconds * 1000);
 }
 
-export function mutationChance(ctx: GameContext): number {
-  return Math.min(1, Math.max(0, ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance)));
+export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef): number {
+  return Math.min(1, Math.max(0, ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0)));
+}
+
+/** Rituals the player can use right now (Besondere Brut). */
+export function availableRituals(ctx: GameContext): BreedingRitualDef[] {
+  if (!ctx.state.features['specialBreeding']) return [];
+  return ctx.content.breedingRituals.list.filter((r) => !r.requires || checkCondition(ctx.state, r.requires));
+}
+
+/** Rarity weights for an egg: a ritual boosts rare+ and cuts everything below its minimum. */
+export function eggRarityWeights(ctx: GameContext, ritual?: BreedingRitualDef): Record<string, number> {
+  const base = rarityWeights(ctx.content, ctx.balance, ctx.mods());
+  if (!ritual) return base;
+  const floor = ritual.minRarity ? ctx.content.rarities.get(ritual.minRarity).order : 0;
+  const rare = ctx.content.rarities.get('rare').order;
+  const out: Record<string, number> = {};
+  for (const [id, w] of Object.entries(base)) {
+    const order = ctx.content.rarities.get(id).order;
+    if (order < floor) continue;
+    out[id] = order >= rare ? w * (1 + (ritual.rarityBoost ?? 0)) : w;
+  }
+  return Object.values(out).some((w) => w > 0) ? out : { [ritual.minRarity ?? 'common']: 1 };
+}
+
+/** Normal cost plus the ritual's extra cost. */
+export function eggCost(ctx: GameContext, generation: number, ritual?: BreedingRitualDef): Cost {
+  const cost = breedingCost(ctx, generation);
+  for (const [res, amount] of Object.entries(ritual?.cost ?? {})) cost[res] = (cost[res] ?? D(0)).add(amount);
+  return cost;
+}
+
+export function eggTimeMs(ctx: GameContext, generation: number, parents: (Creature | undefined)[], ritual?: BreedingRitualDef): number {
+  return ritual ? ritual.hours * 3_600_000 : breedingTimeMs(ctx, generation, parents);
 }
 
 export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined): ActionResult {
@@ -77,15 +114,17 @@ export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature 
   return { ok: true };
 }
 
-export function startBreeding(ctx: GameContext, aId: number, bId: number): ActionResult {
+export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
   const a = findCreature(ctx, aId);
   const b = findCreature(ctx, bId);
   const check = canBreed(ctx, a, b);
   if (!check.ok) return check;
+  const ritual = ritualId ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
+  if (ritualId && !ritual) return { ok: false, reason: 'Dieses Brutritual ist nicht verfügbar.' };
   const generation = offspringGeneration(a, b);
-  if (!trySpend(ctx, breedingCost(ctx, generation))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
-  const data: EggData = { parents: [aId, bId], generation };
-  const proc = startProcess(ctx, EGG, breedingTimeMs(ctx, generation, [a, b]), data);
+  if (!trySpend(ctx, eggCost(ctx, generation, ritual))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const data: EggData = { parents: [aId, bId], generation, ...(ritual ? { ritual: ritual.id } : {}) };
+  const proc = startProcess(ctx, EGG, eggTimeMs(ctx, generation, [a, b], ritual), data);
   a!.job = { kind: 'nest', target: String(proc.id) };
   b!.job = { kind: 'nest', target: String(proc.id) };
   ctx.invalidate();
@@ -139,14 +178,18 @@ registerProcessHandler(EGG, {
     const [a, b] = data.parents.map((id) => findCreature(ctx, id));
     for (const p of [a, b]) if (p?.job?.kind === 'nest') p.job = null;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
-    const mutation = mutationChance(ctx);
-    const speciesId = rollOffspringSpecies(ctx, a, b);
+    const ritual = data.ritual && ctx.content.breedingRituals.has(data.ritual) ? ctx.content.breedingRituals.get(data.ritual) : undefined;
+    const mutation = mutationChance(ctx, ritual);
+    const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1);
+    // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.
+    const rarity = ritual ? rollRarity(ctx.rng, eggRarityWeights(ctx, ritual)) : undefined;
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const nameFor = () => blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.offspringName, ctx.content.species.get(speciesId).name);
     const child = createCreature(ctx, {
       speciesId,
+      rarity,
       name: nameFor(),
       generation: data.generation,
       parents: data.parents,
@@ -165,6 +208,7 @@ registerProcessHandler(EGG, {
     if (twinChance > 0 && stableFree(ctx) > 0 && ctx.rng.chance(twinChance)) {
       const twin = createCreature(ctx, {
         speciesId,
+        rarity: ritual ? rollRarity(ctx.rng, eggRarityWeights(ctx, ritual)) : undefined,
         name: nameFor(),
         generation: data.generation,
         parents: data.parents,

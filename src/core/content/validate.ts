@@ -300,6 +300,17 @@ export function validateContent(data: ContentData): string[] {
       amounts(`${ow}.resources`, o.resources);
     });
   }
+  for (const r of data.breedingRituals) {
+    const w = at('breedingRituals', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.hours`, r.hours, 0.01);
+    amounts(`${w}.cost`, r.cost);
+    cond(`${w}.requires`, r.requires);
+    ref(`${w}.minRarity`, 'rarities', r.minRarity);
+    if (r.hybridMult !== undefined) num(`${w}.hybridMult`, r.hybridMult, 0);
+    if (r.rarityBoost !== undefined) num(`${w}.rarityBoost`, r.rarityBoost, 0);
+    if (r.mutationAdd !== undefined) num(`${w}.mutationAdd`, r.mutationAdd, 0, 1);
+  }
   const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic'];
   for (const t of data.contracts) {
     const w = at('contracts', t.id);

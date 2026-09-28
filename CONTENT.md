@@ -116,6 +116,19 @@ Allel-Bedingungen verlangen ein sequenziertes Genom. Die Evolution rechnet die W
 
 Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wildChance: 1` plus `wildMinRarity` (Mindestseltenheit; der Fund findet auch in einem vollen Stall Platz). Ab 12 h Dauer zeigt die Karte sie als „Tagesreise“ und fragt vor dem Losschicken nach. Neue Regionen bekommen in `ExpeditionTab.svelte` (`layout`) einen Platz auf der Karte.
 
+## Brutritual (Besondere Brut)
+
+`src/content/rituals.ts`: langsame Brutarten mit besseren Chancen. Das normale Ei bleibt unverändert.
+
+```ts
+{ id: 'noble', name: 'Edelbrut', icon: '💠', hours: 8, description: '…', cost: { essence: 300 },
+  requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, minRarity: 'uncommon', rarityBoost: 2 },
+```
+
+- `hours` ersetzt die normale Brutzeit, `cost` kommt zu den normalen Kosten dazu.
+- Wirkungen: `hybridMult` (multipliziert jede Rezept-Chance), `minRarity` (Mindestseltenheit), `rarityBoost` (Gewicht für Selten und höher, 2 = dreifach), `mutationAdd`.
+- Der Zuchtplaner zeigt die Chancen mit dem gewählten Ritual; der Zuchtautomat nutzt nie Rituale.
+
 ## Wochenexpedition
 
 `src/content/voyages.ts` enthält drei Listen:

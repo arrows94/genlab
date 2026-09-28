@@ -49,6 +49,10 @@ export const features: FeatureDef[] = [
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   {
+    id: 'specialBreeding', name: 'Besondere Brut', hint: 'Besondere Brut: Rituale in der Brutstation dauern Stunden, bringen aber seltenere Nachkommen und mehr Hybride.',
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+  },
+  {
     id: 'voyage', name: 'Wochenexpedition', hint: 'Wochenexpedition möglich: Schicke ein Team für sieben Tage auf große Fahrt (Erkundung).',
     condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 },
   },

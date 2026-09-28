@@ -109,10 +109,11 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
       (Nebelmoor 12 h ab Selten nach der 1. Vererbung, Wolkengrat 24 h ab Episch nach der 2.)
 - [x] **Wochenexpedition** (7 Tage) mit Ereignissen unterwegs und einer Entscheidung bei der Rückkehr
       (z. B. „verletztes Wildtier mitnehmen oder Beute behalten?“) – Team bis 3, belegt ein Camp, ab der 2. Vererbung
-- [ ] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
+- [x] **Besondere Brut** (4–24 h): gezielte Hybrid-/Seltenheitsbrut mit besseren Chancen; normales Ei bleibt kurz
+      (Kreuzungsritual 4 h, Edelbrut 8 h, Meisterbrut 24 h)
 - [ ] **Tiefensequenzierung** (8 h): deckt verborgene Eigenschaften oder das Urgen auf
-- [ ] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
-      (Tagesreisen belegen bereits ein Camp und die Kreatur)
+- [x] Lange Projekte belegen knappe Plätze (Brutplatz, Camp) → echte Abwägungen
+      (Reisen belegen Camp und Kreaturen, Brutrituale Nest und Eltern)
       („beste Kreatur eine Woche wegschicken oder im Turm einsetzen?“)
 
 ## Schritt 3 – Beschäftigung „in der Zwischenzeit“

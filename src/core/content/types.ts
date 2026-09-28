@@ -390,6 +390,27 @@ export interface ContractTemplateDef {
   };
 }
 
+/** Besondere Brut: a slow breeding ritual with better odds (the normal egg stays quick). */
+export interface BreedingRitualDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Fixed breeding time in hours (replaces the normal time). */
+  hours: number;
+  /** Extra cost on top of the normal breeding cost. */
+  cost: ResourceAmounts;
+  requires?: Condition;
+  /** Multiplies every hybrid recipe chance. */
+  hybridMult?: number;
+  /** The offspring has at least this rarity. */
+  minRarity?: string;
+  /** Extra weight for rare and better (0.5 = +50 %). */
+  rarityBoost?: number;
+  /** Added to the mutation chance. */
+  mutationAdd?: number;
+}
+
 /** Wochenexpedition: destination of a week (picked by the week, themed by the weekly mutation). */
 export interface VoyageDestinationDef {
   id: string;
@@ -466,6 +487,7 @@ export interface ContentData {
   voyageDestinations: VoyageDestinationDef[];
   voyageEvents: VoyageEventDef[];
   voyageDecisions: VoyageDecisionDef[];
+  breedingRituals: BreedingRitualDef[];
 }
 
 export interface Registry<T extends { id: string }> {
