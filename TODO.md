@@ -1,7 +1,7 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung.
 
 ## Höchste Wirkung
 
@@ -21,12 +21,14 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
   - [x] Bezahlbare Forschungen hervorheben (Rahmen, Zähler pro Thema, Filter „nur bezahlbare“,
         Wartezeit bis bezahlbar aus der aktuellen Produktion)
   - [x] Eigener Bereich für die unendliche Forschung
-- [ ] **Vererbung (Prestige)**
-  - [ ] Übersicht: was verloren geht und was bleibt
-  - [ ] Gewinn als große Zahl
-  - [ ] Vorschau des Produktionsbonus vorher/nachher
-  - [ ] Zeitleiste der bisherigen Durchläufe
-  - [ ] Animation beim Vererben
+- [x] **Vererbung (Prestige)**
+  - [x] Übersicht: was verloren geht und was bleibt (aus den Reset-Daten der Ebene abgeleitet)
+  - [x] Gewinn als große Zahl, mit Fortschritt bis zum nächsten Erbgut-Punkt
+  - [x] Vorschau des Produktionsbonus vorher/nachher
+  - [x] Zeitleiste der bisherigen Durchläufe (neu im Spielstand: `prestigeLog`, Äonen als Trenner;
+        ältere Durchläufe vor der Aufzeichnung werden nur gezählt)
+  - [x] Animation beim Vererben
+  - [ ] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab
 
 ## Auch lohnend
 
