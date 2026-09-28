@@ -4,7 +4,7 @@ import { canAfford } from '../costs';
 import { jobCount, jobSlots } from '../systems/production';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { AutoBreedConfig, Creature } from '../state';
+import type { AutoBreedConfig, AutoRecycleConfig, Creature } from '../state';
 import { D } from '../num';
 import type { System } from '../systems/types';
 import { breedingCost, eggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
@@ -16,7 +16,8 @@ import { canConsume, sell, stableFree } from './stable';
 /**
  * Automation (unlockable): auto-assign jobs by best fit and auto-breeding
  * towards a goal (strength, new hybrids, dex gaps, an allele, abilities or
- * cheap fodder), with a resource budget and an optional stable cleanup. Runs as a system every `automation.intervalSec`, so it also
+ * cheap fodder), with a resource budget and an optional stable cleanup,
+ * plus the Recycling-Automat. Runs as a system every `automation.intervalSec`, so it also
  * works during offline progress.
  */
 
@@ -154,16 +155,54 @@ export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
   return { ok: true, a, b };
 }
 
+/** Automations may only remove consumable creatures that are not shiny, not infused and at most `maxRarity`. */
+function expendable(ctx: GameContext, c: Creature, maxRarity: string): boolean {
+  return canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && ctx.content.rarities.get(c.rarity).order <= ctx.content.rarities.get(maxRarity).order;
+}
+
+/** Weakest first: lower rarity, then lower power. */
+function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
+  const power = new Map(list.map((c) => [c.id, creaturePower(ctx, c)]));
+  return [...list].sort((x, y) => ctx.content.rarities.get(x.rarity).order - ctx.content.rarities.get(y.rarity).order || power.get(x.id)! - power.get(y.id)!);
+}
+
 /** Weakest creature the stable cleanup may remove (never favourites, shiny, infused or above the rarity limit). */
 export function cleanupCandidate(ctx: GameContext, keep: readonly number[] = []): Creature | null {
   const cfg = ctx.state.automation.autoBreed;
-  const max = ctx.content.rarities.get(cfg.cleanupMaxRarity).order;
-  const candidates = ctx.state.creatures.filter(
-    (c) => !keep.includes(c.id) && canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && ctx.content.rarities.get(c.rarity).order <= max,
-  );
-  if (candidates.length === 0) return null;
-  const power = new Map(candidates.map((c) => [c.id, creaturePower(ctx, c)]));
-  return candidates.sort((x, y) => ctx.content.rarities.get(x.rarity).order - ctx.content.rarities.get(y.rarity).order || power.get(x.id)! - power.get(y.id)!)[0]!;
+  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
+}
+
+/** Everything the Recycling-Automat may take right now, weakest first. */
+export function autoRecycleCandidates(ctx: GameContext): Creature[] {
+  const cfg = ctx.state.automation.autoRecycle;
+  // The strongest N of each species stay, counting every creature of that species.
+  const kept = new Set<number>();
+  const bySpecies = new Map<string, Creature[]>();
+  for (const c of ctx.state.creatures) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
+  const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));
+  for (const list of bySpecies.values()) {
+    const strongest = [...list].sort((x, y) => power.get(y.id)! - power.get(x.id)!).slice(0, cfg.keepPerSpecies);
+    for (const c of strongest) kept.add(c.id);
+  }
+  // Never the pair the Zuchtautomat is about to breed.
+  if (ctx.state.automation.autoBreed.enabled && ctx.state.features['autoBreed']) {
+    const plan = planAutoBreed(ctx);
+    if (plan.ok) kept.add(plan.a.id).add(plan.b.id);
+  }
+  const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && expendable(ctx, c, cfg.maxRarity)));
+  // At least one creature must remain.
+  return out.length >= ctx.state.creatures.length ? out.slice(0, -1) : out;
+}
+
+/** Recycles by the rules; returns how many creatures were recycled. */
+export function autoRecycleOnce(ctx: GameContext): number {
+  if (!ctx.state.features['recycler']) return 0;
+  const cfg = ctx.state.automation.autoRecycle;
+  if (cfg.when === 'full' && stableFree(ctx) > 0) return 0;
+  const candidates = autoRecycleCandidates(ctx);
+  const batch = cfg.when === 'full' ? candidates.slice(0, 1) : candidates;
+  if (batch.length === 0) return 0;
+  return recycle(ctx, batch.map((c) => c.id), true).ok ? batch.length : 0;
 }
 
 /** Breeds the planned pair; frees a stable place first if the cleanup is on. */
@@ -174,7 +213,7 @@ export function autoBreedOnce(ctx: GameContext): boolean {
   if (stableFree(ctx) <= 0) {
     const victim = cleanupCandidate(ctx, [plan.a.id, plan.b.id]);
     if (!victim) return false;
-    const done = cfg.cleanup === 'recycle' && ctx.state.features['recycler'] ? recycle(ctx, [victim.id]) : sell(ctx, [victim.id]);
+    const done = cfg.cleanup === 'recycle' && ctx.state.features['recycler'] ? recycle(ctx, [victim.id], true) : sell(ctx, [victim.id], true);
     if (!done.ok || stableFree(ctx) <= 0) return false;
   }
   return startBreeding(ctx, plan.a.id, plan.b.id).ok;
@@ -202,12 +241,24 @@ export function setAutoBreed(ctx: GameContext, patch: Partial<AutoBreedConfig>):
   return { ok: true };
 }
 
+export function setAutoRecycle(ctx: GameContext, patch: Partial<AutoRecycleConfig>): ActionResult {
+  if (!ctx.state.features['autoRecycle']) return { ok: false, reason: 'Der Recycling-Automat ist noch nicht freigeschaltet.' };
+  const next = { ...ctx.state.automation.autoRecycle, ...patch };
+  if (!ctx.content.rarities.has(next.maxRarity)) return { ok: false, reason: 'Unbekannte Seltenheit.' };
+  if (!(Number.isInteger(next.keepPerSpecies) && next.keepPerSpecies >= 0)) return { ok: false, reason: 'Ungültige Anzahl.' };
+  if (!['always', 'full'].includes(next.when)) return { ok: false, reason: 'Unbekannte Regel.' };
+  ctx.state.automation.autoRecycle = next;
+  return { ok: true };
+}
+
 export const automationSystem: System = {
   id: 'automation',
   update(ctx) {
     const a = ctx.state.automation;
     if (ctx.state.simTimeMs - a.lastRunMs < ctx.balance.automation.intervalSec * 1000) return;
     a.lastRunMs = ctx.state.simTimeMs;
+    // Recycle first, so a full stable has room for the next egg.
+    if (a.autoRecycle.enabled && ctx.state.features['autoRecycle']) autoRecycleOnce(ctx);
     if (a.autoBreed.enabled && ctx.state.features['autoBreed']) autoBreedOnce(ctx);
     if (a.autoAssign && ctx.state.features['autoAssign']) autoAssign(ctx);
   },

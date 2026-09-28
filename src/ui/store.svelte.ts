@@ -112,8 +112,8 @@ function wireEvents(g: Game): void {
   });
   const amounts = (v: Record<string, { toString(): string }>) =>
     Object.entries(v).map(([r, a]) => `+${formatNumber(a.toString())} ${content.resources.get(r).icon}`).join(' ');
-  g.bus.on('sold', (e) => toast(`💰 ${e.count} verkauft: ${amounts(e.value)}`));
-  g.bus.on('recycled', (e) => toast(`♻️ ${e.count} recycelt: +${formatNumber(e.fragments)} 🧩`));
+  g.bus.on('sold', (e) => !e.auto && toast(`💰 ${e.count} verkauft: ${amounts(e.value)}`));
+  g.bus.on('recycled', (e) => !e.auto && toast(`♻️ ${e.count} recycelt: +${formatNumber(e.fragments)} 🧩`));
   g.bus.on('stableFull', (e) => toast(`🏠 Stall voll – wilde Kreatur freigelassen (${amounts(e.value)})`, 'error'));
   g.bus.on('infused', (e) => {
     const parts = [`🔮 Infusion: +${formatNumber(e.ep)} EP`];

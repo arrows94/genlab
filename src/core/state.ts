@@ -96,9 +96,23 @@ export interface AutoBreedConfig {
   cleanupMaxRarity: string;
 }
 
+/** Recycling-Automat settings. */
+export interface AutoRecycleConfig {
+  enabled: boolean;
+  /** Highest rarity that may be recycled. */
+  maxRarity: string;
+  /** The strongest N of every species are always kept. */
+  keepPerSpecies: number;
+  /** Sequenced creatures (known genome, often breeding stock) are kept. */
+  keepSequenced: boolean;
+  /** "always": everything that matches; "full": one creature whenever the stable is full. */
+  when: 'always' | 'full';
+}
+
 export interface AutomationState {
   autoAssign: boolean;
   autoBreed: AutoBreedConfig;
+  autoRecycle: AutoRecycleConfig;
   /** Sim time of the last automation run. */
   lastRunMs: number;
 }
@@ -193,7 +207,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' }, lastRunMs: 0 },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
+      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
     talents: {},

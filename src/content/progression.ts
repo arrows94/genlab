@@ -31,6 +31,7 @@ export const features: FeatureDef[] = [
   },
   { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter.' },
+  { id: 'autoRecycle', name: 'Recycling-Automat', hint: 'Der Recycling-Automat zerlegt überzählige Kreaturen nach deinen Regeln (Gen-Recycler).' },
   {
     id: 'hybrids', name: 'Hybride', hint: 'Hybride entdeckt! Bestimmte Artkombinationen können neue Arten hervorbringen. Hinweise gibt es durch Forschung und Erkundung.',
     condition: { type: 'all', of: [{ type: 'feature', feature: 'recycler' }, { type: 'statistic', statistic: 'hatched', amount: 45 }, { type: 'resourceEarned', resource: 'essence', amount: 130 }] },

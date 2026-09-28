@@ -4,7 +4,7 @@ import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
-import { autoAssign, automationSystem, cleanupCandidate, planAutoBreed, setAutoAssign, setAutoBreed } from '@core/features/automation';
+import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, planAutoBreed, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
 import { breedingCost, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
@@ -364,6 +364,81 @@ describe('automation', () => {
       expect(g.state.creatures).not.toContain(weak);
       expect(g.state.creatures).toContain(epic);
       expect(strong.job?.kind).toBe('nest');
+    });
+  });
+
+  describe('recycling automaton', () => {
+    const setup = () => {
+      const g = richGame();
+      unlockFeature(g, 'autoRecycle');
+      g.state.creatures = [];
+      const mk = (speciesId: string, power: number, extra: Partial<Parameters<typeof createCreature>[1]> = {}) =>
+        createCreature(g, { speciesId, rarity: 'common', abilities: [], genome: normal(), stats: { hp: power, atk: power, def: power, spd: power }, exactStats: true, ...extra });
+      return { g, mk };
+    };
+
+    it('keeps the strongest per species and protected creatures', () => {
+      const { g, mk } = setup();
+      const best = mk('pebblit', 90);
+      const second = mk('pebblit', 80);
+      const weak = mk('pebblit', 5);
+      const weaker = mk('pebblit', 3);
+      const locked = mk('pebblit', 1);
+      locked.locked = true;
+      const shiny = mk('pebblit', 1);
+      shiny.shiny = true;
+      const sequenced = mk('pebblit', 2);
+      sequenced.sequenced = true;
+      const rare = mk('pebblit', 1, { rarity: 'rare' });
+      const lonely = mk('emberpup', 1);
+      expect(setAutoRecycle(g, { enabled: true, keepPerSpecies: 2 }).ok).toBe(true);
+      expect(autoRecycleCandidates(g)).toEqual([weaker, weak]);
+      setAutoRecycle(g, { keepSequenced: false, keepPerSpecies: 0 });
+      const all = autoRecycleCandidates(g);
+      expect(all).toHaveLength(6);
+      expect(all).toEqual(expect.arrayContaining([sequenced, lonely, weaker, weak, second, best]));
+      expect(all.at(-1)).toBe(best);
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toEqual(expect.arrayContaining([locked, shiny, rare]));
+      expect(g.state.creatures).not.toContain(weak);
+    });
+
+    it('never takes the pair the breeding automaton wants next', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const cheapA = mk('pebblit', 1);
+      const cheapB = mk('pebblit', 2);
+      cheapA.generation = 1;
+      cheapB.generation = 1;
+      for (const c of g.state.creatures.slice(0, 1)) c.generation = 5;
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 0 });
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      expect(autoRecycleCandidates(g)).not.toContain(cheapA);
+      expect(autoRecycleCandidates(g)).not.toContain(cheapB);
+    });
+
+    it('"full" mode recycles one creature only when the stable is full', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const weak = mk('pebblit', 1);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1, when: 'full' });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toContain(weak);
+      while (stableFree(g) > 0) mk('emberpup', 50);
+      const before = g.state.creatures.length;
+      const fragments = g.state.resources.fragments!;
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toHaveLength(before - 1);
+      expect(g.state.creatures).not.toContain(weak);
+      expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
+    });
+
+    it('is only available after research', () => {
+      const g = richGame();
+      expect(setAutoRecycle(g, { enabled: true }).ok).toBe(false);
+      unlockFeature(g, 'autoRecycle');
+      expect(setAutoRecycle(g, { maxRarity: 'nope' }).ok).toBe(false);
+      expect(setAutoRecycle(g, { keepPerSpecies: -1 }).ok).toBe(false);
     });
   });
 

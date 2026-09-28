@@ -58,7 +58,7 @@ export function takeConsumable(ctx: GameContext, ids: number[]): Creature[] | st
   return out;
 }
 
-export function sell(ctx: GameContext, ids: number[]): ActionResult {
+export function sell(ctx: GameContext, ids: number[], auto = false): ActionResult {
   const taken = takeConsumable(ctx, ids);
   if (typeof taken === 'string') return { ok: false, reason: taken };
   const total: Record<string, Decimal> = {};
@@ -67,7 +67,7 @@ export function sell(ctx: GameContext, ids: number[]): ActionResult {
     removeCreature(ctx, c.id, 'sold');
   }
   for (const [res, v] of Object.entries(total)) grant(ctx, res, v, 'sell');
-  ctx.bus.emit('sold', { count: taken.length, value: total });
+  ctx.bus.emit('sold', { count: taken.length, value: total, auto });
   return { ok: true };
 }
 
