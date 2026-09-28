@@ -1,7 +1,6 @@
 <script lang="ts">
   import { content } from '@content/index';
-  import { effectiveStats } from '@core/creatures';
-  import { formatPercent } from '@core/format';
+  import { formatNumber, formatPercent } from '@core/format';
   import { breedingPreview } from '@core/features/planner';
   import type { Creature } from '@core/state';
   import { game, view } from '../store.svelte';
@@ -16,14 +15,13 @@
     view.frame;
     return breedingPreview(game, a, b);
   });
+  // Parent marks use base stats like the predicted range (both before rarity and bonuses).
   const stats = $derived.by(() => {
     view.frame;
-    const sa = effectiveStats(game, a);
-    const sb = effectiveStats(game, b);
     return content.stats.list.map((s) => {
       const [lo, hi] = preview.stats[s.id] ?? [0, 0];
-      const pa = sa[s.id] ?? 0;
-      const pb = sb[s.id] ?? 0;
+      const pa = a.stats[s.id] ?? 0;
+      const pb = b.stats[s.id] ?? 0;
       const max = Math.max(1, hi, pa, pb) * 1.05;
       return { s, lo, hi, pa, pb, max };
     });
@@ -70,10 +68,10 @@
             <span class="stname">{st.s.name}</span>
             <span class="range">
               <span class="band" style="left: {(st.lo / st.max) * 100}%; width: {Math.max(1.5, ((st.hi - st.lo) / st.max) * 100)}%"></span>
-              <span class="mark a" style="left: {(st.pa / st.max) * 100}%" title="{a.name}: {st.pa}"></span>
-              <span class="mark b" style="left: {(st.pb / st.max) * 100}%" title="{b.name}: {st.pb}"></span>
+              <span class="mark a" style="left: {(st.pa / st.max) * 100}%" title="{a.name}: {formatNumber(st.pa)}"></span>
+              <span class="mark b" style="left: {(st.pb / st.max) * 100}%" title="{b.name}: {formatNumber(st.pb)}"></span>
             </span>
-            <span class="num small">{st.lo}–{st.hi}</span>
+            <span class="num small">{formatNumber(st.lo)}–{formatNumber(st.hi)}</span>
           </li>
         {/each}
       </ul>

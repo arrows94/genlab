@@ -27,8 +27,9 @@ export interface GameEvents {
   anomalyCompleted: { anomaly: string };
   perfectGenome: { creatureId: number; species: string };
   shiny: { creatureId: number; species: string };
-  sold: { count: number; value: Record<string, Decimal> };
-  recycled: { count: number; fragments: Decimal };
+  /** `auto`: done by an automation (no toast per run). */
+  sold: { count: number; value: Record<string, Decimal>; auto?: boolean };
+  recycled: { count: number; fragments: Decimal; auto?: boolean };
   infused: { targetId: number; victims: number; ep: number; levelsGained: number; transferred: { locus: string; allele: string }[] };
   breakthrough: { creatureId: number; rarity: string };
   capsuleOpened: { capsule: string; creatureId: number; rarity: string; pity: boolean };

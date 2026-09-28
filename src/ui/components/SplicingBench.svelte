@@ -4,7 +4,7 @@
   import { canAfford } from '@core/costs';
   import { findCreature } from '@core/creatures';
   import { activeLoci, alleleDef, expressedAppearance, libraryHas, phenotypeLabel } from '@core/genetics';
-  import { formatPercent } from '@core/format';
+  import { formatNumber, formatPercent } from '@core/format';
   import { describeModifier } from '@core/queries';
   import { instabilityChance, maxSplices, splice, spliceCost, splicePreview } from '@core/features/splicing';
   import { game, view, act } from '../store.svelte';
@@ -186,7 +186,7 @@
                 {#each content.stats.list as s (s.id)}
                   {@const before = p.statsBefore[s.id] ?? 0}
                   {@const after = p.statsAfter[s.id] ?? 0}
-                  <span class="delta num" class:up={after > before} class:down={after < before}>{s.short} {before}{#if after !== before} → {after}{/if}</span>
+                  <span class="delta num" class:up={after > before} class:down={after < before}>{s.short} {formatNumber(before)}{#if after !== before} → {formatNumber(after)}{/if}</span>
                 {/each}
               </div>
             </div>

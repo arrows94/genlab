@@ -17,7 +17,7 @@ export function fragmentValue(ctx: GameContext, c: Creature): Decimal {
   return D(ctx.mods().apply('capsule.fragmentYield', base)).floor();
 }
 
-export function recycle(ctx: GameContext, ids: number[]): ActionResult {
+export function recycle(ctx: GameContext, ids: number[], auto = false): ActionResult {
   if (!ctx.state.features['recycler']) return { ok: false, reason: 'Der Gen-Recycler ist noch nicht freigeschaltet.' };
   const taken = takeConsumable(ctx, ids);
   if (typeof taken === 'string') return { ok: false, reason: taken };
@@ -27,7 +27,7 @@ export function recycle(ctx: GameContext, ids: number[]): ActionResult {
     removeCreature(ctx, c.id, 'recycled');
   }
   grant(ctx, 'fragments', total, 'recycler');
-  ctx.bus.emit('recycled', { count: taken.length, fragments: total });
+  ctx.bus.emit('recycled', { count: taken.length, fragments: total, auto });
   return { ok: true };
 }
 

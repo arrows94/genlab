@@ -1,6 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { effectiveStats } from '@core/creatures';
+  import { formatNumberParts } from '@core/format';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
   import { renameCreature, toggleLock } from '@core/actions';
@@ -96,7 +97,8 @@
   </div>
   <dl class="stats">
     {#each content.stats.list as s (s.id)}
-      <div><dt>{s.short}</dt><dd class="num">{stats[s.id]}</dd></div>
+      {@const [value, unit] = formatNumberParts(stats[s.id] ?? 0, { fullBelow: 1000 })}
+      <div title="{s.name}: {(stats[s.id] ?? 0).toLocaleString('de-DE')}"><dt>{s.short}</dt><dd class="num">{value}{#if unit}<small>{unit}</small>{/if}</dd></div>
     {/each}
   </dl>
   <div class="dna"><DnaSequence genome={creature.genome} known={sequenced} /></div>
@@ -142,9 +144,10 @@
   .tier { color: var(--violet); }
   .shiny { background: linear-gradient(90deg, #ff7ad9, #7ad9ff, #b8ff7a); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem; margin: 0; }
-  .stats div { background: var(--bg-2); border-radius: 6px; padding: 0.2rem; text-align: center; }
+  .stats div { background: var(--bg-2); border-radius: 6px; padding: 0.2rem 0.1rem; text-align: center; min-width: 0; }
   dt { font-size: 0.65rem; color: var(--muted); }
-  dd { margin: 0; font-size: 0.9rem; }
+  dd { margin: 0; font-size: 0.9rem; white-space: nowrap; }
+  dd small { display: block; font-size: 0.6rem; color: var(--muted); }
   .job { font-size: 0.8rem; color: var(--teal); }
   .dna { display: flex; justify-content: center; }
   .abilities { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }

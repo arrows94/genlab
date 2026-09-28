@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
-import { createCreature, findCreature } from '@core/creatures';
+import { createCreature, effectiveStats, findCreature } from '@core/creatures';
 import { breedingCost, breedingTimeMs, nestSlots, startBreeding, inheritStats } from '@core/features/breeding';
 import { unlockFeature } from '@core/systems/unlocks';
 import { makeGame } from './helpers';
@@ -67,6 +67,21 @@ describe('breeding', () => {
     }
     const mutated = inheritStats(g, a, b, 1);
     for (const v of Object.values(mutated)) expect(v).toBeGreaterThanOrEqual(Math.floor(75 * 0.9 * 1.05));
+  });
+
+  it('heritage bonus boosts bred offspring without compounding into base stats', () => {
+    const g = breedingGame();
+    const stats = { hp: 100, atk: 100, def: 100, spd: 100 };
+    const a = createCreature(g, { speciesId: 'pebblit', rarity: 'common', stats, exactStats: true });
+    const b = createCreature(g, { speciesId: 'pebblit', rarity: 'common', stats, exactStats: true });
+    const child = createCreature(g, { speciesId: 'pebblit', rarity: 'common', stats, exactStats: true, parents: [a.id, b.id] });
+    const childBefore = effectiveStats(g, child).hp!;
+    const parentBefore = effectiveStats(g, a).hp!;
+    g.state.upgrades.legendaryHeritage = 10;
+    g.invalidate();
+    for (const v of Object.values(inheritStats(g, a, b, 0))) expect(v).toBeLessThanOrEqual(110);
+    expect(effectiveStats(g, child).hp).toBeGreaterThan(childBefore);
+    expect(effectiveStats(g, a).hp).toBe(parentBefore);
   });
 
   it('cost rises with generation (gold from gen 3) and mildly with creatures owned', () => {

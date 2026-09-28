@@ -2,9 +2,12 @@
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { formatNumber, formatPercent } from '@core/format';
-  import { capsuleCost, capsuleOdds, openCapsules, pityCounter, type CapsuleResult } from '@core/features/recycler';
+  import { capsuleCost, capsuleOdds, fragmentValue, openCapsules, pityCounter, type CapsuleResult } from '@core/features/recycler';
+  import { autoRecycleCandidates, setAutoRecycle } from '@core/features/automation';
+  import { D } from '@core/num';
+  import type { AutoRecycleConfig } from '@core/state';
   import { stableFree } from '@core/features/stable';
-  import { game, view, refresh, toast } from '../store.svelte';
+  import { game, view, act, refresh, toast } from '../store.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import { expressedAppearance } from '@core/genetics';
@@ -28,6 +31,26 @@
       })),
     };
   });
+
+  const KEEP = [0, 1, 2, 3, 5, 10];
+
+  // Candidate search walks all creatures – refreshed at the slow rate.
+  const auto = $derived.by(() => {
+    view.slowFrame;
+    if (!game.state.features['autoRecycle']) return null;
+    const cfg = game.state.automation.autoRecycle;
+    const candidates = autoRecycleCandidates(game);
+    return {
+      cfg,
+      count: candidates.length,
+      fragments: candidates.reduce((sum, c) => sum.add(fragmentValue(game, c)), D(0)),
+      next: candidates[0]?.name ?? null,
+    };
+  });
+
+  function setAuto(patch: Partial<AutoRecycleConfig>) {
+    act(setAutoRecycle(game, patch));
+  }
 
   function open(id: string, count: number) {
     const def = content.capsules.get(id);
@@ -59,6 +82,43 @@
   auch Arten, die du noch nicht kennst. Alle Chancen stehen offen daneben. Nur Spielwährung, kein Echtgeld.
   Freie Stallplätze: <b class="num">{data.free}</b>
 </p>
+
+{#if auto}
+  <div class="panel auto" class:on={auto.cfg.enabled}>
+    <div class="auto-row">
+      <label class="switch"><input type="checkbox" checked={auto.cfg.enabled} onchange={(e) => setAuto({ enabled: e.currentTarget.checked })} /> <b>♻️ Recycling-Automat</b></label>
+      <label>Wann
+        <select value={auto.cfg.when} onchange={(e) => setAuto({ when: e.currentTarget.value as AutoRecycleConfig['when'] })}>
+          <option value="always">laufend alles Passende</option>
+          <option value="full">nur wenn der Stall voll ist</option>
+        </select>
+      </label>
+      <label>bis Seltenheit
+        <select value={auto.cfg.maxRarity} onchange={(e) => setAuto({ maxRarity: e.currentTarget.value })}>
+          {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+        </select>
+      </label>
+    </div>
+    <div class="auto-row">
+      <label>Je Art behalten
+        <select value={String(auto.cfg.keepPerSpecies)} onchange={(e) => setAuto({ keepPerSpecies: Number(e.currentTarget.value) })}>
+          {#each KEEP as n (n)}<option value={String(n)}>{n === 0 ? 'keine' : `die ${n} stärksten`}</option>{/each}
+        </select>
+      </label>
+      <label class="switch"><input type="checkbox" checked={auto.cfg.keepSequenced} onchange={(e) => setAuto({ keepSequenced: e.currentTarget.checked })} /> Sequenzierte behalten</label>
+    </div>
+    <p class="small auto-status">
+      <span class="muted">Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten.</span>
+      {#if auto.cfg.when === 'always'}
+        <span class:hit={auto.count > 0}>Betrifft gerade <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'}{#if auto.count > 0}{' '}(≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩){/if}</span>
+      {:else if auto.next}
+        <span>Als Nächstes dran: <b>{auto.next}</b></span>
+      {:else}
+        <span>Keine Kreatur erfüllt die Regeln.</span>
+      {/if}
+    </p>
+  </div>
+{/if}
 
 <div class="grid caps">
   {#each data.capsules as cap (cap.def.id)}
@@ -119,6 +179,11 @@
 
 <style>
   .small { font-size: 0.8rem; }
+  .auto { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+  .auto.on { border-color: var(--teal); box-shadow: 0 0 12px #2fd3c433; }
+  .auto-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+  .auto-status { margin: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+  .auto-status .hit { color: var(--gold); }
   .caps { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .capsule select { width: 100%; margin-bottom: 0.4rem; }
   .odds { width: 100%; font-size: 0.82rem; border-collapse: collapse; }

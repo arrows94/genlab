@@ -152,7 +152,7 @@
         {#each content.stats.list as s (s.id)}
           {@const now = data.statsNow[s.id] ?? 0}
           {@const after = data.statsAfter?.[s.id] ?? now}
-          <span class="stat num" class:up={after > now}>{s.short} {now}{#if after > now}<b> → {after}</b>{/if}</span>
+          <span class="stat num" class:up={after > now}>{s.short} {formatNumber(now)}{#if after > now}<b> → {formatNumber(after)}</b>{/if}</span>
         {/each}
       </div>
     </div>

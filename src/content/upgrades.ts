@@ -183,6 +183,13 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [], unlocksFeatures: ['autoBreed'],
   },
   {
+    id: 'recyclerAutomaton', name: 'Recycling-Automat', category: 'research',
+    requires: { type: 'all', of: [{ type: 'feature', feature: 'recycler' }, { type: 'statistic', statistic: 'recycled', amount: 25 }] },
+    description: 'Recycelt überzählige Kreaturen automatisch nach deinen Regeln.',
+    cost: { fragments: 60, essence: 150 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['autoRecycle'],
+  },
+  {
     id: 'infusionBooster', name: 'Infusionsbeschleuniger', category: 'research', requires: { type: 'feature', feature: 'infusion' },
     description: '+10 % Infusions-EP.',
     cost: { essence: 40 }, costGrowth: 2, maxLevel: 10,
@@ -232,7 +239,7 @@ export const upgrades: UpgradeDef[] = [
   // --- über den Dex freigeschaltet ---
   {
     id: 'legendaryHeritage', name: 'Legendäres Erbgut', category: 'research', requires: { type: 'feature', feature: 'legendaryHeritage' },
-    description: 'Nachwuchs erhält +5 % auf alle Grundwerte.',
+    description: 'Gezüchteter Nachwuchs erhält +5 % auf alle Werte (wird nicht weitervererbt).',
     cost: { essence: 100 }, costGrowth: 2.5, maxLevel: 10,
     modifiers: [{ target: 'breeding.statBonus', op: 'pct', value: 0.05 }],
   },
