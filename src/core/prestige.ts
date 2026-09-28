@@ -58,24 +58,29 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
 
 /**
  * What a reset does to running projects, for the confirmation: travellers
- * keep going, long work in the lab (≥ 1 h, e.g. deep sequencing, ritual
- * eggs) is lost.
+ * and projects without creatures (Großforschung, Großprojekt-Bau) keep
+ * going, long work in the lab (≥ 1 h, e.g. deep sequencing, ritual eggs) is lost.
  */
-export function resetImpact(ctx: GameContext): { travelling: number; lostLong: number } {
+export function resetImpact(ctx: GameContext): { travelling: number; building: number; lostLong: number } {
   let travelling = 0;
+  let building = 0;
   let lostLong = 0;
+  const away = new Set(ctx.state.creatures.filter((c) => c.job?.kind === 'mission').map((c) => c.job!.target));
   for (const p of ctx.state.processes) {
-    if (survivesReset(ctx, p)) travelling++;
-    else if (p.durationMs >= 3_600_000) lostLong++;
+    if (survivesReset(ctx, p)) {
+      if (away.has(String(p.id))) travelling++;
+      else building++;
+    } else if (p.durationMs >= 3_600_000) lostLong++;
   }
-  return { travelling, lostLong };
+  return { travelling, building, lostLong };
 }
 
 /** Text for the confirmation dialog (empty when nothing long is running). */
 export function resetImpactText(ctx: GameContext): string {
-  const { travelling, lostLong } = resetImpact(ctx);
+  const { travelling, building, lostLong } = resetImpact(ctx);
   const parts: string[] = [];
   if (lostLong > 0) parts.push(`${lostLong === 1 ? 'Ein langes Projekt im Labor geht' : `${lostLong} lange Projekte im Labor gehen`} verloren (z. B. Tiefensequenzierung, Brutritual).`);
+  if (building > 0) parts.push(`${building === 1 ? 'Eine Großforschung oder ein Bau läuft' : `${building} Großforschungen und Bauten laufen`} ungestört weiter.`);
   if (travelling > 0) parts.push(`${travelling === 1 ? 'Eine Reise läuft' : `${travelling} Reisen laufen`} weiter – die Reisenden kommen in den neuen Durchlauf zurück.`);
   return parts.join(' ');
 }

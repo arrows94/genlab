@@ -16,6 +16,8 @@ export interface GameEvents {
   dailyClaimed: { step: number };
   weeklyBossHit: { damage: number; total: number; defeated: boolean };
   grandResearchDone: { project: string; level: number };
+  megaProjectStage: { project: string; stage: number };
+  resonanceBought: { resonance: string; level: number };
   timeCrystalUsed: { processId: number; kind: string };
   voyageReturned: { destination: string };
   voyageResolved: { destination: string; decision: string; option: number; creatureId: number | null };

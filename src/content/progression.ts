@@ -79,6 +79,10 @@ export const features: FeatureDef[] = [
     id: 'aeon', name: 'Äon', tab: 'aeon', hint: 'Das Äon ruft: Ein tieferer Neustart für Äon-Splitter und einen eigenen Talentbaum.',
     condition: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 3 }, { type: 'towerFloor', floor: 15 }] },
   },
+  {
+    id: 'megaProjects', name: 'Großprojekte', hint: 'Großprojekt: Im Äon-Tab wartet das Äon-Observatorium. Zahle über mehrere Tage ein – es öffnet neue Stufen im Talentbaum. Einzahlungen gehen bei keinem Neustart verloren.',
+    condition: { type: 'feature', feature: 'aeon' },
+  },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];
 

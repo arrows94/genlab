@@ -24,6 +24,8 @@ export type Condition =
   | { type: 'talent'; talent: string }
   | { type: 'towerFloor'; floor: number }
   | { type: 'anomaly'; anomaly: string }
+  /** A Großprojekt has finished at least `stage` construction stages. */
+  | { type: 'megaProject'; project: string; stage: number }
   | { type: 'all'; of: Condition[] }
   | { type: 'any'; of: Condition[] };
 
@@ -307,6 +309,8 @@ export interface TalentDef {
   cost: number;
   /** All listed talents must be owned first. */
   requires: string[];
+  /** Extra condition before the talent can be learned (e.g. a Großprojekt stage). */
+  unlock?: Condition;
   modifiers: ModifierDef[];
   /** Features that stay unlocked across every reset. */
   unlocksFeatures?: string[];
@@ -427,6 +431,48 @@ export interface GrandResearchDef {
   modifiers: ModifierDef[];
 }
 
+/**
+ * Resonanz: an endless Äon node. Every level costs more shards
+ * (`cost × costGrowth^level`) and adds less (`level^levelPower`), so shards
+ * always stay worth something once the talent tree is complete.
+ */
+export interface ResonanceDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  cost: number;
+  costGrowth: number;
+  /** Effect scale for level n is n^levelPower (< 1 = diminishing returns). */
+  levelPower: number;
+  requires?: Condition;
+  modifiers: ModifierDef[];
+}
+
+/** One construction stage of a Großprojekt: pay in over time, then build. */
+export interface MegaProjectStageDef {
+  name: string;
+  description: string;
+  /** Total to pay in (in any number of deposits). */
+  cost: ResourceAmounts;
+  /** Construction time after the last deposit. */
+  hours: number;
+}
+
+/**
+ * Großprojekt: a building that takes days. Resources are paid in over
+ * several visits, each stage then builds by the real clock. Progress is
+ * never reset; finished stages unlock new systems via `megaProject` conditions.
+ */
+export interface MegaProjectDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  requires?: Condition;
+  stages: MegaProjectStageDef[];
+}
+
 /** Besondere Brut: a slow breeding ritual with better odds (the normal egg stays quick). */
 export interface BreedingRitualDef {
   id: string;
@@ -527,6 +573,8 @@ export interface ContentData {
   breedingRituals: BreedingRitualDef[];
   latentTraits: LatentTraitDef[];
   grandResearch: GrandResearchDef[];
+  resonances: ResonanceDef[];
+  megaProjects: MegaProjectDef[];
 }
 
 export interface Registry<T extends { id: string }> {

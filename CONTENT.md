@@ -130,6 +130,38 @@ Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wil
 - `modifiers` wirken einmal pro erreichter Stufe. Stufen werden nie zurückgesetzt.
 - Mehr gleichzeitige Projekte über den Modifier `slots.grandResearch`.
 
+## Großprojekt
+
+`src/content/megaProjects.ts`: Bauwerke über mehrere Tage. Jede Bauphase wird in beliebig vielen Einzahlungen bezahlt, danach läuft die Bauzeit nach echter Uhrzeit.
+
+```ts
+{
+  id: 'observatory', name: 'Äon-Observatorium', icon: '🔭', description: '…',
+  requires: { type: 'feature', feature: 'aeon' },
+  stages: [
+    { name: 'Fundament', description: '…', cost: { gold: 1e9, towerTokens: 300 }, hours: 12 },
+    { name: 'Kuppel', description: 'Öffnet die vierte Stufe im Talentbaum.', cost: { essence: 2e8, catalyst: 100 }, hours: 24 },
+  ],
+},
+```
+
+- Einzahlungen und fertige Bauphasen werden nie zurückgesetzt, ein laufender Bau überdauert Vererbung und Äon.
+- Was ein Großprojekt freischaltet, hängt an der Bedingung `{ type: 'megaProject', project: 'observatory', stage: 2 }` – nutzbar überall, wo es Bedingungen gibt (Talente über `unlock`, Resonanz, Features …).
+- `MegaProjectPanel.svelte` zeichnet das Äon-Observatorium Bauphase für Bauphase; andere Projekte zeigen ihr `icon`.
+
+## Äon-Resonanz
+
+`src/content/endgame.ts` → `resonances`: endlose Knoten für übrige Äon-Splitter.
+
+```ts
+{ id: 'harvestResonance', name: 'Ernte-Resonanz', icon: '🌾', cost: 3, costGrowth: 1.35, levelPower: 0.7,
+  requires: { type: 'megaProject', project: 'observatory', stage: 4 },
+  description: '+25 % Nahrung, Gold und Essenz (abnehmend).',
+  modifiers: [{ target: 'production.food', op: 'pct', value: 0.25 }] },
+```
+
+- Kosten der nächsten Stufe: `cost × costGrowth^Stufe` (aufgerundet), Wirkung: `modifiers × Stufe^levelPower`.
+
 ## Erbanlage (verborgene Eigenschaft)
 
 `src/content/latent.ts`: starke Eigenschaften, die etwa jede dritte Kreatur verborgen trägt (`balance.deepSequencing.latentChance`). Sie werden vererbt, auch solange sie verborgen sind, und wirken erst nach einer Tiefensequenzierung.
@@ -204,7 +236,8 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
   modifiers: [{ target: 'element.ice.production', op: 'pct', value: 0.5 }] },
 ```
 
-- Talente können `unlocksFeatures` (bleiben über jeden Reset) und `onReset` (Startressourcen) haben.
+- Talente können `unlocksFeatures` (bleiben über jeden Reset) und `onReset` (Startressourcen) haben. `unlock` ist eine zusätzliche Bedingung (z. B. eine Bauphase des Äon-Observatoriums); bis sie erfüllt ist, zeigt der Talentbaum die ganze Stufe versiegelt.
+- Mechanik-Talente nutzen eigene Modifier-Ziele: `breeding.abilityInherit` (Chance je Eltern-Fähigkeit), `breeding.rarityUp` (Chance auf eine Seltenheitsstufe mehr), `mission.hybridChance` (wilde Funde als entdeckte Hybride), `tower.interval` (Sekunden pro Turm-Kampf), `tower.bossAttempts` (Wochen-Boss-Angriffe pro Tag), `slots.grandResearch`.
 - Ein Gen-Locus mit `requires: { type: 'talent', talent: '…' }` existiert erst mit dem Talent – vorhandene Kreaturen bekommen ihn automatisch.
 - Allele mit `top: true` definieren das „perfekte Genom“ der Perfektions-Jagd.
 - Unendliche Forschung: `category: 'infinite'`, `maxLevel: null` und `levelPower` (< 1 = abnehmender Ertrag).

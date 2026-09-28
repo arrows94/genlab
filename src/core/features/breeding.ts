@@ -92,6 +92,24 @@ export function eggRarityWeights(ctx: GameContext, ritual?: BreedingRitualDef): 
   return Object.values(out).some((w) => w > 0) ? out : { [ritual.minRarity ?? 'common']: 1 };
 }
 
+/** One rarity step up (the highest stays). */
+export function nextRarity(ctx: GameContext, id: string): string {
+  const order = ctx.content.rarities.get(id).order;
+  const higher = ctx.content.rarities.list.filter((r) => r.order > order).sort((a, b) => a.order - b.order);
+  return higher[0]?.id ?? id;
+}
+
+/**
+ * Rarity of a hatchling; undefined = rolled by `createCreature` as usual.
+ * Äon talent „Aufstrebende Brut“ may lift it one step.
+ */
+function hatchRarity(ctx: GameContext, ritual?: BreedingRitualDef): string | undefined {
+  const up = Math.min(1, ctx.mods().apply('breeding.rarityUp', 0));
+  if (!ritual && up <= 0) return undefined;
+  const rarity = rollRarity(ctx.rng, ritual ? eggRarityWeights(ctx, ritual) : rarityWeights(ctx.content, ctx.balance, ctx.mods()));
+  return up > 0 && ctx.rng.chance(up) ? nextRarity(ctx, rarity) : rarity;
+}
+
 /** Normal cost plus the ritual's extra cost. */
 export function eggCost(ctx: GameContext, generation: number, ritual?: BreedingRitualDef): Cost {
   const cost = breedingCost(ctx, generation);
@@ -185,7 +203,7 @@ registerProcessHandler(EGG, {
     const mutation = mutationChance(ctx, ritual);
     const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1);
     // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.
-    const rarity = ritual ? rollRarity(ctx.rng, eggRarityWeights(ctx, ritual)) : undefined;
+    const rarity = hatchRarity(ctx, ritual);
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
@@ -212,7 +230,7 @@ registerProcessHandler(EGG, {
     if (twinChance > 0 && stableFree(ctx) > 0 && ctx.rng.chance(twinChance)) {
       const twin = createCreature(ctx, {
         speciesId,
-        rarity: ritual ? rollRarity(ctx.rng, eggRarityWeights(ctx, ritual)) : undefined,
+        rarity: hatchRarity(ctx, ritual),
         latent: inheritLatent(ctx, a, b, ctx.state.nextId),
         name: nameFor(),
         generation: data.generation,

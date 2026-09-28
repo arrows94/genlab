@@ -1,7 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { contractDay, nextContractDay } from '@core/features/contracts';
-  import { attackWeeklyBoss, bossDefeated } from '@core/features/weeklyBoss';
+  import { attackWeeklyBoss, bossAttempts, bossDefeated } from '@core/features/weeklyBoss';
   import { nextWeekStart } from '@core/features/weekly';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { rewardAmounts } from '@core/rewards';
@@ -26,7 +26,8 @@
       share: b.maxHp > 0 ? b.damage / b.maxHp : 0,
       defeated: bossDefeated(game),
       tiers: cfg.tiers.map((t, i) => ({ ...t, reached: i < b.tiers, rewards: rewardAmounts(game, { resources: t.rewards }) })),
-      maxAttempts: cfg.maxAttempts,
+      maxAttempts: bossAttempts(game).max,
+      perDay: bossAttempts(game).perDay,
       refillIn: nextContractDay(game, now) - now,
       weekLeft: nextWeekStart(game, now) - now,
       today: contractDay(game, now) === b.day,
@@ -68,8 +69,8 @@
         {/each}
       </div>
       <div class="actions">
-        <span class="attempts" title="Pro Tag kommen {game.balance.weeklyBoss.attemptsPerDay} Angriffe dazu, bis zu {data.maxAttempts}.">
-          ⚔️ <b class="num">{data.b.attempts}/{data.maxAttempts}</b> Angriffe · +{game.balance.weeklyBoss.attemptsPerDay} in {formatDuration(data.refillIn)}
+        <span class="attempts" title="Pro Tag kommen {data.perDay} Angriffe dazu, bis zu {data.maxAttempts}.">
+          ⚔️ <b class="num">{data.b.attempts}/{data.maxAttempts}</b> Angriffe · +{data.perDay} in {formatDuration(data.refillIn)}
         </span>
         {#if data.defeated}
           <span class="won">🏆 Besiegt!</span>

@@ -2,7 +2,7 @@ import { D } from './num';
 import { ModifierSet } from './modifiers';
 import type { GameContext } from './context';
 import { activeLatent } from './creatures';
-import { talentProvider } from './features/talents';
+import { resonanceProvider, talentProvider } from './features/talents';
 import { anomalyProvider } from './features/anomalies';
 import { weeklyProvider } from './features/weekly';
 import { grandResearchProvider } from './features/grandResearch';
@@ -75,4 +75,5 @@ export const DEFAULT_PROVIDERS: ModifierProvider[] = [
   anomalyProvider,
   weeklyProvider,
   grandResearchProvider,
+  resonanceProvider,
 ];

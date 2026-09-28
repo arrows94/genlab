@@ -43,6 +43,13 @@ export function bossFighter(ctx: GameContext): Fighter {
 }
 
 /** New week → new boss; new day → more attempts. Runs every tick (cheap). */
+/** Attacks per day and the stock limit (Äon talent „Titanenjäger“ raises both). */
+export function bossAttempts(ctx: GameContext): { perDay: number; max: number } {
+  const cfg = ctx.balance.weeklyBoss;
+  const perDay = Math.floor(ctx.mods().apply('tower.bossAttempts', cfg.attemptsPerDay));
+  return { perDay, max: cfg.maxAttempts + 2 * (perDay - cfg.attemptsPerDay) };
+}
+
 export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt): void {
   if (!ctx.state.features['weeklyBoss']) return;
   const b = ctx.state.weeklyBoss;
@@ -64,7 +71,8 @@ export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt
   }
   const day = contractDay(ctx, nowMs);
   if (b.day !== day) {
-    b.attempts = Math.min(cfg.maxAttempts, b.attempts + cfg.attemptsPerDay);
+    const { perDay, max } = bossAttempts(ctx);
+    b.attempts = Math.min(max, b.attempts + perDay);
     b.day = day;
   }
 }

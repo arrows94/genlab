@@ -60,10 +60,15 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [ ] Belohnung: kosmetische Muster (braucht neue Muster im Kreaturen-SVG)
   - [x] Schwierigere Aufträge schalten sich nach und nach frei (Auftragspool statt fester Inhalte)
   - [x] Balancing mit dem Test-Bot: Wie schnell steigt die Auftragsstufe, passen die Belohnungen?
-- [ ] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
-  - [ ] 2–3 weitere Stufen mit spielverändernden Talenten (z. B. Eier verdoppeln Eltern-Fähigkeiten,
-        Expeditionen bringen Hybride, Turm startet ab dem halben Rekord)
-  - [ ] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag, damit Splitter immer etwas wert bleiben
+- [x] **Äon-Talentbaum ausbauen** (läuft nach wenigen Äonen leer)
+  - [x] 2–3 weitere Stufen mit spielverändernden Talenten – Stufe 4 und 5, versiegelt bis zur Kuppel bzw.
+        Sternkarte des Äon-Observatoriums: Starke Blutlinie (Fähigkeiten sicher vererbt), Wilde Kreuzungen
+        (Erkundungen bringen entdeckte Hybride), Sturmlauf (Turm-Kämpfe halb so lang), Aufstrebende Brut
+        (15 % Chance auf eine Seltenheitsstufe mehr), Gelehrtenkreis (+1 Großforschungsplatz), Titanenjäger
+        (+1 Wochen-Boss-Angriff pro Tag). „Turm startet ab dem halben Rekord“ entfällt – die Kontrollpunkte
+        alle 10 Etagen starten schon näher am Rekord.
+  - [x] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag (Ernte, Erbgut, Gene, Kampf; Wirkung Stufe^0,7)
+  - [ ] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (der Bot spielt noch keinen Turm und kein Äon)
 - [ ] **Turm-Mechaniken vertiefen**
   - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
   - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
@@ -135,7 +140,9 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
       (ab Turm-Etage 10; 3 Angriffe pro Tag, bis zu 6 sammelbar; Belohnungen bei 10/25/50/75/100 %)
 - [x] Wochen-Mutation, Wochen-Boss und Wochenexpedition thematisch verbinden
       (Wochenexpedition und Wochen-Boss teilen das Element der Wochen-Mutation)
-- [ ] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
+- [x] **Großprojekte**: z. B. „Äon-Observatorium bauen“ – über Tage Ressourcen einzahlen, schaltet ein neues System frei
+      (4 Bauphasen mit 12–48 h Bauzeit; Einzahlungen bleiben über jeden Neustart, auch kurz vor einem Äon;
+      öffnet Talentstufe 4 und 5 und die Äon-Resonanz. Kosten nach den Beständen des 14-Tage-Bots bemessen)
 
 ## Leitplanken
 

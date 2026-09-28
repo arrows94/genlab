@@ -14,3 +14,4 @@ import './voyage';
 import './deepSequencing';
 import './daily';
 import './grandResearch';
+import './megaProjects';

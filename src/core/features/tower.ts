@@ -166,6 +166,11 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
   return done(false, ctx.balance.tower.maxRounds);
 }
 
+/** Time per floor in ms (Äon talent „Sturmlauf“ shortens it). */
+export function fightIntervalMs(ctx: GameContext): number {
+  return Math.max(1000, ctx.mods().apply('tower.interval', ctx.balance.tower.fightIntervalSec) * 1000);
+}
+
 export function checkpoint(ctx: GameContext): number {
   const every = ctx.balance.tower.checkpointEvery;
   return Math.floor(ctx.state.tower.best / every) * every;
@@ -279,7 +284,7 @@ export const towerSystem: System = {
   id: 'tower',
   update(ctx, dtMs) {
     const tw = ctx.state.tower;
-    const interval = ctx.balance.tower.fightIntervalSec * 1000;
+    const interval = fightIntervalMs(ctx);
     if (!tw.run) {
       // Auto-restart (tower upgrade) after a defeat, from the checkpoint.
       if (tw.autoRestart && ctx.state.features['towerAuto'] && tw.team.length > 0) startRun(ctx, true);

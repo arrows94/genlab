@@ -133,6 +133,13 @@ function wireEvents(g: Game): void {
   });
   g.bus.on('towerRunEnded', (e) => toast(`🗼 Turm-Lauf beendet auf Etage ${e.floor}.`, 'info'));
   g.bus.on('talentBought', (e) => toast(`⏳ Talent gelernt: ${content.talents.get(e.talent).name}`, 'rare'));
+  g.bus.on('resonanceBought', (e) => toast(`〰️ ${content.resonances.get(e.resonance).name} auf Stufe ${e.level}`, 'info'));
+  g.bus.on('megaProjectStage', (e) => {
+    const def = content.megaProjects.get(e.project);
+    const done = e.stage >= def.stages.length;
+    toast(`${def.icon} ${def.name}: ${done ? 'vollendet!' : `„${def.stages[e.stage - 1]!.name}“ fertig gebaut`}`, 'rare', 7000);
+    markUnseen('aeon');
+  });
   g.bus.on('anomalyStarted', (e) => toast(`🌀 Anomalie „${content.anomalies.get(e.anomaly).name}“ beginnt!`, 'unlock'));
   g.bus.on('anomalyCompleted', (e) => toast(`🌀 Anomalie gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
   g.bus.on('perfectGenome', (e) => toast(`✦ Perfektes Genom: ${content.species.get(e.species).name}!`, 'rare', 7000));

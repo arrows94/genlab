@@ -97,6 +97,11 @@ export function validateContent(data: ContentData): string[] {
         return num(`${where}.floor`, c.floor, 1);
       case 'anomaly':
         return ref(where, 'anomalies', c.anomaly);
+      case 'megaProject': {
+        ref(where, 'megaProjects', c.project);
+        const project = data.megaProjects.find((m) => m.id === c.project);
+        return num(`${where}.stage`, c.stage, 1, project?.stages.length ?? Infinity);
+      }
       case 'geneLibrary': {
         const total = data.genes.reduce((n, g) => n + g.alleles.length, 0);
         return num(`${where}.count`, c.count, 0, total);
@@ -258,6 +263,7 @@ export function validateContent(data: ContentData): string[] {
     const w = at('talents', t.id);
     num(`${w}.cost`, t.cost, 0);
     t.requires.forEach((r) => ref(`${w}.requires`, 'talents', r));
+    cond(`${w}.unlock`, t.unlock);
     mods(`${w}.modifiers`, t.modifiers);
     t.unlocksFeatures?.forEach((f) => ref(`${w}.unlocksFeatures`, 'features', f));
     amounts(`${w}.onReset`, t.onReset);
@@ -311,6 +317,27 @@ export function validateContent(data: ContentData): string[] {
     amounts(`${w}.cost`, r.cost);
     cond(`${w}.requires`, r.requires);
     mods(`${w}.modifiers`, r.modifiers);
+  }
+  for (const r of data.resonances) {
+    const w = at('resonances', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.cost`, r.cost, 1);
+    num(`${w}.costGrowth`, r.costGrowth, 1);
+    num(`${w}.levelPower`, r.levelPower, 0, 1);
+    cond(`${w}.requires`, r.requires);
+    mods(`${w}.modifiers`, r.modifiers);
+  }
+  for (const m of data.megaProjects) {
+    const w = at('megaProjects', m.id);
+    text(`${w}.name`, m.name);
+    cond(`${w}.requires`, m.requires);
+    if (!Array.isArray(m.stages) || m.stages.length === 0) issues.push(`${w}.stages: mindestens eine Bauphase`);
+    (m.stages ?? []).forEach((st, i) => {
+      text(`${w}.stages[${i}].name`, st.name);
+      num(`${w}.stages[${i}].hours`, st.hours, 0.01);
+      amounts(`${w}.stages[${i}].cost`, st.cost);
+      if (Object.keys(st.cost).length === 0) issues.push(`${w}.stages[${i}].cost: mindestens eine Ressource`);
+    });
   }
   for (const t of data.latentTraits) {
     const w = at('latentTraits', t.id);

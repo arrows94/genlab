@@ -29,9 +29,11 @@ export function inheritAbilities(ctx: GameContext, a: readonly string[], b: read
   const { balance, rng } = ctx;
   const pool = [...new Set([...a, ...b])];
   const out: string[] = [];
+  // Äon talent „Starke Blutlinie“ raises the chance up to a sure inheritance.
+  const inherit = Math.min(1, ctx.mods().apply('breeding.abilityInherit', balance.breeding.abilityInheritChance));
   for (const id of pool) {
     if (out.length >= balance.abilities.max) break;
-    if (ctx.content.abilities.has(id) && rng.chance(balance.breeding.abilityInheritChance)) out.push(id);
+    if (ctx.content.abilities.has(id) && rng.chance(inherit)) out.push(id);
   }
   if (out.length < balance.abilities.max && rng.chance(mutationChance)) {
     const id = rollAbility(ctx, out);
