@@ -12,3 +12,4 @@ import './recycler';
 import './automation';
 import './voyage';
 import './deepSequencing';
+import './daily';

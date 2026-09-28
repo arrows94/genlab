@@ -68,6 +68,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Tagesbelohnung | `core/features/daily.ts`, `balance.daily` | Einmal pro Tag im Labor; der Treue-Kalender (7 Stufen) rückt pro Abholung vor, eine Pause setzt nichts zurück. Belohnungen wachsen mit der Produktion (`core/rewards.ts`). |
 | Gen-Aufträge | `core/features/contracts.ts`, `content/contracts.ts` | Tägliches Auftragsbrett (Seed aus Spielstand + Tag, kein Server). Vorlagen mit offenen Parametern werden aus Genbibliothek und Dex gewürfelt; erfüllte Aufträge heben die Auftragsstufe. |
 | Erbanlagen | `core/features/deepSequencing.ts`, `content/latent.ts` | Verborgene, vererbbare Eigenschaften (etwa jede dritte Kreatur); die Tiefensequenzierung (8 h, Sequenzierer-Platz) deckt sie auf und aktiviert sie. |
 | Besondere Brut | `core/features/breeding.ts`, `content/rituals.ts` | Brutrituale (4–24 h) mit höherer Hybrid-Chance, Mindestseltenheit oder mehr Mutation; belegen Nest und Eltern. |

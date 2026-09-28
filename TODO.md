@@ -120,7 +120,8 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 ## Schritt 3 – Beschäftigung „in der Zwischenzeit“
 
 - [x] Gen-Aufträge (siehe Endgame) als Tagesaufträge: 3 kleine Aufträge pro Tag
-- [ ] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
+- [x] Tagesbelohnung fürs Einchecken – ohne Strafe bei einer Pause
+      (Treue-Kalender mit 7 Stufen, rückt pro Abholung vor statt pro Kalendertag)
 - [ ] Zeitkristalle im Spiel verdienbar (Aufträge, Turm), um lange Projekte gelegentlich abzukürzen
 
 ## Schritt 4 – Große Ziele

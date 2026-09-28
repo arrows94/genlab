@@ -35,6 +35,17 @@ export const balance: Balance = {
     latentMutation: 0.1,
     primalAwaken: 0.25,
   },
+  daily: {
+    rewards: [
+      { minutes: 10, resources: { essence: 20 } },
+      { minutes: 15, resources: { essence: 30 } },
+      { minutes: 20, resources: { fragments: 15 } },
+      { minutes: 25, resources: { essence: 50 } },
+      { minutes: 30, resources: { catalyst: 1 } },
+      { minutes: 40, resources: { essence: 80, fragments: 25 } },
+      { minutes: 60, resources: { essence: 150, catalyst: 3 }, alleleSamples: 1 },
+    ],
+  },
   notifications: {
     minDurationSec: 120,
     groupSec: 300,

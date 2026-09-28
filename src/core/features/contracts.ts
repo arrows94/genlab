@@ -1,10 +1,10 @@
-import { D, type Decimal } from '../num';
+import type { Decimal } from '../num';
 import { checkCondition } from '../conditions';
 import { findCreature, removeCreature } from '../creatures';
 import { activeLoci, catalogueSamples, expressLocus, libraryHas } from '../genetics';
 import { grant } from '../resources';
 import { Rng } from '../rng';
-import { productionRates } from '../systems/production';
+import { rewardAmounts } from '../rewards';
 import type { AlleleDef, ContractRequirementSpec, ContractTemplateDef, GeneLocusDef } from '../content/types';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -278,19 +278,7 @@ export function fulfillableCount(ctx: GameContext): number {
 
 /** Resource rewards at the current production (shown live on the card). */
 export function contractReward(ctx: GameContext, offer: ContractOffer): Record<string, Decimal> {
-  const reward = ctx.content.contracts.get(offer.template).reward;
-  const factor = ctx.mods().factor('contracts.reward');
-  const out: Record<string, Decimal> = {};
-  const add = (res: string, v: Decimal) => (out[res] = (out[res] ?? D(0)).add(v));
-  if (reward.minutes) {
-    for (const [res, rate] of Object.entries(productionRates(ctx))) if (rate.gt(0)) add(res, rate.mul(60 * reward.minutes));
-  }
-  for (const [res, amount] of Object.entries(reward.resources ?? {})) {
-    const feature = ctx.content.resources.get(res).feature;
-    if (!feature || ctx.state.features[feature]) add(res, D(amount));
-  }
-  for (const res of Object.keys(out)) out[res] = out[res]!.mul(factor).floor();
-  return out;
+  return rewardAmounts(ctx, ctx.content.contracts.get(offer.template).reward, 'contracts.reward');
 }
 
 /** Hands a matching creature over: it leaves, the rewards arrive. */

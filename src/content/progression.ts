@@ -24,6 +24,10 @@ export const features: FeatureDef[] = [
   },
   { id: 'sequencing', name: 'Sequenzierlabor', tab: 'genetics', hint: 'Das Sequenzierlabor ist bereit: Entschlüssele Genome mit Essenz und plane gezielte Zuchten.', condition: { type: 'all', of: [{ type: 'feature', feature: 'biolab' }, { type: 'resourceEarned', resource: 'essence', amount: 5 }] } },
   {
+    id: 'daily', name: 'Tagesbelohnung', hint: 'Tagesbelohnung: Hol dir jeden Tag im Labor ein Geschenk ab. Eine Pause kostet nichts – der Kalender wartet auf dich.',
+    condition: { type: 'feature', feature: 'breeding' },
+  },
+  {
     id: 'contracts', name: 'Gen-Aufträge', tab: 'contracts', hint: 'Gen-Aufträge: Züchter suchen Kreaturen mit bestimmten Genen. Jeden Tag gibt es neue Aufträge.',
     condition: { type: 'statistic', statistic: 'sequenced', amount: 1 },
   },

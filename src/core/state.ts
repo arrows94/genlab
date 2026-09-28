@@ -161,6 +161,14 @@ export interface VoyageState {
   nextBonus: number;
 }
 
+export interface DailyState {
+  /** Contract day of the last claim (-1 = never). */
+  day: number;
+  /** Next step of the Treue-Kalender (0 …). */
+  step: number;
+  claimed: number;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -201,6 +209,7 @@ export interface GameState {
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
   voyage: VoyageState;
+  daily: DailyState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -234,6 +243,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },
+    daily: { day: -1, step: 0, claimed: 0 },
   };
 }
 

@@ -49,6 +49,13 @@ export interface Balance {
     /** With the Urgen talent: chance to awaken an Urgen allele. */
     primalAwaken: number;
   };
+  daily: {
+    /**
+     * Treue-Kalender: one step per claim (not per calendar day, so a break
+     * costs nothing); after the last step it starts over.
+     */
+    rewards: { minutes?: number; resources?: ResourceAmounts; alleleSamples?: number }[];
+  };
   notifications: {
     /** Only processes at least this long announce their end (no pings for 20 s eggs). */
     minDurationSec: number;

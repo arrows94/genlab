@@ -7,6 +7,7 @@ import { deepSequencingBlocker, deepSequencingCost, startDeepSequencing } from '
 import { campSlots, campsUsed, missionAvailable, startMission } from '@core/features/expedition';
 import { sequencerSlots, sequencerUsed, sequencingCost, startSequencing, isBeingSequenced } from '@core/features/sequencing';
 import { consumeBlocker } from '@core/features/stable';
+import { claimDaily, dailyAvailable } from '@core/features/daily';
 import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@core/features/voyage';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
@@ -21,6 +22,9 @@ import { playBot } from './bot';
 export function useLongTermSystems(g: Game): void {
   const free = (c: Creature) => c.job === null || c.job.kind === 'building';
   const fastest = () => g.state.creatures.filter(free).sort((a, b) => (effectiveStats(g, b).spd ?? 0) - (effectiveStats(g, a).spd ?? 0));
+
+  // Tagesbelohnung: claimed at the first check-in of the day.
+  if (dailyAvailable(g)) claimDaily(g);
 
   // Gen-Aufträge: hand over the weakest fitting creature (pulled from its job).
   for (const [slot, offer] of g.state.contracts.offers.entries()) {
@@ -95,7 +99,7 @@ export interface LongRunOptions {
 }
 
 const DAY_MS = 86_400_000;
-const NEW_SOURCES = /^(contract:|voyage:|mission:(mistmoor|cloudridge))/;
+const NEW_SOURCES = /^(contract:|voyage:|daily$|mission:(mistmoor|cloudridge))/;
 
 /**
  * Plays like an idle player over several days: a few active sessions per
