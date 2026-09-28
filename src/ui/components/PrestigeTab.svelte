@@ -2,7 +2,7 @@
   import { content } from '@content/index';
   import { formatNumber } from '@core/format';
   import { performPrestige, prestigeGain } from '@core/prestige';
-  import { game, view, act, save } from '../store.svelte';
+  import { game, view, act, save, ask } from '../store.svelte';
 
   const layer = content.prestigeLayers.get('inheritance');
   const data = $derived.by(() => {
@@ -14,8 +14,8 @@
     };
   });
 
-  function confirmPrestige() {
-    if (confirm(`${layer.name} durchführen? ${layer.description}`) && act(performPrestige(game, layer.id))) save();
+  async function confirmPrestige() {
+    if ((await ask(`${layer.name} durchführen? ${layer.description}`, { ok: layer.name, danger: true })) && act(performPrestige(game, layer.id))) save();
   }
 </script>
 

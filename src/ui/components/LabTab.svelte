@@ -7,7 +7,7 @@
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments, recycle } from '@core/features/recycler';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
@@ -66,11 +66,13 @@
   function selectAllVisible() {
     selected = new Set(data.list.filter((c) => canConsume(game, c)).map((c) => c.id));
   }
-  function doSell() {
-    if (data.chosen.length && confirm(`${data.chosen.length} Kreatur(en) verkaufen?`) && act(sell(game, data.chosen.map((c) => c.id)))) selected = new Set();
+  async function doSell() {
+    const ids = data.chosen.map((c) => c.id);
+    if (ids.length && (await ask(`${ids.length} Kreatur(en) verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, ids))) selected = new Set();
   }
-  function doRecycle() {
-    if (data.chosen.length && confirm(`${data.chosen.length} Kreatur(en) recyceln?`) && act(recycle(game, data.chosen.map((c) => c.id)))) selected = new Set();
+  async function doRecycle() {
+    const ids = data.chosen.map((c) => c.id);
+    if (ids.length && (await ask(`${ids.length} Kreatur(en) recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, ids))) selected = new Set();
   }
 </script>
 
@@ -185,7 +187,7 @@
   .toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem; margin-bottom: 0.6rem; }
   .toolbar input { flex: 1 1 10rem; }
   .toolbar select { flex: 0 1 auto; }
-  .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: 0.4rem; z-index: 5; }
+  .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: calc(var(--header-h, 0px) + 0.4rem); z-index: 5; }
   .small { font-size: 0.8rem; }
   .more { width: 100%; margin-top: 0.75rem; }
   .head-actions { display: flex; gap: 0.4rem; }

@@ -3,7 +3,7 @@
   import { formatNumber } from '@core/format';
   import { performPrestige, prestigeGain } from '@core/prestige';
   import { buyTalent, talentAvailable, AEON_CURRENCY } from '@core/features/talents';
-  import { game, view, act, save } from '../store.svelte';
+  import { game, view, act, save, ask } from '../store.svelte';
 
   const layer = content.prestigeLayers.get('aeon');
 
@@ -25,8 +25,8 @@
     };
   });
 
-  function doAeon() {
-    if (confirm(`Äon einleiten? ${layer.description}`) && act(performPrestige(game, layer.id))) save();
+  async function doAeon() {
+    if ((await ask(`Äon einleiten? ${layer.description}`, { ok: 'Äon einleiten', danger: true })) && act(performPrestige(game, layer.id))) save();
   }
 </script>
 

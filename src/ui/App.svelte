@@ -4,6 +4,7 @@
   import { game, view, init, openTab, save } from './store.svelte';
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
+  import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toasts from './components/Toasts.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
   import DnaHelix from './components/DnaHelix.svelte';
@@ -59,6 +60,11 @@
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
+  /** Header shadow once the page is scrolled under it. */
+  let stuck = $state(false);
+  /** Header height as a CSS variable, so other sticky bars sit below it. */
+  let headerH = $state(0);
+  $effect(() => document.documentElement.style.setProperty('--header-h', `${headerH}px`));
   $effect(() => {
     view.tab;
     navEl?.querySelector('button.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
@@ -72,7 +78,7 @@
   </div>
 {:else}
 <div class="app">
-  <header>
+  <header class:stuck bind:offsetHeight={headerH}>
     <div class="brand">
       <DnaHelix pairs={8} width={70} height={28} />
       <h1>Genlab</h1>
@@ -109,6 +115,8 @@
 {/if}
 {/if}
 <Toasts />
+<ConfirmDialog />
+<svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
 <style>
   .update {
@@ -117,7 +125,19 @@
   }
   .splash { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 0.5rem; color: var(--muted); }
   .app { max-width: 1100px; margin: 0 auto; padding: 0.75rem 1rem 6rem; }
-  header { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  /* Sticky: the resources stay in view while the page scrolls. */
+  header {
+    position: sticky; z-index: 12; top: 0;
+    display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;
+    margin: -0.75rem -1rem 0.75rem; padding: calc(0.6rem + env(safe-area-inset-top)) 1rem 0.6rem;
+  }
+  /* Full-width backdrop behind the (max-width) header content. */
+  header::before {
+    content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: 50%; width: 100vw; translate: -50% 0;
+    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+    border-bottom: 1px solid transparent; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  header.stuck::before { border-bottom-color: var(--line); box-shadow: 0 6px 16px #0006; }
   .brand { display: flex; align-items: center; gap: 0.5rem; }
   h1 {
     margin: 0; font-size: 1.5rem; letter-spacing: 0.08em;
@@ -136,7 +156,7 @@
   /* Portrait phones: bottom tab bar */
   @media (max-width: 640px) {
     .app { padding: 0.5rem 0.6rem 5.5rem; }
-    header { gap: 0.4rem; margin-bottom: 0.5rem; }
+    header { gap: 0.4rem; margin: -0.5rem -0.6rem 0.5rem; padding: calc(0.4rem + env(safe-area-inset-top)) 0.6rem 0.4rem; }
     .brand :global(svg) { display: none; }
     h1 { font-size: 1.2rem; }
     nav {

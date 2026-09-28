@@ -11,7 +11,7 @@
     infusionPreview, infusionProgress, maxInfusionLevel, nextRarity, statsAtInfusion,
   } from '@core/features/infusion';
   import type { Creature } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
 
@@ -74,12 +74,13 @@
     else next.add(id);
     selected = next;
   }
-  function doInfuse() {
+  async function doInfuse() {
     const ids = data.chosen.map((v) => v.id);
-    if (ids.length && confirm(`${ids.length} Kreatur(en) in ${creature.name} infundieren? Sie verschwinden dabei.`) && act(infuse(game, creature.id, ids))) selected = new Set();
+    if (ids.length && (await ask(`${ids.length} Kreatur(en) in ${creature.name} infundieren? Sie verschwinden dabei.`, { ok: 'Infundieren' })) && act(infuse(game, creature.id, ids))) selected = new Set();
   }
-  function doBreakthrough() {
-    if (partner !== null && confirm('Durchbruch durchführen? Der Partner verschwindet.') && act(breakthrough(game, creature.id, partner))) partner = null;
+  async function doBreakthrough() {
+    const p = partner;
+    if (p !== null && (await ask('Durchbruch durchführen? Der Partner verschwindet.', { ok: 'Durchbruch' })) && act(breakthrough(game, creature.id, p))) partner = null;
   }
   function showBurst(lines: string[], color: string) {
     const id = ++burstId;

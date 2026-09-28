@@ -9,7 +9,7 @@
     checkpoint, elementMultiplier, enemyFor, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
@@ -192,8 +192,8 @@
     const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
     act(setTeam(game, next));
   }
-  function stop() {
-    if (confirm('Lauf beenden? Er wird in der Bestenliste eingetragen.')) act(stopRun(game));
+  async function stop() {
+    if (await ask('Lauf beenden? Er wird in der Bestenliste eingetragen.', { ok: 'Beenden', danger: true })) act(stopRun(game));
   }
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
