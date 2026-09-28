@@ -173,6 +173,12 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
   for (const buff of ctx.state.buffs) {
     if (buff.creatureId === c.id) for (const m of buff.modifiers) out.push({ ...m, source: `buff:${buff.source}` });
   }
+  // Bred offspring: `breeding.statBonus` as a stat bonus, never inherited into base stats.
+  if (c.parents) {
+    for (const m of ctx.mods().list('breeding.statBonus')) {
+      for (const s of ctx.content.stats.list) out.push({ ...m, target: `stat.${s.id}` });
+    }
+  }
   for (const [stat, value] of Object.entries(c.boosts ?? {})) {
     if (value) out.push({ target: `stat.${stat}`, op: 'pct', value, source: 'boost' });
   }

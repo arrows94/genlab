@@ -132,16 +132,19 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number, ritual
 }
 
 
-/** Averaged parent stats with variance; mutated stats get an extra multiplier. */
+/**
+ * Averaged parent stats with variance; mutated stats get an extra multiplier.
+ * `breeding.statBonus` is deliberately not baked in here: it would compound
+ * every generation. It applies on top instead (see `creatureOwnModifiers`).
+ */
 export function inheritStats(ctx: GameContext, a: Creature, b: Creature, mutation: number): StatBlock {
   const { balance, rng } = ctx;
   const out: StatBlock = {};
   const [lo, hi] = balance.breeding.mutationStatRange;
-  const bonus = ctx.mods().apply('breeding.statBonus', 1);
   for (const s of ctx.content.stats.list) {
     let value = (((a.stats[s.id] ?? 0) + (b.stats[s.id] ?? 0)) / 2) * rng.range(1 - balance.creature.statVariance, 1 + balance.creature.statVariance);
     if (rng.chance(mutation)) value *= rng.range(lo, hi);
-    out[s.id] = Math.max(1, Math.round(value * bonus));
+    out[s.id] = Math.max(1, Math.round(value));
   }
   return out;
 }

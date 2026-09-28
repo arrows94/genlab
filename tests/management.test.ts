@@ -4,8 +4,8 @@ import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
-import { autoAssign, automationSystem, setAutoAssign, setAutoBreed } from '@core/features/automation';
-import { startBreeding } from '@core/features/breeding';
+import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, planAutoBreed, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
+import { breedingCost, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
 import { rarityChances, rarityWeights } from '@core/rarity';
@@ -247,17 +247,205 @@ describe('automation', () => {
     const g = richGame();
     const best = createCreature(g, { speciesId: 'zephyrix', rarity: 'common', stats: { hp: 1, atk: 1, def: 1, spd: 90 }, exactStats: true, abilities: [], genome: normal() });
     const second = createCreature(g, { speciesId: 'zephyrix', rarity: 'common', stats: { hp: 1, atk: 1, def: 1, spd: 80 }, exactStats: true, abilities: [], genome: normal() });
-    expect(setAutoBreed(g, true, 'spd').ok).toBe(true);
+    expect(setAutoBreed(g, { enabled: true, rule: 'spd' }).ok).toBe(true);
     g.advance(balance.automation.intervalSec * 1000 + 100);
     expect(best.job?.kind).toBe('nest');
     expect(second.job?.kind).toBe('nest');
-    expect(setAutoBreed(g, true, 'nonsense').ok).toBe(false);
+    expect(setAutoBreed(g, { rule: 'nonsense' }).ok).toBe(false);
+  });
+
+  describe('breeding goals', () => {
+    const fresh = () => {
+      const g = richGame();
+      g.state.creatures = [];
+      return g;
+    };
+    const make = (g: ReturnType<typeof richGame>, speciesId: string, extra: Partial<Parameters<typeof createCreature>[1]> = {}) =>
+      createCreature(g, { speciesId, rarity: 'common', abilities: [], genome: normal(), ...extra });
+    const pair = (g: ReturnType<typeof richGame>) => {
+      const plan = planAutoBreed(g);
+      return plan.ok ? [plan.a.id, plan.b.id].sort() : plan.reason;
+    };
+
+    it('hybrid: picks parents of an undiscovered recipe', () => {
+      const g = fresh();
+      make(g, 'pebblit');
+      make(g, 'pebblit');
+      const fire = make(g, 'emberpup');
+      const water = make(g, 'bubbloon');
+      setAutoBreed(g, { rule: 'hybrid' });
+      expect(pair(g)).toEqual([fire.id, water.id].sort());
+      for (const r of content.rarities.list) g.state.dex[`steamling:${r.id}`] = true;
+      for (const r of content.rarities.list) g.state.dex[`magmole:${r.id}`] = true;
+      expect(typeof pair(g)).toBe('string');
+    });
+
+    it('hybrid: honours recipe requirements such as a carried allele', () => {
+      const g = fresh();
+      make(g, 'stormhawk');
+      make(g, 'zephyrix');
+      const carrier = make(g, 'zephyrix', { genome: { ...normal(), speed: ['Tb', 't'] } });
+      setAutoBreed(g, { rule: 'hybrid' });
+      const plan = planAutoBreed(g);
+      expect(plan.ok && [plan.a.id, plan.b.id]).toContain(carrier.id);
+    });
+
+    it('dex: breeds the cheapest pair of a species with missing entries', () => {
+      const g = fresh();
+      make(g, 'emberpup');
+      make(g, 'emberpup');
+      const young = make(g, 'pebblit', { generation: 2 });
+      const younger = make(g, 'pebblit', { generation: 1 });
+      make(g, 'pebblit', { generation: 9 });
+      for (const r of content.rarities.list) g.state.dex[`emberpup:${r.id}`] = true;
+      setAutoBreed(g, { rule: 'dex' });
+      expect(pair(g)).toEqual([young.id, younger.id].sort());
+    });
+
+    it('allele: only uses sequenced carriers of the target allele', () => {
+      const g = fresh();
+      const genome = { ...normal(), strength: ['Kt', 'Kt'] as [string, string] };
+      const hidden = make(g, 'pebblit', { genome });
+      const known = make(g, 'pebblit', { genome });
+      const other = make(g, 'pebblit');
+      known.sequenced = true;
+      other.sequenced = true;
+      expect(setAutoBreed(g, { rule: 'allele', allele: 'strength:Kt' }).ok).toBe(true);
+      expect(pair(g)).toEqual([known.id, other.id].sort()); // one known carrier spreads it
+      known.sequenced = false;
+      expect(pair(g)).toBe('Keine sequenzierte Kreatur trägt das Ziel-Allel.');
+      known.sequenced = true;
+      hidden.sequenced = true;
+      expect(pair(g)).toEqual([hidden.id, known.id].sort());
+      expect(setAutoBreed(g, { allele: 'strength:nope' }).ok).toBe(false);
+    });
+
+    it('abilities and cheap goals', () => {
+      const g = fresh();
+      const gifted = make(g, 'pebblit', { generation: 5, abilities: [content.abilities.list[0]!.id] });
+      const legendary = make(g, 'pebblit', { generation: 6, abilities: [content.abilities.list.find((a) => a.tier === 'legendary')!.id] });
+      const plainA = make(g, 'pebblit', { generation: 1 });
+      const plainB = make(g, 'pebblit', { generation: 2 });
+      setAutoBreed(g, { rule: 'abilities' });
+      expect(pair(g)).toEqual([gifted.id, legendary.id].sort());
+      setAutoBreed(g, { rule: 'cheap' });
+      expect(pair(g)).toEqual([plainA.id, plainB.id].sort());
+    });
+
+    it('respects the budget', () => {
+      const g = fresh();
+      make(g, 'pebblit', { generation: 10 });
+      make(g, 'pebblit', { generation: 10 });
+      setAutoBreed(g, { rule: 'power', budget: 0.1 });
+      g.state.resources.food = D(1);
+      expect(pair(g)).toBe('Nicht genug Ressourcen.');
+      g.state.resources.food = D(1e9);
+      expect(planAutoBreed(g).ok).toBe(true);
+      g.state.resources.food = breedingCost(g, 11).food!.mul(5); // affordable, but more than 10 %
+      expect(pair(g)).toMatch(/Budget/);
+    });
+
+    it('stable cleanup sells the weakest common creature, never favourites or shiny ones', () => {
+      const g = fresh();
+      const strong = make(g, 'pebblit', { stats: { hp: 90, atk: 90, def: 90, spd: 90 }, exactStats: true });
+      const strong2 = make(g, 'pebblit', { stats: { hp: 80, atk: 80, def: 80, spd: 80 }, exactStats: true });
+      const weakLocked = make(g, 'pebblit', { stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
+      weakLocked.locked = true;
+      const weakShiny = make(g, 'pebblit', { stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
+      weakShiny.shiny = true;
+      const epic = make(g, 'pebblit', { rarity: 'epic', stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
+      const weak = make(g, 'pebblit', { stats: { hp: 5, atk: 5, def: 5, spd: 5 }, exactStats: true });
+      while (stableFree(g) > 0) make(g, 'pebblit', { stats: { hp: 50, atk: 50, def: 50, spd: 50 }, exactStats: true });
+      setAutoBreed(g, { enabled: true, rule: 'power' });
+      expect(pair(g)).toBe('Der Stall ist voll.');
+      setAutoBreed(g, { cleanup: 'sell' });
+      expect(cleanupCandidate(g, [strong.id, strong2.id])).toBe(weak);
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).not.toContain(weak);
+      expect(g.state.creatures).toContain(epic);
+      expect(strong.job?.kind).toBe('nest');
+    });
+  });
+
+  describe('recycling automaton', () => {
+    const setup = () => {
+      const g = richGame();
+      unlockFeature(g, 'autoRecycle');
+      g.state.creatures = [];
+      const mk = (speciesId: string, power: number, extra: Partial<Parameters<typeof createCreature>[1]> = {}) =>
+        createCreature(g, { speciesId, rarity: 'common', abilities: [], genome: normal(), stats: { hp: power, atk: power, def: power, spd: power }, exactStats: true, ...extra });
+      return { g, mk };
+    };
+
+    it('keeps the strongest per species and protected creatures', () => {
+      const { g, mk } = setup();
+      const best = mk('pebblit', 90);
+      const second = mk('pebblit', 80);
+      const weak = mk('pebblit', 5);
+      const weaker = mk('pebblit', 3);
+      const locked = mk('pebblit', 1);
+      locked.locked = true;
+      const shiny = mk('pebblit', 1);
+      shiny.shiny = true;
+      const sequenced = mk('pebblit', 2);
+      sequenced.sequenced = true;
+      const rare = mk('pebblit', 1, { rarity: 'rare' });
+      const lonely = mk('emberpup', 1);
+      expect(setAutoRecycle(g, { enabled: true, keepPerSpecies: 2 }).ok).toBe(true);
+      expect(autoRecycleCandidates(g)).toEqual([weaker, weak]);
+      setAutoRecycle(g, { keepSequenced: false, keepPerSpecies: 0 });
+      const all = autoRecycleCandidates(g);
+      expect(all).toHaveLength(6);
+      expect(all).toEqual(expect.arrayContaining([sequenced, lonely, weaker, weak, second, best]));
+      expect(all.at(-1)).toBe(best);
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toEqual(expect.arrayContaining([locked, shiny, rare]));
+      expect(g.state.creatures).not.toContain(weak);
+    });
+
+    it('never takes the pair the breeding automaton wants next', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const cheapA = mk('pebblit', 1);
+      const cheapB = mk('pebblit', 2);
+      cheapA.generation = 1;
+      cheapB.generation = 1;
+      for (const c of g.state.creatures.slice(0, 1)) c.generation = 5;
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 0 });
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      expect(autoRecycleCandidates(g)).not.toContain(cheapA);
+      expect(autoRecycleCandidates(g)).not.toContain(cheapB);
+    });
+
+    it('"full" mode recycles one creature only when the stable is full', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const weak = mk('pebblit', 1);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1, when: 'full' });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toContain(weak);
+      while (stableFree(g) > 0) mk('emberpup', 50);
+      const before = g.state.creatures.length;
+      const fragments = g.state.resources.fragments!;
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures).toHaveLength(before - 1);
+      expect(g.state.creatures).not.toContain(weak);
+      expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
+    });
+
+    it('is only available after research', () => {
+      const g = richGame();
+      expect(setAutoRecycle(g, { enabled: true }).ok).toBe(false);
+      unlockFeature(g, 'autoRecycle');
+      expect(setAutoRecycle(g, { maxRarity: 'nope' }).ok).toBe(false);
+      expect(setAutoRecycle(g, { keepPerSpecies: -1 }).ok).toBe(false);
+    });
   });
 
   it('is only available after unlocking', () => {
     const g = makeGame();
     expect(autoAssign(g).ok).toBe(false);
-    expect(setAutoBreed(g, true).ok).toBe(false);
+    expect(setAutoBreed(g, { enabled: true }).ok).toBe(false);
     expect(automationSystem.id).toBe('automation');
   });
 });

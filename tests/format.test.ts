@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatNumber } from '@core/format';
+import { formatDuration, formatNumber, formatNumberParts } from '@core/format';
 import { D } from '@core/num';
 
 describe('German number formatting', () => {
@@ -18,6 +18,13 @@ describe('German number formatting', () => {
 
   it('falls back to scientific notation', () => {
     expect(formatNumber(D('1.234e100'))).toBe('1,23e100');
+  });
+
+  it('splits value and unit for tight layouts', () => {
+    expect(formatNumberParts(561_703_469_944)).toEqual(['561', 'Mrd.']);
+    expect(formatNumberParts(1234)).toEqual(['1.234', '']);
+    expect(formatNumberParts(-12_345)).toEqual(['-12,3', 'Tsd.']);
+    expect(formatNumberParts(D('1.234e100'))).toEqual(['1,23', 'e100']);
   });
 
   it('formats durations', () => {

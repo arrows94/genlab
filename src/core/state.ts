@@ -84,9 +84,39 @@ export interface Buff {
   creatureId: number | null;
 }
 
+/** Zuchtautomat settings. */
+export interface AutoBreedConfig {
+  enabled: boolean;
+  /** Goal: "power", a stat id, "hybrid", "dex", "allele", "abilities" or "cheap". */
+  rule: string;
+  species: string | null;
+  /** Target allele for the "allele" goal as "locus:allele". */
+  allele: string | null;
+  /** Max share of each owned resource a single egg may cost (1 = everything). */
+  budget: number;
+  /** When the stable is full: do nothing, or sell / recycle the weakest creature. */
+  cleanup: 'off' | 'sell' | 'recycle';
+  /** Highest rarity the cleanup may remove. */
+  cleanupMaxRarity: string;
+}
+
+/** Recycling-Automat settings. */
+export interface AutoRecycleConfig {
+  enabled: boolean;
+  /** Highest rarity that may be recycled. */
+  maxRarity: string;
+  /** The strongest N of every species are always kept. */
+  keepPerSpecies: number;
+  /** Sequenced creatures (known genome, often breeding stock) are kept. */
+  keepSequenced: boolean;
+  /** "always": everything that matches; "full": one creature whenever the stable is full. */
+  when: 'always' | 'full';
+}
+
 export interface AutomationState {
   autoAssign: boolean;
-  autoBreed: { enabled: boolean; rule: string; species: string | null };
+  autoBreed: AutoBreedConfig;
+  autoRecycle: AutoRecycleConfig;
   /** Sequenzier-Roboter: sequence the strongest unknown genomes into free slots. */
   autoSequence: boolean;
   /** Sim time of the last automation run. */
@@ -256,7 +286,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null }, autoSequence: false, lastRunMs: 0 },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
+      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, leaderboard: [], lastResult: null },
     talents: {},

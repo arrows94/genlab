@@ -83,9 +83,9 @@
               {#each data.stats as s (s.stat)}
                 <tr>
                   <th>{content.stats.get(s.stat).name}</th>
-                  <td class="num">{s.final}</td>
+                  <td class="num">{formatNumber(s.final)}</td>
                   <td class="muted small">
-                    Basis {s.base}{#if s.rarityMult !== 1} ×{formatNumber(s.rarityMult, { decimals: 2 })} Seltenheit{/if}
+                    Basis {formatNumber(s.base)}{#if s.rarityMult !== 1} ×{formatNumber(s.rarityMult, { decimals: 2 })} Seltenheit{/if}
                     {#each s.parts as p, i (i)}<br />{fmtMod(p.op, p.value)} {p.label}{/each}
                   </td>
                 </tr>
