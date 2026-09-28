@@ -1,6 +1,6 @@
 
 import { toCost } from '../costs';
-import { checkPerfection, findCreature, registerDex, removeCreature } from '../creatures';
+import { checkPerfection, effectiveStats, findCreature, registerDex, removeCreature } from '../creatures';
 import { activeLoci, alleleDef } from '../genetics';
 import { trySpend } from '../resources';
 import { checkUnlocks } from '../systems/unlocks';
@@ -168,4 +168,15 @@ export function breakthrough(ctx: GameContext, targetId: number, partnerId: numb
 export function batchInfusionVictims(ctx: GameContext, target: Creature, maxRarity: string): Creature[] {
   const max = ctx.content.rarities.get(maxRarity).order;
   return infusionCandidates(ctx, target).filter((c) => canConsume(ctx, c) && ctx.content.rarities.get(c.rarity).order <= max);
+}
+
+/** Progress towards the next level as 0–1 (1 at max level). */
+export function infusionProgress(ctx: GameContext, level: number, ep: number): number {
+  if (level >= maxInfusionLevel(ctx)) return 1;
+  return Math.min(1, ep / epForLevel(ctx, level + 1));
+}
+
+/** Effective stats the creature would have at another infusion level. */
+export function statsAtInfusion(ctx: GameContext, c: Creature, level: number) {
+  return effectiveStats(ctx, { ...c, infusion: { level, ep: 0 } });
 }
