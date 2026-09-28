@@ -199,6 +199,8 @@ describe('Äon prestige and talents', () => {
     performPrestige(g, 'aeon');
     expect(g.state.features.autoBreed).toBe(true);
     expect(g.state.features.autoAssign).toBe(true);
+    expect(g.state.features.autoSequence).toBe(true);
+    expect(g.state.features.autoRecycle).toBe(true);
     expect(g.state.resources.food!.toNumber()).toBeGreaterThanOrEqual(1000);
   });
 
