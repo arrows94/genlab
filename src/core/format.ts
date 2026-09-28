@@ -43,6 +43,18 @@ export function formatNumber(value: NumLike, opts: { fullBelow?: number; decimal
   return `${sign}${de(floorTo(abs.mantissa, 2), 2, 2)}e${abs.exponent}`;
 }
 
+/**
+ * `formatNumber` split into value and unit (`["561", "Mrd."]`, `["1,23", "e45"]`,
+ * `["1.234", ""]`) for tight layouts that put the unit on its own line.
+ */
+export function formatNumberParts(value: NumLike, opts: Parameters<typeof formatNumber>[1] = {}): [string, string] {
+  const text = formatNumber(value, opts);
+  const space = text.lastIndexOf(' ');
+  if (space > 0) return [text.slice(0, space), text.slice(space + 1)];
+  const e = text.indexOf('e');
+  return e > 0 ? [text.slice(0, e), text.slice(e)] : [text, ''];
+}
+
 /** Rounds down (never show more than the player has); epsilon absorbs float noise. */
 function floorTo(value: number, decimals: number): number {
   const f = 10 ** decimals;

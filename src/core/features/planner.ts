@@ -54,11 +54,10 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature): Bre
 
   const v = ctx.balance.creature.statVariance;
   const [, hi] = ctx.balance.breeding.mutationStatRange;
-  const bonus = ctx.mods().apply('breeding.statBonus', 1);
   const stats: Record<string, [number, number]> = {};
   for (const s of ctx.content.stats.list) {
     const avg = ((a.stats[s.id] ?? 0) + (b.stats[s.id] ?? 0)) / 2;
-    stats[s.id] = [Math.max(1, Math.round(avg * (1 - v) * bonus)), Math.round(avg * (1 + v) * hi * bonus)];
+    stats[s.id] = [Math.max(1, Math.round(avg * (1 - v))), Math.round(avg * (1 + v) * hi)];
   }
 
   return {

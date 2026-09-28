@@ -232,7 +232,7 @@ export const upgrades: UpgradeDef[] = [
   // --- über den Dex freigeschaltet ---
   {
     id: 'legendaryHeritage', name: 'Legendäres Erbgut', category: 'research', requires: { type: 'feature', feature: 'legendaryHeritage' },
-    description: 'Nachwuchs erhält +5 % auf alle Grundwerte.',
+    description: 'Gezüchteter Nachwuchs erhält +5 % auf alle Werte (wird nicht weitervererbt).',
     cost: { essence: 100 }, costGrowth: 2.5, maxLevel: 10,
     modifiers: [{ target: 'breeding.statBonus', op: 'pct', value: 0.05 }],
   },
