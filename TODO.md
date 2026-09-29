@@ -111,11 +111,11 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         bei Etage 39 stehen (Boss auf Etage 40) – die Relikte bringen dort zu wenig
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
-        Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×2,5 (`balance.anomalies.goalGrowth`)
+        Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×10 (`balance.anomalies.goalGrowth`)
   - [x] Mehrere Anomalien gleichzeitig aktivierbar – der Lauf ist geschafft, wenn alle Ziele erreicht sind
   - [x] Belohnung wächst mit der Gesamtschwierigkeit: Die Belohnung jeder Anomalie zählt je gemeisterter Stufe.
         Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen, max. 20) bringt 1 Äon-Splitter je Punkt
-        und dauerhaft +5 % Produktion und +3 % Erbgut je Rekordpunkt – eine weitere Splitter-Quelle
+        und dauerhaft +2,5 % Produktion und +1,5 % Erbgut je Rekordpunkt – eine weitere Splitter-Quelle
   - [x] Test-Bot: Anomalie-Läufe in den Äon-Lauf aufnehmen, um Splitter-Ertrag und Rekord-Bonus zu prüfen
         (nach jeder Vererbung: alle gemeisterten auf bester Stufe, eine davon eine Stufe höher)
   - [ ] Anomalien sind viel zu leicht: Rekord 20 (alle vier auf Stufe V gleichzeitig) schon an Tag 11, Stufe-I-Ziele

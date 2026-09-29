@@ -66,7 +66,7 @@ describe('anomaly stages', () => {
     g.step(100);
     expect(g.state.anomalyRecord).toBe(3);
     expect(g.state.resources.aeonShards!.toNumber()).toBe(3 * balance.anomalies.shardsPerRecordPoint);
-    expect(g.mods().totals('prestige.inheritance.gain').pct).toBeCloseTo(inheritance + 0.03 * 3);
+    expect(g.mods().totals('prestige.inheritance.gain').pct).toBeCloseTo(inheritance + 0.015 * 3);
     // Rewards grow with the best stage mastered: famine II = twice +20 % food.
     expect(g.mods().list('production.food').find((m) => m.source === 'anomalyReward:famine')!.value).toBeCloseTo(0.4);
     // An easier run later: no new shards.

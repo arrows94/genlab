@@ -33,6 +33,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Anomalien lassen sich kombinieren: Wähle für mehrere eine Stufe und starte sie zusammen. Geschafft ist der Lauf, wenn alle Ziele erreicht sind.', feature: 'anomalies' },
       { text: 'Die Belohnung einer Anomalie zählt je gemeisterter Stufe. Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen) bringt dauerhaft mehr Produktion und Erbgut.', feature: 'anomalies' },
       { text: 'Jeder neue Anomalie-Rekord bringt außerdem einen Äon-Splitter je Punkt Gesamtschwierigkeit.', feature: 'aeon' },
+      { text: 'Die Äon-Resonanz öffnet sich schon mit den Linsen, der dritten Bauphase des Äon-Observatoriums – nicht erst mit der Sternkarte.', feature: 'megaProjects' },
+      { text: 'Genom-Turm: Relikte werden mit jeder Stufe deutlich teurer. Bereits gekaufte Stufen bleiben erhalten.', feature: 'tower' },
     ],
   },
   {

@@ -196,13 +196,13 @@ export const balance: Balance = {
   },
   anomalies: {
     maxLevel: 5,
-    goalGrowth: 2.5,
+    goalGrowth: 10,
     shardsPerRecordPoint: 1,
     recordModifiers: [
-      { target: 'production.food', op: 'pct', value: 0.05 },
-      { target: 'production.gold', op: 'pct', value: 0.05 },
-      { target: 'production.essence', op: 'pct', value: 0.05 },
-      { target: 'prestige.inheritance.gain', op: 'pct', value: 0.03 },
+      { target: 'production.food', op: 'pct', value: 0.025 },
+      { target: 'production.gold', op: 'pct', value: 0.025 },
+      { target: 'production.essence', op: 'pct', value: 0.025 },
+      { target: 'prestige.inheritance.gain', op: 'pct', value: 0.015 },
     ],
   },
   perfection: {

@@ -200,12 +200,14 @@ describe('Äon talent tiers 4 and 5', () => {
 });
 
 describe('Äon-Resonanz', () => {
-  it('opens with the star map and grows endlessly with diminishing returns', () => {
+  it('opens with the lenses and grows endlessly with diminishing returns', () => {
     const g = megaGame();
     g.state.resources.aeonShards = D(1000);
     const def = content.resonances.get('harvestResonance');
     expect(buyResonance(g, def.id).ok).toBe(false);
-    g.state.megaProjects.observatory = { stage: observatory.stages.length, paid: {} };
+    g.state.megaProjects.observatory = { stage: 2, paid: {} };
+    expect(buyResonance(g, def.id).ok).toBe(false);
+    g.state.megaProjects.observatory = { stage: 3, paid: {} };
     const base = g.mods().totals('production.food').pct;
 
     expect(buyResonance(g, def.id).ok).toBe(true);

@@ -151,7 +151,7 @@ Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wil
 
 ## Äon-Resonanz
 
-`src/content/endgame.ts` → `resonances`: endlose Knoten für übrige Äon-Splitter.
+`src/content/endgame.ts` → `resonances`: endlose Knoten für übrige Äon-Splitter. Sie öffnen sich mit der dritten Bauphase des Äon-Observatoriums (Linsen).
 
 ```ts
 { id: 'harvestResonance', name: 'Ernte-Resonanz', icon: '🌾', cost: 3, costGrowth: 1.35, levelPower: 0.7,
