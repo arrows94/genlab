@@ -88,10 +88,12 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         fertig an Tag 25 – aber Stufe 4 (ab Tag 11 offen) und Stufe 5 sind am Ende noch nicht bezahlbar, Resonanz 0
   - [x] Stufe 4/5 günstiger (6/9 statt 8/12 Splitter). Zweiter 28-Tage-Lauf: noch ohne sichtbare Wirkung – nach
         Stufe 1–3 bleiben an Tag 28 wieder 2 Splitter; die Senkung greift erst ab dem 5. Äon (um Tag 30)
-  - [ ] Splitter-Einkommen und Observatorium angleichen: Der Engpass ist das Einkommen (~3–9 Splitter pro Äon,
-        ein Äon pro Woche), das Observatorium ist schon an Tag 25 fertig. Optionen: mehr Splitter pro Äon
-        (`balance.prestige.aeon`), Splitter aus weiteren Quellen (Turm-Meilensteine, Aufträge, oder die Ideen unter
-        „Ideen (noch grob)“) oder ein langsameres Observatorium
+  - [x] Splitter-Einkommen und Observatorium angleichen: Äon-Formel √(Erbgut / 25) statt / 50, dazu Splitter aus
+        Turm-Meilensteinen (alle 50 Etagen). Dritter 28-Tage-Lauf (ohne Meilensteine, der Bot erreicht Etage ~40):
+        5 statt 4 Äonen (Tag 4/10/16/21/27), 11 statt 9 Talente – Stufe 4 ab Tag 17 offen, 2 von 3 bis Tag 28
+        gekauft; Observatorium an Tag 28 bei 3/4 (vorher fertig an Tag 25). Splitter und Observatorium laufen
+        jetzt etwa im Gleichschritt; Stufe 5 und Resonanz folgen nach Tag 28
+  - [ ] Weitere Splitter-Quellen bei Bedarf: die Ideen unter „Ideen (noch grob)“
 - [x] **Turm-Mechaniken vertiefen**
   - [x] Bosse mit Eigenheiten ab Etage 20 (Element-Schild, Wandler, Regeneration; `bossTraits` in `content/endgame.ts`)
   - [x] Relikte für Turm-Marken (dauerhafte Verwendung für Marken) – sie gehören dem Spieler und stecken in den
