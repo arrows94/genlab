@@ -348,6 +348,8 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Arena: Aktionsleisten unter den Kämpfern, Zugfolge, Kampfuhr mit Zeitlimit-Balken, Zahlen nach Art
       (sehr effektiv, resistiert, ausgewichen, Heilung, Elementwechsel), Treffer-Funken, Boden in Perspektive
 - [ ] Technik-Namen einblenden, Zustands-Symbole (mit Schritt 3)
+- [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
+      nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
 - [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
 - [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
 

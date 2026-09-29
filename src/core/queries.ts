@@ -4,6 +4,7 @@ import type { GameContext } from './context';
 import type { ContentDB, UpgradeDef } from './content/types';
 import type { Creature, GameState } from './state';
 import { creatureModifiers, creaturePower, effectiveStats } from './creatures';
+import { genomeReport } from './genetics';
 
 /** Read-only helpers for the UI (keeps rules out of components). */
 
@@ -78,7 +79,7 @@ export interface CreatureFilter {
   hideAway: boolean;
 }
 
-export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'lineage' | 'power' | 'name' | `stat:${string}`;
+export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'lineage' | 'power' | 'top' | 'name' | `stat:${string}`;
 
 export const EMPTY_FILTER: CreatureFilter = { search: '', species: null, element: null, rarity: null, status: 'all', allele: null, hideAway: false };
 
@@ -124,6 +125,12 @@ export function sortCreatures(ctx: GameContext, list: Creature[], sort: Creature
     case 'power': {
       const cache = new Map(out.map((c) => [c.id, creaturePower(ctx, c)]));
       return out.sort((a, b) => cache.get(b.id)! - cache.get(a.id)!);
+    }
+    case 'top': {
+      // Loci homozygous for their top allele; unsequenced genomes count as unknown (last).
+      const cache = new Map(out.map((c) => [c.id, c.sequenced ? genomeReport(ctx, c.genome).filter((r) => r.perfect).length : -1]));
+      const power = new Map(out.map((c) => [c.id, creaturePower(ctx, c)]));
+      return out.sort((a, b) => cache.get(b.id)! - cache.get(a.id)! || power.get(b.id)! - power.get(a.id)!);
     }
   }
   return out;

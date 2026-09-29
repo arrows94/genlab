@@ -57,6 +57,8 @@
   let sortBy = $state<'power' | 'matchup' | 'speed'>('power');
   let invertSort = $state(false);
   let lastKey: string | null = null;
+  /** Real milliseconds per second of fight time in the replay (and the preview gauges). */
+  const REPLAY_MS_PER_SEC = 700;
   let popupId = 0;
   let frame: number | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -136,8 +138,9 @@
     banner = null;
     popups = [];
     if (prefs.reduceMotion) return finish(lr, key, seconds);
-    // The whole fight plays within ~60 % of the time until the next one.
-    const budgetMs = Math.max(1200, Math.min(fightIntervalMs(game) * 0.6, seconds * 450));
+    // One fixed time scale for every fight (short fights stay short, long ones long);
+    // only fights that would outlast the pause until the next floor are sped up.
+    const budgetMs = Math.max(900, Math.min(fightIntervalMs(game) * 0.85 - 400, seconds * REPLAY_MS_PER_SEC));
     const rate = seconds / budgetMs;
     let last = performance.now();
     const step = (now: number) => {
@@ -316,6 +319,7 @@
   {@const pct = arena.mode === 'preview' ? 1 : Math.max(0, hp / u.maxHp)}
   {@const iv = arena.intervals[i] ?? 1}
   {@const fighting = arena.mode === 'fight' && !replay?.done}
+  {@const fill = fighting && hp > 0 ? gauge(arena.clock, iv) : 0}
   <div
     class="unit"
     class:big
@@ -336,12 +340,15 @@
     </div>
     <span class="uname" title={u.name}>{u.name}</span>
     <div class="hpbar" title="Lebenspunkte"><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
-    <div class="atb" class:idle={!fighting} title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
-      {#if fighting}
-        <div style="width: {(hp > 0 ? gauge(arena.clock, iv) : 0) * 100}%"></div>
-      {:else if arena.mode === 'preview'}
-        <div class="loop" style="animation-duration: {iv * 1.2}s"></div>
-      {/if}
+    <div class="atbrow" title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
+      <div class="atb" class:idle={!fighting} class:ready={fill > 0.8}>
+        {#if fighting}
+          <div style="width: {fill * 100}%"></div>
+        {:else if arena.mode === 'preview'}
+          <div class="loop" style="animation-duration: {(iv * REPLAY_MS_PER_SEC) / 1000}s"></div>
+        {/if}
+      </div>
+      <span class="eta num">{fighting ? (hp > 0 ? formatNumber(iv - (arena.clock % iv), { decimals: 1 }) : '–') : `${formatNumber(iv, { decimals: 1 })} s`}</span>
     </div>
     {#if !u.team}
       <span class="small muted num">{arena.mode === 'fight' ? `${formatNumber(Math.max(0, hp))} / ` : ''}{formatNumber(u.maxHp)} KP</span>
@@ -735,8 +742,12 @@
   .hpbar { width: 100%; height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
   .hpbar div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); transition: width 0.25s; }
   .hpbar div.low { background: linear-gradient(90deg, #a33, var(--danger)); }
-  .atb { width: 80%; height: 3px; border-radius: 99px; background: #0008; overflow: hidden; }
-  .atb div { height: 100%; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 60%, transparent), var(--gold)); }
+  .atbrow { display: flex; align-items: center; gap: 0.25rem; width: 100%; }
+  .atb { flex: 1; height: 6px; border-radius: 99px; background: #0009; overflow: hidden; border: 1px solid #ffffff14; }
+  .atb div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 45%, transparent), var(--gold)); }
+  .atb.ready { box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 70%, transparent); }
+  .atb.ready div { background: linear-gradient(90deg, var(--gold), #fff6c9); }
+  .eta { min-width: 1.9rem; font-size: 0.62rem; color: var(--gold); text-align: right; }
   .atb .loop { width: 100%; transform-origin: 0 50%; animation: fill linear infinite; }
   .atb.idle:not(:has(.loop)) { opacity: 0.4; }
   @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
