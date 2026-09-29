@@ -98,10 +98,6 @@ export interface AutoBreedConfig {
   allele: string | null;
   /** Max share of each owned resource a single egg may cost (1 = everything). */
   budget: number;
-  /** When the stable is full: do nothing, or sell / recycle the weakest creature. */
-  cleanup: 'off' | 'sell' | 'recycle';
-  /** Highest rarity the cleanup may remove. */
-  cleanupMaxRarity: string;
 }
 
 /** Recycling-Automat settings. */
@@ -334,7 +330,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },

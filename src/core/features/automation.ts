@@ -17,8 +17,9 @@ import { isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, startS
 /**
  * Automation (unlockable): auto-assign jobs by best fit and auto-breeding
  * towards a goal (strength, new hybrids, dex gaps, an allele, abilities or
- * cheap fodder), with a resource budget and an optional stable cleanup,
- * plus the Recycling-Automat. Runs as a system every `automation.intervalSec`, so it also
+ * cheap fodder) with a resource budget – on a full stable it waits for the
+ * Recycling-Automat, the only automation that removes creatures – plus the
+ * Recycling-Automat itself. Runs as a system every `automation.intervalSec`, so it also
  * works during offline progress.
  */
 
@@ -137,7 +138,8 @@ function abilityScore(ctx: GameContext, c: Creature): number {
 export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
   if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
-  if (stableFree(ctx) <= 0 && cfg.cleanup === 'off') return { ok: false, reason: 'Der Stall ist voll.' };
+  // Room is made by the Recycling-Automat (or the player) – the only automation that removes creatures.
+  if (stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
   const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
   let pair: [Creature, Creature] | null = null;
   let none = 'Keine zwei freien Kreaturen.';
@@ -192,9 +194,8 @@ function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
 
 /**
  * The strongest N creatures of every species (N = „mindestens N jeder Art
- * behalten“ of the Recycling-Automat). No automation may remove them – the
- * stable cleanup of the Zuchtautomat follows the same rule. Every creature
- * of a species counts, also busy ones.
+ * behalten“ of the Recycling-Automat). No automation may remove them.
+ * Every creature of a species counts, also busy ones.
  */
 export function keptPerSpecies(ctx: GameContext): Set<number> {
   const n = ctx.state.automation.autoRecycle.keepPerSpecies;
@@ -207,17 +208,6 @@ export function keptPerSpecies(ctx: GameContext): Set<number> {
     for (const c of [...list].sort((x, y) => power.get(y.id)! - power.get(x.id)!).slice(0, n)) kept.add(c.id);
   }
   return kept;
-}
-
-/**
- * Weakest creature the stable cleanup may remove: never favourites, shiny,
- * infused, above the rarity limit, or among the strongest N of its species.
- */
-export function cleanupCandidate(ctx: GameContext, keep: readonly number[] = []): Creature | null {
-  const cfg = ctx.state.automation.autoBreed;
-  const kept = keptPerSpecies(ctx);
-  // The creature in the Zerlege-Kammer is already on its way – take the next one.
-  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && !kept.has(c.id) && !inRecycler(ctx, c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
 }
 
 /** Everything the Recycling-Automat may take right now, weakest first. */
@@ -322,18 +312,10 @@ export const recyclerSystem: System = {
   },
 };
 
-/** Breeds the planned pair; frees a stable place first if the cleanup is on. */
+/** Breeds the planned pair (a full stable makes the plan wait). */
 export function autoBreedOnce(ctx: GameContext): boolean {
   const plan = planAutoBreed(ctx);
-  if (!plan.ok) return false;
-  const cfg = ctx.state.automation.autoBreed;
-  if (stableFree(ctx) <= 0) {
-    const victim = cleanupCandidate(ctx, [plan.a.id, plan.b.id]);
-    if (!victim) return false;
-    const done = cfg.cleanup === 'recycle' && ctx.state.features['recycler'] ? recycle(ctx, [victim.id], true) : sell(ctx, [victim.id], true);
-    if (!done.ok || stableFree(ctx) <= 0) return false;
-  }
-  return startBreeding(ctx, plan.a.id, plan.b.id).ok;
+  return plan.ok && startBreeding(ctx, plan.a.id, plan.b.id).ok;
 }
 
 /**
@@ -375,8 +357,6 @@ export function setAutoBreed(ctx: GameContext, patch: Partial<AutoBreedConfig>):
     if (!ctx.content.genes.has(locus) || !ctx.content.genes.get(locus).alleles.some((a) => a.id === allele)) return { ok: false, reason: 'Unbekanntes Allel.' };
   }
   if (!(next.budget > 0 && next.budget <= 1)) return { ok: false, reason: 'Ungültiges Budget.' };
-  if (!['off', 'sell', 'recycle'].includes(next.cleanup)) return { ok: false, reason: 'Unbekannte Stall-Regel.' };
-  if (!ctx.content.rarities.has(next.cleanupMaxRarity)) return { ok: false, reason: 'Unbekannte Seltenheit.' };
   ctx.state.automation.autoBreed = next;
   return { ok: true };
 }

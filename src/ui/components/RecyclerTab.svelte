@@ -173,7 +173,7 @@
     </div>
     <RecyclerChamber />
     <p class="small auto-status">
-      <span class="muted">Der Automat nimmt eine Kreatur nach der anderen in die Kammer. Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. „Je Art behalten“ gilt auch für das Stall-Aufräumen des Zuchtautomaten.</span>
+      <span class="muted">Der Automat nimmt eine Kreatur nach der anderen in die Kammer. Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. Er ist der einzige Automat, der Kreaturen entfernt: Bei vollem Stall wartet der Zuchtautomat, bis hier Platz frei wird.</span>
       {#if auto.count > 0}<span class="hit">Nach den Regeln dran: <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'} (≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩)</span>{/if}
     </p>
   </div>

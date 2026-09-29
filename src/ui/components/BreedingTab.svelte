@@ -7,10 +7,10 @@
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
-  import { cleanupCandidate, planAutoBreed, setAutoBreed } from '@core/features/automation';
+  import { planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
   import type { AutoBreedConfig, Creature, Process } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, openTab } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -67,6 +67,8 @@
       automaton: game.state.features['autoBreed'] === true,
       autoBreed: game.state.automation.autoBreed,
       recycler: game.state.features['recycler'] === true,
+      recycleAuto: game.state.features['autoRecycle'] === true,
+      recycleAutoOn: game.state.automation.autoRecycle.enabled,
       hybrids: game.state.features['hybrids'] === true,
       knownAlleles: activeLoci(game).flatMap((l) => l.alleles.filter((al) => libraryHas(game, l.id, al.id)).map((al) => ({ id: `${l.id}:${al.id}`, label: `${l.name}: ${al.name} (${al.symbol})` }))),
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
@@ -95,13 +97,6 @@
   const autoPlan = $derived.by(() => {
     view.slowFrame;
     return game.state.features['autoBreed'] && game.state.automation.autoBreed.enabled ? planAutoBreed(game) : null;
-  });
-  /** Who the stable cleanup would remove next (shown so the rule is never a surprise). */
-  const cleanupNext = $derived.by(() => {
-    view.slowFrame;
-    const cfg = game.state.automation.autoBreed;
-    if (!game.state.features['autoBreed'] || cfg.cleanup === 'off') return null;
-    return cleanupCandidate(game, autoPlan?.ok ? [autoPlan.a.id, autoPlan.b.id] : []);
   });
 
   const nestsFull = $derived(data.eggs.length >= data.slots);
@@ -264,20 +259,6 @@
           {#each BUDGETS as [v, label] (v)}<option value={String(v)}>{label}</option>{/each}
         </select>
       </label>
-      <label title="Nie betroffen: Favoriten, Schillernde, infundierte und beschäftigte Kreaturen sowie die stärksten jeder Art (Einstellung „Je Art behalten“).">Stall voll
-        <select value={auto.cleanup} onchange={(e) => setAuto({ cleanup: e.currentTarget.value as AutoBreedConfig['cleanup'] })}>
-          <option value="off">anhalten</option>
-          <option value="sell">Schwächste verkaufen</option>
-          {#if data.recycler}<option value="recycle">Schwächste recyceln</option>{/if}
-        </select>
-      </label>
-      {#if auto.cleanup !== 'off'}
-        <label>bis
-          <select value={auto.cleanupMaxRarity} onchange={(e) => setAuto({ cleanupMaxRarity: e.currentTarget.value })}>
-            {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
-          </select>
-        </label>
-      {/if}
     </div>
     <p class="auto-status small">
       <span class="muted">{GOAL_HINTS[auto.rule] ?? `Die zwei mit dem höchsten Wert in ${content.stats.get(auto.rule).name}.`}</span>
@@ -286,15 +267,13 @@
         {:else}<span class="wait">Wartet: {autoPlan.reason}</span>{/if}
       {/if}
     </p>
-    {#if auto.cleanup !== 'off'}
-      <p class="auto-status small">
-        <span class="muted">
-          Stall-Aufräumen nimmt nie Favoriten ★, Schillernde, infundierte oder beschäftigte Kreaturen{#if game.state.automation.autoRecycle.keepPerSpecies > 0}
-            {' '}und lässt die {game.state.automation.autoRecycle.keepPerSpecies} stärksten jeder Art stehen{/if}{data.recycler ? ' – „Je Art behalten“ stellst du beim Recycling-Automaten ein' : ''}.
-        </span>
-        <span>{cleanupNext ? `Als Nächstes würde gehen: ` : 'Keine Kreatur darf entfernt werden – bei vollem Stall wartet der Automat.'}{#if cleanupNext}<b>{cleanupNext.name}</b>{/if}</span>
-      </p>
-    {/if}
+    <p class="auto-status small">
+      <span class="muted">
+        Ist der Stall voll, wartet der Zuchtautomat.
+        {#if data.recycleAuto}Platz schafft der Recycling-Automat mit seiner Zerlege-Kammer{data.recycleAutoOn ? '' : ' (gerade ausgeschaltet)'}.{:else if data.recycler}Platz schaffst du im Labor oder im Gen-Recycler – der Recycling-Automat kann das später übernehmen.{:else}Platz schaffst du im Labor (verkaufen).{/if}
+      </span>
+      {#if data.recycler}<button class="to-recycler" onclick={() => openTab('recycler')}>♻️ Zum Gen-Recycler</button>{/if}
+    </p>
   </div>
 {/if}
 
@@ -467,6 +446,7 @@
 
 <style>
   .small { font-size: 0.8rem; }
+  .to-recycler { align-self: flex-start; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
   .tiny { font-size: 0.68rem; }
 
   .kpi.warn { border-color: var(--danger); }
