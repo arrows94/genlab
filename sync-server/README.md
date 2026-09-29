@@ -6,7 +6,7 @@ Kleiner [Cloudflare Worker](https://developers.cloudflare.com/workers/) mit eine
 - **Keine Konten, keine personenbezogenen Daten:** Gespeichert werden nur ID, Revision, Zeitpunkt, Geräteart („Android“, „Browser“ …), eine zufällige Geräte-Kennung und der verschlüsselte Spielstand.
 - **Konflikte:** Jeder Upload nennt die Revision, auf der er aufbaut. Hat ein anderes Gerät inzwischen geschrieben, antwortet der Server mit `409`, und das Spiel fragt nach.
 - **Aufräumen:** Ein täglicher Cron löscht Spielstände, die ein Jahr lang nicht abgeglichen wurden.
-- **Kosten:** Das kostenlose Cloudflare-Kontingent reicht für viele Spieler (D1: 100 000 Schreibvorgänge pro Tag; ein aktiver Spieler lädt etwa alle 2 Minuten und beim Wechsel hoch).
+- **Kosten:** Ein aktiver Spieler lädt beim Spielen etwa alle 5 Minuten hoch, dazu beim Öffnen und Schließen der App – grob 15–20 Anfragen und geschriebene Zeilen pro Spielstunde, Idle-Zeit im Hintergrund kostet nichts. Das kostenlose Kontingent (D1: 100 000 geschriebene Zeilen pro Tag, Workers: 100 000 Anfragen pro Tag – bitte die aktuellen Zahlen auf den Preisseiten prüfen) reicht damit für einige tausend Spielstunden pro Tag. Ist es erschöpft, lehnt Cloudflare bis Mitternacht (UTC) ab; die Spiele laufen lokal weiter und gleichen danach nach. Darüber hilft der Workers-Paid-Plan (ca. 5 $/Monat).
 
 ## Einrichten (einmalig)
 

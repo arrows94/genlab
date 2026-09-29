@@ -12,8 +12,11 @@ import { SYNC_URL, SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyn
  * (`sync.conflict`) – two saves cannot be merged.
  */
 
-/** Upload interval while the game is in the foreground and has unsynced progress. */
-const PUSH_EVERY_MS = 2 * 60_000;
+/**
+ * Upload interval while the game is in the foreground and has unsynced progress. Leaving the app
+ * uploads at once, so this only bounds the loss after a crash; longer = fewer server writes.
+ */
+const PUSH_EVERY_MS = 5 * 60_000;
 /** How long the start waits for the cloud save before playing the local one. */
 const START_TIMEOUT_MS = 4000;
 

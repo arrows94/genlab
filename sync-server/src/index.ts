@@ -57,6 +57,7 @@ class D1SaveStore implements SaveStore {
     await this.db.prepare('DELETE FROM saves WHERE id = ?').bind(id).run();
   }
 
+  /** Full table scan (no index on updated_at, see schema.sql) – once a day that only costs rows read. */
   async purge(before: number): Promise<number> {
     const res = await this.db.prepare('DELETE FROM saves WHERE updated_at < ?').bind(before).run();
     return res.meta.changes;

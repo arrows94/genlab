@@ -10,4 +10,5 @@ CREATE TABLE IF NOT EXISTS saves (
   data TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS saves_updated_at ON saves (updated_at);
+-- No index on updated_at on purpose: an index row would be written with every upload (D1 bills rows
+-- written), while the daily cleanup scanning the table once only costs rows read.
