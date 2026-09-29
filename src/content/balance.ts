@@ -170,6 +170,12 @@ export const balance: Balance = {
     manualSec: 15,
     autoMinSec: 1,
   },
+  activity: {
+    idleSec: 120,
+    sessionGapSec: 300,
+    maxTickSec: 5,
+    towerMilestones: [10, 25, 50, 75, 100, 150, 200],
+  },
   automation: {
     intervalSec: 5,
   },

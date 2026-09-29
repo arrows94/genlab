@@ -14,6 +14,7 @@ import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
 import { silently } from './sound';
+import { noteActive } from '@core/activity';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -349,6 +350,24 @@ export async function init(): Promise<void> {
   });
 }
 
+/**
+ * Active play time: counts while the game is visible and the player gave any
+ * input in the last `activity.idleSec` (click, touch, key, scroll). The core
+ * adds it up, starts sessions and stamps milestones.
+ */
+function trackActivity(): void {
+  let lastInput = Date.now();
+  let lastTick = Date.now();
+  const onInput = () => (lastInput = Date.now());
+  for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'] as const) window.addEventListener(type, onInput, { passive: true, capture: true });
+  setInterval(() => {
+    const now = Date.now();
+    const dt = now - lastTick;
+    lastTick = now;
+    if (document.visibilityState === 'visible' && now - lastInput < balance.activity.idleSec * 1000) noteActive(game, dt, now);
+  }, 1000);
+}
+
 function startLoop(): void {
   const report = advance();
   if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
@@ -372,6 +391,7 @@ function startLoop(): void {
 
   // Background tabs throttle rAF; a slow interval keeps the sim alive.
   setInterval(advance, 1000);
+  trackActivity();
   setInterval(save, balance.sim.autosaveSec * 1000);
   // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
   document.addEventListener('visibilitychange', () => {

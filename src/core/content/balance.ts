@@ -207,6 +207,16 @@ export interface Balance {
     /** Lower bound for both times. */
     autoMinSec: number;
   };
+  activity: {
+    /** Without input for this long, time no longer counts as active. */
+    idleSec: number;
+    /** A pause longer than this starts a new session. */
+    sessionGapSec: number;
+    /** Largest step counted at once (a sleeping device must not add hours). */
+    maxTickSec: number;
+    /** Tower records that stamp a milestone. */
+    towerMilestones: number[];
+  };
   automation: {
     intervalSec: number;
   };

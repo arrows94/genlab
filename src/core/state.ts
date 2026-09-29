@@ -276,6 +276,10 @@ export interface GameState {
   achievements: Record<string, boolean>;
   /** Free-form counters (hatched, collected, missions ...). */
   statistics: Record<string, number>;
+  /** Active play (see core/activity.ts): wall clock of the last active moment and the current session's length. */
+  activity: { lastActiveAt: number; sessionMs: number };
+  /** Active and total play time when a milestone was first reached (feature:…, achievement:…, tower:…). */
+  milestones: Record<string, { activeMs: number; simMs: number }>;
   prestige: Record<string, { count: number }>;
   automation: AutomationState;
   /** Capsules opened since the last pity-qualifying result, per capsule. */
@@ -337,6 +341,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     recipeHints: {},
     achievements: {},
     statistics: {},
+    activity: { lastActiveAt: 0, sessionMs: 0 },
+    milestones: {},
     prestige: {},
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },

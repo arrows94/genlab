@@ -1,6 +1,7 @@
 import type { EventBus } from './events';
 import type { GameEvents } from './gameEvents';
 import type { GameContext } from './context';
+import { stampMilestone } from './activity';
 
 /**
  * Statistics and records are pure event listeners; systems never update
@@ -54,8 +55,13 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
       record('record.rarity', getCtx().content.rarities.get(e.rarity).order);
     }),
     bus.on('towerFloor', (e) => {
-      if (e.win) record('record.towerFloor', e.floor);
+      if (!e.win) return;
+      record('record.towerFloor', e.floor);
+      if (getCtx().balance.activity.towerMilestones.includes(e.floor)) stampMilestone(getCtx(), `tower:${e.floor}`);
     }),
+    // Milestones: when (in active play time) something was first reached.
+    bus.on('featureUnlocked', (e) => stampMilestone(getCtx(), `feature:${e.feature}`)),
+    bus.on('achievementUnlocked', (e) => stampMilestone(getCtx(), `achievement:${e.achievement}`)),
     bus.on('anomalyCompleted', () => inc('anomaliesCompleted')),
     bus.on('perfectGenome', () => inc('perfectGenomes')),
     bus.on('shiny', () => inc('shinies')),
