@@ -2,6 +2,12 @@
   import { content } from '@content/index';
   import { formatDuration, formatNumber } from '@core/format';
   import { view } from '../store.svelte';
+  import { play } from '../sound';
+
+  // A friendly greeting when the summary of the time away opens.
+  $effect(() => {
+    if (view.offline) play('welcome');
+  });
 
   /** Wording for finished processes by kind; unknown kinds are not listed. */
   const COMPLETED: Record<string, (n: number) => string> = {

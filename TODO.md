@@ -230,54 +230,63 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 # TODO – Sound
 
-Stand: Nur die Fanfaren für „OPTIMALE DNS“ und „SCHILLERND!“ (`ui/fanfare.ts`, mit Web Audio erzeugt, Option „Töne“).
-Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeitungsreihenfolge.
+Stand: Alle Klänge werden live mit Web Audio erzeugt (`ui/sound.ts`, Rezepte in `SOUNDS`), keine Tondateien.
+Welches Ereignis welchen Klang spielt, steht in `ui/soundEvents.ts`; Klänge, die zu einer Animation gehören
+(Kapseln, Turm-Wiedergabe, Zerlege-Kammer, Relikte, Offline-Begrüßung), spielen ihre Komponenten.
+Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven.
 
-## Schritt 1 – Technische Grundlage (zuerst)
+## Schritt 1 – Technische Grundlage
 
 - [x] `ui/fanfare.ts` zu einem kleinen Sound-Modul ausgebaut (`ui/sound.ts`): benannte Klänge (`play('perfect')`,
-      Rezepte in `SOUNDS`), Synth-Bausteine Ton und Rauschen, Lautstärke über `prefs.volume`
+      Rezepte in `SOUNDS`, optional mit Variante wie Tonhöhe oder Seltenheit), Synth-Bausteine Ton, Gleitton und
+      Rauschen, Lautstärke über `prefs.volume`
 - [x] Drosselung: je Klang ein Mindestabstand (`LIMITS`, sonst 80 ms), höchstens 4 Klänge in 250 ms
 - [x] Stumm während des Offline-Nachholens (`silently()` in `store.advance`) und solange der Tab im Hintergrund ist
-- [ ] Automatik-Aktionen (Zuchtautomat, Recycling-Automat …) ohne Klang, außer bei seltenen Ergebnissen – beim
-      Einbauen der Klänge in Schritt 2–4 je Ereignis entscheiden (die Events tragen dafür oft schon `auto`)
-- [x] Optionen: Schalter „Töne“ und Lautstärke-Schieber mit Probeton; „Musik“ kommt in Schritt 5
+- [x] Automatik-Aktionen: Alltägliches, das die Automatik ständig auslöst (Ei gelegt, normales Schlüpfen,
+      Sequenzierung, neues Allel, Erkundung zurück, Turm-Lauf beendet), klingt nur im eigenen Tab; seltene
+      Ergebnisse überall; Verkaufen/Recyceln des Automaten (`auto`) bleibt still
+- [x] Optionen: Schalter „Töne“, Lautstärke mit Probeton, „leises Klicken bei Knöpfen“; Musik mit eigenem Schalter
 - [x] Reduzierte Bewegung ≠ stumm – bleibt getrennt
 
 ## Schritt 2 – Grundgefühl (häufige, kurze Klänge)
 
-- [ ] „Sammeln“-Knopf: weiches „Plopp“, Tonhöhe leicht zufällig, bei schnellem Klicken aufsteigend
-- [ ] Knöpfe/Tabs: sehr leises Klicken (optional, standardmäßig aus)
-- [ ] Toasts: „Info“ neutral, „Selten“ glitzernd, Fehler kurzes dumpfes „Bonk“
-- [ ] Forschung gekauft: Münzklimpern + kurzer Ton, letzte Stufe erreicht: kleiner Akkord
-- [ ] Freischaltung eines neuen Bereichs: kurzes „Tadaa“ (zwei Töne aufwärts)
+- [x] „Sammeln“-Knopf: weiches „Plopp“, Tonhöhe leicht zufällig, bei schnellem Klicken aufsteigend
+- [x] Knöpfe/Tabs: sehr leises Klicken (Option, standardmäßig aus)
+- [x] Toasts: „Info“ neutral, „Selten“ glitzernd, Fehler kurzes dumpfes „Bonk“ – nur wenn das Ereignis keinen
+      eigenen Klang hat (`playedRecently`), sonst gewinnt der eigene
+- [x] Forschung gekauft: Münzklimpern + kurzer Ton, letzte Stufe erreicht: kleiner Akkord
+- [x] Freischaltung eines neuen Bereichs: kurzes „Tadaa“ (zwei Töne aufwärts)
 
 ## Schritt 3 – Zucht und Genetik
 
-- [x] Ei gelegt: weiches Rascheln im Nest (nur im Brutstation-Tab, sonst würde der Zuchtautomat ständig rascheln)
-- [x] Ei schlüpft: Knacken + Glöckchen; ab Selten und bei Hybriden glitzernd (auch außerhalb des Tabs)
-- [ ] Ei schlüpft: feiner nach Seltenheit abstufen (Mythisch mit kleinem Chor)
+- [x] Ei gelegt: weiches Rascheln im Nest (nur im Brutstation-Tab)
+- [x] Ei schlüpft: Knacken + Glöckchen; ab Selten und bei Hybriden glitzernd, je Seltenheit mehr Glitzer, Mythisch
+      mit kleinem Chor
 - [x] Hybrid entdeckt (neu im Dex): eigener „Entdeckung“-Klang
 - [x] Zwillinge: doppeltes Knacken
 - [x] Sequenzierung fertig: Computer-Piepen (im Genlabor); Tiefensequenzierung: tieferes Summen + Aufdeck-Ton;
-      neues Allel in der Bibliothek: kurzes Piepen (im Genlabor). Verdrahtung in `ui/soundEvents.ts`
+      neues Allel in der Bibliothek: kurzes Piepen (im Genlabor)
 - [x] Splicing: Erfolg „Schnipp + Ding“, instabil „Zischen“
-- [ ] Infusion: Aufsaugen, Stufe hoch, Durchbruch (kurze Fanfare)
-- [ ] Dynastie-Stufe erreicht: kleine Krönungs-Fanfare
-- [ ] Brutritual fertig: feierlicher Glockenschlag
+- [x] Infusion: Aufsaugen, Stufe hoch, Durchbruch (kurze Fanfare)
+- [x] Dynastie-Stufe erreicht: kleine Krönungs-Fanfare
+- [x] Brutritual fertig: feierlicher Glockenschlag (`eggHatched` trägt dafür jetzt `ritual`)
 
 ## Schritt 4 – Wirtschaft, Erkundung, Endgame
 
-- [ ] Recycler: Zerlege-Kammer leise brummend (nur sichtbar im Tab), fertig „Plopp + Klimpern“ der Fragmente
-- [ ] Kapseln: Rütteln, Aufplatzen, Karten umdrehen (leise Klicks), Banner ab Episch nach Seltenheit gestuft
-- [ ] Markt: Kaufen (Münzen), Trank trinken (Glucksen)
-- [ ] Erkundung zurück: Horn; wilde Kreatur gefunden: Tierlaut-artiger Ton; Wochenexpedition-Entscheidung: Spannungsakkord
-- [ ] Gen-Auftrag abgegeben: Stempel + Münzen; Tagesbelohnung: Kiste öffnet sich
-- [ ] Turm: Treffer, sehr effektiv (heller), resistiert (dumpf), K.O., Etage geschafft, Boss-Etage (tiefe Trommel),
-      Lauf beendet, Meilenstein (Fanfare), Relikt gekauft
-- [ ] Wochen-Boss: Angriff, Belohnungsstufe erreicht
-- [ ] Vererbung: Rauschen + Glocke; Äon: tiefer, langer Klang; Talent gelernt; Großprojekt-Bauphase fertig
-- [ ] Anomalie gestartet (verzerrter Ton) / gemeistert; Erfolg freigeschaltet (kurzes Jingle); Offline-Rückkehr (Begrüßung)
+- [x] Recycler: Zerlege-Kammer brummt leise, solange sie arbeitet und zu sehen ist; fertig „Plopp + Klimpern“
+- [x] Kapseln: Rütteln, Aufplatzen (ab Episch mit Glitzer, Mythisch mit Akkord), leise Klicks beim Umdrehen
+- [x] Markt: Münzen und Glucksen beim Trank
+- [x] Erkundung zurück: Horn (im Erkundungs-Tab); wilde Kreatur gefunden: Lockruf; Wochenexpedition wartet auf
+      die Entscheidung: Spannungsakkord
+- [x] Gen-Auftrag abgegeben: Stempel + Münzen; Tagesbelohnung: Kiste öffnet sich
+- [x] Turm: Treffer, sehr effektiv (heller), resistiert (dumpf), Ausweichen (Wusch), K.O., Etage geschafft,
+      Boss-Etage (tiefe Trommel), Lauf beendet (im Turm-Tab), Meilenstein (Fanfare), Relikt gekauft
+- [x] Wochen-Boss: Angriff, Belohnungsstufe erreicht
+- [x] Vererbung: Rauschen + Glocke; Äon: tiefer, langer Klang; Talent und Resonanz; Großprojekt-Bauphase fertig
+- [x] Anomalie gestartet (verzerrter Ton) / gemeistert; Erfolg freigeschaltet (kurzes Jingle); Offline-Rückkehr
+      (Begrüßung)
+- [ ] Alle Klänge einmal mit echten Ohren durchhören (Lautstärke untereinander, nervt etwas auf Dauer?) –
+      bisher nur fehlerfrei im Browser abgespielt
 
 ## Schritt 5 – Musik (optional, später)
 

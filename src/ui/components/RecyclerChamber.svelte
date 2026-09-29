@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { play, startHum } from '../sound';
   import { content } from '@content/index';
   import { toggleLock } from '@core/actions';
   import { autoRecycleCandidates, inRecycler, recycleDurationMs, recyclerQueue, recyclingNow, takeBackFromRecycler } from '@core/features/automation';
@@ -67,11 +68,19 @@
   let popId = 0;
   onMount(() =>
     game.bus.on('recycled', (e) => {
+      play('recycled');
       const id = ++popId;
       pops = [...pops, { id, text: `+${formatNumber(e.fragments)} 🧩` }];
       setTimeout(() => (pops = pops.filter((p) => p.id !== id)), 1400);
     }),
   );
+
+  // The chamber hums quietly while something is being taken apart (only while it is on screen).
+  const working = $derived(!!now);
+  $effect(() => {
+    if (!working) return;
+    return startHum();
+  });
 
   /** What the player sent goes back to the stable; an automat pick is kept as a favourite. */
   function rescue() {

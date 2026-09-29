@@ -150,6 +150,7 @@
           <button onclick={() => play('test')}>▶ Probe</button>
         </div>
         <p class="small muted">Beim Nachholen der Offline-Zeit und im Hintergrund bleibt es still.</p>
+        <label class="opt check"><input type="checkbox" checked={prefs.uiClicks} onchange={(e) => updatePrefs({ uiClicks: e.currentTarget.checked })} /> leises Klicken bei Knöpfen</label>
       </div>
     {/if}
     <label class="opt check">

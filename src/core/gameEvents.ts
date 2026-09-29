@@ -25,7 +25,8 @@ export interface GameEvents {
   achievementUnlocked: { achievement: string };
   prestige: { layer: string; gain: Decimal };
   offlineProgress: { requestedMs: number; simulatedMs: number };
-  eggHatched: { creatureId: number; parents: [number, number] };
+  /** `ritual`: the Brutritual the egg came from (missing for normal eggs). */
+  eggHatched: { creatureId: number; parents: [number, number]; ritual?: string };
   missionCompleted: { missionId: string; creatureId: number; rewards: Record<string, Decimal>; wildCreatureId: number | null };
   potionUsed: { potion: string; creatureId: number | null };
   sequenced: { creatureId: number };

@@ -11,6 +11,7 @@
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
+  import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
@@ -109,6 +110,8 @@
       : e.m < 1 ? { text: `−${formatNumber(e.dmg)} resistiert`, kind: 'weak' as const }
       : { text: `−${formatNumber(e.dmg)}`, kind: 'hit' as const };
     popups = [...popups.slice(-6), { id, t: e.t, ...p }];
+    play(p.kind === 'crit' ? 'hitCrit' : p.kind === 'weak' ? 'hitWeak' : p.kind === 'miss' ? 'whoosh' : p.kind === 'hit' ? 'hit' : p.kind === 'heal' ? 'talent' : 'toastInfo');
+    if (!e.kind && e.hp <= 0) play('ko');
     setTimeout(() => (popups = popups.filter((x) => x.id !== id)), 1000);
     if (!e.kind) {
       sparks = [...sparks.slice(-4), { id, t: e.t, color: el(attackerElement).color }];
@@ -125,6 +128,7 @@
     const end = finalState(lr);
     replay = { ...replay, ...end, clock: seconds, attacker: -1, target: -1, done: true };
     banner = { win: lr.win, floor: lr.floor, seconds };
+    if (lr.win) play('floorClear');
     timer = setTimeout(() => (banner = null), 1900);
   }
 
@@ -137,6 +141,7 @@
     replay = { key, hp: fighters.map((f) => f.maxHp), elements: fighters.map((f) => f.element), clock: 0, end: seconds, idx: 0, attacker: -1, target: -1, done: false };
     banner = null;
     popups = [];
+    if (lr.floor % game.balance.tower.bossEvery === 0) play('drum');
     if (prefs.reduceMotion) return finish(lr, key, seconds);
     // One fixed time scale for every fight (short fights stay short, long ones long);
     // only fights that would outlast the pause until the next floor are sped up.

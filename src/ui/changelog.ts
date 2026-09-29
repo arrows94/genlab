@@ -25,6 +25,31 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 15,
+    date: '2026-09-30',
+    title: 'Genlab klingt jetzt überall',
+    items: [
+      { text: 'Neue Klänge fast überall: Sammeln (bei schnellem Klicken steigt der Ton), Freischaltungen, Erfolge, Fehler und eine Begrüßung nach einer Pause. Unter Optionen gibt es zusätzlich ein leises Klicken für Knöpfe (standardmäßig aus).' },
+      { text: 'Gekaufte Forschung klimpert, die letzte Stufe klingt mit einem kleinen Akkord.', feature: 'research' },
+      { text: 'Mythische Kreaturen schlüpfen mit einem kleinen Chor, seltenere glitzern mehr.', feature: 'breeding' },
+      { text: 'Infusion und Durchbruch haben eigene Klänge.', feature: 'infusion' },
+      { text: 'Brutrituale enden mit einem feierlichen Glockenschlag.', feature: 'specialBreeding' },
+      { text: 'Neue Dynastie-Stufen werden gekrönt.', feature: 'dynasties' },
+      { text: 'Gen-Kapseln rütteln, platzen auf und die Karten klicken beim Umdrehen; die Zerlege-Kammer brummt, solange sie arbeitet.', feature: 'recycler' },
+      { text: 'Der Turm-Kampf ist hörbar: Treffer, sehr effektive und resistierte Treffer, Ausweichen, K.O., Boss-Trommel, Etage geschafft, Meilensteine und Relikte.', feature: 'tower' },
+      { text: 'Tränke im Markt gluckern beim Trinken.', feature: 'market' },
+      { text: 'Erkundungen kehren mit einem Horn zurück, wilde Kreaturen melden sich mit einem Lockruf.', feature: 'expedition' },
+      { text: 'Gen-Aufträge werden abgestempelt.', feature: 'contracts' },
+      { text: 'Die Tagesbelohnung öffnet sich wie eine Schatzkiste.', feature: 'daily' },
+      { text: 'Eine Wochenexpedition, die auf deine Entscheidung wartet, kündigt sich mit einem Spannungsakkord an.', feature: 'voyage' },
+      { text: 'Der Wochen-Boss dröhnt bei jedem Angriff, Belohnungsstufen klingen hell.', feature: 'weeklyBoss' },
+      { text: 'Eine Vererbung rauscht und endet mit einer Glocke.', feature: 'inheritance' },
+      { text: 'Äon, Talente und Großprojekte haben eigene Klänge.', feature: 'aeon' },
+      { text: 'Anomalien beginnen verzerrt und enden mit einem Akkord.', feature: 'anomalies' },
+      { text: 'Was die Automatik ständig auslöst, hörst du nur im jeweiligen Tab – seltene Ergebnisse überall.' },
+    ],
+  },
+  {
     id: 14,
     date: '2026-09-30',
     title: 'Neue Klänge und Musik für Brutstation und Genlabor',
