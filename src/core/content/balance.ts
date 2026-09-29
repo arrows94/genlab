@@ -236,10 +236,8 @@ export interface Balance {
     evadePerSpeedLead: number;
     /** … capped at this. */
     maxEvade: number;
-    /** Flat damage blocked per point of defence (after the percentage reduction). */
-    defFlat: number;
-    /** A hit never drops below this share of the attack × multipliers. */
-    minHitShare: number;
+    /** Extra share blocked after the percentage: defRatio × VER / (VER + attacker's ANG). */
+    defRatio: number;
     /** Chance that an enemy attack goes to the front row (when both rows are occupied). */
     frontShare: number;
     enemyBase: Record<string, number>;

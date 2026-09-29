@@ -186,16 +186,18 @@ export function elementMultiplier(ctx: GameContext, attacker: string, defender: 
 
 /**
  * Damage of one hit: attack × multipliers, reduced by defence in two steps –
- * a percentage (defScale / (defScale + VER)) and then a flat part (VER × defFlat).
- * At least `minHitShare` of the raw hit always gets through.
+ * a percentage (defScale / (defScale + VER)) and then a share that depends on
+ * VER against the attacker's ANG (up to `defRatio` when VER ≫ ANG), so it
+ * works the same on every floor. A hit always does at least 1.
  */
 export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): number {
   const t = ctx.balance.tower;
   const mult = elementMultiplier(ctx, att.element, def.element);
   const elem = mult > 1 ? mult * att.elementPower : mult;
   const raw = att.atk * att.power * elem * rng.range(0.9, 1.1);
-  const reduced = raw * (t.defScale / (t.defScale + def.def)) - def.def * t.defFlat;
-  return Math.max(1, Math.round(Math.max(raw * t.minHitShare, reduced)));
+  const guard = 1 - t.defRatio * (def.def / Math.max(1, def.def + att.atk));
+  const reduced = raw * (t.defScale / (t.defScale + def.def)) * guard;
+  return Math.max(1, Math.round(reduced));
 }
 
 /** Row of a team member (front unless marked for the back). */

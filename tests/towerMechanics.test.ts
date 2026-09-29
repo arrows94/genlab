@@ -143,16 +143,18 @@ describe('rows, roles and defence', () => {
     name: 'x', speciesId: 'emberpup', element: 'fire', hp: 1e6, maxHp: 1e6, atk: 100, def: 0, spd: 10, power: 1, elementPower: 1, team: true, ...over,
   });
 
-  it('defence blocks a percentage and then a flat part, but never everything', () => {
+  it('defence blocks a percentage and then a share that grows with VER against ANG', () => {
     const g = towerGame();
     const t = balance.tower;
     const hit = (def: number) => damage(g, unit({ atk: 100 }), unit({ def }), Rng.fromSeed(1));
     // The same seed rolls the same ±10 % spread.
     const rawNoDef = 100 * Rng.fromSeed(1).range(0.9, 1.1);
-    const expected = (def: number) => Math.max(1, Math.round(Math.max(rawNoDef * t.minHitShare, rawNoDef * (t.defScale / (t.defScale + def)) - def * t.defFlat)));
+    const expected = (def: number) => Math.max(1, Math.round(rawNoDef * (t.defScale / (t.defScale + def)) * (1 - t.defRatio * (def / (def + 100)))));
     expect(hit(50)).toBe(expected(50));
     expect(hit(50)).toBeLessThan(Math.round(rawNoDef * (t.defScale / (t.defScale + 50))));
-    expect(hit(10_000)).toBe(Math.round(rawNoDef * t.minHitShare));
+    // Twice the defence of the attack blocks 2/3 of defRatio in the second step.
+    expect(hit(200)).toBe(expected(200));
+    expect(hit(1e9)).toBe(1);
   });
 
   it('enemies mostly hit the front row, back-row hunters and the weakest-hunter differ', () => {

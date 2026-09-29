@@ -306,9 +306,13 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 2 – Verteidigung und Rollen
 
-- [x] Verteidigung stärker: nach `defScale / (defScale + VER)` blockt jeder VER-Punkt noch 0,2 Schaden, mindestens
-      15 % des Treffers kommen durch (`defFlat`, `minHitShare`). Mess-Test: +10 % VER hebt die Siegquote jetzt von
-      38,5 % auf 70,5 % (vorher 63 % → 84 %)
+- [x] Verteidigung stärker: nach `defScale / (defScale + VER)` blockt VER noch bis zu 40 % mehr, je nach VER im
+      Verhältnis zum Angriff des Gegners (`defRatio`, skalenfrei). Mess-Test (Basis 41 %): +10 % KP 67 %, ANG 76 %,
+      VER 57,5 %, TMP 86,5 %; +25 %: VER 70 %, die anderen 99–100 %. Ein fester Abzug je Punkt und eine Mindest-
+      Schadensquote wurden verworfen: Sie wachsen nicht mit den Etagen mit (im Äon-Bot Turm 58 statt 28 an Tag 5)
+- [ ] `defScale` ist fest (50), die Werte wachsen exponentiell – ab Etage ~40 kommen nur noch ~5 % durch, und
+      Verteidigung bleibt schwächer als die anderen Werte. Anteil skalenfrei machen (VER gegen ANG des Angreifers)
+      und die Turm-Kurve danach neu einstellen
 - [x] Reihen: Vorne und Hinten (`tower.back`), Gegner treffen zu 75 % die vordere Reihe, wenn beide besetzt sind;
       Umschalten am Team-Platz, in der Arena steht die hintere Reihe weiter weg
 - [x] Rollen aus den Werten abgeleitet (`roleOf`, verglichen mit dem Profil der Turm-Gegner): Tank 🛡️, Angreifer ⚔️,
