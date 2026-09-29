@@ -1,13 +1,35 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
+import { CHANGELOG } from './src/ui/changelog';
+
+/**
+ * Publishes the release notes as changelog.json next to the game, so an
+ * older version can preview them in its update banner (src/ui/changelog.ts).
+ */
+function changelogJson(): Plugin {
+  const json = () => JSON.stringify(CHANGELOG);
+  return {
+    name: 'genlab-changelog',
+    configureServer(server) {
+      server.middlewares.use('/changelog.json', (_req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(json());
+      });
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'changelog.json', source: json() });
+    },
+  };
+}
 
 export default defineConfig({
   // Relative base so the build also works from file:// and inside Tauri/Capacitor.
   base: './',
   plugins: [
     svelte(),
+    changelogJson(),
     // Installable web app with offline cache. The service worker is only
     // registered in browsers (see src/ui/platform/pwa.ts), not in the native shells.
     VitePWA({
@@ -33,6 +55,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // No json: changelog.json must always come fresh from the server.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         cleanupOutdatedCaches: true,
         // Opens the game when a reminder is tapped (see src/ui/platform/notify.ts).

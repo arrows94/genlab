@@ -6,6 +6,7 @@ import { formatNumber } from '@core/format';
 import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
 import { registerPwa } from './platform/pwa';
+import { closeNews, initNews, news } from './news.svelte';
 import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
@@ -69,14 +70,15 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500, log
 /** The single game instance. Starts fresh; `init()` swaps in the stored save. */
 export const game = new Game({ content, balance });
 
-async function loadSave(): Promise<void> {
+/** Loads the stored save; true if there was one. */
+async function loadSave(): Promise<boolean> {
   let raw: string | null = null;
   try {
     raw = await storage.load();
   } catch (err) {
     view.loadError = (err as Error).message;
   }
-  if (!raw) return;
+  if (!raw) return false;
   try {
     game.loadState(deserialize(raw).state);
   } catch (err) {
@@ -88,6 +90,7 @@ async function loadSave(): Promise<void> {
       /* ignore */
     }
   }
+  return true;
 }
 
 function wireEvents(g: Game): void {
@@ -267,8 +270,9 @@ export async function init(): Promise<void> {
   if (started) return;
   started = true;
   loadInbox();
-  await loadSave();
+  const hadSave = await loadSave();
   view.ready = true;
+  initNews(hadSave, (f) => game.state.features[f] === true);
   refresh();
   startLoop();
   // Leftovers from the last session (the app was closed while notices were pending).
@@ -287,6 +291,7 @@ export async function init(): Promise<void> {
     // Close the topmost dialog; false = nothing open (app gets minimised).
     back: () => {
       if (view.detail !== null) view.detail = null;
+      else if (news.open) closeNews();
       else if (inbox.open) inbox.open = false;
       else if (view.offline) view.offline = null;
       else if (view.tab !== 'lab') view.tab = 'lab';

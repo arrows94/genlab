@@ -3,6 +3,8 @@
   import { formatDuration, formatNumber } from '@core/format';
   import { exportText, importText, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
+  import { CHANGELOG, formatReleaseDate } from '../changelog';
+  import { openAllNews } from '../news.svelte';
   import { cancelNotices, notificationsNeedOpenTab, notificationsSupported, requestNotifyPermission } from '../platform/notify';
 
   let text = $state('');
@@ -112,7 +114,9 @@
       <dt>Zuletzt gespeichert</dt><dd class="num">{info.lastSaved === null ? '–' : `vor ${formatDuration(info.lastSaved * 1000)}`}</dd>
       <dt>Autosave</dt><dd class="num">alle {game.balance.sim.autosaveSec} s</dd>
       <dt>Speicherformat</dt><dd class="num">v{SAVE_VERSION}</dd>
+      {#if CHANGELOG[0]}<dt>Stand</dt><dd>{formatReleaseDate(CHANGELOG[0].date)}</dd>{/if}
     </dl>
+    <button class="news" onclick={() => openAllNews((f) => game.state.features[f] === true)}>✨ Was ist neu?</button>
   </article>
 </div>
 
@@ -144,6 +148,7 @@
   .opt.check { display: flex; align-items: center; gap: 0.5rem; }
   .small { font-size: 0.82rem; }
   dl { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 1rem; margin: 0; font-size: 0.9rem; }
+  .news { margin-top: 0.7rem; font-size: 0.85rem; }
   dd { margin: 0; text-align: right; }
   textarea { width: 100%; font-family: var(--mono); font-size: 0.75rem; resize: vertical; margin-bottom: 0.5rem; }
   .error { color: var(--danger); }

@@ -257,3 +257,21 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 | `balance.ts` | Alle Tuning-Zahlen: Zeiten, Seltenheits-Gewichte, Stat-Multiplikatoren, Prestige-Formel, Stall, Verkaufswerte, Infusion (EP, Stufen, Durchbruch), Recycler |
 
 Bedingungen (`Condition`) für Freischaltungen und Erfolge: `always`, `resourceEarned`, `resourceOwned`, `upgradeLevel`, `feature`, `creatureCount`, `statistic`, `dex`, `prestigeCount`, sowie `all` / `any` zum Kombinieren.
+
+## „Was ist neu?“ (Änderungshinweise für Spieler)
+
+`src/ui/changelog.ts` – vor jedem Release einen Eintrag **oben** anfügen, `id` um eins erhöhen:
+
+```ts
+{
+  id: 2, date: '2026-10-05', title: 'Kurzer Titel',
+  items: [
+    { text: 'Was Spieler jetzt können – ohne Fachbegriffe aus dem Code.' },
+    { text: 'Neuerung im Genom-Turm …', feature: 'tower' },
+  ],
+},
+```
+
+- Nach dem Update zeigt das Spiel einmalig ein Fenster mit allen Einträgen, die das Gerät noch nicht kannte (auch in den Apps). Neue Spieler sehen es nicht. In den Optionen lässt es sich jederzeit öffnen.
+- **Keine Spoiler:** Einträge mit `feature` erscheinen erst, wenn diese Freischaltung erreicht ist (IDs aus `progression.ts`). Sonst steht dort nur „🔒 1 Verbesserung für einen Bereich, den du noch entdeckst.“ Systeme deshalb nur in Einträgen mit passendem `feature` beim Namen nennen.
+- Der Build legt die Liste zusätzlich als `changelog.json` ab. Damit zeigt der Update-Hinweis der **alten** Version schon eine Vorschau (die Datei ist bewusst nicht im Offline-Cache).
