@@ -49,6 +49,7 @@
       total: list.length,
       waitingFull: cfg.when === 'full' && stableFree(game) > 0,
       duration: recycleDurationMs(game),
+      manualDuration: recycleDurationMs(game, true),
       faster: !!speed && (speed.maxLevel === null || (game.state.upgrades[speed.id] ?? 0) < speed.maxLevel),
     };
   });
@@ -136,7 +137,7 @@
         </div>
       </div>
     {/if}
-    <span class="small muted">⏱ {formatDuration(info.duration)} je Kreatur{#if info.faster}{' – '}schneller mit der Forschung „Schnellzerlegung“{/if}</span>
+    <span class="small muted">⏱ {formatDuration(info.manualDuration)} je Kreatur, die du schickst{#if info.automat}{' · '}{formatDuration(info.duration)} für die des Automaten{/if}{#if info.faster}{' – '}schneller mit der Forschung „Schnellzerlegung“{/if}</span>
   </div>
 </div>
 

@@ -27,9 +27,11 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 8,
     date: '2026-09-29',
-    title: 'Alles zum Recycler und Töne einstellbar',
+    title: 'Lustigere Namen, alles zum Recycler, Töne einstellbar',
     items: [
-      { text: 'Recyceln im Labor und in der Detailansicht schickt Kreaturen jetzt in die Zerlege-Kammer des Gen-Recyclers. Dort werden sie nacheinander zerlegt – vor allem, was der Recycling-Automat auswählt. Bis zuletzt kannst du sie mit „↩ Zurückholen“ wieder herausnehmen.', feature: 'recycler' },
+      { text: 'Namen mit mehr Witz: Neue Familien starten mit Rufnamen wie „Wuselbert“ oder „Flauschine“. Ihre Kinder mischen meist die Rufnamen der Eltern („Kiko“ × „Mira“ → „Kira“) – mit Regeln, damit nichts mehr stottert – und bekommen ab und zu einen ganz neuen.', feature: 'breeding' },
+      { text: 'Beinamen: Epische und bessere sowie schillernde Kreaturen tragen einen Beinamen nach ihrer größten Stärke, etwa „Blitzpfote“, „Eichenherz“ oder „Glitzerfell“.' },
+      { text: 'Recyceln im Labor und in der Detailansicht schickt Kreaturen jetzt in die Zerlege-Kammer des Gen-Recyclers. Dort werden sie nacheinander zerlegt – in nur 15 Sekunden je Kreatur und vor allem, was der Recycling-Automat auswählt. Bis zuletzt kannst du sie mit „↩ Zurückholen“ wieder herausnehmen.', feature: 'recycler' },
       { text: 'Die Forschung „Schnellzerlegung“ gibt es jetzt schon mit dem Gen-Recycler, nicht erst mit dem Recycling-Automaten.', feature: 'recycler' },
       { text: 'Unter Optionen gibt es einen Lautstärke-Regler mit Probeton. Beim Nachholen der Offline-Zeit und in einem Hintergrund-Tab bleibt das Spiel still.' },
     ],

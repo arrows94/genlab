@@ -98,6 +98,7 @@
     </form>
   {:else}
     <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
+    {#if creature.epithet}<span class="epithet" title="Beiname">„{creature.epithet}“</span>{/if}
   {/if}
   <div class="meta">
     <span class="element">{element.name}</span>
@@ -172,6 +173,7 @@
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
   .lineage { color: var(--gold); font-weight: 700; }
   .recy { color: var(--violet); font-weight: 700; }
+  .epithet { display: block; font-size: 0.75rem; font-style: italic; color: var(--gold); margin-top: -0.1rem; }
   .element { color: var(--element); }
   .tier { color: var(--violet); }
   .shiny { background: linear-gradient(90deg, #ff7ad9, #7ad9ff, #b8ff7a); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }

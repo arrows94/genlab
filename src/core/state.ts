@@ -57,6 +57,8 @@ export interface Creature {
   lineage: number;
   /** Family name, passed on to offspring (the stronger parent's); null = none yet (wild, start, capsule). */
   family: string | null;
+  /** Beiname („Blitzpfote“) for epic and better or shiny creatures; null = none. */
+  epithet: string | null;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;

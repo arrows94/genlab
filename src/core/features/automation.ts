@@ -268,10 +268,13 @@ export function takeBackFromRecycler(ctx: GameContext, id: number): ActionResult
   return { ok: true };
 }
 
-/** Time the Recycling-Automat needs per creature (research „Schnellzerlegung“ shortens it). */
-export function recycleDurationMs(ctx: GameContext): number {
+/**
+ * Chamber time per creature: short for what the player sent, long for the
+ * Recycling-Automat's picks (research „Schnellzerlegung“ shortens both).
+ */
+export function recycleDurationMs(ctx: GameContext, manual = false): number {
   const r = ctx.balance.recycler;
-  return Math.max(r.autoMinSec, ctx.mods().apply('recycler.time', r.autoSec)) * 1000;
+  return Math.max(r.autoMinSec, ctx.mods().apply('recycler.time', manual ? r.manualSec : r.autoSec)) * 1000;
 }
 
 /** The Recycling-Automat is switched on (it adds its own picks when nothing the player sent waits). */
@@ -296,7 +299,7 @@ export function recyclingNow(ctx: GameContext): { creature: Creature; progress: 
   const cur = ctx.state.automation.recycling;
   const creature = cur ? findCreature(ctx, cur.creatureId) : undefined;
   if (!cur || !creature) return null;
-  const durationMs = recycleDurationMs(ctx);
+  const durationMs = recycleDurationMs(ctx, !!cur.manual);
   return { creature, progress: Math.min(1, cur.elapsedMs / durationMs), remainingMs: Math.max(0, durationMs - cur.elapsedMs), durationMs, manual: !!cur.manual };
 }
 
@@ -341,7 +344,7 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
       fillRecycler(ctx, false);
       continue;
     }
-    const need = recycleDurationMs(ctx) - cur.elapsedMs;
+    const need = recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs;
     if (budget < need) {
       cur.elapsedMs += budget;
       break;

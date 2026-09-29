@@ -133,7 +133,9 @@ export function validateContent(data: ContentData): string[] {
     if (!Array.isArray(e.familyPrefixes) || e.familyPrefixes.length === 0) issues.push(`${at('elements', e.id)}.familyPrefixes: mindestens ein Wort`);
     else e.familyPrefixes.forEach((wd, i) => text(`${at('elements', e.id)}.familyPrefixes[${i}]`, wd));
   }
-  for (const id of ['given', 'familySuffix']) if (!ids.nameLists.has(id)) issues.push(`nameLists: Liste "${id}" fehlt`);
+  for (const id of ['given', 'givenStart', 'givenEnd', 'familySuffix', 'epithet.shiny', ...data.stats.map((s) => `epithet.${s.id}`)]) {
+    if (!ids.nameLists.has(id)) issues.push(`nameLists: Liste "${id}" fehlt`);
+  }
   for (const l of data.nameLists) {
     if (!Array.isArray(l.words) || l.words.length === 0) issues.push(`${at('nameLists', l.id)}.words: mindestens ein Wort`);
     else l.words.forEach((wd, i) => text(`${at('nameLists', l.id)}.words[${i}]`, wd));

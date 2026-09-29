@@ -71,6 +71,7 @@
         <div class="art"><CreatureSvg appearance={data.look} shape={data.species.shape} tier={data.species.tier} size={120} shiny={c.shiny} /></div>
         <div class="title">
           <h2>{c.name}{#if data.infusion.level > 0}<span class="plus num"> +{data.infusion.level}</span>{/if}</h2>
+          {#if c.epithet}<p class="epithet">„{c.epithet}“</p>{/if}
           <p><span style="color: var(--rarity)">{data.rarity.name}</span> · <span style="color: var(--el)">{data.element.name}</span> · {data.species.name} · Gen {c.generation}</p>
           <p class="muted small">{data.species.description}</p>
           <div class="actions">
@@ -188,6 +189,7 @@
   .plain { list-style: none; padding: 0; margin: 0 0 0.5rem; display: grid; gap: 0.25rem; font-size: 0.85rem; }
   .pedigree { display: grid; gap: 0.4rem; }
   .lineage { margin: 0 0 0.5rem; }
+  .epithet { margin: -0.2rem 0 0.2rem; font-style: italic; color: var(--gold); }
   .lineage b { color: var(--gold); }
   .anc { background: var(--bg-2); border-radius: 8px; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
   .grand { display: grid; margin-top: 0.2rem; padding-left: 0.5rem; }

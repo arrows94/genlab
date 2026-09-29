@@ -511,6 +511,11 @@ describe('automation', () => {
       g.state.upgrades['recyclerSpeed'] = content.upgrades.get('recyclerSpeed').maxLevel!;
       g.invalidate();
       expect(recycleDurationMs(g)).toBeLessThanOrEqual(10_000);
+      // What the player sends is much quicker than the automat's picks.
+      g.state.upgrades['recyclerSpeed'] = 0;
+      g.invalidate();
+      expect(recycleDurationMs(g, true)).toBe(balance.recycler.manualSec * 1000);
+      expect(recycleDurationMs(g, true)).toBeLessThan(recycleDurationMs(g) / 5);
     });
 
     it('a creature can still be rescued from the chamber, and switching off frees it', () => {
@@ -608,7 +613,7 @@ describe('automation', () => {
       expect(takeBackFromRecycler(g, c.id).ok).toBe(true);
       expect(inRecycler(g, c.id)).toBe(false);
       const fragments = g.state.resources.fragments ?? D(0);
-      g.advance(recycleDurationMs(g) * 2 + 500);
+      g.advance(recycleDurationMs(g, true) * 2 + 500);
       expect(g.state.creatures).toEqual([c, keep]);
       expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
       expect(recyclingNow(g)).toBeNull();
@@ -621,7 +626,7 @@ describe('automation', () => {
       setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
       expect(sendToRecycler(g, [strong.id]).ok).toBe(true);
       expect(recyclingNow(g)?.creature).toBe(strong);
-      g.advance(recycleDurationMs(g) + 100);
+      g.advance(recycleDurationMs(g, true) + 100);
       expect(g.state.creatures).not.toContain(strong);
       // Now the automat's rules apply to what is left: the weak one is the strongest of its species.
       g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g));
