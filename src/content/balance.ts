@@ -92,6 +92,7 @@ export const balance: Balance = {
     statVariance: 0.1,
     hueVariance: 18,
     maxNameLength: 25,
+    classicName: { minLength: 4, maxLength: 12, attempts: 12 },
     maxGivenLength: 11,
     freshNameChance: 0.25,
     epithetFromRarity: 'epic',

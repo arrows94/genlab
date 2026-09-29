@@ -294,6 +294,8 @@ export interface GameState {
   anomalyRecord: number;
   /** Stammbaum-Dynastien: deepest pure line ever bred per species (never reset). */
   dynasties: Record<string, number>;
+  /** How bred creatures are named: Rufname + family, or the classic blend of the parents' names. */
+  nameStyle: 'family' | 'classic';
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -344,6 +346,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomalyBest: {},
     anomalyRecord: 0,
     dynasties: {},
+    nameStyle: 'family',
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },

@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 10,
+    date: '2026-09-29',
+    title: 'Klassische Namen wählbar',
+    items: [
+      { text: 'Unter Optionen → Namen kannst du wieder die klassischen Namen einstellen: Nachwuchs heißt dann wie früher nach einer Mischung aus den Namen beider Eltern („Glussling“). Die Einstellung gilt für deinen Spielstand; vorhandene Namen bleiben.', feature: 'breeding' },
+    ],
+  },
+  {
     id: 9,
     date: '2026-09-29',
     title: 'Ein Spielstand für alle Geräte',

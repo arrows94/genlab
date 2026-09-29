@@ -111,6 +111,8 @@ export interface Balance {
     statVariance: number;
     hueVariance: number;
     maxNameLength: number;
+    /** Classic naming (option): blend of the parents' names within these lengths. */
+    classicName: { minLength: number; maxLength: number; attempts: number };
     /** Longest Rufname (the family name gets the rest of maxNameLength). */
     maxGivenLength: number;
     /** Chance that a child gets a fresh Rufname instead of a blend of its parents'. */

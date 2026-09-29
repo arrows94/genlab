@@ -92,6 +92,13 @@ export function renameCreature(ctx: GameContext, creatureId: number, name: strin
   return ok;
 }
 
+/** Naming of bred creatures: Rufname + family, or the classic blend of the parents' names. */
+export function setNameStyle(ctx: GameContext, style: string): ActionResult {
+  if (style !== 'family' && style !== 'classic') return { ok: false, reason: 'Unbekannte Namensart.' };
+  ctx.state.nameStyle = style;
+  return { ok: true };
+}
+
 export function toggleLock(ctx: GameContext, creatureId: number): ActionResult {
   const c = findCreature(ctx, creatureId);
   if (!c) return fail('Kreatur nicht gefunden.');
