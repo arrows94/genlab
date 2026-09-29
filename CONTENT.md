@@ -261,7 +261,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 | `abilities.ts` | Fähigkeiten mit Stufe und Wirkungsbereich `self` / `job` / `global` |
 | `capsules.ts` | Gen-Kapseln: Kosten, Seltenheits-Gewichte (werden offen angezeigt), Stufen-Gewichte (Basis/Hybrid/…), optional Elementwahl, Pity-Schwelle |
 | `progression.ts` | Freischaltungen (`features`, optional mit `grantsCreature`), Dex-Belohnungen, Erfolge, Prestige-Ebenen |
-| `names.ts` | Namen gezüchteter Kreaturen: `given` (Rufnamen), `familySuffix` (Endungen der Familiennamen); die Vorsilben stehen je Element als `familyPrefixes` in `elements.ts`. Rufname + Leerzeichen + Familie müssen in `balance.creature.maxNameLength` passen |
+| `names.ts` | Namen gezüchteter Kreaturen: `givenStart` + `givenEnd` (Bausteine wie „Wusel“ + „bert“) und `given` (klassische Rufnamen), `familySuffix` (Endungen der Familiennamen; Vorsilben je Element als `familyPrefixes` in `elements.ts`), `epithet.<stat>` und `epithet.shiny` (Beinamen). Rufnamen bis `balance.creature.maxGivenLength` Zeichen; Kinder mischen meist die Rufnamen der Eltern (`freshNameChance` = Anteil ganz neuer Namen) |
 | `balance.ts` | Alle Tuning-Zahlen: Zeiten, Seltenheits-Gewichte, Stat-Multiplikatoren, Prestige-Formel, Stall, Verkaufswerte, Infusion (EP, Stufen, Durchbruch), Recycler |
 
 Bedingungen (`Condition`) für Freischaltungen und Erfolge: `always`, `resourceEarned`, `resourceOwned`, `upgradeLevel`, `feature`, `creatureCount`, `statistic`, `dex`, `prestigeCount`, sowie `all` / `any` zum Kombinieren.

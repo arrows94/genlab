@@ -111,6 +111,12 @@ export interface Balance {
     statVariance: number;
     hueVariance: number;
     maxNameLength: number;
+    /** Longest Rufname (the family name gets the rest of maxNameLength). */
+    maxGivenLength: number;
+    /** Chance that a child gets a fresh Rufname instead of a blend of its parents'. */
+    freshNameChance: number;
+    /** Creatures of this rarity and better (and shiny ones) get a Beiname. */
+    epithetFromRarity: string;
     /** Offspring names are blended from the parents' names within these limits. */
   };
   abilities: {
@@ -194,7 +200,9 @@ export interface Balance {
     perGeneration: number;
     /** Seconds the Recycling-Automat needs per creature (× `recycler.time` modifiers). */
     autoSec: number;
-    /** Lower bound for that time. */
+    /** Seconds per creature the player sent (lab, detail view) – also × `recycler.time`. */
+    manualSec: number;
+    /** Lower bound for both times. */
     autoMinSec: number;
   };
   automation: {

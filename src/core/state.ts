@@ -57,6 +57,8 @@ export interface Creature {
   lineage: number;
   /** Family name, passed on to offspring (the stronger parent's); null = none yet (wild, start, capsule). */
   family: string | null;
+  /** Beiname („Blitzpfote“) for epic and better or shiny creatures; null = none. */
+  epithet: string | null;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;
@@ -118,7 +120,9 @@ export interface AutomationState {
   autoBreed: AutoBreedConfig;
   autoRecycle: AutoRecycleConfig;
   /** Zerlege-Kammer of the Recycling-Automat: the creature inside and how long it has been there. */
-  recycling: { creatureId: number; elapsedMs: number } | null;
+  recycling: { creatureId: number; elapsedMs: number; manual?: boolean } | null;
+  /** Creatures the player sent to the Zerlege-Kammer, waiting in order (before the automat's picks). */
+  recycleQueue: number[];
   /** Sequenzier-Roboter: sequence the strongest unknown genomes into free slots. */
   autoSequence: boolean;
   /** Sim time of the last automation run. */
@@ -331,7 +335,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     statistics: {},
     prestige: {},
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
-      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, autoSequence: false, lastRunMs: 0 },
+      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
     talents: {},

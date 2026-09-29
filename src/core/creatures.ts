@@ -3,6 +3,7 @@ import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
 import { genomeModifiers, isPerfectGenome, rollGenome } from './genetics';
 import { dynastyModifiers } from './features/dynasty';
+import { epithetFor } from './names';
 import type { GameContext } from './context';
 import type { LatentTraitDef } from './content/types';
 import { Rng } from './rng';
@@ -81,6 +82,7 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     shiny: opts.shiny ?? ctx.rng.chance(Math.min(1, ctx.mods().apply('creature.shinyChance', balance.perfection.shinyChance))),
     lineage: opts.lineage ?? 0,
     family: opts.family ?? null,
+    epithet: null,
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,
@@ -90,6 +92,7 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     locked: false,
     bornAt: state.simTimeMs,
   };
+  creature.epithet = epithetFor(ctx, creature);
   state.creatures.push(creature);
   registerDex(ctx, creature.speciesId, creature.rarity);
   ctx.invalidate();

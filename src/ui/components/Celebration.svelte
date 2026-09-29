@@ -4,7 +4,7 @@
   import { findCreature } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { view, game } from '../store.svelte';
-  import { playFanfare } from '../fanfare';
+  import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaHelix from './DnaHelix.svelte';
 
@@ -43,7 +43,7 @@
   $effect(() => {
     const cur = current;
     if (!cur) return;
-    untrack(() => playFanfare(cur.kind));
+    untrack(() => play(cur.kind));
     const timer = setTimeout(() => dismiss(cur.key), SHOW_MS);
     return () => clearTimeout(timer);
   });

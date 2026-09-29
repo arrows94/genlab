@@ -9,8 +9,10 @@ const KEY = 'genlab.prefs';
 export const prefs = $state({
   notation: 'short' as Notation,
   reduceMotion: false,
-  /** Fanfares for big moments (optimal DNA, first shiny creature). */
+  /** Game sounds (fanfares, effects). */
   sound: true,
+  /** Effect volume 0…1. */
+  volume: 0.7,
   /** Reminders while the game is in the background (needs the system permission). */
   notifications: false,
 });

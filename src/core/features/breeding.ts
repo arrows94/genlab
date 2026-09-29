@@ -8,7 +8,7 @@ import type { BreedingRitualDef } from '../content/types';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
 import { lineageDepth, recordLineage } from './dynasty';
-import { foundFamily, givenName } from '../names';
+import { childGivenName, foundFamily } from '../names';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -253,7 +253,7 @@ registerProcessHandler(EGG, {
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const family = inheritFamily(ctx, a, b);
-    const nameFor = () => `${givenName(ctx, family)} ${family}`;
+    const nameFor = () => `${childGivenName(ctx, a, b, family)} ${family}`;
     const lineage = lineageDepth(ctx, speciesId, a, b);
     const child = createCreature(ctx, {
       speciesId,

@@ -227,3 +227,115 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 - [x] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen (`tests/guardrails.test.ts`)
 - [x] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
       (`tests/longrun.ts`; Funde: Reisende überstehen jetzt Vererbungen, eine Tagesreise pro Region gleichzeitig)
+
+# TODO – Sound
+
+Stand: Nur die Fanfaren für „OPTIMALE DNS“ und „SCHILLERND!“ (`ui/fanfare.ts`, mit Web Audio erzeugt, Option „Töne“).
+Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeitungsreihenfolge.
+
+## Schritt 1 – Technische Grundlage (zuerst)
+
+- [x] `ui/fanfare.ts` zu einem kleinen Sound-Modul ausgebaut (`ui/sound.ts`): benannte Klänge (`play('perfect')`,
+      Rezepte in `SOUNDS`), Synth-Bausteine Ton und Rauschen, Lautstärke über `prefs.volume`
+- [x] Drosselung: je Klang ein Mindestabstand (`LIMITS`, sonst 80 ms), höchstens 4 Klänge in 250 ms
+- [x] Stumm während des Offline-Nachholens (`silently()` in `store.advance`) und solange der Tab im Hintergrund ist
+- [ ] Automatik-Aktionen (Zuchtautomat, Recycling-Automat …) ohne Klang, außer bei seltenen Ergebnissen – beim
+      Einbauen der Klänge in Schritt 2–4 je Ereignis entscheiden (die Events tragen dafür oft schon `auto`)
+- [x] Optionen: Schalter „Töne“ und Lautstärke-Schieber mit Probeton; „Musik“ kommt in Schritt 5
+- [x] Reduzierte Bewegung ≠ stumm – bleibt getrennt
+
+## Schritt 2 – Grundgefühl (häufige, kurze Klänge)
+
+- [ ] „Sammeln“-Knopf: weiches „Plopp“, Tonhöhe leicht zufällig, bei schnellem Klicken aufsteigend
+- [ ] Knöpfe/Tabs: sehr leises Klicken (optional, standardmäßig aus)
+- [ ] Toasts: „Info“ neutral, „Selten“ glitzernd, Fehler kurzes dumpfes „Bonk“
+- [ ] Forschung gekauft: Münzklimpern + kurzer Ton, letzte Stufe erreicht: kleiner Akkord
+- [ ] Freischaltung eines neuen Bereichs: kurzes „Tadaa“ (zwei Töne aufwärts)
+
+## Schritt 3 – Zucht und Genetik
+
+- [ ] Ei gelegt: weiches Rascheln im Nest
+- [ ] Ei schlüpft: Knacken; Tonhöhe/Glanz nach Seltenheit (ab Episch mit Glitzern, Mythisch mit kleinem Chor)
+- [ ] Hybrid entdeckt (neu im Dex): eigener „Entdeckung“-Klang
+- [ ] Zwillinge: doppeltes Knacken
+- [ ] Sequenzierung fertig: Computer-Piepen; Tiefensequenzierung: tieferes Summen + Aufdeck-Ton
+- [ ] Splicing: Erfolg „Schnipp + Ding“, instabil „Zischen“
+- [ ] Infusion: Aufsaugen, Stufe hoch, Durchbruch (kurze Fanfare)
+- [ ] Dynastie-Stufe erreicht: kleine Krönungs-Fanfare
+- [ ] Brutritual fertig: feierlicher Glockenschlag
+
+## Schritt 4 – Wirtschaft, Erkundung, Endgame
+
+- [ ] Recycler: Zerlege-Kammer leise brummend (nur sichtbar im Tab), fertig „Plopp + Klimpern“ der Fragmente
+- [ ] Kapseln: Rütteln, Aufplatzen, Karten umdrehen (leise Klicks), Banner ab Episch nach Seltenheit gestuft
+- [ ] Markt: Kaufen (Münzen), Trank trinken (Glucksen)
+- [ ] Erkundung zurück: Horn; wilde Kreatur gefunden: Tierlaut-artiger Ton; Wochenexpedition-Entscheidung: Spannungsakkord
+- [ ] Gen-Auftrag abgegeben: Stempel + Münzen; Tagesbelohnung: Kiste öffnet sich
+- [ ] Turm: Treffer, sehr effektiv (heller), resistiert (dumpf), K.O., Etage geschafft, Boss-Etage (tiefe Trommel),
+      Lauf beendet, Meilenstein (Fanfare), Relikt gekauft
+- [ ] Wochen-Boss: Angriff, Belohnungsstufe erreicht
+- [ ] Vererbung: Rauschen + Glocke; Äon: tiefer, langer Klang; Talent gelernt; Großprojekt-Bauphase fertig
+- [ ] Anomalie gestartet (verzerrter Ton) / gemeistert; Erfolg freigeschaltet (kurzes Jingle); Offline-Rückkehr (Begrüßung)
+
+## Schritt 5 – Musik (optional, später)
+
+- [ ] Ruhige Hintergrundmusik (Schleife, erzeugt oder lizenzfreie Datei), standardmäßig aus; eigener Schalter
+- [ ] Variante je Bereich (Labor, Turm, Äon) mit weichem Übergang
+- [ ] Falls Tondateien: lizenzfreie Quellen dokumentieren, als `.ogg` klein halten, nicht in den Service-Worker-Precache
+
+# TODO – Kampfsystem überarbeiten
+
+Stand: Jede Kreatur schlägt einmal pro Runde zu, Tempo bestimmt nur die Reihenfolge in der Runde, der Gegner trifft
+ein zufälliges Teammitglied, höchstens 40 Runden. Messung (gemischtes Team, 200 Kämpfe je Wert): **+50 % Tempo ändert
+die Siegquote gar nicht** (Etage 25: 35,5 % → 35,5 %), +50 % Verteidigung wenig (→ 53 %), +50 % KP oder Angriff fast
+alles (→ 99–100 %). Dazu kommen die Stillstands-Phasen des Test-Bots im Turm (siehe Endgame: 8–13 Tage ohne Fortschritt).
+Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus, Genetik und Fähigkeiten wirken mit.
+
+## Schritt 1 – Zeitleiste statt Runden (Tempo wird wichtig)
+
+- [ ] Aktionsleiste (ATB): Jeder Kämpfer füllt eine Leiste mit seinem Tempo und handelt, wenn sie voll ist.
+      Doppelt so schnell = ungefähr doppelt so viele Aktionen (mit abnehmendem Ertrag, z. B. Tempo^0,8, damit
+      Tempo nicht alles schlägt)
+- [ ] Zeitlimit statt 40 Runden (z. B. 60 s Kampfzeit), das Regenerations- und Wandler-Verhalten daran anpassen
+- [ ] Tempo zusätzlich: kleine Ausweich-Chance, abhängig vom Tempo-Unterschied (gedeckelt, z. B. max. 25 %)
+- [ ] Mit dem Mess-Test von oben prüfen: +50 % auf jeden Wert soll spürbar, aber ähnlich viel bringen
+
+## Schritt 2 – Verteidigung und Rollen
+
+- [ ] Verteidigung stärker: fester Schadensabzug plus Prozent (heute nur `defScale / (defScale + VER)`)
+- [ ] Reihen: Vorne (wird bevorzugt getroffen, z. B. 60 %) und Hinten; der Spieler stellt das Team auf
+- [ ] Rollen aus den Werten ableiten und anzeigen: Tank (KP/VER), Angreifer (ANG), Schneller (TMP) – als Hinweis,
+      keine Pflicht
+- [ ] Gegner mit eigener Zielwahl je Boss-Eigenheit (z. B. „jagt den Schwächsten“, „trifft alle Hinteren“)
+
+## Schritt 3 – Elemente und Fähigkeiten im Kampf
+
+- [ ] Element-Techniken: Jede Kreatur hat nach n Aktionen eine Spezialaktion ihres Elements, z. B.
+      Feuer Brand (Schaden über Zeit), Wasser Heilung fürs Team, Erde Schild, Luft Ausweichen, Elektro Betäubung,
+      Natur Regeneration, Eis Verlangsamen (senkt Tempo des Ziels), Schatten kritischer Treffer, Licht Reinigen,
+      Metall Panzer, Gift Vergiftung, Kristall Rückstrahlung
+- [ ] Zustände mit Symbolen in der Arena: Brand, Gift, Betäubt, Verlangsamt, Schild
+- [ ] Bestehende Fähigkeiten (`abilities.ts`) bekommen Kampfwirkungen, wo es passt (z. B. „Flink“ → erste Aktion sofort)
+- [ ] Team-Synergien: zwei gleiche Elemente +x %, drei verschiedene Elemente Bonus gegen Wandler
+- [ ] Genetik einbinden: seltene Allele und Erbanlagen können Kampf-Eigenschaften geben (z. B. „Dornenhaut“)
+
+## Schritt 4 – Gegner und Turm
+
+- [ ] Mehrere Gegner pro Etage (1–3), Boss-Etagen mit Begleitern und Phasen (unter 50 % KP neue Eigenheit)
+- [ ] Gegner-Techniken je Element, damit Element-Wahl auch bei normalen Etagen zählt
+- [ ] Turm-Kurve neu einstellen (heute ×1,11 je Etage): Wachstum der Team-Stärke über Vererbung/Äon messen und die
+      Stillstands-Phasen des Test-Bots beseitigen; Test-Bot stellt Reihen und Rollen sinnvoll auf
+- [ ] Wochen-Boss nutzt dieselbe Kampf-Logik (heute eigene Reihenfolge in `weeklyBoss.ts`)
+
+## Schritt 5 – Darstellung
+
+- [ ] Arena: Aktionsleisten unter den Kämpfern, Zahlen nach Art (kritisch, sehr effektiv, resistiert, geblockt),
+      Technik-Namen einblenden, Zustands-Symbole
+- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
+- [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
+
+## Leitplanken
+
+- [ ] Kämpfe bleiben deterministisch (Seed pro Kampf) und offline schnell berechenbar – Simulation ohne Grafik
+- [ ] Alte Spielstände: Aufstellung (Reihen) hat einen Standard, nichts muss neu eingestellt werden
+- [ ] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen

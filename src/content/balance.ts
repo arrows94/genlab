@@ -91,7 +91,10 @@ export const balance: Balance = {
   creature: {
     statVariance: 0.1,
     hueVariance: 18,
-    maxNameLength: 20,
+    maxNameLength: 25,
+    maxGivenLength: 11,
+    freshNameChance: 0.25,
+    epithetFromRarity: 'epic',
   },
   abilities: {
     slotChances: [0.35, 0.15, 0.05],
@@ -163,6 +166,7 @@ export const balance: Balance = {
     fragmentsByRarity: { common: 1, uncommon: 3, rare: 8, epic: 25, legendary: 80, mythic: 250 },
     perGeneration: 0.05,
     autoSec: 180,
+    manualSec: 15,
     autoMinSec: 1,
   },
   automation: {

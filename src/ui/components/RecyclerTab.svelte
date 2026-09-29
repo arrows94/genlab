@@ -143,9 +143,11 @@
   </div>
 </header>
 <p class="muted small">
-  Überzählige Kreaturen recycelst du im <b>Labor</b> („Auswählen“) oder in der Detailansicht. Aus Gen-Fragmenten entstehen hier zufällige Kreaturen –
-  auch Arten, die du noch nicht kennst. Alle Chancen stehen offen daneben. Nur Spielwährung, kein Echtgeld.
+  Überzählige Kreaturen schickst du im <b>Labor</b> („Auswählen“ → „Zum Recycler“) oder aus der Detailansicht in die Zerlege-Kammer. Aus Gen-Fragmenten
+  entstehen hier zufällige Kreaturen – auch Arten, die du noch nicht kennst. Alle Chancen stehen offen daneben. Nur Spielwährung, kein Echtgeld.
 </p>
+
+<div class="chamber-wrap"><RecyclerChamber /></div>
 
 {#if auto}
   <div class="panel auto" class:on={auto.cfg.enabled}>
@@ -171,9 +173,8 @@
       </label>
       <label class="switch"><input type="checkbox" checked={auto.cfg.keepSequenced} onchange={(e) => setAuto({ keepSequenced: e.currentTarget.checked })} /> Sequenzierte behalten</label>
     </div>
-    <RecyclerChamber />
     <p class="small auto-status">
-      <span class="muted">Der Automat nimmt eine Kreatur nach der anderen in die Kammer. Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. Er ist der einzige Automat, der Kreaturen entfernt: Bei vollem Stall wartet der Zuchtautomat, bis hier Platz frei wird.</span>
+      <span class="muted">Der Automat füllt die Kammer, wenn nichts von dir wartet – eine Kreatur nach der anderen. Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. Er ist der einzige Automat, der Kreaturen entfernt: Bei vollem Stall wartet der Zuchtautomat, bis hier Platz frei wird.</span>
       {#if auto.count > 0}<span class="hit">Nach den Regeln dran: <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'} (≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩)</span>{/if}
     </p>
   </div>
@@ -265,6 +266,7 @@
 
 <style>
   .small { font-size: 0.8rem; }
+  .chamber-wrap { margin-bottom: 0.75rem; }
   .auto { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
   .auto.on { border-color: var(--teal); box-shadow: 0 0 12px #2fd3c433; }
   .auto-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }

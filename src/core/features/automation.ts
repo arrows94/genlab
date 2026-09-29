@@ -11,7 +11,7 @@ import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding }
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
-import { canConsume, sell, stableFree } from './stable';
+import { canConsume, consumeBlocker, stableFree } from './stable';
 import { isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, startSequencing } from './sequencing';
 
 /**
@@ -225,19 +225,59 @@ export function autoRecycleCandidates(ctx: GameContext): Creature[] {
   return out.length >= ctx.state.creatures.length ? out.slice(0, -1) : out;
 }
 
-// ---- Zerlege-Kammer: the Recycling-Automat takes one creature at a time ----
+// ---- Zerlege-Kammer: one creature at a time, sent by the player or picked by the Recycling-Automat ----
 
-/** Creature is in the Zerlege-Kammer (the other automations leave it alone). */
+/** Creature is in the Zerlege-Kammer or waiting for it (the other automations leave it alone). */
 export function inRecycler(ctx: GameContext, id: number): boolean {
-  return ctx.state.automation.recycling?.creatureId === id;
+  const a = ctx.state.automation;
+  return a.recycling?.creatureId === id || a.recycleQueue.includes(id);
 }
 
-/** Time the Recycling-Automat needs per creature (research „Schnellzerlegung“ shortens it). */
-export function recycleDurationMs(ctx: GameContext): number {
+/** Creatures the player sent, still waiting for the chamber (in order). */
+export function recyclerQueue(ctx: GameContext): Creature[] {
+  return ctx.state.automation.recycleQueue.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c && canConsume(ctx, c));
+}
+
+/**
+ * Sends creatures to the Zerlege-Kammer (lab selection, detail view): they
+ * are taken apart one after another, before anything the Recycling-Automat
+ * picks. Until then they can be taken back.
+ */
+export function sendToRecycler(ctx: GameContext, ids: number[]): ActionResult {
+  if (!ctx.state.features['recycler']) return { ok: false, reason: 'Der Gen-Recycler ist noch nicht freigeschaltet.' };
+  const creatures = ids.map((id) => findCreature(ctx, id));
+  if (creatures.length === 0) return { ok: false, reason: 'Keine Kreatur gewählt.' };
+  for (const c of creatures) {
+    if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
+    const blocker = consumeBlocker(ctx, c);
+    if (blocker) return { ok: false, reason: `${c.name}: ${blocker}` };
+  }
+  const a = ctx.state.automation;
+  for (const c of creatures) if (!inRecycler(ctx, c!.id)) a.recycleQueue.push(c!.id);
+  fillRecycler(ctx, false);
+  return { ok: true };
+}
+
+/** Takes a creature the player sent back out of the chamber or the queue. */
+export function takeBackFromRecycler(ctx: GameContext, id: number): ActionResult {
+  const a = ctx.state.automation;
+  if (a.recycling?.creatureId === id && a.recycling.manual) a.recycling = null;
+  else if (a.recycleQueue.includes(id)) a.recycleQueue = a.recycleQueue.filter((x) => x !== id);
+  else return { ok: false, reason: 'Diese Kreatur wartet nicht auf den Recycler.' };
+  fillRecycler(ctx, false);
+  return { ok: true };
+}
+
+/**
+ * Chamber time per creature: short for what the player sent, long for the
+ * Recycling-Automat's picks (research „Schnellzerlegung“ shortens both).
+ */
+export function recycleDurationMs(ctx: GameContext, manual = false): number {
   const r = ctx.balance.recycler;
-  return Math.max(r.autoMinSec, ctx.mods().apply('recycler.time', r.autoSec)) * 1000;
+  return Math.max(r.autoMinSec, ctx.mods().apply('recycler.time', manual ? r.manualSec : r.autoSec)) * 1000;
 }
 
+/** The Recycling-Automat is switched on (it adds its own picks when nothing the player sent waits). */
 function recyclerRunning(ctx: GameContext): boolean {
   return ctx.state.automation.autoRecycle.enabled && !!ctx.state.features['autoRecycle'] && !!ctx.state.features['recycler'];
 }
@@ -254,53 +294,66 @@ function stillExpendable(ctx: GameContext, c: Creature | undefined): c is Creatu
   return !!c && expendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
 }
 
-/** The creature in the Zerlege-Kammer with its progress, or null. */
-export function recyclingNow(ctx: GameContext): { creature: Creature; progress: number; remainingMs: number; durationMs: number } | null {
+/** The creature in the Zerlege-Kammer with its progress, or null. `manual`: sent by the player. */
+export function recyclingNow(ctx: GameContext): { creature: Creature; progress: number; remainingMs: number; durationMs: number; manual: boolean } | null {
   const cur = ctx.state.automation.recycling;
   const creature = cur ? findCreature(ctx, cur.creatureId) : undefined;
   if (!cur || !creature) return null;
-  const durationMs = recycleDurationMs(ctx);
-  return { creature, progress: Math.min(1, cur.elapsedMs / durationMs), remainingMs: Math.max(0, durationMs - cur.elapsedMs), durationMs };
+  const durationMs = recycleDurationMs(ctx, !!cur.manual);
+  return { creature, progress: Math.min(1, cur.elapsedMs / durationMs), remainingMs: Math.max(0, durationMs - cur.elapsedMs), durationMs, manual: !!cur.manual };
 }
 
-/** Puts the next creature into the empty chamber; returns whether one went in. */
-export function fillRecycler(ctx: GameContext): boolean {
-  if (!recyclerRunning(ctx) || ctx.state.automation.recycling) return false;
+/**
+ * Puts the next creature into the empty chamber: first what the player sent,
+ * then (if `withAutomat` and switched on) the Recycling-Automat's pick.
+ * Returns whether one went in.
+ */
+export function fillRecycler(ctx: GameContext, withAutomat = true): boolean {
+  const a = ctx.state.automation;
+  if (!ctx.state.features['recycler'] || a.recycling) return false;
+  while (a.recycleQueue.length > 0) {
+    const id = a.recycleQueue.shift()!;
+    const c = findCreature(ctx, id);
+    if (c && canConsume(ctx, c)) {
+      a.recycling = { creatureId: id, elapsedMs: 0, manual: true };
+      return true;
+    }
+  }
+  if (!withAutomat || !recyclerRunning(ctx)) return false;
   const next = nextForChamber(ctx);
   if (!next) return false;
-  ctx.state.automation.recycling = { creatureId: next.id, elapsedMs: 0 };
+  a.recycling = { creatureId: next.id, elapsedMs: 0 };
   return true;
 }
 
 /**
- * Runs the chamber for `dtMs`: a finished creature is recycled (if the rules
- * still allow it) and the next one goes in right away, so offline steps
- * process several creatures.
+ * Runs the chamber for `dtMs`: a finished creature is recycled and the next
+ * one goes in right away, so offline steps process several creatures.
  */
 export function advanceRecycler(ctx: GameContext, dtMs: number): void {
   const a = ctx.state.automation;
-  if (!a.recycling) return;
-  if (!recyclerRunning(ctx)) {
-    a.recycling = null; // switched off: the creature is free again
-    return;
-  }
+  if (a.recycling && !a.recycling.manual && !recyclerRunning(ctx)) a.recycling = null; // automat switched off: its pick is free again
+  if (!a.recycling) fillRecycler(ctx, false);
   let budget = dtMs;
   for (let i = 0; i < 1000 && a.recycling && budget > 0; i++) {
     const cur = a.recycling;
-    if (!stillExpendable(ctx, findCreature(ctx, cur.creatureId))) {
+    const c = findCreature(ctx, cur.creatureId);
+    // Rescued (favourite, put to work, sequencing …) or gone: the chamber moves on.
+    if (!(cur.manual ? !!c && canConsume(ctx, c) : stillExpendable(ctx, c))) {
       a.recycling = null;
-      break;
+      fillRecycler(ctx, false);
+      continue;
     }
-    const need = recycleDurationMs(ctx) - cur.elapsedMs;
+    const need = recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs;
     if (budget < need) {
       cur.elapsedMs += budget;
       break;
     }
     budget -= need;
     a.recycling = null;
-    // Once inside, it is recycled – only a rescue (checked above) or „je Art behalten“ stops it.
-    // The rules for picking (e.g. the Zuchtautomat's next pair) were checked when it went in.
-    if (!keptPerSpecies(ctx).has(cur.creatureId)) recycle(ctx, [cur.creatureId], true);
+    // Once inside, it is recycled. The automat's picking rules were checked when it went in;
+    // „je Art behalten“ still protects its picks, what the player sent is always taken.
+    if (cur.manual || !keptPerSpecies(ctx).has(cur.creatureId)) recycle(ctx, [cur.creatureId], !cur.manual);
     fillRecycler(ctx);
   }
 }

@@ -6,7 +6,7 @@ import { createEmptyState, type GameState } from './state';
  * `MIGRATIONS[oldVersion]` (old → old+1) whenever the state shape changes in
  * a way `mergeDefaults` cannot fix on its own (renames, restructures).
  */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -60,6 +60,11 @@ export const MIGRATIONS: Record<number, Migration> = {
   7: (s) => ({
     ...s,
     creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ lineage: 0, family: null, ...c })),
+  }),
+  // v8 → v9: Beinamen. Older creatures have none.
+  8: (s) => ({
+    ...s,
+    creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ epithet: null, ...c })),
   }),
 };
 
