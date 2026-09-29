@@ -309,7 +309,9 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Verteidigung stärker: nach `defScale / (defScale + VER)` blockt VER noch bis zu 40 % mehr, je nach VER im
       Verhältnis zum Angriff des Gegners (`defRatio`, skalenfrei). Mess-Test (Basis 41 %): +10 % KP 67 %, ANG 76 %,
       VER 57,5 %, TMP 86,5 %; +25 %: VER 70 %, die anderen 99–100 %. Ein fester Abzug je Punkt und eine Mindest-
-      Schadensquote wurden verworfen: Sie wachsen nicht mit den Etagen mit (im Äon-Bot Turm 58 statt 28 an Tag 5)
+      Schadensquote wurden verworfen: Sie wachsen nicht mit den Etagen mit (im Äon-Bot Turm 58 statt 28 an Tag 5).
+      Äon-Bot 12 Tage mit der jetzigen Formel: Turm 15/17 an Tag 1–5 (vorher 18/28), 37 an Tag 8 (vorher 36),
+      ab Tag 9 wie vorher 39; Wochen-Boss, Äonen und Splitter ähnlich
 - [ ] `defScale` ist fest (50), die Werte wachsen exponentiell – ab Etage ~40 kommen nur noch ~5 % durch, und
       Verteidigung bleibt schwächer als die anderen Werte. Anteil skalenfrei machen (VER gegen ANG des Angreifers)
       und die Turm-Kurve danach neu einstellen
