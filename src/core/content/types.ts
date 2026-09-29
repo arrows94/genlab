@@ -184,6 +184,8 @@ export interface BuildingDef {
   baseRate: number;
   /** Stat that scales output (see balance.production.statScaling). */
   workStat: string;
+  /** Elements with a type advantage here: their creatures produce more (balance.production.affinityBonus). */
+  elements: string[];
   baseSlots: number;
   feature: string;
 }

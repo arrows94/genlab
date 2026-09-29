@@ -255,7 +255,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 
 | Datei | Inhalt |
 |---|---|
-| `buildings.ts` | Anlagen: produzierte Ressource, Grundrate, Stat, der den Ertrag erhöht, Plätze |
+| `buildings.ts` | Anlagen: produzierte Ressource, Grundrate, Stat, der den Ertrag erhöht, `elements` mit Typvorteil (+`balance.production.affinityBonus`), Plätze |
 | `potions.ts` | Tränke: `permanentStat` (mit `statBonus`), `creatureBuff`, `globalBuff`, `timeSkip` |
 | `missions.ts` | Erkundungen: Dauer, Kosten, Belohnungsbereiche, Chance auf wilde Kreatur |
 | `abilities.ts` | Fähigkeiten mit Stufe und Wirkungsbereich `self` / `job` / `global` |

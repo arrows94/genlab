@@ -1,7 +1,7 @@
 import { assignJob } from '../actions';
 import { effectiveStats, creaturePower, findCreature } from '../creatures';
 import { canAfford } from '../costs';
-import { jobCount, jobSlots } from '../systems/production';
+import { jobCount, jobSlots, workerBase } from '../systems/production';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { AutoBreedConfig, AutoRecycleConfig, Creature } from '../state';
@@ -34,8 +34,9 @@ export const BREED_GOALS = ['hybrid', 'dex', 'allele', 'abilities', 'lineage', '
 export type AutoBreedPlan = { ok: true; a: Creature; b: Creature } | { ok: false; reason: string };
 
 /**
- * Fills every unlocked building with the best available creatures for its
- * work stat. Only idle or already working creatures are moved.
+ * Fills every unlocked building with the creatures that produce the most
+ * there (work stat and type advantage). Only idle or already working
+ * creatures are moved.
  */
 export function autoAssign(ctx: GameContext): ActionResult {
   if (!ctx.state.features['autoAssign']) return { ok: false, reason: 'Der Arbeitsplaner ist noch nicht freigeschaltet.' };
@@ -44,10 +45,10 @@ export function autoAssign(ctx: GameContext): ActionResult {
   for (const c of pool) c.job = null;
   ctx.invalidate();
   const buildings = ctx.content.buildings.list.filter((b) => ctx.state.features[b.feature]);
-  const stats = new Map(pool.map((c) => [c.id, effectiveStats(ctx, c)]));
   // Buildings with fewer slots first, so scarce places get the specialists.
   for (const b of [...buildings].sort((x, y) => jobSlots(ctx, x.id) - jobSlots(ctx, y.id))) {
-    const free = pool.filter((c) => c.job === null).sort((x, y) => (stats.get(y.id)![b.workStat] ?? 0) - (stats.get(x.id)![b.workStat] ?? 0));
+    const output = new Map(pool.filter((c) => c.job === null).map((c) => [c.id, workerBase(ctx, b, c)]));
+    const free = pool.filter((c) => c.job === null).sort((x, y) => output.get(y.id)! - output.get(x.id)!);
     for (const c of free) {
       if (jobCount(ctx, b.id) >= jobSlots(ctx, b.id)) break;
       assignJob(ctx, c.id, b.id);

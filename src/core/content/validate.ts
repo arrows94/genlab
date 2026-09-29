@@ -189,6 +189,7 @@ export function validateContent(data: ContentData): string[] {
     ref(`${w}.produces`, 'resources', b.produces);
     ref(`${w}.feature`, 'features', b.feature);
     if (!statIds.has(b.workStat)) issues.push(`${w}.workStat: unbekannter Stat "${b.workStat}"`);
+    b.elements.forEach((e, i) => ref(`${w}.elements[${i}]`, 'elements', e));
     num(`${w}.baseRate`, b.baseRate, 0);
     num(`${w}.baseSlots`, b.baseSlots, 0);
   }

@@ -6,7 +6,7 @@ import { jobCount, jobSlots } from '@core/systems/production';
 import { visibleUpgrades } from '@core/queries';
 import { creaturePower } from '@core/creatures';
 import type { Game } from '@core/game';
-import { performPrestige, prestigeGain } from '@core/prestige';
+import { performPrestige, prestigeGain, resetImpact } from '@core/prestige';
 import { canConsume, sell, stableFree } from '@core/features/stable';
 import { useLongTermSystems } from './longrun';
 import { endgameCheckIn, useEndgameSystems, type EndgameOptions } from './endgameBot';
@@ -104,7 +104,8 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
       if (!idle || !open[0] || !assignJob(g, idle.id, open[0].id).ok) break;
     }
 
-    if (prestigeAt > 0 && g.state.features.inheritance) {
+    // Travellers survive the reset; with every camp taken by them the lone start creature could neither explore nor breed.
+    if (prestigeAt > 0 && g.state.features.inheritance && resetImpact(g).travelling < campSlots(g)) {
       const gain = prestigeGain(g, 'inheritance');
       const owned = g.state.resources.heritage?.toNumber() ?? 0;
       if (gain.gte(prestigeAt) && gain.gte(owned * prestigeGrowth)) performPrestige(g, 'inheritance');

@@ -42,7 +42,8 @@ export function useLongTermSystems(g: Game): void {
     if (offer.done) continue;
     const ready = contractCandidates(g, offer).ready.filter((c) => free(c) && !c.locked).sort((a, b) => creaturePower(g, a) - creaturePower(g, b));
     const pick = ready[0];
-    if (!pick || g.state.creatures.length <= 3) continue;
+    // Only creatures at home count: travellers cannot breed.
+    if (!pick || g.state.creatures.filter((c) => c.job?.kind !== 'mission').length <= 3) continue;
     if (pick.job) assignJob(g, pick.id, null);
     if (!consumeBlocker(g, pick)) deliverContract(g, slot, pick.id);
   }

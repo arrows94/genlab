@@ -7,6 +7,7 @@
   import { setAutoSequence } from '@core/features/automation';
   import { deepSequencingBlocker, deepSequencingCost, deepSequencingTimeMs, startDeepSequencing } from '@core/features/deepSequencing';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
+  import { maxSplices } from '@core/features/splicing';
   import { processRemainingMs } from '@core/systems/processes';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
@@ -14,7 +15,7 @@
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaHelix from './DnaHelix.svelte';
-  import DnaSequence from './DnaSequence.svelte';
+  import GenomeView from './GenomeView.svelte';
   import SplicingBench from './SplicingBench.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
 
@@ -50,6 +51,7 @@
       sequenced: game.state.statistics['sequenced'] ?? 0,
       time: sequencingTimeMs(game),
       inspected: inspect !== null ? findCreature(game, inspect) : undefined,
+      maxSplices: maxSplices(game),
       splicing: game.state.features['splicing'] === true,
       deepOn: game.state.features['deepSequencing'] === true,
       robot: game.state.features['autoSequence'] === true,
@@ -66,6 +68,12 @@
       ? game.state.creatures.filter((c) => !c.sequenced && !isBeingSequenced(game, c.id))
       : game.state.creatures.filter((c) => !deepSequencingBlocker(game, c));
     return list.map((c) => ({ c, power: creaturePower(game, c) })).sort((a, b) => b.power - a.power);
+  });
+
+  /** Genome viewer choices: sequenced creatures first, then by name. */
+  const inspectable = $derived.by(() => {
+    view.slowFrame;
+    return [...game.state.creatures].sort((a, b) => Number(b.sequenced) - Number(a.sequenced) || a.name.localeCompare(b.name, 'de'));
   });
 
   const pickCost = $derived.by(() => {
@@ -208,14 +216,35 @@
   {/if}
 </section>
 
-<section class="panel">
-  <h3>🔎 Genom ansehen</h3>
-  <CreaturePicker creatures={game.state.creatures} bind:value={inspect} />
+<section class="panel inspector">
+  <div class="lab-head">
+    <h3>🔎 Genom ansehen</h3>
+    <div class="ipick"><CreaturePicker creatures={inspectable} bind:value={inspect} /></div>
+  </div>
   {#if data.inspected}
-    <div class="inspect">
-      <DnaSequence genome={data.inspected.genome} known={data.inspected.sequenced} detailed />
-      {#if !data.inspected.sequenced}<p class="small muted">Noch nicht sequenziert – nur das Aussehen verrät etwas.</p>{/if}
+    {@const c = data.inspected}
+    {@const sp = species(c)}
+    {@const el = content.elements.get(sp.element)}
+    {@const rar = content.rarities.get(c.rarity)}
+    <div class="idcard" style="--el: {el.color}; --rarity: {rar.color}">
+      <button class="portrait" title="Details zu {c.name}" onclick={() => (view.detail = c.id)}>
+        <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={72} shiny={c.shiny} />
+      </button>
+      <div class="who">
+        <b class="iname">{c.name}</b>
+        <span class="small muted">{sp.name} · Gen {c.generation}</span>
+        <div class="tags">
+          <span class="tag el">{el.name}</span>
+          <span class="tag rar">{rar.name}</span>
+          {#if c.sequenced}<span class="tag ok">🧬 sequenziert</span>{:else}<span class="tag">❔ unbekannt</span>{/if}
+          {#if data.splicing && c.sequenced}<span class="tag" title="Splicing-Eingriffe">✂️ {c.splices ?? 0}/{data.maxSplices}</span>{/if}
+        </div>
+      </div>
     </div>
+    <GenomeView genome={c.genome} known={c.sequenced} />
+    {#if !c.sequenced}<p class="small muted">Noch nicht sequenziert – nur das Aussehen verrät etwas. Im Sequenzierlabor lässt sich das Genom entschlüsseln.</p>{/if}
+  {:else}
+    <p class="small muted empty-hint">Wähle eine Kreatur, um ihre Gene, verdeckten Allele und Top-Allele zu sehen.</p>
   {/if}
 </section>
 
@@ -315,7 +344,23 @@
   .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .confirm button { min-width: 12rem; }
 
-  .inspect { margin-top: 0.6rem; }
+  .inspector { display: grid; gap: 0.5rem; }
+  .inspector .lab-head { margin-bottom: 0; }
+  .ipick { flex: 1 1 16rem; max-width: 26rem; }
+  .idcard {
+    display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0.7rem; border-radius: var(--radius);
+    background: radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--el) 22%, transparent), transparent 55%), var(--bg-2);
+    border: 1px solid color-mix(in srgb, var(--el) 40%, var(--line));
+  }
+  .portrait { padding: 0.2rem; border-radius: 50%; line-height: 0; background: color-mix(in srgb, var(--el) 14%, #0006); border: 2px solid color-mix(in srgb, var(--el) 60%, transparent); }
+  .who { display: grid; gap: 0.1rem; min-width: 0; }
+  .iname { font-size: 1.05rem; border-bottom: 2px solid var(--rarity); justify-self: start; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem; }
+  .tag { font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); }
+  .tag.el { border-color: var(--el); background: color-mix(in srgb, var(--el) 18%, transparent); }
+  .tag.rar { border-color: var(--rarity); color: var(--rarity); }
+  .tag.ok { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); color: var(--teal); }
+  .empty-hint { margin: 0; }
 
   /* Gene library */
   .libbar { flex: 1; max-width: 16rem; height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }

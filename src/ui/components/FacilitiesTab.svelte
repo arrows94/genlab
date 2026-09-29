@@ -5,7 +5,7 @@
   import { effectiveStats } from '@core/creatures';
   import { formatNumber, formatPercent } from '@core/format';
   import { expressedAppearance } from '@core/genetics';
-  import { assignGain, jobCount, jobSlots, workerRate } from '@core/systems/production';
+  import { assignGain, hasAffinity, jobCount, jobSlots, workerRate } from '@core/systems/production';
   import { autoAssign, setAutoAssign } from '@core/features/automation';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
@@ -25,12 +25,13 @@
         const stat = content.stats.get(b.workStat);
         const workers = game.state.creatures
           .filter((c) => c.job?.kind === 'building' && c.job.target === b.id)
-          .map((c) => ({ c, stat: effectiveStats(game, c)[b.workStat] ?? 0, rate: workerRate(game, c) }));
+          .map((c) => ({ c, stat: effectiveStats(game, c)[b.workStat] ?? 0, rate: workerRate(game, c), fit: hasAffinity(game, b, c) }));
         const slots = jobSlots(game, b.id);
         return {
           def: b,
           res: content.resources.get(b.produces),
           stat,
+          elements: b.elements.map((id) => content.elements.get(id)),
           used: jobCount(game, b.id),
           slots,
           workers,
@@ -57,6 +58,7 @@
         c,
         stat: effectiveStats(game, c)[b.workStat] ?? 0,
         gain: assignGain(game, b.id, c),
+        fit: hasAffinity(game, b, c),
         from: c.job?.kind === 'building' ? content.buildings.get(c.job.target) : null,
       }))
       .sort((x, y) => (x.from ? 1 : 0) - (y.from ? 1 : 0) || y.gain.cmp(x.gain));
@@ -137,14 +139,20 @@
         {/each}
       </div>
 
-      <p class="hint small">
-        💡 <b>{b.stat.name}</b> erhöht den Ertrag: +{formatPercent(game.balance.production.statScaling, 0)} je Punkt.
-        <span class="muted">{b.def.description.split('.')[0]}.</span>
-      </p>
+      <div class="bonus">
+        <span class="stat small" title="Jeder Punkt {b.stat.name} erhöht den Ertrag der Kreatur">
+          📈 <b>{b.stat.name}</b> <span class="muted">+{formatPercent(game.balance.production.statScaling, 0)} je Punkt</span>
+        </span>
+        <span class="affinity small" title="Kreaturen dieser Elemente haben hier einen Typvorteil">
+          <b>Typvorteil +{formatPercent(game.balance.production.affinityBonus, 0)}</b>
+          {#each b.elements as e (e.id)}<span class="el" style="--el: {e.color}">{e.name}</span>{/each}
+        </span>
+      </div>
 
       <div class="sockets">
         {#each b.workers as w (w.c.id)}
-          <div class="socket filled" style="--el: {el(w.c).color}">
+          <div class="socket filled" class:fit={w.fit} style="--el: {el(w.c).color}">
+            {#if w.fit}<span class="fitmark" title="Typvorteil: {el(w.c).name} +{formatPercent(game.balance.production.affinityBonus, 0)}">★</span>{/if}
             <button class="art" title="Details zu {w.c.name}" onclick={() => (view.detail = w.c.id)}>
               <CreatureSvg appearance={expressedAppearance(game, w.c)} shape={species(w.c).shape} tier={species(w.c).tier} size={44} shiny={w.c.shiny} />
             </button>
@@ -167,19 +175,21 @@
       {#if picking === b.def.id}
         <div class="picker">
           <div class="picker-head">
-            <b class="small">Wer soll hier arbeiten? <span class="muted">Sortiert nach zusätzlichem Ertrag ({b.stat.name} zählt).</span></b>
+            <b class="small">Wer soll hier arbeiten? <span class="muted">Sortiert nach zusätzlichem Ertrag ({b.stat.name} und Typvorteil ★ zählen).</span></b>
             <button class="close" onclick={() => (picking = null)}>Fertig</button>
           </div>
           <div class="tiles">
             {#each candidates as t (t.c.id)}
               <button
                 class="tile"
+                class:fit={t.fit}
                 disabled={b.used >= b.slots}
                 style="--el: {el(t.c).color}; --rarity: {content.rarities.get(t.c.rarity).color}"
-                title="{t.c.name} · {species(t.c).name} · {content.rarities.get(t.c.rarity).name}{t.from ? ` · arbeitet in: ${t.from.name}` : ''}"
+                title="{t.c.name} · {species(t.c).name} · {el(t.c).name}{t.fit ? ' (Typvorteil)' : ''} · {content.rarities.get(t.c.rarity).name}{t.from ? ` · arbeitet in: ${t.from.name}` : ''}"
                 onclick={() => assign(t.c, b.def.id)}
               >
                 {#if t.from}<span class="from" title="Arbeitet gerade in: {t.from.name}">{t.from.icon}</span>{/if}
+                {#if t.fit}<span class="fitmark" title="Typvorteil: {el(t.c).name}">★</span>{/if}
                 <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={species(t.c).shape} tier={species(t.c).tier} size={40} shiny={t.c.shiny} />
                 <span class="tname">{t.c.name}</span>
                 <span class="small num"><span class="muted">{b.stat.short}</span> {formatNumber(t.stat)}</span>
@@ -223,7 +233,14 @@
   .floater { position: absolute; bottom: 38%; pointer-events: none; font-size: 0.85rem; font-weight: 700; color: var(--rc); background: #0009; border-radius: 99px; padding: 0.05rem 0.45rem; white-space: nowrap; transform: translateX(-50%); animation: float-up 1.6s ease-out forwards; }
   @keyframes float-up { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -52px); opacity: 0; } }
 
-  .hint { margin: 0; }
+  .bonus { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .bonus > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding: 0.25rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
+  .affinity { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)) !important; }
+  .affinity b { color: var(--gold); }
+  .el { padding: 0 0.4rem; border-radius: 99px; font-size: 0.72rem; color: var(--text); background: color-mix(in srgb, var(--el) 22%, transparent); border: 1px solid color-mix(in srgb, var(--el) 60%, transparent); }
+  .fitmark { position: absolute; top: 2px; left: 5px; font-size: 0.8rem; color: var(--gold); text-shadow: 0 0 6px color-mix(in srgb, var(--gold) 70%, transparent); }
+  .socket.fit { box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 30%, transparent); }
+  .tile.fit { background: radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--gold) 12%, transparent), var(--bg-2) 70%); }
 
   .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.8rem, 1fr)); gap: 0.4rem; }
   .socket {
@@ -255,5 +272,5 @@
   .tile:hover:not(:disabled) { border-color: var(--rc); }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
   .gain { color: var(--rc); font-weight: 600; }
-  .from { position: absolute; top: 2px; left: 5px; font-size: 0.8rem; }
+  .from { position: absolute; top: 2px; right: 5px; font-size: 0.8rem; }
 </style>
