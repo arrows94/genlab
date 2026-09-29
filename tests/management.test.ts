@@ -395,6 +395,59 @@ describe('automation', () => {
     });
   });
 
+  describe('protection rules for every automatic removal (tester report)', () => {
+    const setup = () => {
+      const g = richGame();
+      unlockFeature(g, 'autoRecycle');
+      g.state.creatures = [];
+      const mk = (speciesId: string, power: number, extra: Partial<Parameters<typeof createCreature>[1]> = {}) =>
+        createCreature(g, { speciesId, rarity: 'common', abilities: [], genome: normal(), stats: { hp: power, atk: power, def: power, spd: power }, exactStats: true, ...extra });
+      return { g, mk };
+    };
+
+    it('the stable cleanup keeps the strongest N of every species, like the recycling automaton', () => {
+      const { g, mk } = setup();
+      // A bred high-generation common and the only water creature – both must survive a full stable.
+      const peak = mk('emberpup', 60, { generation: 23 });
+      const fire2 = mk('emberpup', 40);
+      const water = mk('bubbloon', 5);
+      const spare = mk('pebblit', 50, { rarity: 'uncommon' });
+      mk('pebblit', 60);
+      mk('pebblit', 70);
+      while (stableFree(g) > 0) mk('pebblit', 55 + g.state.creatures.length);
+      setAutoRecycle(g, { keepPerSpecies: 2 });
+      setAutoBreed(g, { enabled: true, rule: 'power', cleanup: 'sell', cleanupMaxRarity: 'uncommon' });
+      const victim = cleanupCandidate(g, [])!;
+      expect(victim.speciesId).toBe('pebblit');
+      expect([peak, fire2, water]).not.toContain(victim);
+      // Many rounds of breeding with cleanup never wipe out a species below the rule.
+      for (let i = 0; i < 40; i++) g.advance(balance.automation.intervalSec * 1000 + 100);
+      const count = (sp: string) => g.state.creatures.filter((c) => c.speciesId === sp).length;
+      expect(count('emberpup')).toBeGreaterThanOrEqual(2);
+      expect(count('bubbloon')).toBe(1);
+      expect(g.state.creatures).toContain(peak);
+      expect(g.state.creatures).toContain(water);
+      void spare;
+    });
+
+    it('favourites survive both automatons even when nothing else is left to take', () => {
+      const { g, mk } = setup();
+      const favs = Array.from({ length: 6 }, (_, i) => mk('pebblit', 1 + i));
+      for (const c of favs) c.locked = true;
+      while (stableFree(g) > 0) {
+        const c = mk('pebblit', 1);
+        c.locked = true;
+      }
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 0, keepSequenced: false, maxRarity: 'mythic' });
+      setAutoBreed(g, { enabled: true, rule: 'power', cleanup: 'recycle', cleanupMaxRarity: 'mythic' });
+      const before = g.state.creatures.length;
+      for (let i = 0; i < 10; i++) g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(g.state.creatures.filter((c) => c.locked)).toHaveLength(before);
+      expect(cleanupCandidate(g, [])).toBeNull();
+      expect(autoRecycleCandidates(g)).toEqual([]);
+    });
+  });
+
   describe('recycling automaton', () => {
     const setup = () => {
       const g = richGame();

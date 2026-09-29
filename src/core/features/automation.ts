@@ -167,24 +167,40 @@ function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
   return [...list].sort((x, y) => ctx.content.rarities.get(x.rarity).order - ctx.content.rarities.get(y.rarity).order || power.get(x.id)! - power.get(y.id)!);
 }
 
-/** Weakest creature the stable cleanup may remove (never favourites, shiny, infused or above the rarity limit). */
+/**
+ * The strongest N creatures of every species (N = „mindestens N jeder Art
+ * behalten“ of the Recycling-Automat). No automation may remove them – the
+ * stable cleanup of the Zuchtautomat follows the same rule. Every creature
+ * of a species counts, also busy ones.
+ */
+export function keptPerSpecies(ctx: GameContext): Set<number> {
+  const n = ctx.state.automation.autoRecycle.keepPerSpecies;
+  const kept = new Set<number>();
+  if (n <= 0) return kept;
+  const bySpecies = new Map<string, Creature[]>();
+  for (const c of ctx.state.creatures) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
+  const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));
+  for (const list of bySpecies.values()) {
+    for (const c of [...list].sort((x, y) => power.get(y.id)! - power.get(x.id)!).slice(0, n)) kept.add(c.id);
+  }
+  return kept;
+}
+
+/**
+ * Weakest creature the stable cleanup may remove: never favourites, shiny,
+ * infused, above the rarity limit, or among the strongest N of its species.
+ */
 export function cleanupCandidate(ctx: GameContext, keep: readonly number[] = []): Creature | null {
   const cfg = ctx.state.automation.autoBreed;
-  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
+  const kept = keptPerSpecies(ctx);
+  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && !kept.has(c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
 }
 
 /** Everything the Recycling-Automat may take right now, weakest first. */
 export function autoRecycleCandidates(ctx: GameContext): Creature[] {
   const cfg = ctx.state.automation.autoRecycle;
   // The strongest N of each species stay, counting every creature of that species.
-  const kept = new Set<number>();
-  const bySpecies = new Map<string, Creature[]>();
-  for (const c of ctx.state.creatures) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
-  const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));
-  for (const list of bySpecies.values()) {
-    const strongest = [...list].sort((x, y) => power.get(y.id)! - power.get(x.id)!).slice(0, cfg.keepPerSpecies);
-    for (const c of strongest) kept.add(c.id);
-  }
+  const kept = keptPerSpecies(ctx);
   // Never the pair the Zuchtautomat is about to breed.
   if (ctx.state.automation.autoBreed.enabled && ctx.state.features['autoBreed']) {
     const plan = planAutoBreed(ctx);

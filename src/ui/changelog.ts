@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 3,
+    date: '2026-09-29',
+    title: 'Sicherer Stall',
+    items: [
+      { text: 'Der Zuchtautomat räumt bei vollem Stall nicht mehr die letzten Kreaturen einer Art weg: Die stärksten jeder Art bleiben stehen – so viele, wie beim Recycling-Automaten unter „Je Art behalten“ eingestellt ist (Standard: 2).', feature: 'autoBreed' },
+      { text: 'Der Zuchtautomat zeigt, welche Kreatur beim nächsten vollen Stall als Nächstes gehen würde. Favoriten ★ sind wie immer geschützt.', feature: 'autoBreed' },
+      { text: 'Die Talente der Stufen 4 und 5 im Äon-Talentbaum sind günstiger (6 und 9 statt 8 und 12 Splitter).', feature: 'megaProjects' },
+    ],
+  },
+  {
     id: 2,
     date: '2026-09-29',
     title: 'Feinschliff',

@@ -7,7 +7,7 @@
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { availableRituals, eggCost, eggTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
-  import { planAutoBreed, setAutoBreed } from '@core/features/automation';
+  import { cleanupCandidate, planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
   import type { AutoBreedConfig, Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
@@ -100,6 +100,13 @@
   const autoPlan = $derived.by(() => {
     view.slowFrame;
     return game.state.features['autoBreed'] && game.state.automation.autoBreed.enabled ? planAutoBreed(game) : null;
+  });
+  /** Who the stable cleanup would remove next (shown so the rule is never a surprise). */
+  const cleanupNext = $derived.by(() => {
+    view.slowFrame;
+    const cfg = game.state.automation.autoBreed;
+    if (!game.state.features['autoBreed'] || cfg.cleanup === 'off') return null;
+    return cleanupCandidate(game, autoPlan?.ok ? [autoPlan.a.id, autoPlan.b.id] : []);
   });
 
   const nestsFull = $derived(data.eggs.length >= data.slots);
@@ -235,7 +242,7 @@
           {#each BUDGETS as [v, label] (v)}<option value={String(v)}>{label}</option>{/each}
         </select>
       </label>
-      <label title="Nie betroffen: Favoriten, Schillernde, infundierte und beschäftigte Kreaturen.">Stall voll
+      <label title="Nie betroffen: Favoriten, Schillernde, infundierte und beschäftigte Kreaturen sowie die stärksten jeder Art (Einstellung „Je Art behalten“).">Stall voll
         <select value={auto.cleanup} onchange={(e) => setAuto({ cleanup: e.currentTarget.value as AutoBreedConfig['cleanup'] })}>
           <option value="off">anhalten</option>
           <option value="sell">Schwächste verkaufen</option>
@@ -257,6 +264,15 @@
         {:else}<span class="wait">Wartet: {autoPlan.reason}</span>{/if}
       {/if}
     </p>
+    {#if auto.cleanup !== 'off'}
+      <p class="auto-status small">
+        <span class="muted">
+          Stall-Aufräumen nimmt nie Favoriten ★, Schillernde, infundierte oder beschäftigte Kreaturen{#if game.state.automation.autoRecycle.keepPerSpecies > 0}
+            {' '}und lässt die {game.state.automation.autoRecycle.keepPerSpecies} stärksten jeder Art stehen{/if}{data.recycler ? ' – „Je Art behalten“ stellst du beim Recycling-Automaten ein' : ''}.
+        </span>
+        <span>{cleanupNext ? `Als Nächstes würde gehen: ` : 'Keine Kreatur darf entfernt werden – bei vollem Stall wartet der Automat.'}{#if cleanupNext}<b>{cleanupNext.name}</b>{/if}</span>
+      </p>
+    {/if}
   </div>
 {/if}
 
