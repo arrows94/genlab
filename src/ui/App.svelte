@@ -135,10 +135,11 @@
     display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;
     margin: -0.75rem -1rem 0.75rem; padding: calc(0.6rem + env(safe-area-inset-top)) 1rem 0.6rem;
   }
-  /* Full-width backdrop behind the (max-width) header content. */
+  /* Full-width backdrop behind the (max-width) header content. Opaque without backdrop-filter: in the
+     installed iOS web app the header reaches under the status bar, and the blur made the top look smeared. */
   header::before {
     content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: 50%; width: 100vw; translate: -50% 0;
-    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+    background: var(--bg);
     border-bottom: 1px solid transparent; transition: border-color 0.2s, box-shadow 0.2s;
   }
   header.stuck::before { border-bottom-color: var(--line); box-shadow: 0 6px 16px #0006; }
