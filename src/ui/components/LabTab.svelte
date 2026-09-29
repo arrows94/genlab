@@ -36,6 +36,7 @@
       fragments: game.state.features['recycler'] ? batchFragments(game, chosen) : null,
       species: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       away: game.state.creatures.filter((c) => c.job?.kind === 'mission').length,
+      working: game.state.creatures.filter((c) => c.job?.kind === 'building').length,
       alleles: activeLoci(game).flatMap((l) => l.alleles.filter((a) => game.state.geneLibrary[`${l.id}:${a.id}`]).map((a) => ({ key: `${l.id}:${a.id}`, label: `${l.name}: ${a.name} (${a.symbol})` }))),
     };
   });
@@ -78,11 +79,20 @@
   }
 </script>
 
+<header class="tab-head">
+  <h2>🧪 Labor</h2>
+  <div class="kpis">
+    <span class="kpi" class:warn={data.total >= data.capacity}><b class="num">{data.total}/{data.capacity}</b><small>im Stall</small></span>
+    <span class="kpi"><b class="num">{data.working}</b><small>bei der Arbeit</small></span>
+    {#if data.away > 0}<span class="kpi"><b class="num">{data.away}</b><small>unterwegs</small></span>{/if}
+  </div>
+</header>
+
 {#if game.state.features['daily']}<DailyCard />{/if}
 
 <section class="panel collect">
   <div>
-    <h2>Genlabor</h2>
+    <h3>🍖 Sammeln</h3>
     <p class="muted">Sammle Nahrung für deine Kreaturen.</p>
   </div>
   <button class="primary big" onclick={onCollect}>

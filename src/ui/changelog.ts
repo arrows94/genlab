@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 2,
+    date: '2026-09-29',
+    title: 'Feinschliff',
+    items: [
+      { text: 'Jeder Tab hat jetzt oben eine einheitliche Kopfzeile mit den wichtigsten Kennzahlen auf einen Blick.' },
+      { text: 'Seltene Kreaturen fallen stärker auf: Ab Episch läuft ein Schimmer über den Kartenrahmen, ab Legendär leuchtet die Karte.' },
+      { text: 'Der Labor-Tab heißt jetzt auch oben „Labor“ – so ist er nicht mehr mit dem Genlabor zu verwechseln.', feature: 'sequencing' },
+      { text: 'Eine laufende Anomalie zeigt einen Fortschrittsbalken bis zu ihrem Ziel.', feature: 'anomalies' },
+    ],
+  },
+  {
     id: 1,
     date: '2026-09-28',
     title: 'Mehr Übersicht',

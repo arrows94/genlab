@@ -76,11 +76,17 @@
   );
 </script>
 
-<h2>Gen-Recycler & Kapseln</h2>
+<header class="tab-head">
+  <h2>♻️ Gen-Recycler & Kapseln</h2>
+  <div class="kpis">
+    <span class="kpi"><b class="num">🧩 {formatNumber(game.state.resources['fragments'] ?? 0)}</b><small>Gen-Fragmente</small></span>
+    <span class="kpi" class:warn={data.free <= 0}><b class="num">{data.free}</b><small>freie Stallplätze</small></span>
+    <span class="kpi"><b class="num">{game.state.statistics['capsulesOpened'] ?? 0}</b><small>Kapseln geöffnet</small></span>
+  </div>
+</header>
 <p class="muted small">
   Überzählige Kreaturen recycelst du im <b>Labor</b> („Auswählen“) oder in der Detailansicht. Aus Gen-Fragmenten entstehen hier zufällige Kreaturen –
   auch Arten, die du noch nicht kennst. Alle Chancen stehen offen daneben. Nur Spielwährung, kein Echtgeld.
-  Freie Stallplätze: <b class="num">{data.free}</b>
 </p>
 
 {#if auto}

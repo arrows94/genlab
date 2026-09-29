@@ -178,7 +178,7 @@
   {/if}
 {/snippet}
 
-<header class="head">
+<header class="tab-head">
   <h2>🥚 Brutstation</h2>
   <div class="kpis">
     <span class="kpi"><b class="num">{data.eggs.length}/{data.slots}</b><small>Nester</small></span>
@@ -422,12 +422,6 @@
   .small { font-size: 0.8rem; }
   .tiny { font-size: 0.68rem; }
 
-  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
-  .head h2 { margin: 0; }
-  .kpis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .kpi { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); min-width: 4.5rem; }
-  .kpi b { font-size: 1.05rem; }
-  .kpi small { color: var(--muted); font-size: 0.68rem; }
   .kpi.warn { border-color: var(--danger); }
   .mini { width: 100%; height: 3px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }
   .mini span { display: block; height: 100%; background: var(--teal); }

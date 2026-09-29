@@ -69,7 +69,7 @@
   }
 </script>
 
-<h2>Optionen</h2>
+<header class="tab-head"><h2>⚙️ Optionen</h2></header>
 {#if view.loadError}
   <p class="panel error">Der letzte Spielstand konnte nicht geladen werden: {view.loadError}. Eine Kopie liegt unter „genlab.save.broken“ im Browser-Speicher.</p>
 {/if}

@@ -18,6 +18,8 @@ import { activeLoci } from '@core/genetics';
 import { splice } from '@core/features/splicing';
 import { sell } from '@core/features/stable';
 import type { Genome } from '@core/state';
+import type { Condition } from '@core/content/types';
+import { conditionProgress } from '@core/conditions';
 import { balance, content, makeGame, NOW } from './helpers';
 
 function endgame(seed = 30, overrides = {}) {
@@ -344,5 +346,19 @@ describe('gated gene loci (Urgen) before the talent', () => {
     expect(c.genome.primal).toBeUndefined();
     g.state.geneLibrary['primal:U'] = true;
     expect(splice(g, c.id, 'primal', 0, 'U')).toEqual({ ok: false, reason: 'Unbekanntes Gen.' });
+  });
+});
+
+describe('condition progress (anomaly goal bar)', () => {
+  it('measures countable conditions and combines them', () => {
+    const g = makeGame();
+    g.state.earned.gold = D(5000);
+    expect(conditionProgress(g.state, { type: 'resourceEarned', resource: 'gold', amount: 20000 })).toBeCloseTo(0.25);
+    g.state.statistics.hatched = 30;
+    const parts: Condition[] = [{ type: 'resourceEarned', resource: 'gold', amount: 20000 }, { type: 'statistic', statistic: 'hatched', amount: 10 }];
+    const all: Condition = { type: 'all', of: parts };
+    expect(conditionProgress(g.state, all)).toBeCloseTo(0.25);
+    expect(conditionProgress(g.state, { type: 'any', of: parts })).toBe(1);
+    expect(conditionProgress(g.state, { type: 'feature', feature: 'farm' })).toBeNull();
   });
 });

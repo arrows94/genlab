@@ -58,7 +58,7 @@
   </div>
 {/snippet}
 
-<header class="head">
+<header class="tab-head">
   <h2>📖 Monster-Dex <span class="muted num">{data.count.found}/{data.count.total}</span></h2>
   <div class="switch">
     <button class:active={dex.view === 'cards'} onclick={() => (dex.view = 'cards')}>Sammlung</button>
@@ -255,8 +255,6 @@
 
 <style>
   .small { font-size: 0.8rem; }
-  .head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
-  .head h2 { margin: 0; }
   .switch { display: flex; gap: 0.3rem; }
   .switch button { font-size: 0.85rem; padding: 0.35rem 0.7rem; }
   .switch button.active { border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }

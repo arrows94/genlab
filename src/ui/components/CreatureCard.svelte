@@ -54,6 +54,8 @@
   });
 
   const TIER_LABELS: Record<string, string> = { hybrid: 'Hybrid', rareHybrid: 'Seltener Hybrid', mythic: 'Mythisch' };
+  /** Rarity order from which the frame shimmers (3 = Episch); one step higher also glows. */
+  const SHIMMER_FROM = 3;
 
   let editing = $state(false);
   let draft = $state('');
@@ -68,7 +70,16 @@
   }
 </script>
 
-<article class="card" class:glow={rarity.glow} class:selected style="--rarity: {rarity.color}; --element: {element.color}">
+<article
+  class="card"
+  class:glow={rarity.glow}
+  class:selected
+  class:plain={rarity.order <= 1}
+  class:rare={rarity.order >= 2}
+  class:shimmer={rarity.order >= SHIMMER_FROM}
+  class:radiant={rarity.order >= SHIMMER_FROM + 1}
+  style="--rarity: {rarity.color}; --element: {element.color}"
+>
   <header>
     {#if selectable}
       <input type="checkbox" checked={selected} onchange={() => onselect?.()} aria-label="Auswählen" />
@@ -128,6 +139,22 @@
     gap: 0.4rem;
   }
   .card { animation: appear 0.3s ease-out; }
+  /* Rarity frames: common/uncommon muted, rare with a tinted top, epic+ with a light sweeping along the
+     frame, legendary+ additionally glowing. */
+  .card.plain { border-color: color-mix(in srgb, var(--rarity) 55%, var(--line)); }
+  .card.rare { background: linear-gradient(180deg, color-mix(in srgb, var(--rarity) 14%, var(--panel-2)), var(--bg-2) 55%); }
+  .card.shimmer::before {
+    content: ''; position: absolute; inset: -2px; border-radius: inherit; padding: 2px; pointer-events: none;
+    background: linear-gradient(115deg, transparent 35%, #ffffffcc 48%, color-mix(in srgb, var(--rarity) 60%, #fff) 52%, transparent 65%) 0 0 / 300% 100% no-repeat;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: sheen 3.6s ease-in-out infinite;
+  }
+  .card.radiant { box-shadow: 0 0 12px color-mix(in srgb, var(--rarity) 35%, transparent); }
+  .card.radiant::before { animation-duration: 2.6s; }
+  @keyframes sheen { 0% { background-position: 100% 0; } 60%, 100% { background-position: 0% 0; } }
   .card.glow { animation: appear 0.3s ease-out, mythic-glow 2.2s ease-in-out 0.3s infinite; }
   .new { background: var(--gold); color: #000; border-radius: 99px; padding: 0 0.4rem; font-size: 0.62rem; font-weight: 800; animation: pulse-new 1s ease-in-out infinite; }
   @keyframes pulse-new { 50% { opacity: 0.55; } }

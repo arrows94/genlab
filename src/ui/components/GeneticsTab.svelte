@@ -106,7 +106,7 @@
   const locusState = (i: number, progress: number, n: number) => (i < Math.floor(progress * n) ? 'done' : i === Math.floor(progress * n) ? 'scan' : 'wait');
 </script>
 
-<header class="head">
+<header class="tab-head">
   <h2>🧬 Genlabor</h2>
   <div class="kpis">
     <span class="kpi" class:live={!data.free}><b class="num">{data.machines.filter(Boolean).length}/{data.slots}</b><small>Sequenzierer</small></span>
@@ -259,14 +259,7 @@
   .small { font-size: 0.8rem; margin: 0.2rem 0; }
   h3 { margin: 0; }
   h4 { margin: 0.6rem 0 0.4rem; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
-  .head h2 { margin: 0; }
-  .kpis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .kpi { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); min-width: 4.5rem; }
-  .kpi b { font-size: 1.05rem; }
-  .kpi small { color: var(--muted); font-size: 0.68rem; }
   .kpi.live { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
-  .kpi.warn { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
 
   .lab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
   .robot { display: flex; gap: 0.45rem; align-items: center; padding: 0.3rem 0.6rem; border-radius: 8px; border: 1px solid var(--line); font-size: 0.85rem; }

@@ -99,3 +99,15 @@ h3 { margin: 0 0 0.5rem; font-size: 1rem; }
 /* Horizontal scroll areas without visible scrollbar on touch devices. */
 .hscroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .hscroll::-webkit-scrollbar { display: none; }
+
+/* Tab header: title on the left, KPI tiles on the right (shared by every tab). */
+.tab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+.tab-head h2 { margin: 0; }
+.kpis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.kpi { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); min-width: 4.5rem; }
+.kpi b { font-size: 1.05rem; }
+.kpi small { color: var(--muted); font-size: 0.68rem; }
+/* Something is running / ready (gold) – tabs may override the colour. */
+.kpi.live { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
+/* Needs attention. */
+.kpi.warn { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
