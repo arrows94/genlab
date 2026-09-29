@@ -296,6 +296,8 @@ export interface GameState {
   dynasties: Record<string, number>;
   /** How bred creatures are named: Rufname + family, or the classic blend of the parents' names. */
   nameStyle: 'family' | 'classic';
+  /** Family names the player gave (by renaming, „Kiko Sonnenschein“); they win over automatic ones. */
+  playerFamilies: Record<string, boolean>;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -347,6 +349,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomalyRecord: 0,
     dynasties: {},
     nameStyle: 'family',
+    playerFamilies: {},
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },

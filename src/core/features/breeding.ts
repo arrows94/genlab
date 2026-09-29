@@ -211,13 +211,15 @@ export function inheritAppearance(ctx: GameContext, a: Creature, b: Creature): A
 }
 
 /**
- * Family of a child: the stronger parent's, else the other one's. Without any,
- * the stronger parent founds a family (named after its element) and carries
- * it from now on, so its later children share it.
+ * Family of a child: one the player gave (by renaming) wins, otherwise the
+ * stronger parent's, else the other one's. Without any, the stronger parent
+ * founds a family (named after its element) and carries it from now on, so
+ * its later children share it.
  */
 function inheritFamily(ctx: GameContext, a: Creature, b: Creature): string {
   const [strong, weak] = creaturePower(ctx, a) >= creaturePower(ctx, b) ? [a, b] : [b, a];
-  const known = strong.family ?? weak.family;
+  const families = [strong.family, weak.family].filter((f): f is string => !!f);
+  const known = families.find((f) => ctx.state.playerFamilies[f]) ?? families[0];
   if (known) return known;
   const family = foundFamily(ctx, ctx.content.species.get(strong.speciesId).element);
   const founder = findCreature(ctx, strong.id);

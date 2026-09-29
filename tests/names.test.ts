@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { createCreature, findCreature } from '@core/creatures';
 import { breedingTimeMs, startBreeding } from '@core/features/breeding';
 import { blendNames, epithetFor, foundFamily, givenName, rufname, syllables } from '@core/names';
-import { setNameStyle } from '@core/actions';
+import { renameCreature, setNameStyle } from '@core/actions';
 import { Rng } from '@core/rng';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
@@ -156,6 +156,37 @@ describe('offspring names: Rufname + Familie', () => {
     const names = (seed: number) => Array.from({ length: 20 }, () => blendNames(Rng.fromSeed(seed), 'Funke', 'Blubbling', rules, 'x'));
     expect(names(5)).toEqual(names(5));
     expect(blendNames(Rng.fromSeed(1), 'Ab', 'C', rules, 'Glutwelpe')).toBe('Glutwelpe');
+  });
+
+  it('a surname the player gives becomes the family of the offspring – and wins over an automatic one', () => {
+    const g = nameGame();
+    const strong = mk(g, 'emberpup', 50, 'Funkenstein');
+    const weak = mk(g, 'emberpup', 10, 'Tauhain');
+    expect(renameCreature(g, weak.id, '  Kiko   Sonnenschein ').ok).toBe(true);
+    expect(weak.name).toBe('Kiko Sonnenschein');
+    expect(weak.family).toBe('Sonnenschein');
+    const child = hatch(g, strong, weak);
+    expect(child.family).toBe('Sonnenschein');
+    expect(child.name.endsWith(' Sonnenschein')).toBe(true);
+    // Several words: everything after the Rufname.
+    renameCreature(g, strong.id, 'Rex von Stein');
+    expect(strong.family).toBe('von Stein');
+    // A single word keeps the family.
+    renameCreature(g, strong.id, 'Rex');
+    expect(strong.family).toBe('von Stein');
+  });
+
+  it('a long surname still fits the name limit', () => {
+    const g = nameGame();
+    const a = mk(g, 'emberpup', 50);
+    const b = mk(g, 'emberpup', 10);
+    renameCreature(g, a.id, 'Ab Schnuckelputzhausen');
+    for (let i = 0; i < 5; i++) {
+      const child = hatch(g, a, b);
+      expect(child.family).toBe('Schnuckelputzhausen');
+      expect(child.name.length).toBeLessThanOrEqual(balance.creature.maxNameLength);
+      g.state.creatures = [a, b];
+    }
   });
 
   it('older saves get creatures without a family and Beiname', () => {

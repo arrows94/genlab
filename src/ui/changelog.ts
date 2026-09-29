@@ -27,8 +27,9 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 10,
     date: '2026-09-29',
-    title: 'Klassische Namen wählbar',
+    title: 'Eigene Familiennamen und klassische Namen',
     items: [
+      { text: 'Gib einer Kreatur beim Umbenennen einen Nachnamen („Kiko Sonnenschein“) – ihr Nachwuchs erbt diesen Familiennamen. Selbst vergebene Familien gehen vor den automatischen.', feature: 'breeding' },
       { text: 'Unter Optionen → Namen kannst du wieder die klassischen Namen einstellen: Nachwuchs heißt dann wie früher nach einer Mischung aus den Namen beider Eltern („Glussling“). Die Einstellung gilt für deinen Spielstand; vorhandene Namen bleiben.', feature: 'breeding' },
     ],
   },

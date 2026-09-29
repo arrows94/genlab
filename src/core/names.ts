@@ -180,5 +180,10 @@ export function blendNames(rng: Rng, a: string, b: string, rules: NameRules, fal
 /** Name of a newborn in the chosen style. The family is passed on either way (for switching back). */
 export function offspringName(ctx: GameContext, a: Creature, b: Creature, family: string, speciesName: string): string {
   if (ctx.state.nameStyle === 'classic') return blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.classicName, speciesName);
-  return `${childGivenName(ctx, a, b, family)} ${family}`;
+  const given = childGivenName(ctx, a, b, family);
+  // A long surname from the player leaves less room: then a short Rufname that fits.
+  const room = ctx.balance.creature.maxNameLength - family.length - 1;
+  if (given.length <= room) return `${given} ${family}`;
+  const short = ctx.content.nameLists.get('given').words.filter((w) => w.length <= room);
+  return short.length > 0 ? `${ctx.rng.pick(short)} ${family}` : family.slice(0, ctx.balance.creature.maxNameLength);
 }

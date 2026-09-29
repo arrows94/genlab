@@ -86,9 +86,15 @@ export function assignJob(ctx: GameContext, creatureId: number, buildingId: stri
 export function renameCreature(ctx: GameContext, creatureId: number, name: string): ActionResult {
   const c = findCreature(ctx, creatureId);
   if (!c) return fail('Kreatur nicht gefunden.');
-  const trimmed = name.trim().slice(0, ctx.balance.creature.maxNameLength);
+  const trimmed = name.trim().replace(/\s+/g, ' ').slice(0, ctx.balance.creature.maxNameLength).trim();
   if (!trimmed) return fail('Name darf nicht leer sein.');
   c.name = trimmed;
+  // A surname the player gives („Kiko Sonnenschein“, „Kiko von Stein“) becomes the family its offspring inherit.
+  const space = trimmed.indexOf(' ');
+  if (space > 0) {
+    c.family = trimmed.slice(space + 1);
+    ctx.state.playerFamilies[c.family] = true;
+  }
   return ok;
 }
 
