@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 6,
+    date: '2026-09-29',
+    title: 'Spielstand leichter umziehen',
+    items: [
+      { text: 'Der Export ist jetzt rund zehnmal kürzer – er passt bequem in eine Nachricht. Alte Exporte lassen sich weiterhin einspielen.' },
+      { text: 'Neuer „Teilen …“-Knopf in den Optionen: Schick deinen Spielstand direkt per Messenger, Mail oder AirDrop auf ein anderes Gerät.' },
+      { text: 'Vor dem Import siehst du beide Spielstände nebeneinander – Spielzeit, Kreaturen, Erfolge und mehr. Ist der Import weniger weit, wirst du gewarnt.' },
+    ],
+  },
+  {
     id: 5,
     date: '2026-09-29',
     title: 'Turm-Verlauf und umkehrbare Sortierung',

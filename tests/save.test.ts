@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { SAVE_VERSION, SaveError, deserialize, exportSave, importSave, mergeDefaults, migrate, serialize, type Migration } from '@core/save';
 import { renameCreature } from '@core/actions';
+import { progressSummary } from '@core/queries';
 import { NOW, makeGame } from './helpers';
 
 describe('save / load', () => {
@@ -31,17 +32,37 @@ describe('save / load', () => {
     expect(copy.rng.next()).toBe(g.rng.next());
   });
 
-  it('exports and imports a text backup (with umlauts)', () => {
+  it('exports and imports a compressed text backup (with umlauts)', async () => {
     const g = makeGame();
     renameCreature(g, g.state.creatures[0]!.id, 'Glühwürmchen');
-    const text = exportSave(g.state, NOW);
-    expect(text.startsWith('GENLAB1:')).toBe(true);
-    expect(importSave(text).state.creatures[0]!.name).toBe('Glühwürmchen');
+    const text = await exportSave(g.state, NOW);
+    expect(text.startsWith('GENLAB2:')).toBe(true);
+    expect(text.length).toBeLessThan(serialize(g.state, NOW).length);
+    const { state, savedAt } = await importSave(text);
+    expect(savedAt).toBe(NOW);
+    expect(state.creatures[0]!.name).toBe('Glühwürmchen');
   });
 
-  it('rejects garbage', () => {
-    expect(() => importSave('hello')).toThrow(SaveError);
-    expect(() => importSave('GENLAB1:%%%')).toThrow(SaveError);
+  it('still imports the old uncompressed format', async () => {
+    const g = makeGame();
+    renameCreature(g, g.state.creatures[0]!.id, 'Glühwürmchen');
+    const bytes = new TextEncoder().encode(serialize(g.state, NOW));
+    const text = 'GENLAB1:' + btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(''));
+    expect((await importSave(text)).state.creatures[0]!.name).toBe('Glühwürmchen');
+  });
+
+  it('ignores line breaks and spaces added when the text was sent around', async () => {
+    const g = makeGame();
+    const text = await exportSave(g.state, NOW);
+    const wrapped = `  ${text.match(/.{1,60}/g)!.join('\n')} \n`;
+    expect((await importSave(wrapped)).state.creatures).toEqual(g.state.creatures);
+  });
+
+  it('rejects garbage', async () => {
+    await expect(importSave('hello')).rejects.toThrow(SaveError);
+    await expect(importSave('GENLAB1:%%%')).rejects.toThrow(SaveError);
+    await expect(importSave('GENLAB2:%%%')).rejects.toThrow(SaveError);
+    await expect(importSave('GENLAB2:' + btoa('not gzip at all'))).rejects.toThrow(SaveError);
     expect(() => deserialize('{not json')).toThrow(SaveError);
   });
 
@@ -109,5 +130,22 @@ describe('async save storage', () => {
     expect(loaded.state.creatures).toEqual(g.state.creatures);
     await storage.clear();
     expect(await storage.load()).toBeNull();
+  });
+});
+
+describe('progressSummary', () => {
+  it('shows only unlocked systems and counts progress of any state', async () => {
+    const g = makeGame();
+    const labels = (s: typeof g.state) => progressSummary(g.content, s).map((r) => r.label);
+    expect(labels(g.state)).toEqual(['Spielzeit', 'Kreaturen', 'Erfolge']);
+
+    g.state.features.inheritance = true;
+    g.state.features.tower = true;
+    g.state.prestige.inheritance = { count: 3 };
+    g.state.tower.best = 12;
+    const { state } = await importSave(await exportSave(g.state, NOW));
+    const rows = Object.fromEntries(progressSummary(g.content, state).map((r) => [r.label, r.value]));
+    expect(rows).toMatchObject({ Vererbung: 3, 'Turm-Rekord': 12, Kreaturen: g.state.creatures.length });
+    expect(rows).not.toHaveProperty('Äon');
   });
 });

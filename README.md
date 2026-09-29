@@ -29,7 +29,7 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 
 **Benachrichtigungen** (Optionen, standardmäßig aus): Die Handy-Apps planen beim Wechsel in den Hintergrund lokale Benachrichtigungen beim System (Capacitor Local Notifications, ohne Server) – z. B. „Expedition zurück“ oder „Offline-Maximum erreicht“. Im Browser/PWA erscheinen sie nur, solange der Tab im Hintergrund geöffnet bleibt; Tauri hat keine. Planung in `core/notices.ts`, Plattform in `ui/platform/notify.ts`.
 
-**Spielstände:** Browser und Desktop speichern im `localStorage` (bei Tauri dauerhaft im App-Profil). Die Handy-Apps nutzen Capacitor Preferences (Android SharedPreferences, iOS UserDefaults), weil das System den WebView-Speicher löschen kann; ein vorhandener Browser-Spielstand wird beim ersten Start übernommen. Export/Import (Optionen) funktioniert überall – so lässt sich ein Spielstand zwischen Geräten umziehen.
+**Spielstände:** Browser und Desktop speichern im `localStorage` (bei Tauri dauerhaft im App-Profil). Die Handy-Apps nutzen Capacitor Preferences (Android SharedPreferences, iOS UserDefaults), weil das System den WebView-Speicher löschen kann; ein vorhandener Browser-Spielstand wird beim ersten Start übernommen. Export/Import (Optionen) funktioniert überall – so lässt sich ein Spielstand zwischen Geräten umziehen. Der Export ist gzip-komprimiert (`GENLAB2:…`, ältere `GENLAB1:`-Exporte werden weiter gelesen), lässt sich über das System-Teilen-Menü verschicken (Web Share API bzw. `@capacitor/share`) und wird vor dem Einspielen mit dem aktuellen Stand verglichen.
 
 ### Einmalige Einrichtung
 
@@ -42,7 +42,7 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 
 ## Spielen
 
-Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern und auf einem anderen Gerät wieder einspielen.
+Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern, teilen und auf einem anderen Gerät wieder einspielen.
 
 ## Architektur
 

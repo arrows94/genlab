@@ -136,23 +136,42 @@ export function deserialize(json: string, migrations: Record<number, Migration> 
   return { state, savedAt: migrated.savedAt };
 }
 
-const EXPORT_PREFIX = 'GENLAB1:';
+/** Uncompressed backup: prefix + base64(UTF-8 JSON). Still read, written only without gzip support. */
+const EXPORT_PREFIX_PLAIN = 'GENLAB1:';
+/** Compressed backup: prefix + base64(gzip(UTF-8 JSON)), roughly a tenth of the plain size. */
+const EXPORT_PREFIX_GZIP = 'GENLAB2:';
 
-/** Backup string: prefix + base64(UTF-8 JSON). */
-export function exportSave(state: GameState, now = Date.now()): string {
-  const bytes = new TextEncoder().encode(serialize(state, now));
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return EXPORT_PREFIX + btoa(binary);
+const canGzip = () => typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
+
+async function pipeBytes(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
 }
 
-export function importSave(text: string): { state: GameState; savedAt: number } {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith(EXPORT_PREFIX)) throw new SaveError('Das ist kein Genlab-Export.');
+function toBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+/** Backup string for moving a save between devices (gzip-compressed where the platform supports it). */
+export async function exportSave(state: GameState, now = Date.now()): Promise<string> {
+  const bytes = new TextEncoder().encode(serialize(state, now));
+  if (!canGzip()) return EXPORT_PREFIX_PLAIN + toBase64(bytes);
+  return EXPORT_PREFIX_GZIP + toBase64(await pipeBytes(bytes, new CompressionStream('gzip')));
+}
+
+/** Reads a backup string from `exportSave` (both formats). Whitespace, e.g. line breaks added by messengers, is ignored. */
+export async function importSave(text: string): Promise<{ state: GameState; savedAt: number }> {
+  const compact = text.replace(/\s+/g, '');
+  const gzip = compact.startsWith(EXPORT_PREFIX_GZIP);
+  if (!gzip && !compact.startsWith(EXPORT_PREFIX_PLAIN)) throw new SaveError('Das ist kein Genlab-Export.');
+  if (gzip && !canGzip()) throw new SaveError('Dieses Gerät kann komprimierte Exporte nicht lesen – bitte Browser bzw. System aktualisieren.');
   let json: string;
   try {
-    const binary = atob(trimmed.slice(EXPORT_PREFIX.length));
-    json = new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
+    const binary = atob(compact.slice(EXPORT_PREFIX_PLAIN.length));
+    let bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+    if (gzip) bytes = await pipeBytes(bytes, new DecompressionStream('gzip'));
+    json = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     throw new SaveError('Export-Text ist beschädigt.');
   }

@@ -1,14 +1,21 @@
 <script lang="ts">
+  import { fade, scale } from 'svelte/transition';
   import { SAVE_VERSION } from '@core/save';
   import { formatDuration, formatNumber } from '@core/format';
-  import { exportText, importText, hardReset, save, toast, view, game, ask } from '../store.svelte';
+  import { progressSummary, type ProgressRow } from '@core/queries';
+  import type { GameState } from '@core/state';
+  import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { CHANGELOG, formatReleaseDate } from '../changelog';
   import { openAllNews } from '../news.svelte';
   import { cancelNotices, notificationsNeedOpenTab, notificationsSupported, requestNotifyPermission } from '../platform/notify';
+  import { shareSupported, shareText } from '../platform/share';
 
   let text = $state('');
   let fileInput: HTMLInputElement | undefined = $state();
+  /** A read export waiting for the player to compare and confirm it. */
+  let pending: { state: GameState; savedAt: number } | null = $state(null);
+  const canShare = shareSupported();
 
   const info = $derived.by(() => {
     view.frame;
@@ -19,22 +26,62 @@
     };
   });
 
-  function doExport() {
-    text = exportText();
-    navigator.clipboard?.writeText(text).then(
-      () => toast('Export in die Zwischenablage kopiert.'),
-      () => toast('Export erstellt – bitte manuell kopieren.'),
-    );
+  /** Rows of both saves side by side; a row missing on one side (not unlocked yet) counts as 0. */
+  const comparison = $derived.by(() => {
+    if (!pending) return null;
+    const here = progressSummary(game.content, game.state);
+    const there = progressSummary(game.content, pending.state);
+    const labels = [...new Set([...here, ...there].map((r) => r.label))];
+    const find = (rows: ProgressRow[], label: string) => rows.find((r) => r.label === label);
+    const rows = labels.map((label) => {
+      const a = find(here, label);
+      const b = find(there, label);
+      return { label, kind: (a ?? b)!.kind, here: a?.value ?? 0, there: b?.value ?? 0 };
+    });
+    return { rows, behind: pending.state.simTimeMs < game.state.simTimeMs };
+  });
+
+  const fileName = () => `genlab-${new Date().toISOString().slice(0, 10)}.txt`;
+  const show = (kind: ProgressRow['kind'], v: number) => (kind === 'duration' ? formatDuration(v) : formatNumber(v));
+
+  /** Safari only allows clipboard writes inside the click; a ClipboardItem may resolve later. */
+  async function copy(exported: Promise<string>): Promise<boolean> {
+    try {
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': exported.then((t) => new Blob([t], { type: 'text/plain' })) })]);
+        return true;
+      }
+    } catch {
+      /* fall back to writeText */
+    }
+    try {
+      await navigator.clipboard.writeText(await exported);
+      return true;
+    } catch {
+      return false;
+    }
   }
-  function download() {
-    const blob = new Blob([exportText()], { type: 'text/plain' });
+  async function doExport() {
+    const exported = exportText();
+    toast((await copy(exported)) ? 'Export in die Zwischenablage kopiert.' : 'Export erstellt – bitte manuell kopieren.');
+    text = await exported;
+  }
+  async function download() {
+    const blob = new Blob([await exportText()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `genlab-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = fileName();
     a.click();
     URL.revokeObjectURL(url);
     toast('Backup-Datei heruntergeladen.');
+  }
+  async function share() {
+    try {
+      if (await shareText(await exportText(), fileName(), 'Genlab-Spielstand')) toast('Spielstand geteilt.');
+    } catch (err) {
+      toast(`Teilen fehlgeschlagen: ${(err as Error).message}`, 'error');
+    }
   }
   async function fromFile(e: Event) {
     // currentTarget is null after the first await – keep a reference.
@@ -43,11 +90,23 @@
     if (!file) return;
     text = (await file.text()).trim();
     input.value = '';
-    doImport();
+    await doImport();
   }
   async function doImport() {
-    const t = text;
-    if (t.trim() && (await ask('Aktuellen Spielstand durch den Import ersetzen?', { ok: 'Ersetzen', danger: true }))) importText(t);
+    if (!text.trim()) return;
+    pending = await readImport(text);
+  }
+  function confirmImport() {
+    if (!pending) return;
+    applyImport(pending.state);
+    pending = null;
+    text = '';
+  }
+  function onKey(e: KeyboardEvent) {
+    if (pending && e.key === 'Escape') {
+      e.preventDefault();
+      pending = null;
+    }
   }
   async function toggleNotifications(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -122,17 +181,45 @@
 
 <article class="panel">
   <h3>Spielstand sichern</h3>
-  <p class="small muted">Der Export ist ein Text (GENLAB1:…), den du kopieren oder als Datei speichern kannst – z. B. um auf ein anderes Gerät umzuziehen.</p>
+  <p class="small muted">Der Export ist ein Text (GENLAB2:…), den du kopieren, teilen oder als Datei speichern kannst – z. B. um auf ein anderes Gerät umzuziehen. Vor dem Einspielen siehst du beide Stände im Vergleich.</p>
   <div class="row">
     <button onclick={() => { save(); toast('Gespeichert.'); }}>Jetzt speichern</button>
     <button onclick={doExport}>Export kopieren</button>
+    {#if canShare}<button onclick={share}>Teilen …</button>{/if}
     <button onclick={download}>Als Datei herunterladen</button>
     <button onclick={() => fileInput?.click()}>Datei importieren …</button>
     <input bind:this={fileInput} type="file" accept=".txt,text/plain" hidden onchange={fromFile} />
   </div>
   <textarea bind:value={text} rows="4" placeholder="Export-Text hier einfügen …" spellcheck="false"></textarea>
-  <button class="primary" onclick={doImport} disabled={!text.trim()}>Text importieren</button>
+  <button class="primary" onclick={doImport} disabled={!text.trim()}>Text importieren …</button>
 </article>
+
+<svelte:window onkeydowncapture={onKey} />
+
+{#if pending && comparison}
+  <div class="backdrop" transition:fade={{ duration: 120 }} onclick={(e) => e.target === e.currentTarget && (pending = null)} role="presentation">
+    <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="import-title" transition:scale={{ duration: 150, start: 0.92 }}>
+      <h3 id="import-title">Spielstand ersetzen?</h3>
+      <table>
+        <thead><tr><th></th><th>Dieses Gerät</th><th>Import</th></tr></thead>
+        <tbody>
+          <tr><td>Gespeichert</td><td class="num">jetzt</td><td class="num">vor {formatDuration(Math.max(0, Date.now() - pending.savedAt))}</td></tr>
+          {#each comparison.rows as r (r.label)}
+            <tr><td>{r.label}</td><td class="num">{show(r.kind, r.here)}</td><td class="num" class:less={r.there < r.here} class:more={r.there > r.here}>{show(r.kind, r.there)}</td></tr>
+          {/each}
+        </tbody>
+      </table>
+      {#if comparison.behind}
+        <p class="warn">⚠️ Der Import hat weniger Spielzeit als dieser Stand – du würdest Fortschritt verlieren.</p>
+      {/if}
+      <p class="small muted">Die Zeit seit dem Export wird nach dem Import als Offline-Fortschritt nachgeholt.</p>
+      <div class="buttons">
+        <button onclick={() => (pending = null)}>Abbrechen</button>
+        <button class="danger" onclick={confirmImport}>Ersetzen</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <article class="panel danger-zone">
   <h3>Gefahrenzone</h3>
@@ -153,4 +240,15 @@
   textarea { width: 100%; font-family: var(--mono); font-size: 0.75rem; resize: vertical; margin-bottom: 0.5rem; }
   .error { color: var(--danger); }
   .danger-zone { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+  .backdrop { position: fixed; inset: 0; z-index: 50; background: #000a; display: grid; place-items: center; padding: 1rem; }
+  .dialog { max-width: 28rem; width: 100%; max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.1rem 1.2rem 1rem; box-shadow: 0 12px 40px #000a; }
+  .dialog h3 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 0.6rem; }
+  th { font-weight: 600; text-align: right; color: var(--muted); font-size: 0.8rem; }
+  td { padding: 0.2rem 0; border-top: 1px solid var(--line); }
+  td + td, th + th { text-align: right; padding-left: 0.8rem; }
+  .less { color: var(--danger); }
+  .more { color: var(--teal); }
+  .warn { color: var(--danger); margin: 0 0 0.5rem; font-size: 0.9rem; }
+  .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
 </style>

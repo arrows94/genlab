@@ -1,8 +1,8 @@
 import { canAfford } from './costs';
 import { nextUpgradeCost, upgradeAvailable } from './actions';
 import type { GameContext } from './context';
-import type { UpgradeDef } from './content/types';
-import type { Creature } from './state';
+import type { ContentDB, UpgradeDef } from './content/types';
+import type { Creature, GameState } from './state';
 import { creatureModifiers, creaturePower, effectiveStats } from './creatures';
 
 /** Read-only helpers for the UI (keeps rules out of components). */
@@ -35,6 +35,32 @@ export function dexCount(ctx: GameContext): { found: number; total: number } {
     found: Object.keys(ctx.state.dex).length,
     total: ctx.content.species.list.length * ctx.content.rarities.list.length,
   };
+}
+
+/** One line of the save comparison shown before an import. */
+export interface ProgressRow {
+  label: string;
+  value: number;
+  /** How the UI formats `value`. */
+  kind: 'duration' | 'count';
+}
+
+/**
+ * Progress key figures of any state (also one that is not loaded, e.g. an
+ * import), so two saves can be compared side by side. Rows for systems the
+ * save has not unlocked yet are left out.
+ */
+export function progressSummary(content: ContentDB, state: GameState): ProgressRow[] {
+  const rows: ProgressRow[] = [{ label: 'Spielzeit', value: state.simTimeMs, kind: 'duration' }];
+  for (const layer of content.prestigeLayers.list) {
+    const count = state.prestige[layer.id]?.count ?? 0;
+    if (count > 0 || state.features[layer.feature]) rows.push({ label: layer.name, value: count, kind: 'count' });
+  }
+  rows.push({ label: 'Kreaturen', value: state.creatures.length, kind: 'count' });
+  if (state.features.dex) rows.push({ label: 'Dex-Einträge', value: Object.keys(state.dex).length, kind: 'count' });
+  rows.push({ label: 'Erfolge', value: Object.values(state.achievements).filter(Boolean).length, kind: 'count' });
+  if (state.features.tower) rows.push({ label: 'Turm-Rekord', value: state.tower.best, kind: 'count' });
+  return rows;
 }
 
 // --- Creature list: filter & sort (Kreaturenliste) ---

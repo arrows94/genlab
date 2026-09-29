@@ -1,5 +1,6 @@
 import { content, balance } from '@content/index';
 import { Game, type OfflineReport } from '@core/game';
+import type { GameState } from '@core/state';
 import { deserialize, exportSave, importSave, serialize, type SaveStorage } from '@core/save';
 import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
@@ -228,22 +229,25 @@ export function save(): void {
   );
 }
 
-export function exportText(): string {
+export function exportText(): Promise<string> {
   return exportSave(game.state);
 }
 
-export function importText(text: string): boolean {
+/** Reads an export without loading it (for the comparison before an import); null after a toast if it is invalid. */
+export async function readImport(text: string): Promise<{ state: GameState; savedAt: number } | null> {
   try {
-    const { state } = importSave(text);
-    game.loadState(state);
-    save();
-    toast('Spielstand importiert.', 'info');
-    refresh();
-    return true;
+    return await importSave(text);
   } catch (err) {
     toast((err as Error).message, 'error', 6000);
-    return false;
+    return null;
   }
+}
+
+export function applyImport(state: GameState): void {
+  game.loadState(state);
+  save();
+  toast('Spielstand importiert.', 'info');
+  refresh();
 }
 
 export function hardReset(): void {
