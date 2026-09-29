@@ -150,7 +150,8 @@ function wireEvents(g: Game): void {
     markUnseen('aeon');
   });
   g.bus.on('anomalyStarted', (e) => toast(`🌀 Anomalie „${content.anomalies.get(e.anomaly).name}“ beginnt!`, 'unlock'));
-  g.bus.on('anomalyCompleted', (e) => toast(`🌀 Anomalie gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
+  g.bus.on('anomalyCompleted', (e) => toast(`🌀 ${content.anomalies.get(e.anomaly).name} Stufe ${e.level} gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
+  g.bus.on('anomalyRecord', (e) => toast(`🏆 Neuer Anomalie-Rekord: Schwierigkeit ${e.total}${e.shards > 0 && g.state.features.aeon ? ` · +${e.shards} ⏳` : ''}`, 'rare', 7000));
   g.bus.on('perfectGenome', (e) => toast(`✦ Perfektes Genom: ${content.species.get(e.species).name}!`, 'rare', 7000));
   g.bus.on('shiny', (e) => toast(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare', 7000));
   g.bus.on('recipeHinted', (e) => {

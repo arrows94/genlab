@@ -101,10 +101,14 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [x] Meilensteine alle 50 Etagen mit dauerhaftem Bonus (+15 % Turm-Schaden, +10 % Produktion) und einmalig
         3 Äon-Splitter – eine weitere Splitter-Quelle
   - [ ] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
-- [ ] **Anomalien mit Stufen und Kombinationen**
-  - [ ] Schwierigkeitsstufen I–V pro Anomalie
-  - [ ] Mehrere Anomalien gleichzeitig aktivierbar
-  - [ ] Belohnung wächst mit der Gesamtschwierigkeit
+- [x] **Anomalien mit Stufen und Kombinationen**
+  - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
+        Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×2,5 (`balance.anomalies.goalGrowth`)
+  - [x] Mehrere Anomalien gleichzeitig aktivierbar – der Lauf ist geschafft, wenn alle Ziele erreicht sind
+  - [x] Belohnung wächst mit der Gesamtschwierigkeit: Die Belohnung jeder Anomalie zählt je gemeisterter Stufe.
+        Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen, max. 20) bringt 1 Äon-Splitter je Punkt
+        und dauerhaft +5 % Produktion und +3 % Erbgut je Rekordpunkt – eine weitere Splitter-Quelle
+  - [ ] Test-Bot: Anomalie-Läufe in den Äon-Lauf aufnehmen, um Splitter-Ertrag und Rekord-Bonus zu prüfen
 - [ ] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
 
 ## Später

@@ -224,6 +224,16 @@ export interface Balance {
     /** Permanent bonus per milestone reached (stacks). */
     milestoneModifiers: ModifierDef[];
   };
+  anomalies: {
+    /** Highest difficulty stage (I–V). */
+    maxLevel: number;
+    /** Countable goals × goalGrowth^(stage − 1). */
+    goalGrowth: number;
+    /** Äon-Splitter per point of a new record in total difficulty (sum of the stages of one run). */
+    shardsPerRecordPoint: number;
+    /** Permanent bonus per point of the record in total difficulty. */
+    recordModifiers: ModifierDef[];
+  };
   perfection: {
     /** Base chance for the "Schillernd" colour mutation (modified by `creature.shinyChance`). */
     shinyChance: number;

@@ -266,7 +266,7 @@ describe('anomalies', () => {
     const g = endgame();
     const base = g.mods().apply('breeding.time', 100);
     expect(startAnomaly(g, 'broodFever').ok).toBe(true);
-    expect(g.state.anomaly?.id).toBe('broodFever');
+    expect(g.state.anomaly?.levels.broodFever).toBe(1);
     expect(g.state.creatures).toHaveLength(1);
     expect(g.mods().apply('breeding.time', 100)).toBeCloseTo(base * 0.5);
     expect(performPrestige(g, 'inheritance').ok).toBe(false);

@@ -226,9 +226,10 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 { id: 'twinBirth', name: 'Zwillingsgeburten', tier: 2, cost: 3, requires: ['aeonHarvest'],
   description: '15 % Chance auf Zwillinge.', modifiers: [{ target: 'breeding.twinChance', op: 'add', value: 0.15 }] },
 
-// Anomalie: Regeln + Ziel + dauerhafte Belohnung
+// Anomalie: Regeln + Ziel + dauerhafte Belohnung, Stufen I–V
 { id: 'famine', name: 'Hungersnot', description: 'Halbe Nahrungsproduktion.',
   modifiers: [{ target: 'production.food', op: 'mult', value: 0.5 }],
+  perLevel: [{ target: 'production.food', op: 'mult', value: 0.8 }], levelText: '−20 % Nahrung',
   goal: { type: 'resourceEarned', resource: 'food', amount: 150000 }, goalText: '150.000 Nahrung verdienen',
   reward: [{ target: 'production.food', op: 'pct', value: 0.2 }], rewardText: '+20 % Nahrung' },
 
@@ -237,6 +238,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
   modifiers: [{ target: 'element.ice.production', op: 'pct', value: 0.5 }] },
 ```
 
+- Anomalien haben die Stufen I bis `balance.anomalies.maxLevel`; Stufe n+1 lässt sich erst starten, wenn Stufe n gemeistert ist. `perLevel` wirkt je Stufe über I zusätzlich (`mult` wird potenziert), `levelText` beschreibt das für eine Stufe. Zählbare Ziele wachsen je Stufe um `goalGrowth` (aufgerundet); für `resourceEarned` erzeugt das Spiel den Zieltext selbst, sonst gilt `goalText`. Die Belohnung zählt je gemeisterter Stufe. Mehrere Anomalien lassen sich kombinieren; ein neuer Rekord in der Summe der Stufen bringt `shardsPerRecordPoint` Äon-Splitter je Punkt und `recordModifiers` je Rekordpunkt.
 - Talente können `unlocksFeatures` (bleiben über jeden Reset) und `onReset` (Startressourcen) haben. `unlock` ist eine zusätzliche Bedingung (z. B. eine Bauphase des Äon-Observatoriums); bis sie erfüllt ist, zeigt der Talentbaum die ganze Stufe versiegelt.
 - Mechanik-Talente nutzen eigene Modifier-Ziele: `breeding.abilityInherit` (Chance je Eltern-Fähigkeit), `breeding.rarityUp` (Chance auf eine Seltenheitsstufe mehr), `mission.hybridChance` (wilde Funde als entdeckte Hybride), `tower.interval` (Sekunden pro Turm-Kampf), `tower.bossAttempts` (Wochen-Boss-Angriffe pro Tag), `slots.grandResearch`.
 - Ein Gen-Locus mit `requires: { type: 'talent', talent: '…' }` existiert erst mit dem Talent – vorhandene Kreaturen bekommen ihn automatisch.

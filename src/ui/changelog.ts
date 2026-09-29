@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 4,
+    date: '2026-09-29',
+    title: 'Anomalien mit Stufen',
+    items: [
+      { text: 'Jede Anomalie hat jetzt die Stufen I–V. Die nächste Stufe öffnet sich, wenn du die vorige meisterst – mit härteren Regeln und größerem Ziel.', feature: 'anomalies' },
+      { text: 'Anomalien lassen sich kombinieren: Wähle für mehrere eine Stufe und starte sie zusammen. Geschafft ist der Lauf, wenn alle Ziele erreicht sind.', feature: 'anomalies' },
+      { text: 'Die Belohnung einer Anomalie zählt je gemeisterter Stufe. Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen) bringt dauerhaft mehr Produktion und Erbgut.', feature: 'anomalies' },
+      { text: 'Jeder neue Anomalie-Rekord bringt außerdem einen Äon-Splitter je Punkt Gesamtschwierigkeit.', feature: 'aeon' },
+    ],
+  },
+  {
     id: 3,
     date: '2026-09-29',
     title: 'Sicherer Stall',

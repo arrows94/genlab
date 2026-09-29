@@ -75,3 +75,24 @@ export function conditionProgress(state: GameState, c: Condition): number | null
       return null;
   }
 }
+
+/** The same condition with every countable target × factor (rounded up); yes/no parts stay. */
+export function scaleCondition(c: Condition, factor: number): Condition {
+  const up = (n: number) => Math.ceil(n * factor);
+  switch (c.type) {
+    case 'resourceEarned':
+    case 'resourceOwned':
+    case 'statistic':
+      return { ...c, amount: up(c.amount) };
+    case 'creatureCount':
+    case 'geneLibrary':
+      return { ...c, count: up(c.count) };
+    case 'towerFloor':
+      return { ...c, floor: up(c.floor) };
+    case 'all':
+    case 'any':
+      return { ...c, of: c.of.map((x) => scaleCondition(x, factor)) };
+    default:
+      return c;
+  }
+}

@@ -34,7 +34,8 @@ export interface GameEvents {
   towerRunEnded: { floor: number };
   talentBought: { talent: string };
   anomalyStarted: { anomaly: string };
-  anomalyCompleted: { anomaly: string };
+  anomalyCompleted: { anomaly: string; level: number };
+  anomalyRecord: { total: number; shards: number };
   perfectGenome: { creatureId: number; species: string };
   shiny: { creatureId: number; species: string };
   /** `auto`: done by an automation (no toast per run). */

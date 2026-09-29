@@ -272,8 +272,13 @@ export interface GameState {
   capsulePity: Record<string, number>;
   tower: TowerState;
   talents: Record<string, boolean>;
-  anomaly: { id: string } | null;
+  /** Running anomaly challenge: difficulty stage per active anomaly (several at once). */
+  anomaly: { levels: Record<string, number> } | null;
   anomaliesCompleted: Record<string, boolean>;
+  /** Best stage mastered per anomaly (drives the reward). */
+  anomalyBest: Record<string, number>;
+  /** Highest total difficulty (sum of stages) of a completed anomaly run. */
+  anomalyRecord: number;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -321,6 +326,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
+    anomalyBest: {},
+    anomalyRecord: 0,
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },
