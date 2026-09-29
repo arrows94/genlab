@@ -3,6 +3,7 @@
   import { formatDuration, formatNumber } from '@core/format';
   import { exportText, importText, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
+  import { play } from '../sound';
   import { CHANGELOG, formatReleaseDate } from '../changelog';
   import { openAllNews } from '../news.svelte';
   import { cancelNotices, notificationsNeedOpenTab, notificationsSupported, requestNotifyPermission } from '../platform/notify';
@@ -91,8 +92,19 @@
     </label>
     <label class="opt check">
       <input type="checkbox" checked={prefs.sound} onchange={(e) => updatePrefs({ sound: e.currentTarget.checked })} />
-      <span>Töne (Fanfaren bei optimaler DNS und schillernden Kreaturen)</span>
+      <span>Töne</span>
     </label>
+    {#if prefs.sound}
+      <div class="opt volume">
+        <label for="volume">Lautstärke <span class="num muted">{Math.round(prefs.volume * 100)} %</span></label>
+        <div class="vol-row">
+          <input id="volume" type="range" min="0" max="100" step="5" value={Math.round(prefs.volume * 100)}
+            oninput={(e) => updatePrefs({ volume: Number(e.currentTarget.value) / 100 })} onchange={() => play('test')} />
+          <button onclick={() => play('test')}>▶ Probe</button>
+        </div>
+        <p class="small muted">Beim Nachholen der Offline-Zeit und im Hintergrund bleibt es still.</p>
+      </div>
+    {/if}
   </article>
 
   <article class="panel">
@@ -150,6 +162,8 @@
   .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   .opt { display: grid; gap: 0.3rem; margin-bottom: 0.5rem; }
   .opt.check { display: flex; align-items: center; gap: 0.5rem; }
+  .vol-row { display: flex; align-items: center; gap: 0.5rem; }
+  .vol-row input { flex: 1; min-width: 0; }
   .small { font-size: 0.82rem; }
   dl { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 1rem; margin: 0; font-size: 0.9rem; }
   .news { margin-top: 0.7rem; font-size: 0.85rem; }

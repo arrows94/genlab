@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { content } from '@content/index';
   import { toggleLock } from '@core/actions';
-  import { autoRecycleCandidates, recycleDurationMs, recyclingNow } from '@core/features/automation';
+  import { autoRecycleCandidates, inRecycler, recycleDurationMs, recyclerQueue, recyclingNow, takeBackFromRecycler } from '@core/features/automation';
+  import type { Creature } from '@core/state';
   import { fragmentValue } from '@core/features/recycler';
   import { stableFree } from '@core/features/stable';
   import { formatDuration, formatNumber } from '@core/format';
@@ -11,9 +12,10 @@
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
-   * Zerlege-Kammer of the Recycling-Automat: the creature being taken apart
-   * right now (it shrinks and fades as the progress fills), the queue behind it,
-   * and a rescue button – the player can still keep it as a favourite.
+   * Zerlege-Kammer of the Gen-Recycler: the creature being taken apart right
+   * now (it shrinks and fades as the progress fills) and the queue behind it –
+   * first what the player sent (can be taken back), then the Recycling-Automat's
+   * picks (can be rescued as a favourite).
    */
   const QUEUE = 6;
 
@@ -34,12 +36,16 @@
   const info = $derived.by(() => {
     view.slowFrame;
     const cfg = game.state.automation.autoRecycle;
-    const current = game.state.automation.recycling?.creatureId;
-    const list = autoRecycleCandidates(game).filter((c) => c.id !== current);
+    const automat = !!game.state.features['autoRecycle'];
+    const mine = recyclerQueue(game);
+    const picks = automat && cfg.enabled ? autoRecycleCandidates(game).filter((c) => !inRecycler(game, c.id)) : [];
+    const entry = (c: Creature, manual: boolean) => ({ c, manual, species: content.species.get(c.speciesId), rarity: content.rarities.get(c.rarity), look: expressedAppearance(game, c) });
+    const list = [...mine.map((c) => entry(c, true)), ...picks.map((c) => entry(c, false))];
     const speed = content.upgrades.has('recyclerSpeed') ? content.upgrades.get('recyclerSpeed') : null;
     return {
       cfg,
-      next: list.slice(0, QUEUE).map((c) => ({ c, species: content.species.get(c.speciesId), rarity: content.rarities.get(c.rarity), look: expressedAppearance(game, c) })),
+      automat,
+      next: list.slice(0, QUEUE),
       total: list.length,
       waitingFull: cfg.when === 'full' && stableFree(game) > 0,
       duration: recycleDurationMs(game),
@@ -48,7 +54,8 @@
   });
 
   const idleText = $derived(
-    !info.cfg.enabled ? 'Der Automat ist ausgeschaltet.'
+    !info.automat ? 'Schicke Kreaturen im Labor („Auswählen“ → „Zum Recycler“) oder aus der Detailansicht hierher.'
+    : !info.cfg.enabled ? 'Der Automat ist ausgeschaltet – im Labor kannst du Kreaturen selbst schicken.'
     : info.waitingFull ? 'Wartet, bis der Stall voll ist.'
     : info.total === 0 ? 'Keine Kreatur erfüllt die Regeln.'
     : 'Die nächste Kreatur kommt gleich in die Kammer.',
@@ -59,16 +66,19 @@
   let popId = 0;
   onMount(() =>
     game.bus.on('recycled', (e) => {
-      if (!e.auto) return;
       const id = ++popId;
       pops = [...pops, { id, text: `+${formatNumber(e.fragments)} 🧩` }];
       setTimeout(() => (pops = pops.filter((p) => p.id !== id)), 1400);
     }),
   );
 
+  /** What the player sent goes back to the stable; an automat pick is kept as a favourite. */
   function rescue() {
-    const c = now?.creature;
-    if (c && act(toggleLock(game, c.id))) toast(`★ ${c.name} ist jetzt Favorit und bleibt.`);
+    const cur = now;
+    if (!cur) return;
+    if (cur.manual) {
+      if (act(takeBackFromRecycler(game, cur.creature.id))) toast(`↩ ${cur.creature.name} ist zurück im Stall.`);
+    } else if (act(toggleLock(game, cur.creature.id))) toast(`★ ${cur.creature.name} ist jetzt Favorit und bleibt.`);
   }
 </script>
 
@@ -101,7 +111,11 @@
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(now.progress * 100)}><span style="width: {now.progress * 100}%"></span></div>
       <div class="row">
         <span class="small num">noch {formatDuration(now.remainingMs)} · ≈ {formatNumber(now.fragments)} 🧩</span>
-        <button class="rescue" onclick={rescue} title="Als Favorit markieren – Favoriten recycelt der Automat nie">★ Retten</button>
+        {#if now.manual}
+          <button class="rescue" onclick={rescue} title="Von dir geschickt – zurück in den Stall">↩ Zurückholen</button>
+        {:else}
+          <button class="rescue" onclick={rescue} title="Als Favorit markieren – Favoriten recycelt der Automat nie">★ Retten</button>
+        {/if}
       </div>
     {:else}
       <div class="who"><b class="muted">Leer</b></div>
@@ -112,7 +126,11 @@
         <span class="small muted">Warteschlange ({info.total})</span>
         <div class="minis">
           {#each info.next as q (q.c.id)}
-            <span class="q" style="--rc: {q.rarity.color}" title="{q.c.name} · {q.species.name} · {q.rarity.name}"><CreatureSvg appearance={q.look} shape={q.species.shape} tier={q.species.tier} size={30} /></span>
+            {#if q.manual}
+              <button class="q mine" style="--rc: {q.rarity.color}" title="{q.c.name} · {q.species.name} · {q.rarity.name} – von dir geschickt, antippen zum Zurückholen" onclick={() => act(takeBackFromRecycler(game, q.c.id))}><CreatureSvg appearance={q.look} shape={q.species.shape} tier={q.species.tier} size={30} /></button>
+            {:else}
+              <span class="q" style="--rc: {q.rarity.color}" title="{q.c.name} · {q.species.name} · {q.rarity.name} – vom Recycling-Automaten gewählt"><CreatureSvg appearance={q.look} shape={q.species.shape} tier={q.species.tier} size={30} /></span>
+            {/if}
           {/each}
           {#if info.total > info.next.length}<span class="small muted more">+{info.total - info.next.length}</span>{/if}
         </div>
@@ -174,7 +192,8 @@
   .rescue { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
   .queue { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; }
   .minis { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
-  .q { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; background: var(--panel); border: 1px solid color-mix(in srgb, var(--rc) 45%, var(--line)); }
+  .q { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 8px; background: var(--panel); border: 1px solid color-mix(in srgb, var(--rc) 45%, var(--line)); }
+  .q.mine { border-style: dashed; border-color: var(--violet); cursor: pointer; }
   .more { margin-left: 0.2rem; }
   .small { font-size: 0.8rem; }
 

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 8,
+    date: '2026-09-29',
+    title: 'Alles zum Recycler und Töne einstellbar',
+    items: [
+      { text: 'Recyceln im Labor und in der Detailansicht schickt Kreaturen jetzt in die Zerlege-Kammer des Gen-Recyclers. Dort werden sie nacheinander zerlegt – vor allem, was der Recycling-Automat auswählt. Bis zuletzt kannst du sie mit „↩ Zurückholen“ wieder herausnehmen.', feature: 'recycler' },
+      { text: 'Die Forschung „Schnellzerlegung“ gibt es jetzt schon mit dem Gen-Recycler, nicht erst mit dem Recycling-Automaten.', feature: 'recycler' },
+      { text: 'Unter Optionen gibt es einen Lautstärke-Regler mit Probeton. Beim Nachholen der Offline-Zeit und in einem Hintergrund-Tab bleibt das Spiel still.' },
+    ],
+  },
+  {
     id: 7,
     date: '2026-09-29',
     title: 'Zuchtautomat und Recycling-Automat arbeiten zusammen',

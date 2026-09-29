@@ -4,7 +4,10 @@ import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
-import { autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclingNow, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
+import {
+  autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
+  setAutoAssign, setAutoBreed, setAutoRecycle, takeBackFromRecycler,
+} from '@core/features/automation';
 import { breedingCost, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
@@ -583,6 +586,59 @@ describe('automation', () => {
       setAutoBreed(g, { enabled: true, rule: 'cheap' });
       g.advance(recycleDurationMs(g));
       expect(g.state.creatures).not.toContain(a);
+    });
+
+    it('creatures sent from the lab go through the chamber one by one – also without the automat', () => {
+      const g = richGame();
+      unlockFeature(g, 'recycler');
+      g.state.creatures = [];
+      const mk = (power: number) =>
+        createCreature(g, { speciesId: 'pebblit', rarity: 'common', abilities: [], genome: normal(), stats: { hp: power, atk: power, def: power, spd: power }, exactStats: true });
+      const [a, b, c] = [mk(1), mk(2), mk(3)];
+      const keep = mk(90);
+      keep.locked = true;
+      expect(sendToRecycler(g, [keep.id]).ok).toBe(false);
+      expect(sendToRecycler(g, [a.id, b.id, c.id]).ok).toBe(true);
+      // The first goes in right away, the others wait; nothing is gone yet.
+      expect(recyclingNow(g)?.creature).toBe(a);
+      expect(recyclingNow(g)?.manual).toBe(true);
+      expect(recyclerQueue(g)).toEqual([b, c]);
+      expect(g.state.creatures).toHaveLength(4);
+      // Taken back while waiting.
+      expect(takeBackFromRecycler(g, c.id).ok).toBe(true);
+      expect(inRecycler(g, c.id)).toBe(false);
+      const fragments = g.state.resources.fragments ?? D(0);
+      g.advance(recycleDurationMs(g) * 2 + 500);
+      expect(g.state.creatures).toEqual([c, keep]);
+      expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
+      expect(recyclingNow(g)).toBeNull();
+    });
+
+    it('what the player sent comes before the automat’s picks, and never counts against „je Art behalten“', () => {
+      const { g, mk } = setup();
+      const strong = mk('pebblit', 90);
+      const weak = mk('pebblit', 1);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      expect(sendToRecycler(g, [strong.id]).ok).toBe(true);
+      expect(recyclingNow(g)?.creature).toBe(strong);
+      g.advance(recycleDurationMs(g) + 100);
+      expect(g.state.creatures).not.toContain(strong);
+      // Now the automat's rules apply to what is left: the weak one is the strongest of its species.
+      g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g));
+      expect(g.state.creatures).toContain(weak);
+    });
+
+    it('a creature sent by the player is taken back out of the chamber', () => {
+      const { g, mk } = setup();
+      const a = mk('pebblit', 1);
+      mk('pebblit', 2);
+      sendToRecycler(g, [a.id]);
+      g.advance(1000);
+      expect(recyclingNow(g)?.creature).toBe(a);
+      expect(takeBackFromRecycler(g, a.id).ok).toBe(true);
+      expect(recyclingNow(g)).toBeNull();
+      g.advance(recycleDurationMs(g) * 2);
+      expect(g.state.creatures).toContain(a);
     });
 
     it('processes several creatures in one long (offline) step', () => {

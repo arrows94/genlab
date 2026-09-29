@@ -235,14 +235,14 @@ Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeit
 
 ## Schritt 1 – Technische Grundlage (zuerst)
 
-- [ ] `ui/fanfare.ts` zu einem kleinen Sound-Modul ausbauen (`ui/sound.ts`): benannte Klänge (`play('hatch')`),
-      Synth-Bausteine (Ton, Akkord, Rauschen für Knacken/Rascheln), ein gemeinsamer Lautstärke-Regler
-- [ ] Drosselung: pro Klang höchstens n-mal pro Sekunde, gleichzeitige Klänge begrenzen (Zuchtautomat, 10er-Kapseln,
-      Recycling-Automat bei kurzer Kammerzeit)
-- [ ] Stumm während des Offline-Nachholens und solange der Tab im Hintergrund ist; kein Klang für Automatik-Aktionen,
-      außer bei seltenen Ergebnissen
-- [ ] Optionen: Lautstärke-Schieber (Effekte), getrennt „Musik“ (siehe Schritt 5); Einstellung gerätebezogen in `prefs`
-- [ ] Reduzierte Bewegung ≠ stumm – bleibt getrennt
+- [x] `ui/fanfare.ts` zu einem kleinen Sound-Modul ausgebaut (`ui/sound.ts`): benannte Klänge (`play('perfect')`,
+      Rezepte in `SOUNDS`), Synth-Bausteine Ton und Rauschen, Lautstärke über `prefs.volume`
+- [x] Drosselung: je Klang ein Mindestabstand (`LIMITS`, sonst 80 ms), höchstens 4 Klänge in 250 ms
+- [x] Stumm während des Offline-Nachholens (`silently()` in `store.advance`) und solange der Tab im Hintergrund ist
+- [ ] Automatik-Aktionen (Zuchtautomat, Recycling-Automat …) ohne Klang, außer bei seltenen Ergebnissen – beim
+      Einbauen der Klänge in Schritt 2–4 je Ereignis entscheiden (die Events tragen dafür oft schon `auto`)
+- [x] Optionen: Schalter „Töne“ und Lautstärke-Schieber mit Probeton; „Musik“ kommt in Schritt 5
+- [x] Reduzierte Bewegung ≠ stumm – bleibt getrennt
 
 ## Schritt 2 – Grundgefühl (häufige, kurze Klänge)
 

@@ -8,7 +8,8 @@
   import { dynastyRecord, dynastyTier, lineageBonus, nextTierDepth } from '@core/features/dynasty';
   import { toggleLock } from '@core/actions';
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
-  import { fragmentValue, recycle } from '@core/features/recycler';
+  import { fragmentValue } from '@core/features/recycler';
+  import { inRecycler, sendToRecycler, takeBackFromRecycler } from '@core/features/automation';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaSequence from './DnaSequence.svelte';
@@ -35,6 +36,7 @@
       blocker: consumeBlocker(game, c),
       sellValue: batchSellValue(game, [c]),
       fragments: fragmentValue(game, c),
+      recycling: inRecycler(game, c.id),
       dynasty: game.state.features['dynasties']
         ? (() => {
             const record = dynastyRecord(game, c.speciesId);
@@ -53,7 +55,7 @@
   }
   async function doRecycle() {
     const cur = c;
-    if (cur && (await ask(`${cur.name} recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, [cur.id]))) close();
+    if (cur && (await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
   function fmtMod(op: string, v: number) {
     if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;
@@ -75,7 +77,11 @@
             <button onclick={() => act(toggleLock(game, c!.id))}>{c.locked ? '★ Favorit' : '☆ Als Favorit sperren'}</button>
             <button class="danger" disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doSell}>Verkaufen · <CostLabel cost={data.sellValue} /></button>
             {#if game.state.features['recycler']}
-              <button disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doRecycle}>Recyceln · <span class="num">{formatNumber(data.fragments)} 🧩</span></button>
+              {#if data.recycling}
+                <button onclick={() => act(takeBackFromRecycler(game, c!.id))} title="Wartet auf die Zerlege-Kammer oder liegt schon darin. Vom Recycling-Automaten gewählte Kreaturen rettest du als Favorit.">↩ Aus dem Recycler holen</button>
+              {:else}
+                <button disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doRecycle}>♻️ Zum Recycler · <span class="num">≈ {formatNumber(data.fragments)} 🧩</span></button>
+              {/if}
             {/if}
           </div>
         </div>

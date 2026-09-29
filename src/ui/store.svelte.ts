@@ -11,6 +11,7 @@ import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
+import { silently } from './sound';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -277,6 +278,12 @@ function toForeground(): void {
   cancelNotices();
 }
 
+/** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent. */
+function advance() {
+  const quiet = Date.now() - game.state.lastTickAt > 5000;
+  return quiet ? silently(() => game.update(Date.now())) : game.update(Date.now());
+}
+
 let started = false;
 /** Loads the save (async on native platforms), then starts the game loop. */
 export async function init(): Promise<void> {
@@ -297,7 +304,7 @@ export async function init(): Promise<void> {
     save: toBackground,
     resume: () => {
       toForeground();
-      const r = game.update(Date.now());
+      const r = advance();
       if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
       refresh();
     },
@@ -315,13 +322,13 @@ export async function init(): Promise<void> {
 }
 
 function startLoop(): void {
-  const report = game.update(Date.now());
+  const report = advance();
   if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
 
   let lastRender = 0;
   let lastSlow = 0;
   const loop = (t: number) => {
-    const r = game.update(Date.now());
+    const r = advance();
     if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
     if (t - lastRender >= 100) {
       lastRender = t;
@@ -336,14 +343,14 @@ function startLoop(): void {
   requestAnimationFrame(loop);
 
   // Background tabs throttle rAF; a slow interval keeps the sim alive.
-  setInterval(() => game.update(Date.now()), 1000);
+  setInterval(advance, 1000);
   setInterval(save, balance.sim.autosaveSec * 1000);
   // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') toBackground();
     else {
       toForeground();
-      game.update(Date.now());
+      advance();
     }
   });
   window.addEventListener('beforeunload', save);

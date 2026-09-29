@@ -105,7 +105,8 @@
     {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
     {#if creature.shiny}<span class="shiny">✦ Schillernd</span>{/if}
     <span class="num">Gen {creature.generation}</span>
-    {#if game.state.automation.recycling?.creatureId === creature.id}<span class="recy" title="Der Recycling-Automat zerlegt diese Kreatur gerade – als Favorit ★ bleibt sie">♻ in der Zerlege-Kammer</span>{/if}
+    {#if game.state.automation.recycling?.creatureId === creature.id}<span class="recy" title="Wird gerade im Gen-Recycler zerlegt – zurückholen in der Detailansicht oder im Recycler">♻ in der Zerlege-Kammer</span>
+    {:else if game.state.automation.recycleQueue.includes(creature.id)}<span class="recy" title="Wartet auf die Zerlege-Kammer – zurückholen in der Detailansicht oder im Recycler">♻ wartet auf den Recycler</span>{/if}
     {#if creature.lineage > 0 && game.state.features['dynasties']}<span class="lineage num" title="Reine Linie: {creature.lineage} Generationen in Folge dieselbe Art">👑 {creature.lineage}</span>{/if}
   </div>
   <dl class="stats">
