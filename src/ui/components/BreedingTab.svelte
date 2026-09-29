@@ -5,12 +5,12 @@
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { availableRituals, eggCost, eggTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
+  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
-  import { cleanupCandidate, planAutoBreed, setAutoBreed } from '@core/features/automation';
+  import { planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
-  import type { AutoBreedConfig, Creature } from '@core/state';
-  import { game, view, act } from '../store.svelte';
+  import type { AutoBreedConfig, Creature, Process } from '@core/state';
+  import { game, view, act, openTab } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -19,6 +19,7 @@
   import BreedingPlanner from './BreedingPlanner.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
   import SortToggle from './SortToggle.svelte';
+  import DynastyPanel from './DynastyPanel.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -66,23 +67,15 @@
       automaton: game.state.features['autoBreed'] === true,
       autoBreed: game.state.automation.autoBreed,
       recycler: game.state.features['recycler'] === true,
+      recycleAuto: game.state.features['autoRecycle'] === true,
+      recycleAutoOn: game.state.automation.autoRecycle.enabled,
       hybrids: game.state.features['hybrids'] === true,
       knownAlleles: activeLoci(game).flatMap((l) => l.alleles.filter((al) => libraryHas(game, l.id, al.id)).map((al) => ({ id: `${l.id}:${al.id}`, label: `${l.name}: ${al.name} (${al.symbol})` }))),
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
-      eggs: eggs(game).map((p) => {
-        const d = p.data as EggData;
-        const parents = d.parents.map((id) => findCreature(game, id));
-        return {
-          id: p.id,
-          progress: Math.min(1, p.elapsedMs / p.durationMs),
-          remaining: processRemainingMs(game, p),
-          parents,
-          hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
-          generation: d.generation,
-          ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
-        };
-      }),
+      eggs: nestEggs(game).map(eggView),
+      ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
+      ritualEggs: ritualEggs(game).map(eggView),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -94,6 +87,9 @@
       rituals,
       ritual,
       special: game.state.features['specialBreeding'] === true,
+      dynasties: game.state.features['dynasties'] === true,
+      // Pure line of the child (a hybrid would break it).
+      lineage: a && b && a.speciesId === b.speciesId ? Math.min(a.lineage ?? 0, b.lineage ?? 0) + 1 : 0,
     };
   });
 
@@ -102,15 +98,29 @@
     view.slowFrame;
     return game.state.features['autoBreed'] && game.state.automation.autoBreed.enabled ? planAutoBreed(game) : null;
   });
-  /** Who the stable cleanup would remove next (shown so the rule is never a surprise). */
-  const cleanupNext = $derived.by(() => {
-    view.slowFrame;
-    const cfg = game.state.automation.autoBreed;
-    if (!game.state.features['autoBreed'] || cfg.cleanup === 'off') return null;
-    return cleanupCandidate(game, autoPlan?.ok ? [autoPlan.a.id, autoPlan.b.id] : []);
-  });
 
   const nestsFull = $derived(data.eggs.length >= data.slots);
+  const ritualFull = $derived(data.ritualEggs.length >= data.ritualSlots);
+  /** Normal nests first, then the Ritualnest (Besondere Brut). */
+  const nestList = $derived([
+    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: data.eggs[i], ritual: false })),
+    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: data.ritualEggs[i], ritual: true })),
+  ]);
+
+  function eggView(p: Process) {
+    const d = p.data as EggData;
+    // Ritual eggs show their Keimprobe (the parents may have changed or gone since).
+    const parents = d.sample ?? d.parents.map((id) => findCreature(game, id));
+    return {
+      id: p.id,
+      progress: Math.min(1, p.elapsedMs / p.durationMs),
+      remaining: processRemainingMs(game, p),
+      parents,
+      hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
+      generation: d.generation,
+      ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
+    };
+  }
 
   const BUDGETS = [[1, 'alle Vorräte'], [0.5, '50 %'], [0.25, '25 %'], [0.1, '10 %']] as const;
   const GOAL_HINTS: Record<string, string> = {
@@ -119,6 +129,7 @@
     dex: 'Die günstigsten zwei einer Art, der noch Dex-Einträge fehlen.',
     allele: 'Sequenzierte Träger des Ziel-Allels – reinerbige zuerst.',
     abilities: 'Kreaturen mit den meisten und seltensten Fähigkeiten.',
+    lineage: 'Die zwei tiefsten reinen Linien einer Art – so wächst die Dynastie Generation für Generation.',
     cheap: 'Die niedrigsten Generationen – billiger Nachwuchs für Infusion und Recycler.',
   };
 
@@ -138,6 +149,8 @@
         return rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
       case 'generation':
         return y.c.generation - x.c.generation || y.power - x.power;
+      case 'lineage':
+        return (y.c.lineage ?? 0) - (x.c.lineage ?? 0) || y.c.generation - x.c.generation || y.power - x.power;
       case 'species':
         return content.species.get(x.c.speciesId).name.localeCompare(content.species.get(y.c.speciesId).name, 'de') || rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
       case 'name':
@@ -216,6 +229,7 @@
             <option value="dex">Dex-Lücken füllen</option>
             <option value="abilities">Fähigkeiten</option>
             <option value="allele">Gen-Ziel (Allel)</option>
+            {#if data.dynasties}<option value="lineage">Reine Linie vertiefen</option>{/if}
           </optgroup>
           <optgroup label="Verwertung">
             <option value="cheap">Günstiger Nachwuchs</option>
@@ -245,20 +259,6 @@
           {#each BUDGETS as [v, label] (v)}<option value={String(v)}>{label}</option>{/each}
         </select>
       </label>
-      <label title="Nie betroffen: Favoriten, Schillernde, infundierte und beschäftigte Kreaturen sowie die stärksten jeder Art (Einstellung „Je Art behalten“).">Stall voll
-        <select value={auto.cleanup} onchange={(e) => setAuto({ cleanup: e.currentTarget.value as AutoBreedConfig['cleanup'] })}>
-          <option value="off">anhalten</option>
-          <option value="sell">Schwächste verkaufen</option>
-          {#if data.recycler}<option value="recycle">Schwächste recyceln</option>{/if}
-        </select>
-      </label>
-      {#if auto.cleanup !== 'off'}
-        <label>bis
-          <select value={auto.cleanupMaxRarity} onchange={(e) => setAuto({ cleanupMaxRarity: e.currentTarget.value })}>
-            {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
-          </select>
-        </label>
-      {/if}
     </div>
     <p class="auto-status small">
       <span class="muted">{GOAL_HINTS[auto.rule] ?? `Die zwei mit dem höchsten Wert in ${content.stats.get(auto.rule).name}.`}</span>
@@ -267,23 +267,22 @@
         {:else}<span class="wait">Wartet: {autoPlan.reason}</span>{/if}
       {/if}
     </p>
-    {#if auto.cleanup !== 'off'}
-      <p class="auto-status small">
-        <span class="muted">
-          Stall-Aufräumen nimmt nie Favoriten ★, Schillernde, infundierte oder beschäftigte Kreaturen{#if game.state.automation.autoRecycle.keepPerSpecies > 0}
-            {' '}und lässt die {game.state.automation.autoRecycle.keepPerSpecies} stärksten jeder Art stehen{/if}{data.recycler ? ' – „Je Art behalten“ stellst du beim Recycling-Automaten ein' : ''}.
-        </span>
-        <span>{cleanupNext ? `Als Nächstes würde gehen: ` : 'Keine Kreatur darf entfernt werden – bei vollem Stall wartet der Automat.'}{#if cleanupNext}<b>{cleanupNext.name}</b>{/if}</span>
-      </p>
-    {/if}
+    <p class="auto-status small">
+      <span class="muted">
+        Ist der Stall voll, wartet der Zuchtautomat.
+        {#if data.recycleAuto}Platz schafft der Recycling-Automat mit seiner Zerlege-Kammer{data.recycleAutoOn ? '' : ' (gerade ausgeschaltet)'}.{:else if data.recycler}Platz schaffst du im Labor oder im Gen-Recycler – der Recycling-Automat kann das später übernehmen.{:else}Platz schaffst du im Labor (verkaufen).{/if}
+      </span>
+      {#if data.recycler}<button class="to-recycler" onclick={() => openTab('recycler')}>♻️ Zum Gen-Recycler</button>{/if}
+    </p>
   </div>
 {/if}
 
 <!-- Nests -->
 <div class="nests">
-  {#each Array.from({ length: data.slots }, (_, i) => i) as i (i)}
-    {@const egg = data.eggs[i]}
-    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85}>
+  {#each nestList as n (n.key)}
+    {@const egg = n.egg}
+    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ritualnest={n.ritual}>
+      {#if n.ritual}<span class="rn-label tiny">✨ Ritualnest</span>{/if}
       <div class="egg-wrap">
         {#if egg}
           <span class="glow" style="--h: {egg.hues[0]}; opacity: {0.25 + egg.progress * 0.6}"></span>
@@ -311,10 +310,10 @@
         </div>
         <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
         <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
-        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span> {/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span>{' '}{/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
         <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
       {:else}
-        <span class="small muted">Freies Nest</span>
+        <span class="small muted">{n.ritual ? 'Frei für ein Brutritual' : 'Freies Nest'}</span>
       {/if}
     </article>
   {/each}
@@ -362,19 +361,20 @@
         </button>
       {/each}
     </div>
-    {#if data.ritual}<p class="small muted note">Nest und beide Eltern sind {data.ritual.hours} Stunden belegt.</p>{/if}
+    {#if data.ritual}<p class="small muted note">Dauert {data.ritual.hours} {data.ritual.hours === 1 ? 'Stunde' : 'Stunden'} im Ritualnest, neben den normalen Nestern. Die Eltern bleiben frei – eine Keimprobe genügt.</p>{/if}
   {/if}
 
   <div class="facts">
     <span class="fact">🧬 Gen <b class="num">{data.generation}</b></span>
     <span class="fact">⏱ <b class="num">{formatDuration(data.time)}</b></span>
     <span class="fact">✨ Mutation <b class="num">{formatPercent(data.mutation)}</b></span>
+    {#if data.dynasties && data.lineage > 0}<span class="fact" title="Reine Linie, solange das Kind dieselbe Art wird (ein Hybrid bricht sie)">👑 Linie <b class="num">{data.lineage}</b></span>{/if}
   </div>
-  <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || nestsFull || data.stableFull} onclick={breed}>
+  <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || (data.ritual ? ritualFull : nestsFull) || data.stableFull} onclick={breed}>
     🥚 Brüten · <CostLabel cost={data.cost} />
   </button>
   <p class="small muted note">
-    {#if nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
+    {#if data.ritual && ritualFull}Das Ritualnest ist belegt.{:else if !data.ritual && nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else if data.ritual}Die Eltern arbeiten weiter.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
   </p>
 
   {#if data.a && data.b}
@@ -401,6 +401,7 @@
           <option value="power">{sortArrow} Gesamtstärke</option>
           <option value="rarity">{sortArrow} Seltenheit</option>
           <option value="generation">{sortArrow} Generation</option>
+          {#if data.dynasties}<option value="lineage">{sortArrow} Reine Linie</option>{/if}
           <option value="species">Art ({sortAz})</option>
           <option value="name">Name ({sortAz})</option>
           {#each content.stats.list as st (st.id)}<option value={`stat:${st.id}`}>{sortArrow} {st.name}</option>{/each}
@@ -425,6 +426,7 @@
         <span class="tname">{t.c.name}</span>
         {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
         <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
+        {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
         {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
         {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
       </button>
@@ -435,6 +437,8 @@
   {#if data.hidden > 0}<p class="tiny muted more">… und {data.hidden} weitere – Suche oder Filter grenzen die Liste ein.</p>{/if}
 </article>
 
+{#if data.dynasties}<DynastyPanel />{/if}
+
 <p class="muted small hint">
   Nachwuchs erbt gemittelte Werte, Aussehen und Fähigkeiten der Eltern. Mutationen können Werte steigern oder neue Fähigkeiten bringen.
   Die Seltenheit wird bei jeder Geburt neu gewürfelt ({content.rarities.list.length} Stufen).
@@ -442,6 +446,7 @@
 
 <style>
   .small { font-size: 0.8rem; }
+  .to-recycler { align-self: flex-start; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
   .tiny { font-size: 0.68rem; }
 
   .kpi.warn { border-color: var(--danger); }
@@ -464,6 +469,8 @@
   }
   .nest.busy { border: 1px solid var(--line); background: radial-gradient(circle at 50% 30%, #f2c14e14, var(--panel) 70%); }
   .nest.soon { border-color: var(--gold); }
+  .nest.ritualnest { position: relative; border: 1px dashed color-mix(in srgb, var(--violet) 60%, var(--line)); background: radial-gradient(circle at 50% 30%, #9b6bff1f, var(--panel) 70%); }
+  .rn-label { position: absolute; top: 0.3rem; left: 0.5rem; color: var(--violet); font-weight: 700; }
   .egg-wrap { position: relative; width: 120px; height: 86px; display: grid; justify-items: center; align-items: end; }
   .twigs { position: absolute; bottom: 0; width: 120px; height: 40px; }
   .egg { position: relative; z-index: 1; margin-bottom: 12px; transform-origin: 50% 90%; }
@@ -517,6 +524,7 @@
   .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .filters input { width: 11rem; }
   .sortgroup { display: flex; gap: 0.3rem; }
+  .lin { color: var(--gold); font-weight: 700; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
   .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
   .tile.a { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; }
@@ -539,6 +547,7 @@
     .socket :global(svg) { width: 64px; height: 64px; }
     .filters input { width: 100%; }
     .filters select { flex: 1 1 30%; min-width: 0; }
-    .sortgroup { flex: 1 1 30%; min-width: 0; }
+    .sortgroup { flex: 1 1 100%; min-width: 0; }
+    .sortgroup select { flex: 1 1 auto; }
   }
 </style>

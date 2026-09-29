@@ -26,6 +26,7 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
       const c = ctx.state.creatures.find((x) => x.id === e.creatureId);
       if (c) {
         record('record.generation', c.generation);
+        record('record.lineage', c.lineage ?? 0);
         record('record.rarity', ctx.content.rarities.get(c.rarity).order);
       }
     }),

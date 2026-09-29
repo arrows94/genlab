@@ -177,15 +177,18 @@ Eine **Tagesreise** ist eine Region mit langer Dauer und garantiertem Fund: `wil
 
 ## Brutritual (Besondere Brut)
 
-`src/content/rituals.ts`: langsame Brutarten mit besseren Chancen. Das normale Ei bleibt unverändert.
+`src/content/rituals.ts`: langsame Brutarten mit sicheren Ergebnissen. Sie laufen im eigenen Ritualnest
+(`balance.breeding.ritualNests`, Modifier `slots.ritualNest`) neben den normalen Nestern und nehmen nur eine
+Keimprobe der Eltern – die Eltern bleiben frei. Das normale Ei bleibt unverändert.
 
 ```ts
-{ id: 'noble', name: 'Edelbrut', icon: '💠', hours: 8, description: '…', cost: { essence: 300 },
-  requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, minRarity: 'uncommon', rarityBoost: 2 },
+{ id: 'noble', name: 'Edelbrut', icon: '💠', hours: 3, description: '…', cost: { essence: 300 },
+  requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 }, minRarity: 'rare' },
 ```
 
 - `hours` ersetzt die normale Brutzeit, `cost` kommt zu den normalen Kosten dazu.
-- Wirkungen: `hybridMult` (multipliziert jede Rezept-Chance), `minRarity` (Mindestseltenheit), `rarityBoost` (Gewicht für Selten und höher, 2 = dreifach), `mutationAdd`.
+- Wirkungen: `guaranteedHybrid` (passt ein Rezept, wird es sicher ein Hybrid), `hybridMult` (multipliziert jede
+  Rezept-Chance), `minRarity` (Mindestseltenheit), `rarityBoost` (Gewicht für Selten und höher, 2 = dreifach), `mutationAdd`.
 - Der Zuchtplaner zeigt die Chancen mit dem gewählten Ritual; der Zuchtautomat nutzt nie Rituale.
 
 ## Wochenexpedition
@@ -258,6 +261,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 | `abilities.ts` | Fähigkeiten mit Stufe und Wirkungsbereich `self` / `job` / `global` |
 | `capsules.ts` | Gen-Kapseln: Kosten, Seltenheits-Gewichte (werden offen angezeigt), Stufen-Gewichte (Basis/Hybrid/…), optional Elementwahl, Pity-Schwelle |
 | `progression.ts` | Freischaltungen (`features`, optional mit `grantsCreature`), Dex-Belohnungen, Erfolge, Prestige-Ebenen |
+| `names.ts` | Namen gezüchteter Kreaturen: `givenStart` + `givenEnd` (Bausteine wie „Wusel“ + „bert“) und `given` (klassische Rufnamen), `familySuffix` (Endungen der Familiennamen; Vorsilben je Element als `familyPrefixes` in `elements.ts`), `epithet.<stat>` und `epithet.shiny` (Beinamen). Rufnamen bis `balance.creature.maxGivenLength` Zeichen; Kinder mischen meist die Rufnamen der Eltern (`freshNameChance` = Anteil ganz neuer Namen) |
 | `balance.ts` | Alle Tuning-Zahlen: Zeiten, Seltenheits-Gewichte, Stat-Multiplikatoren, Prestige-Formel, Stall, Verkaufswerte, Infusion (EP, Stufen, Durchbruch), Recycler |
 
 Bedingungen (`Condition`) für Freischaltungen und Erfolge: `always`, `resourceEarned`, `resourceOwned`, `upgradeLevel`, `feature`, `creatureCount`, `statistic`, `dex`, `prestigeCount`, sowie `all` / `any` zum Kombinieren.

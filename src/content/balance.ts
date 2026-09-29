@@ -91,8 +91,10 @@ export const balance: Balance = {
   creature: {
     statVariance: 0.1,
     hueVariance: 18,
-    maxNameLength: 20,
-    offspringName: { minLength: 4, maxLength: 12, attempts: 12 },
+    maxNameLength: 25,
+    maxGivenLength: 11,
+    freshNameChance: 0.25,
+    epithetFromRarity: 'epic',
   },
   abilities: {
     slotChances: [0.35, 0.15, 0.05],
@@ -110,6 +112,7 @@ export const balance: Balance = {
     mutationStatRange: [1.05, 1.25],
     abilityInheritChance: 0.5,
     baseNests: 1,
+    ritualNests: 1,
   },
   genetics: {
     alleleMutationFactor: 0.5,
@@ -162,6 +165,9 @@ export const balance: Balance = {
   recycler: {
     fragmentsByRarity: { common: 1, uncommon: 3, rare: 8, epic: 25, legendary: 80, mythic: 250 },
     perGeneration: 0.05,
+    autoSec: 180,
+    manualSec: 15,
+    autoMinSec: 1,
   },
   automation: {
     intervalSec: 5,
@@ -209,6 +215,18 @@ export const balance: Balance = {
   },
   perfection: {
     shinyChance: 0.0005,
+  },
+  dynasty: {
+    statPerDepth: 0.01,
+    maxDepthBonus: 0.5,
+    tiers: [5, 10, 20, 35, 50],
+    statPerTier: 0.05,
+    shardsPerTier: [0, 0, 0, 2, 3],
+    modifiersPerTier: [
+      { target: 'production.food', op: 'pct', value: 0.01 },
+      { target: 'production.gold', op: 'pct', value: 0.01 },
+      { target: 'production.essence', op: 'pct', value: 0.01 },
+    ],
   },
   missions: {
     baseCamps: 1,

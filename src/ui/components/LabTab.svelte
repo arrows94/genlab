@@ -6,8 +6,9 @@
   import { activeLoci } from '@core/genetics';
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
-  import { batchFragments, recycle } from '@core/features/recycler';
-  import { game, view, act, ask } from '../store.svelte';
+  import { batchFragments } from '@core/features/recycler';
+  import { inRecycler, sendToRecycler } from '@core/features/automation';
+  import { game, view, act, ask, toast } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
@@ -76,8 +77,13 @@
     if (ids.length && (await ask(`${ids.length} Kreatur(en) verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, ids))) selected = new Set();
   }
   async function doRecycle() {
-    const ids = data.chosen.map((c) => c.id);
-    if (ids.length && (await ask(`${ids.length} Kreatur(en) recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, ids))) selected = new Set();
+    const ids = data.chosen.filter((c) => !inRecycler(game, c.id)).map((c) => c.id);
+    if (!ids.length) return;
+    const text = `${ids.length} Kreatur(en) zum Gen-Recycler schicken? Sie werden in der Zerlege-Kammer nacheinander recycelt – bis dahin kannst du sie dort zurückholen.`;
+    if ((await ask(text, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, ids))) {
+      selected = new Set();
+      toast(`♻️ ${ids.length} ${ids.length === 1 ? 'Kreatur wartet' : 'Kreaturen warten'} auf die Zerlege-Kammer.`);
+    }
   }
 </script>
 
@@ -156,6 +162,7 @@
         <option value="oldest">Älteste</option>
         <option value="rarity">Seltenheit</option>
         <option value="generation">Generation</option>
+        {#if game.state.features['dynasties']}<option value="lineage">Reine Linie</option>{/if}
         <option value="power">Gesamtstärke</option>
         {#each content.stats.list as s (s.id)}<option value={`stat:${s.id}`}>{s.name}</option>{/each}
         <option value="name">Name</option>
@@ -174,7 +181,7 @@
       <button onclick={() => (selected = new Set())}>Keine</button>
       <button class="danger" disabled={!data.chosen.length} onclick={doSell}>Verkaufen · <CostLabel cost={data.sellValue} /></button>
       {#if data.fragments}
-        <button disabled={!data.chosen.length} onclick={doRecycle}>Recyceln · <span class="num">{formatNumber(data.fragments)} 🧩</span></button>
+        <button disabled={!data.chosen.length} onclick={doRecycle}>♻️ Zum Recycler · <span class="num">≈ {formatNumber(data.fragments)} 🧩</span></button>
       {/if}
       <span class="muted small">Favoriten und beschäftigte Kreaturen werden nie verbraucht.</span>
     </div>

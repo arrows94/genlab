@@ -98,6 +98,7 @@
     </form>
   {:else}
     <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
+    {#if creature.epithet}<span class="epithet" title="Beiname">„{creature.epithet}“</span>{/if}
   {/if}
   <div class="meta">
     <span class="element">{element.name}</span>
@@ -105,6 +106,9 @@
     {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
     {#if creature.shiny}<span class="shiny">✦ Schillernd</span>{/if}
     <span class="num">Gen {creature.generation}</span>
+    {#if game.state.automation.recycling?.creatureId === creature.id}<span class="recy" title="Wird gerade im Gen-Recycler zerlegt – zurückholen in der Detailansicht oder im Recycler">♻ in der Zerlege-Kammer</span>
+    {:else if game.state.automation.recycleQueue.includes(creature.id)}<span class="recy" title="Wartet auf die Zerlege-Kammer – zurückholen in der Detailansicht oder im Recycler">♻ wartet auf den Recycler</span>{/if}
+    {#if creature.lineage > 0 && game.state.features['dynasties']}<span class="lineage num" title="Reine Linie: {creature.lineage} Generationen in Folge dieselbe Art">👑 {creature.lineage}</span>{/if}
   </div>
   <dl class="stats">
     {#each content.stats.list as s (s.id)}
@@ -167,6 +171,9 @@
   .art { border: none; padding: 0; cursor: pointer; display: flex; justify-content: center; background: radial-gradient(circle, color-mix(in srgb, var(--element) 18%, transparent), transparent 70%); border-radius: 50%; }
   .name { background: none; border: none; padding: 0; font-weight: 700; font-size: 1.05rem; text-align: left; }
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
+  .lineage { color: var(--gold); font-weight: 700; }
+  .recy { color: var(--violet); font-weight: 700; }
+  .epithet { display: block; font-size: 0.75rem; font-style: italic; color: var(--gold); margin-top: -0.1rem; }
   .element { color: var(--element); }
   .tier { color: var(--violet); }
   .shiny { background: linear-gradient(90deg, #ff7ad9, #7ad9ff, #b8ff7a); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }

@@ -111,8 +111,13 @@ export interface Balance {
     statVariance: number;
     hueVariance: number;
     maxNameLength: number;
+    /** Longest Rufname (the family name gets the rest of maxNameLength). */
+    maxGivenLength: number;
+    /** Chance that a child gets a fresh Rufname instead of a blend of its parents'. */
+    freshNameChance: number;
+    /** Creatures of this rarity and better (and shiny ones) get a Beiname. */
+    epithetFromRarity: string;
     /** Offspring names are blended from the parents' names within these limits. */
-    offspringName: { minLength: number; maxLength: number; attempts: number };
   };
   abilities: {
     /** Chance for the 1st, 2nd, 3rd … ability when a creature is created without parents. */
@@ -138,6 +143,8 @@ export interface Balance {
     abilityInheritChance: number;
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
+    /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */
+    ritualNests: number;
   };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */
@@ -191,6 +198,12 @@ export interface Balance {
   recycler: {
     fragmentsByRarity: Record<string, number>;
     perGeneration: number;
+    /** Seconds the Recycling-Automat needs per creature (× `recycler.time` modifiers). */
+    autoSec: number;
+    /** Seconds per creature the player sent (lab, detail view) – also × `recycler.time`. */
+    manualSec: number;
+    /** Lower bound for both times. */
+    autoMinSec: number;
   };
   automation: {
     intervalSec: number;
@@ -240,6 +253,20 @@ export interface Balance {
     shardsPerRecordPoint: number;
     /** Permanent bonus per point of the record in total difficulty. */
     recordModifiers: ModifierDef[];
+  };
+  dynasty: {
+    /** Stat bonus per generation of a creature's own pure line. */
+    statPerDepth: number;
+    /** Cap of that bonus. */
+    maxDepthBonus: number;
+    /** Line depths of the dynasty tiers (record per species). */
+    tiers: number[];
+    /** Stat bonus per tier for every creature of that species. */
+    statPerTier: number;
+    /** Äon-Splitter for reaching each tier (same order as `tiers`). */
+    shardsPerTier: number[];
+    /** Permanent bonus per tier, summed over all species. */
+    modifiersPerTier: ModifierDef[];
   };
   perfection: {
     /** Base chance for the "Schillernd" colour mutation (modified by `creature.shinyChance`). */

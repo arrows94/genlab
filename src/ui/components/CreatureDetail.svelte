@@ -5,9 +5,11 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { statBreakdown } from '@core/queries';
+  import { dynastyRecord, dynastyTier, lineageBonus, nextTierDepth } from '@core/features/dynasty';
   import { toggleLock } from '@core/actions';
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
-  import { fragmentValue, recycle } from '@core/features/recycler';
+  import { fragmentValue } from '@core/features/recycler';
+  import { inRecycler, sendToRecycler, takeBackFromRecycler } from '@core/features/automation';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaSequence from './DnaSequence.svelte';
@@ -34,6 +36,13 @@
       blocker: consumeBlocker(game, c),
       sellValue: batchSellValue(game, [c]),
       fragments: fragmentValue(game, c),
+      recycling: inRecycler(game, c.id),
+      dynasty: game.state.features['dynasties']
+        ? (() => {
+            const record = dynastyRecord(game, c.speciesId);
+            return { own: lineageBonus(game, c), record, tier: dynastyTier(game, record), next: nextTierDepth(game, record), statPerTier: game.balance.dynasty.statPerTier };
+          })()
+        : null,
     };
   });
 
@@ -46,7 +55,7 @@
   }
   async function doRecycle() {
     const cur = c;
-    if (cur && (await ask(`${cur.name} recyceln?`, { ok: 'Recyceln', danger: true })) && act(recycle(game, [cur.id]))) close();
+    if (cur && (await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
   function fmtMod(op: string, v: number) {
     if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;
@@ -62,13 +71,18 @@
         <div class="art"><CreatureSvg appearance={data.look} shape={data.species.shape} tier={data.species.tier} size={120} shiny={c.shiny} /></div>
         <div class="title">
           <h2>{c.name}{#if data.infusion.level > 0}<span class="plus num"> +{data.infusion.level}</span>{/if}</h2>
+          {#if c.epithet}<p class="epithet">„{c.epithet}“</p>{/if}
           <p><span style="color: var(--rarity)">{data.rarity.name}</span> · <span style="color: var(--el)">{data.element.name}</span> · {data.species.name} · Gen {c.generation}</p>
           <p class="muted small">{data.species.description}</p>
           <div class="actions">
             <button onclick={() => act(toggleLock(game, c!.id))}>{c.locked ? '★ Favorit' : '☆ Als Favorit sperren'}</button>
             <button class="danger" disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doSell}>Verkaufen · <CostLabel cost={data.sellValue} /></button>
             {#if game.state.features['recycler']}
-              <button disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doRecycle}>Recyceln · <span class="num">{formatNumber(data.fragments)} 🧩</span></button>
+              {#if data.recycling}
+                <button onclick={() => act(takeBackFromRecycler(game, c!.id))} title="Wartet auf die Zerlege-Kammer oder liegt schon darin. Vom Recycling-Automaten gewählte Kreaturen rettest du als Favorit.">↩ Aus dem Recycler holen</button>
+              {:else}
+                <button disabled={!!data.blocker} title={data.blocker ?? ''} onclick={doRecycle}>♻️ Zum Recycler · <span class="num">≈ {formatNumber(data.fragments)} 🧩</span></button>
+              {/if}
             {/if}
           </div>
         </div>
@@ -117,7 +131,15 @@
             </p>
           {/if}
 
-          <h3>Stammbaum</h3>
+          <h3>Stammbaum{#if c.family} <span class="muted small">· Familie {c.family}</span>{/if}</h3>
+          {#if data.dynasty}
+            {@const d = data.dynasty}
+            <p class="small lineage">
+              {#if c.lineage > 0}<b>👑 Reine Linie · Tiefe {c.lineage}</b> <span class="muted">(+{formatPercent(d.own)} Werte)</span>
+              {:else}<span class="muted">Keine reine Linie – dafür müssen beide Eltern von derselben Art sein wie das Kind.</span>{/if}
+              <br /><span class="muted">Dynastie {data.species.name}: Rekord {d.record}{#if d.tier > 0}{' · '}Stufe {d.tier} (+{formatPercent(d.tier * d.statPerTier)} Werte für die Art){/if}{#if d.next !== null}{' · '}nächste Stufe ab Tiefe {d.next}{/if}</span>
+            </p>
+          {/if}
           {#if c.ancestry}
             <div class="pedigree">
               {#each c.ancestry as p, i (i)}
@@ -166,6 +188,9 @@
   .stats td.num { font-weight: 700; font-size: 1rem; }
   .plain { list-style: none; padding: 0; margin: 0 0 0.5rem; display: grid; gap: 0.25rem; font-size: 0.85rem; }
   .pedigree { display: grid; gap: 0.4rem; }
+  .lineage { margin: 0 0 0.5rem; }
+  .epithet { margin: -0.2rem 0 0.2rem; font-style: italic; color: var(--gold); }
+  .lineage b { color: var(--gold); }
   .anc { background: var(--bg-2); border-radius: 8px; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
   .grand { display: grid; margin-top: 0.2rem; padding-left: 0.5rem; }
   @media (max-width: 640px) {

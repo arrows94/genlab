@@ -13,6 +13,7 @@ import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
+import { silently } from './sound';
 
 /**
  * Bridge between the core and Svelte. Holds the single Game instance, runs
@@ -52,6 +53,8 @@ export const view = $state({
   hatchlings: [] as { id: number; key: number }[],
   /** Open in-game confirmation (replaces window.confirm, which browsers can block). */
   confirm: null as { text: string; ok: string; danger: boolean; resolve: (yes: boolean) => void } | null,
+  /** Big full-screen moments waiting to be shown, oldest first (optimal DNA, first shiny creature). */
+  celebrations: [] as { key: number; kind: 'perfect' | 'shiny'; creatureId: number; species: string }[],
   returns: [] as { id: number; missionId: string; creatureId: number; rewards: [string, string][]; wildSpecies: string | null }[],
 });
 
@@ -154,8 +157,18 @@ function wireEvents(g: Game): void {
   g.bus.on('anomalyStarted', (e) => toast(`🌀 Anomalie „${content.anomalies.get(e.anomaly).name}“ beginnt!`, 'unlock'));
   g.bus.on('anomalyCompleted', (e) => toast(`🌀 ${content.anomalies.get(e.anomaly).name} Stufe ${e.level} gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
   g.bus.on('anomalyRecord', (e) => toast(`🏆 Neuer Anomalie-Rekord: Schwierigkeit ${e.total}${e.shards > 0 && g.state.features.aeon ? ` · +${e.shards} ⏳` : ''}`, 'rare', 7000));
-  g.bus.on('perfectGenome', (e) => toast(`✦ Perfektes Genom: ${content.species.get(e.species).name}!`, 'rare', 7000));
-  g.bus.on('shiny', (e) => toast(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare', 7000));
+  g.bus.on('dynastyTier', (e) => {
+    if (g.state.features['dynasties']) toast(`👑 Dynastie ${content.species.get(e.species).name}: Stufe ${e.tier} (reine Linie ${e.depth})${e.shards > 0 && g.state.features.aeon ? ` · +${e.shards} ⏳` : ''}`, 'rare', 7000);
+  });
+  // Big moments get a full-screen celebration (and stay in the notification center).
+  g.bus.on('perfectGenome', (e) => {
+    record(`✦ Optimale DNS: perfektes Genom für ${content.species.get(e.species).name}!`, 'rare');
+    view.celebrations = [...view.celebrations, { key: ++listId, kind: 'perfect', creatureId: e.creatureId, species: e.species }];
+  });
+  g.bus.on('shiny', (e) => {
+    record(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare');
+    view.celebrations = [...view.celebrations, { key: ++listId, kind: 'shiny', creatureId: e.creatureId, species: e.species }];
+  });
   g.bus.on('recipeHinted', (e) => {
     toast(`📜 Hinweis auf eine Kreuzung: „${content.recipes.get(e.recipe).hint}“`, 'unlock', 6000);
     markUnseen('dex');
@@ -290,6 +303,12 @@ const syncHost = {
   notify: (text: string, kind: 'info' | 'error' = 'info') => toast(text, kind, kind === 'error' ? 6000 : 3500),
 };
 
+/** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent. */
+function advance() {
+  const quiet = Date.now() - game.state.lastTickAt > 5000;
+  return quiet ? silently(() => game.update(Date.now())) : game.update(Date.now());
+}
+
 let started = false;
 /** Loads the save (async on native platforms), then starts the game loop. */
 export async function init(): Promise<void> {
@@ -312,7 +331,7 @@ export async function init(): Promise<void> {
     save: toBackground,
     resume: () => {
       toForeground();
-      const r = game.update(Date.now());
+      const r = advance();
       if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
       refresh();
     },
@@ -331,13 +350,13 @@ export async function init(): Promise<void> {
 }
 
 function startLoop(): void {
-  const report = game.update(Date.now());
+  const report = advance();
   if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
 
   let lastRender = 0;
   let lastSlow = 0;
   const loop = (t: number) => {
-    const r = game.update(Date.now());
+    const r = advance();
     if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
     if (t - lastRender >= 100) {
       lastRender = t;
@@ -352,14 +371,14 @@ function startLoop(): void {
   requestAnimationFrame(loop);
 
   // Background tabs throttle rAF; a slow interval keeps the sim alive.
-  setInterval(() => game.update(Date.now()), 1000);
+  setInterval(advance, 1000);
   setInterval(save, balance.sim.autosaveSec * 1000);
   // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') toBackground();
     else {
       toForeground();
-      game.update(Date.now());
+      advance();
     }
   });
   window.addEventListener('beforeunload', save);

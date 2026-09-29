@@ -17,6 +17,9 @@ export const talents: TalentDef[] = [
   // Tier 2
   { id: 'twinBirth', name: 'Zwillingsgeburten', tier: 2, cost: 3, requires: ['aeonHarvest'], description: '15 % Chance, dass ein Ei Zwillinge hervorbringt.',
     modifiers: [{ target: 'breeding.twinChance', op: 'add', value: 0.15 }] },
+  { id: 'dynasty', name: 'Stammbaum-Dynastien', tier: 2, cost: 3, requires: ['aeonHarvest'],
+    description: 'Reine Linien zählen: Jede Generation derselben Art in Folge stärkt das Kind, und der Rekord jeder Art bringt dauerhafte Boni (Brutstation).',
+    modifiers: [], unlocksFeatures: ['dynasties'] },
   { id: 'ancientGenes', name: 'Urgene', tier: 2, cost: 3, requires: ['aeonMemory'], description: 'Ein zusätzlicher Gen-Locus „Urgen“ erwacht in allen Kreaturen.',
     modifiers: [] },
   { id: 'aeonTeam', name: 'Vierter Kämpfer', tier: 2, cost: 2, requires: ['aeonAutomation'], description: '+1 Platz im Turm-Team.',
@@ -134,8 +137,8 @@ export const bossTraits: BossTraitDef[] = [
     description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
   { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0,
     description: 'Wechselt jede Runde sein Element. Ein bunt gemischtes Team hilft.' },
-  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.08,
-    description: 'Heilt nach jeder Runde 8 % seiner KP. Nur hoher Schaden bringt ihn zu Fall.' },
+  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4,
+    description: 'Heilt nach jeder Runde 40 % des Schadens, den er in dieser Runde genommen hat. Je schneller er fällt, desto weniger kann er heilen.' },
 ];
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */

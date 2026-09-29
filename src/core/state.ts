@@ -53,6 +53,12 @@ export interface Creature {
   splices: number;
   /** Rare colour mutation "Schillernd". */
   shiny: boolean;
+  /** Stammbaum-Dynastie: generations in a row of a pure line (same species as both parents); 0 = none. */
+  lineage: number;
+  /** Family name, passed on to offspring (the stronger parent's); null = none yet (wild, start, capsule). */
+  family: string | null;
+  /** Beiname („Blitzpfote“) for epic and better or shiny creatures; null = none. */
+  epithet: string | null;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;
@@ -94,10 +100,6 @@ export interface AutoBreedConfig {
   allele: string | null;
   /** Max share of each owned resource a single egg may cost (1 = everything). */
   budget: number;
-  /** When the stable is full: do nothing, or sell / recycle the weakest creature. */
-  cleanup: 'off' | 'sell' | 'recycle';
-  /** Highest rarity the cleanup may remove. */
-  cleanupMaxRarity: string;
 }
 
 /** Recycling-Automat settings. */
@@ -117,6 +119,10 @@ export interface AutomationState {
   autoAssign: boolean;
   autoBreed: AutoBreedConfig;
   autoRecycle: AutoRecycleConfig;
+  /** Zerlege-Kammer of the Recycling-Automat: the creature inside and how long it has been there. */
+  recycling: { creatureId: number; elapsedMs: number; manual?: boolean } | null;
+  /** Creatures the player sent to the Zerlege-Kammer, waiting in order (before the automat's picks). */
+  recycleQueue: number[];
   /** Sequenzier-Roboter: sequence the strongest unknown genomes into free slots. */
   autoSequence: boolean;
   /** Sim time of the last automation run. */
@@ -286,6 +292,8 @@ export interface GameState {
   anomalyBest: Record<string, number>;
   /** Highest total difficulty (sum of stages) of a completed anomaly run. */
   anomalyRecord: number;
+  /** Stammbaum-Dynastien: deepest pure line ever bred per species (never reset). */
+  dynasties: Record<string, number>;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -326,8 +334,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     achievements: {},
     statistics: {},
     prestige: {},
-    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
-      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
+    automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
+      autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
     tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
     talents: {},
@@ -335,6 +343,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomaliesCompleted: {},
     anomalyBest: {},
     anomalyRecord: 0,
+    dynasties: {},
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },

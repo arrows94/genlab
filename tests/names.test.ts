@@ -1,59 +1,142 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
-import { Rng } from '@core/rng';
-import { blendNames, syllables } from '@core/names';
-import { startBreeding } from '@core/features/breeding';
+import { createCreature, findCreature } from '@core/creatures';
+import { breedingTimeMs, startBreeding } from '@core/features/breeding';
+import { epithetFor, foundFamily, givenName, rufname, syllables } from '@core/names';
+import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
-import { balance, makeGame } from './helpers';
+import type { Creature } from '@core/state';
+import { balance, content, makeGame } from './helpers';
 
-const rules = balance.creature.offspringName;
+function nameGame(seed = 4, freshNameChance = balance.creature.freshNameChance) {
+  const g = makeGame(seed, { creature: { ...balance.creature, freshNameChance } });
+  unlockFeature(g, 'breeding');
+  g.state.resources.food = D(1e12);
+  g.state.resources.gold = D(1e12);
+  g.state.creatures = [];
+  return g;
+}
 
-describe('offspring names', () => {
-  it('splits names into syllables', () => {
-    expect(syllables('Glutwelpe')).toEqual(['Glu', 'twe', 'lpe']);
-    expect(syllables('Sprössling')).toEqual(['Sprö', 'ssling']);
-    expect(syllables('Ferrox')).toEqual(['Fe', 'rrox']);
-    expect(syllables('Xyz')).toEqual(['Xyz']);
+const mk = (g: ReturnType<typeof nameGame>, species: string, power: number, family: string | null = null) =>
+  createCreature(g, { speciesId: species, rarity: 'common', abilities: [], genome: {}, family, stats: { hp: power, atk: power, def: power, spd: power }, exactStats: true });
+
+function hatch(g: ReturnType<typeof nameGame>, a: Creature, b: Creature): Creature {
+  const ids: number[] = [];
+  const off = g.bus.on('eggHatched', (e) => ids.push(e.creatureId));
+  expect(startBreeding(g, a.id, b.id).ok).toBe(true);
+  g.advance(breedingTimeMs(g, 60, [a, b]) + 1000);
+  off();
+  return findCreature(g, ids[0]!)!;
+}
+
+/** A Rufname follows the rules: not too long, at most 3 syllables, no stuttering. */
+function wellFormed(name: string) {
+  const parts = syllables(name).map((p) => p.toLowerCase());
+  return name.length <= balance.creature.maxGivenLength && parts.length <= 3 + 1 && !/(.)\1\1/i.test(name);
+}
+
+describe('offspring names: Rufname + Familie', () => {
+  it('the stronger parent founds a family named after its element; the child carries it', () => {
+    const g = nameGame();
+    const strong = mk(g, 'emberpup', 50);
+    const weak = mk(g, 'bubbloon', 5);
+    const child = hatch(g, strong, weak);
+    const [first, family, ...rest] = child.name.split(' ');
+    expect(rest).toEqual([]);
+    expect(wellFormed(first!)).toBe(true);
+    expect(child.family).toBe(family);
+    expect(content.elements.get('fire').familyPrefixes.some((p) => family!.startsWith(p))).toBe(true);
+    // The founder carries the family from now on (its name stays).
+    expect(strong.family).toBe(family);
+    expect(strong.name).toBe('Glutwelpe');
+    expect(weak.family).toBeNull();
   });
 
-  it('blends start of one parent with the end of the other', () => {
-    const rng = Rng.fromSeed(3);
-    for (let i = 0; i < 200; i++) {
-      const name = blendNames(rng, 'Glutwelpe', 'Sprössling', rules, 'Fallback');
-      expect(name.length).toBeGreaterThanOrEqual(rules.minLength);
-      expect(name.length).toBeLessThanOrEqual(rules.maxLength);
-      expect(['glutwelpe', 'sprössling']).not.toContain(name.toLowerCase());
-      // Always starts with a parent's first syllable.
-      expect(/^(glu|sprö)/.test(name.toLowerCase()), name).toBe(true);
+  it('children take the stronger parent’s family, siblings get different Rufnamen', () => {
+    const g = nameGame();
+    const a = mk(g, 'emberpup', 50, 'Funkenstein');
+    const b = mk(g, 'emberpup', 10, 'Tauhain');
+    const first = hatch(g, a, b);
+    const second = hatch(g, a, b);
+    expect(first.family).toBe('Funkenstein');
+    expect(second.family).toBe('Funkenstein');
+    expect(first.name.split(' ')[0]).not.toBe(second.name.split(' ')[0]);
+    // Without a family of its own, the weaker parent's is passed on.
+    const c = mk(g, 'bubbloon', 90);
+    expect(hatch(g, c, b).family).toBe('Tauhain');
+  });
+
+  it('never gets longer than the name limit, and a line keeps varied names over many generations', () => {
+    const g = nameGame(9);
+    for (let i = 0; i < 300; i++) {
+      const family = foundFamily(g, g.rng.pick(content.elements.list).id);
+      expect(`${givenName(g, family)} ${family}`.length).toBeLessThanOrEqual(balance.creature.maxNameLength);
+    }
+    let pair = [mk(g, 'emberpup', 20), mk(g, 'emberpup', 20)] as [Creature, Creature];
+    const late: string[] = [];
+    for (let gen = 0; gen < 30; gen++) {
+      const x = hatch(g, pair[0], pair[1]);
+      const y = hatch(g, pair[0], pair[1]);
+      for (const c of [x, y]) {
+        expect(c.name).toMatch(/^\S+ \S+$/);
+        expect(c.name.length).toBeLessThanOrEqual(balance.creature.maxNameLength);
+        const parts = syllables(rufname(c)).map((p) => p.toLowerCase());
+        expect(new Set(parts).size, c.name).toBe(parts.length);
+        expect(/(.)\1\1/i.test(c.name), c.name).toBe(false);
+        if (gen >= 20) late.push(rufname(c));
+      }
+      g.state.creatures = [x, y];
+      pair = [x, y];
+    }
+    // No convergence to „Fafa“: the last ten generations still have many different Rufnamen.
+    expect(new Set(late).size).toBeGreaterThanOrEqual(12);
+  });
+
+  it('children mostly blend their parents’ Rufnamen', () => {
+    const g = nameGame(3, 0);
+    const a = mk(g, 'emberpup', 50, 'Funkenstein');
+    const b = mk(g, 'emberpup', 10, 'Funkenstein');
+    a.name = 'Kiko Funkenstein';
+    b.name = 'Mira Funkenstein';
+    for (let i = 0; i < 6; i++) {
+      const child = hatch(g, a, b);
+      const first = rufname(child).toLowerCase();
+      expect(first.startsWith('ki') || first.startsWith('mi'), child.name).toBe(true);
+      expect(first.endsWith('ko') || first.endsWith('ra'), child.name).toBe(true);
+      g.state.creatures = g.state.creatures.filter((c) => c === a || c === b);
     }
   });
 
-  it('is random but reproducible with the same seed', () => {
-    const names = (seed: number) => Array.from({ length: 20 }, () => blendNames(Rng.fromSeed(seed), 'Funke', 'Blubbling', rules, 'x'));
+  it('epic and better or shiny creatures get a Beiname from their best stat', () => {
+    const g = nameGame();
+    const common = createCreature(g, { speciesId: 'emberpup', rarity: 'common' });
+    expect(common.epithet).toBeNull();
+    const base = content.species.get('emberpup').baseStats;
+    const fast = createCreature(g, { speciesId: 'emberpup', rarity: 'epic', stats: { ...base, spd: (base.spd ?? 1) * 3 }, exactStats: true });
+    expect(content.nameLists.get('epithet.spd').words).toContain(fast.epithet);
+    const shiny = createCreature(g, { speciesId: 'emberpup', rarity: 'common', shiny: true });
+    expect(content.nameLists.get('epithet.shiny').words).toContain(shiny.epithet);
+    expect(epithetFor(g, { ...common, rarity: 'legendary' })).not.toBeNull();
+  });
+
+  it('keeps names reproducible with the same seed', () => {
+    const names = (seed: number) => {
+      const g = nameGame(seed);
+      return Array.from({ length: 5 }, () => `${givenName(g, null)} ${foundFamily(g, 'water')}`);
+    };
     expect(names(5)).toEqual(names(5));
-    const rng = Rng.fromSeed(9);
-    const variety = new Set(Array.from({ length: 50 }, () => blendNames(rng, 'Funke', 'Blubbling', rules, 'x')));
-    expect(variety.size).toBeGreaterThan(3);
   });
 
-  it('falls back when no valid blend exists', () => {
-    // "Ab" × "C" can only make 3-letter names (below the minimum length).
-    expect(blendNames(Rng.fromSeed(1), 'Ab', 'C', rules, 'Glutwelpe')).toBe('Glutwelpe');
-    expect(blendNames(Rng.fromSeed(1), '', 'Funke', rules, 'Glutwelpe')).toBe('Glutwelpe');
-  });
-
-  it('hatched offspring get a blended name of their (renamed) parents', () => {
-    const g = makeGame(4);
-    unlockFeature(g, 'breeding');
-    g.state.resources.food = D(1e9);
-    const [a, b] = g.state.creatures;
-    a!.name = 'Funke';
-    b!.name = 'Moosbart';
-    startBreeding(g, a!.id, b!.id);
-    g.advance(120_000);
-    const child = g.state.creatures.at(-1)!;
-    expect(child.name).not.toBe('Funke');
-    expect(child.name).not.toBe('Moosbart');
-    expect(/^(Fu|Moo)/.test(child.name)).toBe(true);
+  it('older saves get creatures without a family and Beiname', () => {
+    const g = nameGame();
+    mk(g, 'emberpup', 10, 'Funkenstein');
+    const raw = JSON.parse(serialize(g.state));
+    raw.saveVersion = 7;
+    for (const c of raw.state.creatures) {
+      delete c.family;
+      delete c.epithet;
+    }
+    const { state } = deserialize(JSON.stringify(raw));
+    expect(state.creatures.every((c) => c.family === null && c.epithet === null)).toBe(true);
   });
 });

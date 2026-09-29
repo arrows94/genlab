@@ -25,7 +25,7 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: 6,
+    id: 9,
     date: '2026-09-29',
     title: 'Ein Spielstand für alle Geräte',
     items: [
@@ -33,6 +33,46 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Der Export ist jetzt rund zehnmal kürzer – er passt bequem in eine Nachricht. Alte Exporte lassen sich weiterhin einspielen.' },
       { text: 'Neuer „Teilen …“-Knopf in den Optionen: Schick deinen Spielstand direkt per Messenger, Mail oder AirDrop auf ein anderes Gerät.' },
       { text: 'Vor dem Import siehst du beide Spielstände nebeneinander – Spielzeit, Kreaturen, Erfolge und mehr. Ist der Import weniger weit, wirst du gewarnt.' },
+    ],
+  },
+  {
+    id: 8,
+    date: '2026-09-29',
+    title: 'Lustigere Namen, alles zum Recycler, Töne einstellbar',
+    items: [
+      { text: 'Namen mit mehr Witz: Neue Familien starten mit Rufnamen wie „Wuselbert“ oder „Flauschine“. Ihre Kinder mischen meist die Rufnamen der Eltern („Kiko“ × „Mira“ → „Kira“) – mit Regeln, damit nichts mehr stottert – und bekommen ab und zu einen ganz neuen.', feature: 'breeding' },
+      { text: 'Beinamen: Epische und bessere sowie schillernde Kreaturen tragen einen Beinamen nach ihrer größten Stärke, etwa „Blitzpfote“, „Eichenherz“ oder „Glitzerfell“.' },
+      { text: 'Recyceln im Labor und in der Detailansicht schickt Kreaturen jetzt in die Zerlege-Kammer des Gen-Recyclers. Dort werden sie nacheinander zerlegt – in nur 15 Sekunden je Kreatur und vor allem, was der Recycling-Automat auswählt. Bis zuletzt kannst du sie mit „↩ Zurückholen“ wieder herausnehmen.', feature: 'recycler' },
+      { text: 'Die Forschung „Schnellzerlegung“ gibt es jetzt schon mit dem Gen-Recycler, nicht erst mit dem Recycling-Automaten.', feature: 'recycler' },
+      { text: 'Unter Optionen gibt es einen Lautstärke-Regler mit Probeton. Beim Nachholen der Offline-Zeit und in einem Hintergrund-Tab bleibt das Spiel still.' },
+    ],
+  },
+  {
+    id: 7,
+    date: '2026-09-29',
+    title: 'Zuchtautomat und Recycling-Automat arbeiten zusammen',
+    items: [
+      { text: 'Der Zuchtautomat räumt den Stall nicht mehr selbst auf. Ist der Stall voll, wartet er – Platz schafft der Recycling-Automat mit seiner Zerlege-Kammer. So nehmen sich die beiden nicht mehr gegenseitig die Kreaturen weg.', feature: 'autoBreed' },
+      { text: 'Die Zerlege-Kammer wird nicht mehr unterbrochen: Eine Kreatur, die drin ist, wird fertig recycelt – außer du rettest sie als Favorit ★.', feature: 'autoRecycle' },
+    ],
+  },
+  {
+    id: 6,
+    date: '2026-09-29',
+    title: 'Stammbaum-Dynastien, Familiennamen und neue Brutrituale',
+    items: [
+      { text: 'Große Momente werden gefeiert: Das erste perfekte Genom einer Art erscheint bildschirmfüllend als „OPTIMALE DNS“, die erste schillernde Kreatur einer Art als „SCHILLERND!“ – jeweils mit Fanfare. Die Töne lassen sich unter Optionen ausschalten.' },
+      { text: 'Neue Namen: Frisch geschlüpfte Kreaturen bekommen einen Rufnamen und den Familiennamen des stärkeren Elternteils, zum Beispiel „Kiko Funkenstein“. Hat noch keiner eine Familie, gründet der stärkere eine – passend zu seinem Element. Keine seltsamen Silbensalate mehr nach vielen Generationen.', feature: 'breeding' },
+      { text: 'Besondere Brut überarbeitet: Rituale laufen im eigenen Ritualnest neben den normalen Nestern und brauchen nur eine Keimprobe – die Eltern bleiben frei.', feature: 'specialBreeding' },
+      { text: 'Kürzer und sicherer: Kreuzungsritual 1 Stunde (passt ein Rezept, wird es sicher ein Hybrid), Edelbrut 3 Stunden (mindestens Selten), Meisterbrut 8 Stunden (mindestens Episch).', feature: 'specialBreeding' },
+      { text: 'Der Recycling-Automat arbeitet jetzt sichtbar: Er nimmt eine Kreatur nach der anderen in seine Zerlege-Kammer, statt alle auf einmal zu recyceln. Du siehst, wer gerade dran ist, wie lange es noch dauert und wer als Nächstes kommt – und kannst sie mit „★ Retten“ noch behalten.', feature: 'autoRecycle' },
+      { text: 'Anfangs braucht die Kammer 3 Minuten je Kreatur. Die neue Forschung „Schnellzerlegung“ (10 Stufen) bringt das auf wenige Sekunden.', feature: 'autoRecycle' },
+      { text: 'Neues Äon-Talent „Stammbaum-Dynastien“ (Stufe 2): Es öffnet reine Linien in der Brutstation.', feature: 'aeon' },
+      { text: 'Neu: Stammbaum-Dynastien. Paare Kreaturen derselben Art – jede Generation in Folge vertieft die reine Linie und macht das Kind stärker (+1 % Werte je Generation).', feature: 'dynasties' },
+      { text: 'Der Rekord jeder Art bleibt für immer. Ab Linien-Tiefe 5, 10, 20, 35 und 50 steigt die Dynastie eine Stufe: mehr Werte für die ganze Art und mehr Produktion. Die Stufen 4 und 5 bringen Äon-Splitter.', feature: 'dynasties' },
+      { text: 'Die Brutstation zeigt die Linie des nächsten Kindes und eine Übersicht aller Dynastien. Kandidaten und Kreaturenliste lassen sich nach „Reine Linie“ sortieren, und der Zuchtautomat kann reine Linien gezielt vertiefen.', feature: 'dynasties' },
+      { text: 'Genom-Turm: Bosse mit Regeneration heilen jetzt 40 % des Schadens, den sie in der Runde genommen haben – statt 8 % ihrer KP. Sie sind dadurch keine unüberwindbare Wand mehr.', feature: 'tower' },
+      { text: 'Die Brutstation am Handy: Die Sortierung der Kandidaten hat eine eigene Zeile und ist wieder lesbar.', feature: 'breeding' },
     ],
   },
   {

@@ -209,6 +209,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
   const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
   const elements = ctx.content.elements.list.map((e) => e.id);
   for (let round = 1; round <= ctx.balance.tower.maxRounds; round++) {
+    let taken = 0;
     // Wandler: a new element every round.
     if (trait?.kind === 'shift' && round > 1) {
       enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
@@ -221,6 +222,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
         // Element-Schild: only hits with element advantage get through in full.
         if (trait?.kind === 'shield' && elementMultiplier(ctx, f.element, enemy.element) <= 1) dmg = Math.max(1, Math.round(dmg * trait.value));
         enemy.hp -= dmg;
+        taken += dmg;
         hit(f, enemy, dmg);
         if (log.length < 12) log.push(`${f.name} trifft für ${dmg}`);
         if (enemy.hp <= 0) {
@@ -240,9 +242,10 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
         }
       }
     }
-    // Regeneration: heals after every round.
+    // Regeneration: heals a share of the damage it took this round. Scaling with
+    // the team's damage (not the boss's max HP) keeps it equally hard on every floor.
     if (trait?.kind === 'regen' && enemy.hp > 0) {
-      const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(enemy.maxHp * trait.value));
+      const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(taken * trait.value));
       if (healed > 0) {
         enemy.hp += healed;
         if (log.length < 12) log.push(`${enemy.name} heilt ${healed}`);

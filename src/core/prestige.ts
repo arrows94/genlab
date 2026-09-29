@@ -223,6 +223,8 @@ export function resetOverview(ctx: GameContext, layerId: string): { lost: ResetI
   if (grand > 0) kept.push({ icon: '📜', label: 'Großforschung', detail: `${grand} Stufen` });
   const mega = Object.values(s.megaProjects).reduce((n, m) => n + m.stage, 0);
   if (mega > 0) kept.push({ icon: '🏗️', label: 'Großprojekte', detail: `${mega} Bauphasen` });
+  const dynasties = Object.values(s.dynasties).filter((d) => d > 0).length;
+  if (dynasties > 0 && s.features['dynasties']) kept.push({ icon: '👑', label: 'Dynastie-Rekorde', detail: `${dynasties} Arten` });
   const anomalies = Object.values(s.anomaliesCompleted).filter(Boolean).length;
   if (anomalies > 0) kept.push({ icon: '🌀', label: 'Anomalie-Belohnungen', detail: `${anomalies} gemeistert` });
   if (travelling > 0) kept.push({ icon: '🧭', label: 'Reisende', detail: `${travelling} kommen in den neuen Lauf zurück` });
