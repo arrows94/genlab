@@ -9,8 +9,8 @@ export function shareSupported(): boolean {
   return Capacitor.isNativePlatform() || typeof navigator.share === 'function';
 }
 
-/** False if the player closed the share sheet without picking a target. */
-export async function shareText(text: string, fileName: string, title: string): Promise<boolean> {
+/** Shares `text`, in browsers as a file if `fileName` is given. False if the player closed the share sheet. */
+export async function shareText(text: string, title: string, fileName?: string): Promise<boolean> {
   try {
     if (Capacitor.isNativePlatform()) {
       const { Share } = await import('@capacitor/share');
@@ -18,8 +18,8 @@ export async function shareText(text: string, fileName: string, title: string): 
       return true;
     }
     // A file survives messengers that shorten or reformat long texts.
-    const file = new File([text], fileName, { type: 'text/plain' });
-    await navigator.share(navigator.canShare?.({ files: [file] }) ? { title, files: [file] } : { title, text });
+    const file = fileName ? new File([text], fileName, { type: 'text/plain' }) : null;
+    await navigator.share(file && navigator.canShare?.({ files: [file] }) ? { title, files: [file] } : { title, text });
     return true;
   } catch (err) {
     // Closing the sheet rejects with AbortError (web) or "Share canceled" (native).

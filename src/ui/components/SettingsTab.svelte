@@ -2,7 +2,6 @@
   import { fade, scale } from 'svelte/transition';
   import { SAVE_VERSION } from '@core/save';
   import { formatDuration, formatNumber } from '@core/format';
-  import { progressSummary, type ProgressRow } from '@core/queries';
   import type { GameState } from '@core/state';
   import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
@@ -10,6 +9,8 @@
   import { openAllNews } from '../news.svelte';
   import { cancelNotices, notificationsNeedOpenTab, notificationsSupported, requestNotifyPermission } from '../platform/notify';
   import { shareSupported, shareText } from '../platform/share';
+  import SaveCompare from './SaveCompare.svelte';
+  import SyncPanel from './SyncPanel.svelte';
 
   let text = $state('');
   let fileInput: HTMLInputElement | undefined = $state();
@@ -26,23 +27,7 @@
     };
   });
 
-  /** Rows of both saves side by side; a row missing on one side (not unlocked yet) counts as 0. */
-  const comparison = $derived.by(() => {
-    if (!pending) return null;
-    const here = progressSummary(game.content, game.state);
-    const there = progressSummary(game.content, pending.state);
-    const labels = [...new Set([...here, ...there].map((r) => r.label))];
-    const find = (rows: ProgressRow[], label: string) => rows.find((r) => r.label === label);
-    const rows = labels.map((label) => {
-      const a = find(here, label);
-      const b = find(there, label);
-      return { label, kind: (a ?? b)!.kind, here: a?.value ?? 0, there: b?.value ?? 0 };
-    });
-    return { rows, behind: pending.state.simTimeMs < game.state.simTimeMs };
-  });
-
   const fileName = () => `genlab-${new Date().toISOString().slice(0, 10)}.txt`;
-  const show = (kind: ProgressRow['kind'], v: number) => (kind === 'duration' ? formatDuration(v) : formatNumber(v));
 
   /** Safari only allows clipboard writes inside the click; a ClipboardItem may resolve later. */
   async function copy(exported: Promise<string>): Promise<boolean> {
@@ -78,7 +63,7 @@
   }
   async function share() {
     try {
-      if (await shareText(await exportText(), fileName(), 'Genlab-Spielstand')) toast('Spielstand geteilt.');
+      if (await shareText(await exportText(), 'Genlab-Spielstand', fileName())) toast('Spielstand geteilt.');
     } catch (err) {
       toast(`Teilen fehlgeschlagen: ${(err as Error).message}`, 'error');
     }
@@ -196,20 +181,12 @@
 
 <svelte:window onkeydowncapture={onKey} />
 
-{#if pending && comparison}
+{#if pending}
   <div class="backdrop" transition:fade={{ duration: 120 }} onclick={(e) => e.target === e.currentTarget && (pending = null)} role="presentation">
     <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="import-title" transition:scale={{ duration: 150, start: 0.92 }}>
       <h3 id="import-title">Spielstand ersetzen?</h3>
-      <table>
-        <thead><tr><th></th><th>Dieses Gerät</th><th>Import</th></tr></thead>
-        <tbody>
-          <tr><td>Gespeichert</td><td class="num">jetzt</td><td class="num">vor {formatDuration(Math.max(0, Date.now() - pending.savedAt))}</td></tr>
-          {#each comparison.rows as r (r.label)}
-            <tr><td>{r.label}</td><td class="num">{show(r.kind, r.here)}</td><td class="num" class:less={r.there < r.here} class:more={r.there > r.here}>{show(r.kind, r.there)}</td></tr>
-          {/each}
-        </tbody>
-      </table>
-      {#if comparison.behind}
+      <SaveCompare other={pending.state} otherLabel="Import" otherSavedAt={pending.savedAt} />
+      {#if pending.state.simTimeMs < game.state.simTimeMs}
         <p class="warn">⚠️ Der Import hat weniger Spielzeit als dieser Stand – du würdest Fortschritt verlieren.</p>
       {/if}
       <p class="small muted">Die Zeit seit dem Export wird nach dem Import als Offline-Fortschritt nachgeholt.</p>
@@ -220,6 +197,8 @@
     </div>
   </div>
 {/if}
+
+<SyncPanel />
 
 <article class="panel danger-zone">
   <h3>Gefahrenzone</h3>
@@ -243,12 +222,6 @@
   .backdrop { position: fixed; inset: 0; z-index: 50; background: #000a; display: grid; place-items: center; padding: 1rem; }
   .dialog { max-width: 28rem; width: 100%; max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.1rem 1.2rem 1rem; box-shadow: 0 12px 40px #000a; }
   .dialog h3 { margin-top: 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 0.6rem; }
-  th { font-weight: 600; text-align: right; color: var(--muted); font-size: 0.8rem; }
-  td { padding: 0.2rem 0; border-top: 1px solid var(--line); }
-  td + td, th + th { text-align: right; padding-left: 0.8rem; }
-  .less { color: var(--danger); }
-  .more { color: var(--teal); }
   .warn { color: var(--danger); margin: 0 0 0.5rem; font-size: 0.9rem; }
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
 </style>

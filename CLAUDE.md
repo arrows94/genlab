@@ -57,6 +57,7 @@ Three layers with strict import direction `ui → core ← content` (aliases `@u
 - Tabs are registered in `TABS` in `ui/App.svelte` and map to `FeatureDef.tab`.
 - Styling: global tokens in `ui/styles.css` (`--teal`, `--gold`, `--violet`, `--panel`, `--line` …), component-scoped CSS otherwise. Respect the `.reduce-motion` class for animations. Layouts must also work at phone width, where the tab bar moves to the bottom.
 - Platform glue: `ui/platform/` (storage, notifications, PWA, native). Mobile uses Capacitor Preferences instead of `localStorage` for saves.
+- Device sync: `ui/sync.svelte.ts` (when to upload/download, conflicts) on top of `ui/platform/sync.ts` (sync code, AES-GCM, HTTP client). The server is the Cloudflare Worker in `sync-server/` (D1, tested in `tests/sync.test.ts`). The build only offers sync if `VITE_SYNC_URL` is set. Uploads count "played" time: a device that was not in the foreground since its last upload takes a newer cloud save silently, otherwise the player chooses (`SyncDialog`).
 
 ### Player-facing release notes
 

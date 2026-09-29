@@ -27,8 +27,9 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 6,
     date: '2026-09-29',
-    title: 'Spielstand leichter umziehen',
+    title: 'Ein Spielstand für alle Geräte',
     items: [
+      { text: 'Neu: Geräte-Sync in den Optionen. Richte ihn einmal ein, gib den Sync-Code auf deinem Handy, Tablet oder PC ein – und spiele überall mit demselben Stand weiter. Er wird beim Wechsel automatisch abgeglichen und verschlüsselt übertragen, ein Konto brauchst du nicht.' },
       { text: 'Der Export ist jetzt rund zehnmal kürzer – er passt bequem in eine Nachricht. Alte Exporte lassen sich weiterhin einspielen.' },
       { text: 'Neuer „Teilen …“-Knopf in den Optionen: Schick deinen Spielstand direkt per Messenger, Mail oder AirDrop auf ein anderes Gerät.' },
       { text: 'Vor dem Import siehst du beide Spielstände nebeneinander – Spielzeit, Kreaturen, Erfolge und mehr. Ist der Import weniger weit, wirst du gewarnt.' },

@@ -30,6 +30,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Device sync server (sync-server/README.md). Unset = no sync in the web app.
+          VITE_SYNC_URL: ${{ vars.SYNC_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

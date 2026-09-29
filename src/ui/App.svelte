@@ -7,6 +7,7 @@
   import { loadPrefs } from './prefs.svelte';
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import SyncDialog from './components/SyncDialog.svelte';
   import Toasts from './components/Toasts.svelte';
   import NotificationBell from './components/NotificationBell.svelte';
   import NotificationCenter from './components/NotificationCenter.svelte';
@@ -123,6 +124,7 @@
 {/if}
 <Toasts />
 <NotificationCenter />
+<SyncDialog />
 <ConfirmDialog />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
