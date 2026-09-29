@@ -1,0 +1,70 @@
+# Deploys the device sync server (sync-server/) to Cloudflare – no local terminal needed.
+# One-time setup: see sync-server/README.md („Einrichten über GitHub“).
+# Start: Actions → „Sync-Server (Cloudflare)“ → Run workflow. Safe to run again after changes.
+name: Sync-Server (Cloudflare)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sync-server
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER: npx --yes wrangler@4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Zugangsdaten prüfen
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Secrets CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID fehlen (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Datenbank anlegen (nur beim ersten Mal)
+        run: |
+          find_db() { $WRANGLER d1 list --json | jq -r '.[] | select(.name == "genlab-sync") | .uuid'; }
+          id=$(find_db)
+          if [ -z "$id" ]; then
+            # Data stays in the EU (players are mostly German, GDPR).
+            $WRANGLER d1 create genlab-sync --jurisdiction eu
+            id=$(find_db)
+          fi
+          if [ -z "$id" ]; then echo "::error::D1-Datenbank genlab-sync nicht gefunden."; exit 1; fi
+          echo "D1-Datenbank: $id"
+          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+
+      - name: Tabellen anlegen bzw. prüfen
+        # schema.sql only uses CREATE … IF NOT EXISTS, so existing saves are kept.
+        run: $WRANGLER d1 execute genlab-sync --remote --file schema.sql --yes
+
+      - name: Worker veröffentlichen
+        run: |
+          $WRANGLER deploy 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -n1)
+          {
+            echo "## Sync-Server ist online"
+            echo
+            if [ -n "$url" ]; then
+              echo "URL: **$url**"
+              echo
+              echo "Trage sie einmalig als Repository-Variable **SYNC_URL** ein (Settings → Secrets and variables → Actions → Variables) und starte danach den Workflow „Web-App (GitHub Pages)“ neu."
+            else
+              echo "Die URL steht im Log des Schritts „Worker veröffentlichen“."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
