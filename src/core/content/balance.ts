@@ -225,7 +225,17 @@ export interface Balance {
   tower: {
     fightIntervalSec: number;
     baseTeamSize: number;
-    maxRounds: number;
+    /**
+     * Aktionsleiste: each fighter acts every (mean speed of the fight / own
+     * speed)^speedExponent seconds of fight time – relative, so it works on every floor.
+     */
+    speedExponent: number;
+    /** Fight time limit in seconds (a draw counts as a defeat). */
+    maxFightSec: number;
+    /** Dodge chance per 100 % speed lead of the defender over the attacker … */
+    evadePerSpeedLead: number;
+    /** … capped at this. */
+    maxEvade: number;
     enemyBase: Record<string, number>;
     /** Enemy stats × growth^(floor − 1). */
     enemyGrowth: number;

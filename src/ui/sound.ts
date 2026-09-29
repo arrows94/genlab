@@ -74,7 +74,8 @@ export function silently<T>(fn: () => T): T {
   }
 }
 
-function context(): AudioContext | null {
+/** The shared audio context (effects and music); resumes it when the browser suspended it. */
+export function audioContext(): AudioContext | null {
   if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
   audio ??= new AudioContext();
   if (audio.state === 'suspended') void audio.resume();
@@ -133,7 +134,7 @@ export function play(name: SoundName): void {
   const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
   if (!allowed(name, now)) return;
   try {
-    const ctx = context();
+    const ctx = audioContext();
     if (!ctx) return;
     lastPlayed.set(name, now);
     recent.push(now);

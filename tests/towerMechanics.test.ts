@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  buyRelic, elementMultiplier, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, buyRelic, elementMultiplier, evadeChance, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Fighter } from '@core/features/tower';
@@ -45,8 +45,8 @@ describe('boss traits', () => {
   it('Element-Schild lets only a quarter through without element advantage', () => {
     const g = towerGame();
     const team = [fighterFor(g, champion(g, 5000))];
-    const plain = fight(g, undefined, team).result.events.find((e) => e.a === 0)!.dmg;
-    const shielded = fight(g, 'elementShield', team).result.events.find((e) => e.a === 0)!.dmg;
+    const plain = fight(g, undefined, team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
+    const shielded = fight(g, 'elementShield', team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
     expect(shielded).toBe(Math.max(1, Math.round(plain * 0.25)));
   });
 
@@ -59,13 +59,13 @@ describe('boss traits', () => {
     expect(regen.result.log.some((l) => l.includes('heilt'))).toBe(true);
   });
 
-  it('Regeneration heals a share of the damage taken in the round', () => {
+  it('Regeneration heals a share of the damage taken in the last second', () => {
     const g = towerGame();
     const team = [fighterFor(g, champion(g, 5000))];
     const { result } = fight(g, 'regenerator', team);
-    const firstHit = result.events.find((e) => e.a === 0)!.dmg;
-    const heal = Number(result.log.find((l) => l.includes('heilt'))!.match(/heilt (\d+)/)![1]);
-    expect(heal).toBe(Math.round(firstHit * content.bossTraits.get('regenerator').value));
+    const heal = result.events.find((e) => e.kind === 'heal')!;
+    const taken = result.events.filter((e) => e.a === 0 && !e.kind && e.at <= heal.at && e.at > heal.at - 1).reduce((n, e) => n + e.dmg, 0);
+    expect(heal.dmg).toBe(Math.round(taken * content.bossTraits.get('regenerator').value));
   });
 
   it('a regenerating boss is no wall: twice the power of its plain version is enough', () => {
@@ -81,6 +81,60 @@ describe('boss traits', () => {
     let power = 50;
     while (wins(power, undefined) < 8) power *= 1.25;
     expect(wins(power * 2, 'regenerator')).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe('Aktionsleiste', () => {
+  const unit = (spd: number, over: Partial<Fighter> = {}): Fighter => ({
+    name: 'x', speciesId: 'emberpup', element: 'fire', hp: 1e6, maxHp: 1e6, atk: 10, def: 0, spd, power: 1, elementPower: 1, team: true, ...over,
+  });
+
+  it('faster fighters act more often, relative to the others', () => {
+    const g = towerGame();
+    const [slow, fast] = actionIntervals(g, [unit(10), unit(20)]);
+    expect(fast).toBeLessThan(slow!);
+    expect(slow! / fast!).toBeCloseTo(Math.pow(2, balance.tower.speedExponent), 2);
+    // Only ratios count: ten times the stats give the same time line.
+    expect(actionIntervals(g, [unit(100), unit(200)])).toEqual(actionIntervals(g, [unit(10), unit(20)]));
+    const r = simulateFight(g, [unit(20), unit(10)], unit(15, { team: false, element: 'water' }), Rng.fromSeed(1));
+    const acts = (i: number) => r.events.filter((e) => e.a === i).length;
+    expect(acts(0)).toBeGreaterThan(acts(1));
+  });
+
+  it('a faster defender dodges sometimes, capped', () => {
+    const g = towerGame();
+    expect(evadeChance(g, unit(10), unit(10))).toBe(0);
+    expect(evadeChance(g, unit(20), unit(10))).toBe(0);
+    expect(evadeChance(g, unit(10), unit(20))).toBeCloseTo(balance.tower.evadePerSpeedLead);
+    expect(evadeChance(g, unit(1), unit(1000))).toBe(balance.tower.maxEvade);
+    const r = simulateFight(g, [unit(5)], unit(50, { team: false }), Rng.fromSeed(2));
+    expect(r.events.some((e) => e.kind === 'miss' && e.dmg === 0)).toBe(true);
+  });
+
+  it('ends at the time limit with a defeat and keeps events in time order', () => {
+    const g = towerGame();
+    const r = simulateFight(g, [unit(10, { atk: 1 })], unit(10, { team: false, atk: 1 }), Rng.fromSeed(3));
+    expect(r.win).toBe(false);
+    expect(r.seconds).toBe(balance.tower.maxFightSec);
+    expect(r.log.at(-1)).toBe('Zeit abgelaufen');
+    for (let i = 1; i < r.events.length; i++) expect(r.events[i]!.at).toBeGreaterThanOrEqual(r.events[i - 1]!.at);
+    expect(r.fighters.every((f) => f.interval > 0)).toBe(true);
+  });
+
+  it('speed wins fights: +50 % Tempo helps about as much as +50 % Angriff', () => {
+    const g = towerGame();
+    const enemy = enemyFor(g, 25);
+    const team = (boost: Partial<Record<'atk' | 'spd', number>>) =>
+      ['fire', 'water', 'earth'].map((e) => unit(Math.round(16 * (boost.spd ?? 1)), { element: e, hp: 200, maxHp: 200, atk: Math.round(66 * (boost.atk ?? 1)), def: 33 }));
+    const wins = (boost: Partial<Record<'atk' | 'spd', number>>) => {
+      let w = 0;
+      for (let seed = 1; seed <= 40; seed++) if (simulateFight(g, team(boost), { ...enemy }, Rng.fromSeed(seed)).win) w++;
+      return w;
+    };
+    const base = wins({});
+    expect(base).toBeLessThan(35);
+    expect(wins({ spd: 1.5 })).toBeGreaterThanOrEqual(38);
+    expect(wins({ atk: 1.5 })).toBeGreaterThanOrEqual(38);
   });
 });
 

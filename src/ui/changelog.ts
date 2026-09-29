@@ -27,8 +27,11 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 12,
     date: '2026-09-29',
-    title: 'Genom ansehen mit Suche, Infusion merkt sich die Auswahl',
+    title: 'Neues Kampfsystem im Turm, Hintergrundmusik, Genom-Suche',
     items: [
+      { text: 'Neues Kampfsystem mit Aktionsleiste: Jede Kreatur handelt, sobald ihre Leiste voll ist – doppelt so schnelle Kreaturen kommen fast doppelt so oft dran und weichen langsameren Gegnern manchmal aus. Tempo lohnt sich jetzt!', feature: 'tower' },
+      { text: 'Die Turm-Arena ist neu gestaltet: Zugfolge, Aktionsleisten unter jedem Kämpfer, Kampfuhr, Treffer-Funken und Anzeigen für „Sehr effektiv!“, „resistiert“, „Ausgewichen!“ und Heilungen. Kandidaten lassen sich nach Tempo sortieren.', feature: 'tower' },
+      { text: 'Hintergrundmusik: ruhige, live erzeugte Klänge – im Turm treibender, im Äon schwebend. Einschalten über 🎵 oben oder unter Optionen (mit eigener Lautstärke).' },
       { text: '„Genom ansehen“ im Genlabor: Statt einer langen Liste wählst du Kreaturen jetzt aus einer Galerie mit Suche, Art-Filter, „nur sequenzierte“ und Sortierung (z. B. meiste Top-Allele). Mit ‹ › blätterst du durch die gefilterten Kreaturen, die gewählte bleibt beim Tab-Wechsel erhalten.', feature: 'sequencing' },
       { text: 'Infusion: Die Schnellwahl („bis Seltenheit“, „nur Allel-Spender“) wird gespeichert, und die ausgewählten Artgenossen bleiben erhalten, wenn du die Kreaturdetails schließt und wieder öffnest.', feature: 'infusion' },
     ],

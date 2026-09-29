@@ -13,7 +13,8 @@ import type { ModifierProvider } from '../providers';
 /**
  * Genom-Turm: an endless auto-battle. A team of 3–5 creatures fights floor
  * after floor every `fightIntervalSec`; enemies scale endlessly and element
- * strengths/weaknesses matter. A defeat ends the run (it goes on the personal
+ * strengths/weaknesses matter. Fights run on an Aktionsleiste: speed decides
+ * how often a fighter acts and how often it dodges. A defeat ends the run (it goes on the personal
  * leaderboard); the next run may start from the last checkpoint.
  */
 
@@ -163,15 +164,24 @@ export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): 
   return Math.max(1, Math.round(att.atk * att.power * elem * (scale / (scale + def.def)) * rng.range(0.9, 1.1)));
 }
 
-/** One hit of a fight: attacker/target are indices into `[...team, enemy]`. */
+/**
+ * One moment of a fight for the replay: attacker/target are indices into
+ * `[...team, enemy]`. `kind` is missing for a normal hit.
+ */
 export interface FightEvent {
+  /** Fight time in seconds. */
+  at: number;
   a: number;
   t: number;
   dmg: number;
-  /** Target HP after the hit. */
+  /** Target HP after the event. */
   hp: number;
   /** Element multiplier of the hit (>1 super effective, <1 resisted). */
   m: number;
+  /** miss: dodged (dmg 0) · heal: the boss regenerates (a = t) · shift: the boss changes its element (a = t). */
+  kind?: 'miss' | 'heal' | 'shift';
+  /** New element after a shift. */
+  element?: string;
 }
 
 /** Snapshot of a fighter for replaying a fight in the UI. */
@@ -181,79 +191,119 @@ export interface FighterSnapshot {
   element: string;
   maxHp: number;
   team: boolean;
+  /** Seconds between two actions (Aktionsleiste). */
+  interval: number;
 }
 
 export interface FightResult {
   win: boolean;
-  rounds: number;
+  /** Fight time in seconds when it ended. */
+  seconds: number;
   log: string[];
   fighters: FighterSnapshot[];
   events: FightEvent[];
 }
 
-const maxEvents = 40;
+const maxEvents = 60;
+const maxLog = 14;
 
-/** Simulates one floor. Team HP is full at the start of every floor. */
+/** Seconds between two actions of each fighter: relative to the mean speed of everyone in the fight. */
+export function actionIntervals(ctx: GameContext, fighters: Fighter[]): number[] {
+  const speeds = fighters.map((f) => Math.max(1, f.spd));
+  const mean = speeds.reduce((a, b) => a + b, 0) / Math.max(1, speeds.length);
+  return speeds.map((spd) => Math.round(Math.pow(mean / spd, ctx.balance.tower.speedExponent) * 1000) / 1000);
+}
+
+/** Chance that `defender` dodges a hit of `attacker`: grows with its speed lead. */
+export function evadeChance(ctx: GameContext, attacker: Fighter, defender: Fighter): number {
+  const t = ctx.balance.tower;
+  const lead = Math.max(1, defender.spd) / Math.max(1, attacker.spd) - 1;
+  return Math.min(t.maxEvade, Math.max(0, lead * t.evadePerSpeedLead));
+}
+
+/**
+ * Simulates one floor on a time line (Aktionsleiste): every fighter acts when
+ * its bar is full, faster ones more often; faster defenders may dodge. Boss
+ * traits tick once per second of fight time. Team HP is full at the start of
+ * every floor. Deterministic for a given RNG state.
+ */
 export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng): FightResult {
   const log: string[] = [];
   const events: FightEvent[] = [];
   const order = [...team, enemy];
-  const fighters = order.map((f) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team }));
-  const hit = (att: Fighter, target: Fighter, dmg: number) => {
-    if (events.length < maxEvents) {
-      events.push({ a: order.indexOf(att), t: order.indexOf(target), dmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, att.element, target.element) });
-    }
-  };
-  const all = [...order].sort((a, b) => b.spd - a.spd);
-  const done = (win: boolean, rounds: number) => ({ win, rounds, log, fighters, events });
+  const intervals = actionIntervals(ctx, order);
+  const fighters: FighterSnapshot[] = order.map((f, i) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]! }));
+  const note = (line: string) => log.length < maxLog && log.push(line);
+  const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
+  const done = (win: boolean, seconds: number): FightResult => ({ win, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
   const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
   const elements = ctx.content.elements.list.map((e) => e.id);
-  for (let round = 1; round <= ctx.balance.tower.maxRounds; round++) {
-    let taken = 0;
-    // Wandler: a new element every round.
-    if (trait?.kind === 'shift' && round > 1) {
-      enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
-      if (log.length < 12) log.push(`${enemy.name} wechselt zu ${ctx.content.elements.get(enemy.element).name}`);
+  const boss = order.length - 1;
+  const limit = ctx.balance.tower.maxFightSec;
+  // Next action time per fighter; everyone starts with an empty bar.
+  const next = intervals.slice();
+  let tick = 1;
+  let taken = 0;
+  const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
+
+  for (;;) {
+    // The next actor: earliest full bar, ties to the faster one, then team before enemy.
+    let who = -1;
+    for (let i = 0; i < order.length; i++) {
+      if (order[i]!.hp <= 0) continue;
+      if (who < 0 || next[i]! < next[who]! - 1e-9 || (Math.abs(next[i]! - next[who]!) < 1e-9 && order[i]!.spd > order[who]!.spd)) who = i;
     }
-    for (const f of all) {
-      if (f.hp <= 0) continue;
-      if (f.team) {
-        let dmg = damage(ctx, f, enemy, rng);
-        // Element-Schild: only hits with element advantage get through in full.
-        if (trait?.kind === 'shield' && elementMultiplier(ctx, f.element, enemy.element) <= 1) dmg = Math.max(1, Math.round(dmg * trait.value));
-        enemy.hp -= dmg;
-        taken += dmg;
-        hit(f, enemy, dmg);
-        if (log.length < 12) log.push(`${f.name} trifft für ${dmg}`);
-        if (enemy.hp <= 0) {
-          log.push(`${enemy.name} besiegt (Runde ${round})`);
-          return done(true, round);
-        }
-      } else {
-        const alive = team.filter((t) => t.hp > 0);
-        const target = rng.pick(alive);
-        const dmg = damage(ctx, f, target, rng);
-        target.hp -= dmg;
-        hit(f, target, dmg);
-        if (log.length < 12) log.push(`${f.name} trifft ${target.name} für ${dmg}`);
-        if (team.every((t) => t.hp <= 0)) {
-          log.push(`Team besiegt (Runde ${round})`);
-          return done(false, round);
+    const now = next[who]!;
+    // Boss traits tick every full second of fight time before this action.
+    while (tick <= now && tick <= limit) {
+      if (trait?.kind === 'shift') {
+        enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
+        record({ at: tick, a: boss, t: boss, dmg: 0, hp: enemy.hp, m: 1, kind: 'shift', element: enemy.element });
+        note(`${fmt(tick)} · ${enemy.name} wechselt zu ${ctx.content.elements.get(enemy.element).name}`);
+      }
+      // Regeneration heals a share of the damage taken since the last tick. Scaling with
+      // the team's damage (not the boss's max HP) keeps it equally hard on every floor.
+      if (trait?.kind === 'regen' && enemy.hp > 0) {
+        const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(taken * trait.value));
+        if (healed > 0) {
+          enemy.hp += healed;
+          record({ at: tick, a: boss, t: boss, dmg: healed, hp: enemy.hp, m: 1, kind: 'heal' });
+          note(`${fmt(tick)} · ${enemy.name} heilt ${healed}`);
         }
       }
+      taken = 0;
+      tick++;
     }
-    // Regeneration: heals a share of the damage it took this round. Scaling with
-    // the team's damage (not the boss's max HP) keeps it equally hard on every floor.
-    if (trait?.kind === 'regen' && enemy.hp > 0) {
-      const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(taken * trait.value));
-      if (healed > 0) {
-        enemy.hp += healed;
-        if (log.length < 12) log.push(`${enemy.name} heilt ${healed}`);
-      }
+    if (now > limit) {
+      log.push('Zeit abgelaufen');
+      return done(false, limit);
+    }
+    const att = order[who]!;
+    next[who] = now + intervals[who]!;
+    const target = att.team ? enemy : rng.pick(team.filter((t) => t.hp > 0));
+    const ti = order.indexOf(target);
+    const m = elementMultiplier(ctx, att.element, target.element);
+    if (rng.chance(evadeChance(ctx, att, target))) {
+      record({ at: now, a: who, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss' });
+      note(`${fmt(now)} · ${target.name} weicht ${att.name} aus`);
+      continue;
+    }
+    let dmg = damage(ctx, att, target, rng);
+    // Element-Schild: only hits with element advantage get through in full.
+    if (att.team && trait?.kind === 'shield' && m <= 1) dmg = Math.max(1, Math.round(dmg * trait.value));
+    target.hp -= dmg;
+    if (att.team) taken += dmg;
+    record({ at: now, a: who, t: ti, dmg, hp: Math.max(0, target.hp), m });
+    note(`${fmt(now)} · ${att.name} trifft ${att.team ? '' : `${target.name} `}für ${dmg}`);
+    if (enemy.hp <= 0) {
+      log.push(`${enemy.name} besiegt nach ${fmt(now)}`);
+      return done(true, now);
+    }
+    if (team.every((t) => t.hp <= 0)) {
+      log.push(`Team besiegt nach ${fmt(now)}`);
+      return done(false, now);
     }
   }
-  log.push('Zeit abgelaufen');
-  return done(false, ctx.balance.tower.maxRounds);
 }
 
 /** Time per floor in ms (Äon talent „Sturmlauf“ shortens it). */
