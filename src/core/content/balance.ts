@@ -241,6 +241,20 @@ export interface Balance {
     /** Permanent bonus per point of the record in total difficulty. */
     recordModifiers: ModifierDef[];
   };
+  dynasty: {
+    /** Stat bonus per generation of a creature's own pure line. */
+    statPerDepth: number;
+    /** Cap of that bonus. */
+    maxDepthBonus: number;
+    /** Line depths of the dynasty tiers (record per species). */
+    tiers: number[];
+    /** Stat bonus per tier for every creature of that species. */
+    statPerTier: number;
+    /** Äon-Splitter for reaching each tier (same order as `tiers`). */
+    shardsPerTier: number[];
+    /** Permanent bonus per tier, summed over all species. */
+    modifiersPerTier: ModifierDef[];
+  };
   perfection: {
     /** Base chance for the "Schillernd" colour mutation (modified by `creature.shinyChance`). */
     shinyChance: number;

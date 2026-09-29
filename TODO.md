@@ -127,7 +127,15 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         5 Äonen (Tag 5/10/15/19/24), 49 Vererbungen (vorher 70: fehlgeschlagene Anomalie-Läufe kosten den Bot Zeit)
   - [ ] Test-Bot: klügere Anomalie-Wahl (einzelne Anomalie eine Stufe höher statt immer alle zusammen), damit der
         Äon-Lauf nicht mit zwölfstündigen Fehlversuchen Vererbungen verliert
-- [ ] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
+- [x] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
+  - [x] Reine Linie = beide Eltern und das Kind dieselbe Art; Tiefe = kürzere Elternlinie + 1 (`lineage` an der
+        Kreatur, +1 % Werte je Tiefe, höchstens +50 %; beginnt nach jedem Neustart von vorn)
+  - [x] Dauerhafter Rekord je Art (`dynasties`, übersteht Vererbung und Äon): Stufen ab Tiefe 5/10/20/35/50 geben
+        der Art +5 % Werte je Stufe und allen +1 % Produktion je Stufe; Stufe 4 und 5 bringen 2 bzw. 3 Äon-Splitter
+  - [x] Brutstation: Linie des nächsten Kindes, Dynastie-Übersicht, Sortierung „Reine Linie“, Zuchtautomat-Ziel
+        „Reine Linie vertiefen“; Freischaltung nach der 1. Vererbung (Rekorde zählen schon vorher)
+  - [ ] Balancing mit dem Test-Bot: Der Bot züchtet noch keine reinen Linien gezielt – Tempo der Stufen und
+        Splitter-Ertrag erst messen, wenn der Bot das Zuchtautomat-Ziel nutzt
 
 ## Später
 

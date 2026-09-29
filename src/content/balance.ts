@@ -210,6 +210,18 @@ export const balance: Balance = {
   perfection: {
     shinyChance: 0.0005,
   },
+  dynasty: {
+    statPerDepth: 0.01,
+    maxDepthBonus: 0.5,
+    tiers: [5, 10, 20, 35, 50],
+    statPerTier: 0.05,
+    shardsPerTier: [0, 0, 0, 2, 3],
+    modifiersPerTier: [
+      { target: 'production.food', op: 'pct', value: 0.01 },
+      { target: 'production.gold', op: 'pct', value: 0.01 },
+      { target: 'production.essence', op: 'pct', value: 0.01 },
+    ],
+  },
   missions: {
     baseCamps: 1,
     statScaling: 0.02,

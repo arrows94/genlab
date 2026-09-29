@@ -19,6 +19,7 @@
   import BreedingPlanner from './BreedingPlanner.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
   import SortToggle from './SortToggle.svelte';
+  import DynastyPanel from './DynastyPanel.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -94,6 +95,9 @@
       rituals,
       ritual,
       special: game.state.features['specialBreeding'] === true,
+      dynasties: game.state.features['dynasties'] === true,
+      // Pure line of the child (a hybrid would break it).
+      lineage: a && b && a.speciesId === b.speciesId ? Math.min(a.lineage ?? 0, b.lineage ?? 0) + 1 : 0,
     };
   });
 
@@ -119,6 +123,7 @@
     dex: 'Die günstigsten zwei einer Art, der noch Dex-Einträge fehlen.',
     allele: 'Sequenzierte Träger des Ziel-Allels – reinerbige zuerst.',
     abilities: 'Kreaturen mit den meisten und seltensten Fähigkeiten.',
+    lineage: 'Die zwei tiefsten reinen Linien einer Art – so wächst die Dynastie Generation für Generation.',
     cheap: 'Die niedrigsten Generationen – billiger Nachwuchs für Infusion und Recycler.',
   };
 
@@ -138,6 +143,8 @@
         return rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
       case 'generation':
         return y.c.generation - x.c.generation || y.power - x.power;
+      case 'lineage':
+        return (y.c.lineage ?? 0) - (x.c.lineage ?? 0) || y.c.generation - x.c.generation || y.power - x.power;
       case 'species':
         return content.species.get(x.c.speciesId).name.localeCompare(content.species.get(y.c.speciesId).name, 'de') || rarityOrder(y.c) - rarityOrder(x.c) || y.power - x.power;
       case 'name':
@@ -216,6 +223,7 @@
             <option value="dex">Dex-Lücken füllen</option>
             <option value="abilities">Fähigkeiten</option>
             <option value="allele">Gen-Ziel (Allel)</option>
+            {#if data.dynasties}<option value="lineage">Reine Linie vertiefen</option>{/if}
           </optgroup>
           <optgroup label="Verwertung">
             <option value="cheap">Günstiger Nachwuchs</option>
@@ -369,6 +377,7 @@
     <span class="fact">🧬 Gen <b class="num">{data.generation}</b></span>
     <span class="fact">⏱ <b class="num">{formatDuration(data.time)}</b></span>
     <span class="fact">✨ Mutation <b class="num">{formatPercent(data.mutation)}</b></span>
+    {#if data.dynasties && data.lineage > 0}<span class="fact" title="Reine Linie, solange das Kind dieselbe Art wird (ein Hybrid bricht sie)">👑 Linie <b class="num">{data.lineage}</b></span>{/if}
   </div>
   <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || nestsFull || data.stableFull} onclick={breed}>
     🥚 Brüten · <CostLabel cost={data.cost} />
@@ -401,6 +410,7 @@
           <option value="power">{sortArrow} Gesamtstärke</option>
           <option value="rarity">{sortArrow} Seltenheit</option>
           <option value="generation">{sortArrow} Generation</option>
+          {#if data.dynasties}<option value="lineage">{sortArrow} Reine Linie</option>{/if}
           <option value="species">Art ({sortAz})</option>
           <option value="name">Name ({sortAz})</option>
           {#each content.stats.list as st (st.id)}<option value={`stat:${st.id}`}>{sortArrow} {st.name}</option>{/each}
@@ -425,6 +435,7 @@
         <span class="tname">{t.c.name}</span>
         {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
         <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
+        {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
         {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
         {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
       </button>
@@ -434,6 +445,8 @@
   </div>
   {#if data.hidden > 0}<p class="tiny muted more">… und {data.hidden} weitere – Suche oder Filter grenzen die Liste ein.</p>{/if}
 </article>
+
+{#if data.dynasties}<DynastyPanel />{/if}
 
 <p class="muted small hint">
   Nachwuchs erbt gemittelte Werte, Aussehen und Fähigkeiten der Eltern. Mutationen können Werte steigern oder neue Fähigkeiten bringen.
@@ -517,6 +530,7 @@
   .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .filters input { width: 11rem; }
   .sortgroup { display: flex; gap: 0.3rem; }
+  .lin { color: var(--gold); font-weight: 700; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
   .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
   .tile.a { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; }
@@ -539,6 +553,7 @@
     .socket :global(svg) { width: 64px; height: 64px; }
     .filters input { width: 100%; }
     .filters select { flex: 1 1 30%; min-width: 0; }
-    .sortgroup { flex: 1 1 30%; min-width: 0; }
+    .sortgroup { flex: 1 1 100%; min-width: 0; }
+    .sortgroup select { flex: 1 1 auto; }
   }
 </style>

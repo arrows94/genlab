@@ -10,6 +10,7 @@ import { consumeBlocker } from '@core/features/stable';
 import { claimDaily, dailyAvailable } from '@core/features/daily';
 import { grandAvailable, grandCost, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@core/features/voyage';
+import { totalDynastyTiers } from '@core/features/dynasty';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
 import { playBot } from './bot';
@@ -110,6 +111,9 @@ export interface DayReport {
   anomalyRecord: number;
   /** Sum of all relic levels. */
   relics: number;
+  /** Deepest pure line ever bred (any species) and the sum of all dynasty tiers. */
+  dynastyBest: number;
+  dynastyTiers: number;
   /** Äon-Splitter earned so far, by source (aeon, tower, anomaly, contract …). */
   shardSources: Record<string, number>;
 }
@@ -201,6 +205,8 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       observatory: g.state.megaProjects.observatory?.stage ?? 0,
       anomalyRecord: g.state.anomalyRecord,
       relics: Object.values(g.state.relics).reduce((a, b) => a + b, 0),
+      dynastyBest: Math.max(0, ...Object.values(g.state.dynasties)),
+      dynastyTiers: totalDynastyTiers(g),
       shardSources: { ...shardSources },
       bossShare: g.state.weeklyBoss.maxHp > 0 ? Math.round((g.state.weeklyBoss.damage / g.state.weeklyBoss.maxHp) * 100) / 100 : 0,
     });

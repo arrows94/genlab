@@ -105,6 +105,7 @@
     {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
     {#if creature.shiny}<span class="shiny">✦ Schillernd</span>{/if}
     <span class="num">Gen {creature.generation}</span>
+    {#if creature.lineage > 0 && game.state.features['dynasties']}<span class="lineage num" title="Reine Linie: {creature.lineage} Generationen in Folge dieselbe Art">👑 {creature.lineage}</span>{/if}
   </div>
   <dl class="stats">
     {#each content.stats.list as s (s.id)}
@@ -167,6 +168,7 @@
   .art { border: none; padding: 0; cursor: pointer; display: flex; justify-content: center; background: radial-gradient(circle, color-mix(in srgb, var(--element) 18%, transparent), transparent 70%); border-radius: 50%; }
   .name { background: none; border: none; padding: 0; font-weight: 700; font-size: 1.05rem; text-align: left; }
   .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
+  .lineage { color: var(--gold); font-weight: 700; }
   .element { color: var(--element); }
   .tier { color: var(--violet); }
   .shiny { background: linear-gradient(90deg, #ff7ad9, #7ad9ff, #b8ff7a); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }

@@ -53,6 +53,8 @@ export interface Creature {
   splices: number;
   /** Rare colour mutation "Schillernd". */
   shiny: boolean;
+  /** Stammbaum-Dynastie: generations in a row of a pure line (same species as both parents); 0 = none. */
+  lineage: number;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;
@@ -286,6 +288,8 @@ export interface GameState {
   anomalyBest: Record<string, number>;
   /** Highest total difficulty (sum of stages) of a completed anomaly run. */
   anomalyRecord: number;
+  /** Stammbaum-Dynastien: deepest pure line ever bred per species (never reset). */
+  dynasties: Record<string, number>;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -335,6 +339,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     anomaliesCompleted: {},
     anomalyBest: {},
     anomalyRecord: 0,
+    dynasties: {},
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },

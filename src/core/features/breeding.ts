@@ -7,6 +7,7 @@ import { rarityWeights, rollRarity } from '../rarity';
 import type { BreedingRitualDef } from '../content/types';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
+import { lineageDepth, recordLineage } from './dynasty';
 import { blendNames } from '../names';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
@@ -208,6 +209,7 @@ registerProcessHandler(EGG, {
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const nameFor = () => blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.offspringName, ctx.content.species.get(speciesId).name);
+    const lineage = lineageDepth(speciesId, a, b);
     const child = createCreature(ctx, {
       speciesId,
       rarity,
@@ -221,8 +223,10 @@ registerProcessHandler(EGG, {
       abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
       genome: inheritGenome(ctx, a.genome, b.genome, mutation),
       ancestry: [snapshot(a), snapshot(b)],
+      lineage,
       source: 'hatch',
     });
+    recordLineage(ctx, child);
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });
 
     // Twin births (Äon talent): a second child from the same parents, if the stable has room.
@@ -241,6 +245,7 @@ registerProcessHandler(EGG, {
         abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
         genome: inheritGenome(ctx, a.genome, b.genome, mutation),
         ancestry: [snapshot(a), snapshot(b)],
+        lineage,
         source: 'hatch',
       });
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents });

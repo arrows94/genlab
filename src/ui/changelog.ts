@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 6,
+    date: '2026-09-29',
+    title: 'Stammbaum-Dynastien',
+    items: [
+      { text: 'Neu: Stammbaum-Dynastien. Paare Kreaturen derselben Art – jede Generation in Folge vertieft die reine Linie und macht das Kind stärker (+1 % Werte je Generation).', feature: 'dynasties' },
+      { text: 'Der Rekord jeder Art bleibt für immer. Ab Linien-Tiefe 5, 10, 20, 35 und 50 steigt die Dynastie eine Stufe: mehr Werte für die ganze Art und mehr Produktion. Die Stufen 4 und 5 bringen Äon-Splitter.', feature: 'dynasties' },
+      { text: 'Die Brutstation zeigt die Linie des nächsten Kindes und eine Übersicht aller Dynastien. Kandidaten und Kreaturenliste lassen sich nach „Reine Linie“ sortieren, und der Zuchtautomat kann reine Linien gezielt vertiefen.', feature: 'dynasties' },
+      { text: 'Genom-Turm: Bosse mit Regeneration heilen jetzt 40 % des Schadens, den sie in der Runde genommen haben – statt 8 % ihrer KP. Sie sind dadurch keine unüberwindbare Wand mehr.', feature: 'tower' },
+      { text: 'Die Brutstation am Handy: Die Sortierung der Kandidaten hat eine eigene Zeile und ist wieder lesbar.', feature: 'breeding' },
+    ],
+  },
+  {
     id: 5,
     date: '2026-09-29',
     title: 'Turm-Verlauf und umkehrbare Sortierung',

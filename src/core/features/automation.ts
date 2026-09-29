@@ -28,7 +28,7 @@ export function breedRuleScore(ctx: GameContext, c: Creature, rule: string): num
 }
 
 /** Breeding goals besides "power" and the stat ids. */
-export const BREED_GOALS = ['hybrid', 'dex', 'allele', 'abilities', 'cheap'] as const;
+export const BREED_GOALS = ['hybrid', 'dex', 'allele', 'abilities', 'lineage', 'cheap'] as const;
 
 export type AutoBreedPlan = { ok: true; a: Creature; b: Creature } | { ok: false; reason: string };
 
@@ -103,6 +103,24 @@ function dexPair(ctx: GameContext, pool: Creature[]): [Creature, Creature] | nul
   return best?.pair ?? null;
 }
 
+/**
+ * Stammbaum-Dynastie: the two deepest lines of one species (the child gets
+ * the shallower line + 1). Lower generations first at the same depth – cheaper eggs.
+ */
+function lineagePair(pool: Creature[]): [Creature, Creature] | null {
+  const bySpecies = new Map<string, Creature[]>();
+  for (const c of pool) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
+  let best: { depth: number; generation: number; pair: [Creature, Creature] } | null = null;
+  for (const list of bySpecies.values()) {
+    if (list.length < 2) continue;
+    const [a, b] = [...list].sort((x, y) => (y.lineage ?? 0) - (x.lineage ?? 0) || x.generation - y.generation);
+    const depth = Math.min(a!.lineage ?? 0, b!.lineage ?? 0);
+    const generation = Math.max(a!.generation, b!.generation);
+    if (!best || depth > best.depth || (depth === best.depth && generation < best.generation)) best = { depth, generation, pair: [a!, b!] };
+  }
+  return best?.pair ?? null;
+}
+
 /** Copies of the target allele – only for sequenced creatures (the genome must be known). */
 function alleleCopies(c: Creature, target: string | null): number {
   if (!target || !c.sequenced) return 0;
@@ -139,6 +157,10 @@ export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
     }
     case 'abilities':
       pair = topTwo(ctx, pool, (c) => abilityScore(ctx, c));
+      break;
+    case 'lineage':
+      pair = lineagePair(pool);
+      none = 'Keine zwei freien Kreaturen derselben Art.';
       break;
     case 'cheap':
       pair = topTwo(ctx, pool, (c) => -c.generation);
