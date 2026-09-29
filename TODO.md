@@ -93,6 +93,12 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         5 statt 4 Äonen (Tag 4/10/16/21/27), 11 statt 9 Talente – Stufe 4 ab Tag 17 offen, 2 von 3 bis Tag 28
         gekauft; Observatorium an Tag 28 bei 3/4 (vorher fertig an Tag 25). Splitter und Observatorium laufen
         jetzt etwa im Gleichschritt; Stufe 5 und Resonanz folgen nach Tag 28
+  - [x] Vierter 28-Tage-Lauf mit Relikten und Anomalien (und behobenem Bot-Fehler: nach einem Neustart blieb die
+        einzige Kreatur auf der Farm): 7 statt 5 Äonen (Tag 4/8/13/16/20/25/28), 71 Splitter aus Äonen, 20 aus
+        Anomalien, 2 vom Wochen-Boss. Talente an Tag 16 bei 12 und danach Stillstand, weil Stufe 5 und Resonanz auf
+        das Observatorium warten (an Tag 20 bei 3/4, danach Stillstand) – an Tag 28 liegen 50 Splitter ungenutzt
+  - [ ] Splitter-Einkommen liegt jetzt über den Ausgaben: Anomalien und Relikte bremsen, oder Resonanz nicht mehr
+        an das fertige Observatorium binden
   - [ ] Weitere Splitter-Quellen bei Bedarf: die Ideen unter „Ideen (noch grob)“
 - [x] **Turm-Mechaniken vertiefen**
   - [x] Bosse mit Eigenheiten ab Etage 20 (Element-Schild, Wandler, Regeneration; `bossTraits` in `content/endgame.ts`)
@@ -100,7 +106,9 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         Plätzen des Turm-Teams statt an einer Kreatur, damit sie jede Vererbung überstehen (`relics`)
   - [x] Meilensteine alle 50 Etagen mit dauerhaftem Bonus (+15 % Turm-Schaden, +10 % Produktion) und einmalig
         3 Äon-Splitter – eine weitere Splitter-Quelle
-  - [ ] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
+  - [x] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
+  - [ ] Relikte sind viel zu billig: Im 28-Tage-Lauf sind alle 50 Stufen an Tag 3 gekauft. Trotzdem bleibt der Turm
+        bei Etage 39 stehen (Boss auf Etage 40) – die Relikte bringen dort zu wenig
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
         Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×2,5 (`balance.anomalies.goalGrowth`)
@@ -108,7 +116,11 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [x] Belohnung wächst mit der Gesamtschwierigkeit: Die Belohnung jeder Anomalie zählt je gemeisterter Stufe.
         Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen, max. 20) bringt 1 Äon-Splitter je Punkt
         und dauerhaft +5 % Produktion und +3 % Erbgut je Rekordpunkt – eine weitere Splitter-Quelle
-  - [ ] Test-Bot: Anomalie-Läufe in den Äon-Lauf aufnehmen, um Splitter-Ertrag und Rekord-Bonus zu prüfen
+  - [x] Test-Bot: Anomalie-Läufe in den Äon-Lauf aufnehmen, um Splitter-Ertrag und Rekord-Bonus zu prüfen
+        (nach jeder Vererbung: alle gemeisterten auf bester Stufe, eine davon eine Stufe höher)
+  - [ ] Anomalien sind viel zu leicht: Rekord 20 (alle vier auf Stufe V gleichzeitig) schon an Tag 11, Stufe-I-Ziele
+        sind spät in Minuten erreicht. Die Ziele wachsen nur ×2,5 je Stufe, die Produktion viel schneller. Der
+        volle Rekord-Bonus (+100 % Produktion, +60 % Erbgut, 20 Splitter) kommt damit in der zweiten Woche
 - [ ] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
 
 ## Später
