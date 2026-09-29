@@ -243,6 +243,9 @@
       boss: nextFloor % game.balance.tower.bossEvery === 0,
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
       targeting: targetingOf(game, enemy),
+      // Rows as data, so the Vorne/Hinten switches re-render with every change.
+      rows: Object.fromEntries(team.map((c) => [c.id, rowOf(game, c.id)])) as Record<number, Row>,
+      roles: Object.fromEntries(team.map((c) => [c.id, roleOf(game, effectiveStats(game, c))])) as Record<number, ReturnType<typeof roleOf>>,
       milestones: towerMilestones(game),
       nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
       reward: floorRewardInfo(game, nextFloor),
@@ -548,8 +551,8 @@
         <div class="socket locked" title="Weitere Plätze über Äon-Talente">🔒</div>
       {:else if c}
         {@const sp = content.species.get(c.speciesId)}
-        {@const role = ROLE_INFO[roleOf(game, effectiveStats(game, c))]}
-        {@const row = rowOf(game, c.id)}
+        {@const role = ROLE_INFO[data.roles[c.id] ?? 'tank']}
+        {@const row = data.rows[c.id] ?? 'front'}
         <div class="socket filled" class:back={row === 'back'} style="--el: {el(sp.element).color}">
           <span class="role" title="{role.name}: {role.hint}">{role.icon}</span>
           <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={52} shiny={c.shiny} />

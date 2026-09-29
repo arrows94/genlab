@@ -45,6 +45,73 @@ const SOUNDS = {
     [76, 80, 83, 88, 92, 95, 100, 95, 92, 88].forEach((m, i) => bell(m, i * 0.075, 0.18));
     for (const m of [76, 83, 88, 92]) bell(m, 0.85, 1.2, 0.22);
   },
+  // ---- Brutstation ----
+  /** Egg laid: soft rustle in the straw and a low, warm note. */
+  eggLaid: (s: Synth) => {
+    s.noise(0, 0.35, 0.18, 1400);
+    s.note(55, 0.05, 0.3, 'sine', 0.35, 900);
+  },
+  /** Egg hatches: two cracks and a small chime. */
+  hatch: (s: Synth) => {
+    s.noise(0, 0.05, 0.5, 5000);
+    s.noise(0.12, 0.06, 0.55, 6000);
+    s.note(79, 0.2, 0.18, 'triangle', 0.35, 5000);
+    s.note(84, 0.3, 0.3, 'triangle', 0.3, 5000);
+  },
+  /** Rare or better hatchling: cracks and a sparkling run. */
+  hatchRare: (s: Synth) => {
+    s.noise(0, 0.05, 0.5, 5000);
+    s.noise(0.12, 0.06, 0.55, 6000);
+    [79, 83, 86, 91, 95].forEach((m, i) => s.note(m, 0.2 + i * 0.06, 0.25, 'triangle', 0.3, 7000));
+    s.note(91, 0.55, 0.8, 'sine', 0.22, 7000);
+  },
+  /** Twins: the crack twice, the second one higher. */
+  twins: (s: Synth) => {
+    s.noise(0, 0.05, 0.5, 5000);
+    s.noise(0.1, 0.05, 0.5, 6500);
+    s.note(79, 0.18, 0.18, 'triangle', 0.3, 5000);
+    s.note(83, 0.3, 0.18, 'triangle', 0.3, 5000);
+    s.note(86, 0.42, 0.35, 'triangle', 0.3, 5000);
+  },
+  /** New species in the Dex (hybrids): a little „discovery“ motif. */
+  discovery: (s: Synth) => {
+    [72, 76, 79, 84].forEach((m, i) => s.note(m, i * 0.1, 0.22, 'triangle', 0.35, 5000));
+    for (const m of [72, 79, 84, 88]) s.note(m, 0.45, 0.9, 'sine', 0.18, 5000);
+  },
+
+  // ---- Genlabor ----
+  /** Sequencing done: computer beeps, then an „ok“ chirp. */
+  sequenced: (s: Synth) => {
+    [84, 84, 88].forEach((m, i) => s.note(m, i * 0.09, 0.05, 'square', 0.18, 3000));
+    s.note(91, 0.3, 0.15, 'square', 0.2, 3500);
+  },
+  /** Deep sequencing reveals the Erbanlage: low hum, then a bright reveal. */
+  deepSequenced: (s: Synth) => {
+    s.note(43, 0, 0.7, 'sawtooth', 0.25, 300);
+    s.note(50, 0.1, 0.6, 'sawtooth', 0.18, 300);
+    s.note(86, 0.65, 0.5, 'sine', 0.3, 6000);
+    s.note(91, 0.75, 0.6, 'sine', 0.25, 6000);
+  },
+  /** New allele in the gene library: a short bleep. */
+  catalogued: (s: Synth) => {
+    s.note(88, 0, 0.06, 'square', 0.15, 3500);
+    s.note(93, 0.07, 0.1, 'square', 0.15, 3500);
+  },
+  /** Splice worked: snip and a clear ding. */
+  spliceOk: (s: Synth) => {
+    s.noise(0, 0.04, 0.45, 8000);
+    s.noise(0.06, 0.04, 0.4, 8000);
+    s.note(88, 0.12, 0.5, 'sine', 0.35, 8000);
+    s.note(95, 0.14, 0.45, 'sine', 0.18, 8000);
+  },
+  /** Unstable splice: a hiss and a falling tone. */
+  spliceFail: (s: Synth) => {
+    s.noise(0, 0.5, 0.35, 2500);
+    s.note(60, 0.05, 0.12, 'sawtooth', 0.25, 1200);
+    s.note(55, 0.18, 0.12, 'sawtooth', 0.25, 1000);
+    s.note(49, 0.31, 0.3, 'sawtooth', 0.25, 800);
+  },
+
   /** Short sample for the volume setting. */
   test: (s: Synth) => {
     s.note(72, 0, 0.12, 'triangle', 0.5, 4000);
@@ -53,7 +120,9 @@ const SOUNDS = {
 } satisfies Record<string, (s: Synth) => void>;
 
 /** Minimum time between two plays of the same sound (ms); default below. */
-const LIMITS: Partial<Record<SoundName, number>> = { perfect: 1500, shiny: 1500 };
+const LIMITS: Partial<Record<SoundName, number>> = {
+  perfect: 1500, shiny: 1500, eggLaid: 700, hatch: 600, hatchRare: 900, twins: 900, discovery: 1500, sequenced: 800, deepSequenced: 1500, catalogued: 400,
+};
 const DEFAULT_GAP_MS = 80;
 /** At most this many sounds start within `BURST_MS`. */
 const BURST_MAX = 4;

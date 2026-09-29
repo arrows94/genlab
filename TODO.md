@@ -254,12 +254,14 @@ Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeit
 
 ## Schritt 3 – Zucht und Genetik
 
-- [ ] Ei gelegt: weiches Rascheln im Nest
-- [ ] Ei schlüpft: Knacken; Tonhöhe/Glanz nach Seltenheit (ab Episch mit Glitzern, Mythisch mit kleinem Chor)
-- [ ] Hybrid entdeckt (neu im Dex): eigener „Entdeckung“-Klang
-- [ ] Zwillinge: doppeltes Knacken
-- [ ] Sequenzierung fertig: Computer-Piepen; Tiefensequenzierung: tieferes Summen + Aufdeck-Ton
-- [ ] Splicing: Erfolg „Schnipp + Ding“, instabil „Zischen“
+- [x] Ei gelegt: weiches Rascheln im Nest (nur im Brutstation-Tab, sonst würde der Zuchtautomat ständig rascheln)
+- [x] Ei schlüpft: Knacken + Glöckchen; ab Selten und bei Hybriden glitzernd (auch außerhalb des Tabs)
+- [ ] Ei schlüpft: feiner nach Seltenheit abstufen (Mythisch mit kleinem Chor)
+- [x] Hybrid entdeckt (neu im Dex): eigener „Entdeckung“-Klang
+- [x] Zwillinge: doppeltes Knacken
+- [x] Sequenzierung fertig: Computer-Piepen (im Genlabor); Tiefensequenzierung: tieferes Summen + Aufdeck-Ton;
+      neues Allel in der Bibliothek: kurzes Piepen (im Genlabor). Verdrahtung in `ui/soundEvents.ts`
+- [x] Splicing: Erfolg „Schnipp + Ding“, instabil „Zischen“
 - [ ] Infusion: Aufsaugen, Stufe hoch, Durchbruch (kurze Fanfare)
 - [ ] Dynastie-Stufe erreicht: kleine Krönungs-Fanfare
 - [ ] Brutritual fertig: feierlicher Glockenschlag
@@ -281,7 +283,8 @@ Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeit
 
 - [x] Ruhige Hintergrundmusik, live mit Web Audio erzeugt (`ui/music.ts`: Pad, Bass, Zupfer, Hall), standardmäßig
       aus; Schalter 🎵 in der Kopfzeile und unter Optionen mit eigener Lautstärke; still im Hintergrund-Tab
-- [x] Variante je Bereich (Labor ruhig, Turm treibend in Moll, Äon schwebend lydisch), Wechsel am nächsten Akkord
+- [x] Variante je Bereich (Labor ruhig, Brutstation Spieluhr, Genlabor Sequenzer, Turm treibend in Moll, Äon
+      schwebend lydisch); beim Tab-Wechsel klingen die Akkorde in 1,2 s aus und die neue Stimmung setzt sofort ein
 - [ ] Falls Tondateien: lizenzfreie Quellen dokumentieren, als `.ogg` klein halten, nicht in den Service-Worker-Precache
 
 # TODO – Kampfsystem überarbeiten

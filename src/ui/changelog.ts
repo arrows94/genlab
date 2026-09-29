@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 14,
+    date: '2026-09-30',
+    title: 'Neue Klänge und Musik für Brutstation und Genlabor',
+    items: [
+      { text: 'Die Hintergrundmusik hat zwei neue Stimmungen: eine Spieluhr in der Brutstation und einen leisen Sequenzer im Genlabor. Beim Tab-Wechsel blendet die Musik jetzt sofort weich über.' },
+      { text: 'Neue Klänge in der Brutstation: Ei gelegt, Schlüpfen (seltene Kreaturen und Hybride glitzern), Zwillinge und eine kleine Melodie für neu entdeckte Hybride.', feature: 'breeding' },
+      { text: 'Neue Klänge im Genlabor: Sequenzierung fertig, Tiefensequenzierung, neues Allel in der Bibliothek.', feature: 'sequencing' },
+      { text: 'Gen-Splicing klingt jetzt nach Schnitt und „Ding“ – oder nach Zischen, wenn es instabil wird.', feature: 'splicing' },
+      { text: 'Behoben: Die Schalter „Vorne“/„Hinten“ am Turm-Team zeigten die gewählte Reihe nicht an.', feature: 'tower' },
+    ],
+  },
+  {
     id: 13,
     date: '2026-09-30',
     title: 'Reihen und Rollen im Turm, kompakte Genbibliothek',
