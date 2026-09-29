@@ -137,6 +137,8 @@ export interface TowerState {
   /** Highest floor ever cleared. */
   best: number;
   autoRestart: boolean;
+  /** Where the auto-restart begins: like the last run started by hand (checkpoint or floor 1). */
+  restartFromCheckpoint: boolean;
   /** Relikt per team place (relic id or null), same order as `team`. */
   relicSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
@@ -322,7 +324,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], run: null, best: 0, autoRestart: false, relicSlots: [], leaderboard: [], lastResult: null },
+    tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

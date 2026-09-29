@@ -35,6 +35,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Jeder neue Anomalie-Rekord bringt außerdem einen Äon-Splitter je Punkt Gesamtschwierigkeit.', feature: 'aeon' },
       { text: 'Die Äon-Resonanz öffnet sich schon mit den Linsen, der dritten Bauphase des Äon-Observatoriums – nicht erst mit der Sternkarte.', feature: 'megaProjects' },
       { text: 'Genom-Turm: Relikte werden mit jeder Stufe deutlich teurer. Bereits gekaufte Stufen bleiben erhalten.', feature: 'tower' },
+      { text: 'Genom-Turm: Der Auto-Neustart beginnt dort, wo du deinen letzten Lauf gestartet hast. Startest du „Ab Etage 1“, geht es nach einer Niederlage auch wieder bei Etage 1 los – praktisch nach einer Vererbung, wenn das Team noch schwach ist.', feature: 'towerAuto' },
     ],
   },
   {

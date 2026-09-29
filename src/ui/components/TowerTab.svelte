@@ -369,7 +369,7 @@
         {#if data.cp > 0}<button disabled={data.team.length === 0} onclick={() => act(startRun(game, false))}>Ab Etage 1</button>{/if}
       {/if}
       {#if data.auto}
-        <label class="small auto"><input type="checkbox" checked={data.tw.autoRestart} onchange={(e) => act(setTowerAutoRestart(game, e.currentTarget.checked))} /> Auto-Neustart</label>
+        <label class="small auto"><input type="checkbox" checked={data.tw.autoRestart} onchange={(e) => act(setTowerAutoRestart(game, e.currentTarget.checked))} /> Auto-Neustart <span class="muted" title="Startet wie dein letzter Lauf – ab dem Checkpoint oder ab Etage 1">ab Etage {data.tw.restartFromCheckpoint ? data.cp + 1 : 1}</span></label>
       {/if}
     </div>
 

@@ -10,7 +10,7 @@ import { canConsume } from '@core/features/stable';
 import { startBreeding } from '@core/features/breeding';
 import { revealGenome } from '@core/features/sequencing';
 import { usePotion } from '@core/features/market';
-import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, simulateFight, startRun, teamSize } from '@core/features/tower';
+import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, setTowerAutoRestart, simulateFight, startRun, stopRun, teamSize } from '@core/features/tower';
 import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
 import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
@@ -84,6 +84,23 @@ describe('genome tower', () => {
     g.state.tower.best = 27;
     setTeam(g, [champion(g, 10).id]);
     startRun(g, true);
+    expect(g.state.tower.run?.startFloor).toBe(21);
+  });
+
+  it('auto-restart begins where the last run began (checkpoint or floor 1)', () => {
+    const g = endgame();
+    unlockFeature(g, 'towerAuto');
+    g.state.tower.best = 27;
+    setTeam(g, [champion(g, 10).id]);
+    setTowerAutoRestart(g, true);
+    startRun(g, false);
+    stopRun(g);
+    g.step(100);
+    expect(g.state.tower.run?.startFloor).toBe(1);
+    stopRun(g);
+    startRun(g, true);
+    stopRun(g);
+    g.step(100);
     expect(g.state.tower.run?.startFloor).toBe(21);
   });
 
