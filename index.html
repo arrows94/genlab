@@ -9,7 +9,9 @@
     <link rel="icon" type="image/png" sizes="64x64" href="./icons/favicon-64.png" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Opaque, not black-translucent: iOS 26 sizes a translucent home-screen web app short by the top
+         inset (empty band under the tab bar) and blurs the top. Takes effect only after re-adding the app. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Genlab" />
     <title>Genlab</title>
   </head>

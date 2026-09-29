@@ -20,7 +20,8 @@
    pinch zoom. Set on every element because scroll containers do not inherit it from <html>. */
 * { box-sizing: border-box; touch-action: manipulation; }
 
-html { scroll-padding-top: calc(var(--header-h, 0px) + 0.5rem); }
+/* No rubber-band bounce or pull-to-refresh: header and tab bar stay where they are, like in an app. */
+html { scroll-padding-top: calc(var(--header-h, 0px) + 0.5rem); overscroll-behavior-y: none; }
 /* The sticky header's 100vw backdrop must not cause horizontal scrolling (classic scrollbars); clip keeps sticky working. */
 body { overflow-x: clip; }
 
