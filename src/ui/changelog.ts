@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 5,
+    date: '2026-09-29',
+    title: 'Turm-Verlauf und umkehrbare Sortierung',
+    items: [
+      { text: 'Genom-Turm: Die Bestenliste zeigt nur noch die drei besten Läufe. Darunter siehst du deine letzten zehn Läufe – mit Etage, Startetage, Team und Uhrzeit.', feature: 'tower' },
+      { text: 'Neben der Sortierung im Labor sitzt jetzt ein ⇅-Knopf, der die Reihenfolge umdreht: schwächste zuerst, häufigste Seltenheit zuerst, Name von Z bis A …' },
+      { text: 'Auch die Kandidaten der Brutstation lassen sich mit ⇅ umgekehrt sortieren.', feature: 'breeding' },
+      { text: 'Genom-Turm: Die Kandidaten lassen sich mit ⇅ umgekehrt sortieren.', feature: 'tower' },
+    ],
+  },
+  {
     id: 4,
     date: '2026-09-29',
     title: 'Anomalien mit Stufen',

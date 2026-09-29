@@ -18,6 +18,7 @@
   import EggSvg from './EggSvg.svelte';
   import BreedingPlanner from './BreedingPlanner.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
+  import SortToggle from './SortToggle.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -52,7 +53,7 @@
     // Chosen parents stay on top so they never scroll out of reach.
     const chosenFirst = (x: { c: Creature }) => (x.c.id === parentA || x.c.id === parentB ? 0 : 1);
     const candidates = pool
-      .sort((x, y) => chosenFirst(x) - chosenFirst(y) || compareCandidates(x, y))
+      .sort((x, y) => chosenFirst(x) - chosenFirst(y) || (viewState.breeding.invert ? -1 : 1) * compareCandidates(x, y))
       .slice(0, 60);
     const stableCap = stableCapacity(game);
     const free = stableFree(game);
@@ -121,6 +122,8 @@
     cheap: 'Die niedrigsten Generationen – billiger Nachwuchs für Infusion und Recycler.',
   };
 
+  const sortArrow = $derived(viewState.breeding.invert ? '↑' : '↓');
+  const sortAz = $derived(viewState.breeding.invert ? 'Z–A' : 'A–Z');
   const rarityOrder = (c: Creature) => content.rarities.get(c.rarity).order;
   /** Secondary value for the chosen sort (stat sorts need the effective stats). */
   function sortKey(c: Creature): number {
@@ -393,14 +396,17 @@
         <option value="">Alle Seltenheiten</option>
         {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
-      <select bind:value={viewState.breeding.sort} title="Sortierung">
-        <option value="power">↓ Gesamtstärke</option>
-        <option value="rarity">↓ Seltenheit</option>
-        <option value="generation">↓ Generation</option>
-        <option value="species">Art (A–Z)</option>
-        <option value="name">Name (A–Z)</option>
-        {#each content.stats.list as st (st.id)}<option value={`stat:${st.id}`}>↓ {st.name}</option>{/each}
-      </select>
+      <span class="sortgroup">
+        <select bind:value={viewState.breeding.sort} title="Sortierung">
+          <option value="power">{sortArrow} Gesamtstärke</option>
+          <option value="rarity">{sortArrow} Seltenheit</option>
+          <option value="generation">{sortArrow} Generation</option>
+          <option value="species">Art ({sortAz})</option>
+          <option value="name">Name ({sortAz})</option>
+          {#each content.stats.list as st (st.id)}<option value={`stat:${st.id}`}>{sortArrow} {st.name}</option>{/each}
+        </select>
+        <SortToggle bind:inverted={viewState.breeding.invert} />
+      </span>
     </div>
   </div>
   <div class="tiles">
@@ -510,6 +516,7 @@
   .cand-head h4 { margin: 0; }
   .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .filters input { width: 11rem; }
+  .sortgroup { display: flex; gap: 0.3rem; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
   .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
   .tile.a { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; }
@@ -532,5 +539,6 @@
     .socket :global(svg) { width: 64px; height: 64px; }
     .filters input { width: 100%; }
     .filters select { flex: 1 1 30%; min-width: 0; }
+    .sortgroup { flex: 1 1 30%; min-width: 0; }
   }
 </style>

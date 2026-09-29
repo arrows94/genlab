@@ -143,6 +143,8 @@ export interface TowerState {
   relicSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
   leaderboard: { floor: number; team: string[]; at: number }[];
+  /** The most recent runs, newest first (missing startFloor in older saves). */
+  history: { floor: number; startFloor: number; team: string[]; at: number }[];
   lastResult: {
     floor: number;
     win: boolean;
@@ -327,7 +329,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], lastResult: null },
+    tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
