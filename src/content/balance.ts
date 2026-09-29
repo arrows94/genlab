@@ -203,7 +203,7 @@ export const balance: Balance = {
   },
   prestige: {
     inheritance: { divisor: 1e5, exponent: 0.5, minGain: 1 },
-    aeon: { divisor: 50, exponent: 0.5, minGain: 1 },
+    aeon: { divisor: 25, exponent: 0.5, minGain: 1 },
   },
   weekly: { epoch: '2024-01-01' },
 };

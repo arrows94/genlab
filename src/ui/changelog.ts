@@ -31,6 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       { text: 'Der Zuchtautomat räumt bei vollem Stall nicht mehr die letzten Kreaturen einer Art weg: Die stärksten jeder Art bleiben stehen – so viele, wie beim Recycling-Automaten unter „Je Art behalten“ eingestellt ist (Standard: 2).', feature: 'autoBreed' },
       { text: 'Der Zuchtautomat zeigt, welche Kreatur beim nächsten vollen Stall als Nächstes gehen würde. Favoriten ★ sind wie immer geschützt.', feature: 'autoBreed' },
+      { text: 'Ein Äon bringt mehr Splitter: √(Erbgut / 25) statt √(Erbgut / 50) – etwa 40 % mehr für dasselbe Erbgut.', feature: 'aeon' },
       { text: 'Die Talente der Stufen 4 und 5 im Äon-Talentbaum sind günstiger (6 und 9 statt 8 und 12 Splitter).', feature: 'megaProjects' },
       { text: 'Der Äon-Tab zeigt jetzt dieselbe Übersicht wie die Vererbung: Splitter-Gewinn, was verloren geht und was bleibt, und eine Zeitleiste deiner Äonen samt der Vererbungen dazwischen.', feature: 'aeon' },
     ],

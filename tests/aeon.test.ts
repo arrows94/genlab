@@ -42,7 +42,7 @@ describe('endgame bot', () => {
 
     expect(g.state.features.aeon).toBe(true);
     expect(aeons).toBe(1);
-    // sqrt(900 / 50) = 4 shards, all spent on tier-1 talents (1 + 1 + 2).
+    // sqrt(900 / 25) = 6 shards, spent on tier-1 talents (1 + 1 + 2) and more.
     expect(Object.keys(g.state.talents).length).toBeGreaterThanOrEqual(3);
     // Resources that the Äon would have taken went into the Fundament instead.
     const paid = g.state.megaProjects.observatory?.paid ?? {};
