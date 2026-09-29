@@ -229,6 +229,11 @@ export interface Balance {
     maxLevel: number;
     /** Countable goals × goalGrowth^(stage − 1). */
     goalGrowth: number;
+    /**
+     * Earned-resource goals also grow with the player's progress: × (production
+     * multiplier of that resource when the run starts)^progressExponent.
+     */
+    progressExponent: number;
     /** Äon-Splitter per point of a new record in total difficulty (sum of the stages of one run). */
     shardsPerRecordPoint: number;
     /** Permanent bonus per point of the record in total difficulty. */

@@ -2,8 +2,9 @@
   import { content } from '@content/index';
   import { conditionProgress } from '@core/conditions';
   import {
-    abandonAnomaly, activeAnomalies, anomalyAvailable, anomalyBest, anomalyGoal, anomalyGoalText, anomalyProgress, maxStartLevel, startAnomalies,
+    abandonAnomaly, activeAnomalies, anomalyAvailable, anomalyBest, anomalyGoal, anomalyGoalText, anomalyProgress, anomalyScale, maxStartLevel, startAnomalies,
   } from '@core/features/anomalies';
+  import { formatNumber } from '@core/format';
   import { game, view, act, save, ask } from '../store.svelte';
 
   /** Chosen stage per anomaly for the next run (0 = not part of it). */
@@ -26,6 +27,7 @@
         level,
         goal: level > 0 ? anomalyGoalText(game, a.id, level) : anomalyGoalText(game, a.id, Math.max(1, anomalyBest(game, a.id) + 1)),
         progress: running && level > 0 ? conditionProgress(game.state, anomalyGoal(game, a.id, level)) : null,
+        scale: anomalyScale(game, a.id),
       };
     });
     const total = list.reduce((n, x) => n + x.level, 0);
@@ -70,7 +72,8 @@
 </header>
 <p class="muted small intro">
   Durchläufe mit veränderten Regeln. Jede Anomalie hat die Stufen I–{ROMAN[maxLevel]}; die nächste öffnet sich, wenn du die vorige meisterst.
-  Du kannst mehrere kombinieren – geschafft ist der Lauf, wenn alle Ziele erreicht sind. Die Belohnung wächst mit der besten Stufe,
+  Du kannst mehrere kombinieren – geschafft ist der Lauf, wenn alle Ziele erreicht sind. Die Ziele wachsen mit deinem Produktionsbonus
+  und werden beim Start festgelegt. Die Belohnung wächst mit der besten Stufe,
   und ein neuer Rekord in der Gesamtschwierigkeit bringt dauerhaft mehr Produktion und Erbgut{#if data.aeon} sowie Äon-Splitter{/if}. Beim Start wird dein Lauf wie bei einer Vererbung zurückgesetzt (ohne Erbgut).
 </p>
 
@@ -106,7 +109,7 @@
         <p class="small live">▶ Stufe {ROMAN[x.level]}</p>
       {/if}
 
-      <p class="small"><b>Ziel{x.level > 0 ? ` (Stufe ${ROMAN[x.level]})` : ''}:</b> {x.goal}</p>
+      <p class="small"><b>Ziel{x.level > 0 ? ` (Stufe ${ROMAN[x.level]})` : ''}:</b> {x.goal}{#if x.scale > 1.05}{' '}<span class="muted" title="Das Ziel wächst mit deinem Produktionsbonus. Es wird beim Start des Laufs festgelegt.">(×{formatNumber(x.scale)} Fortschritt)</span>{/if}</p>
       {#if x.progress !== null}
         <div class="goal"><div style="width: {x.progress * 100}%"></div><span class="num">{Math.floor(x.progress * 100)} %</span></div>
       {/if}

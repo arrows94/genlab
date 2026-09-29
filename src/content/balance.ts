@@ -196,7 +196,8 @@ export const balance: Balance = {
   },
   anomalies: {
     maxLevel: 5,
-    goalGrowth: 10,
+    goalGrowth: 4,
+    progressExponent: 1,
     shardsPerRecordPoint: 1,
     recordModifiers: [
       { target: 'production.food', op: 'pct', value: 0.025 },

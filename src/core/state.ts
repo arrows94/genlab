@@ -274,8 +274,11 @@ export interface GameState {
   capsulePity: Record<string, number>;
   tower: TowerState;
   talents: Record<string, boolean>;
-  /** Running anomaly challenge: difficulty stage per active anomaly (several at once). */
-  anomaly: { levels: Record<string, number> } | null;
+  /**
+   * Running anomaly challenge: difficulty stage per active anomaly (several at
+   * once) and each goal's progress scale, frozen at the start (missing = 1).
+   */
+  anomaly: { levels: Record<string, number>; scales?: Record<string, number> } | null;
   anomaliesCompleted: Record<string, boolean>;
   /** Best stage mastered per anomaly (drives the reward). */
   anomalyBest: Record<string, number>;

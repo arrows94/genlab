@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import {
-  abandonAnomaly, anomalyGoal, anomalyGoalText, anomalyProgress, maxStartLevel, ruleActive, startAnomalies, startAnomaly,
+  abandonAnomaly, anomalyGoal, anomalyGoalText, anomalyProgress, anomalyScale, maxStartLevel, ruleActive, startAnomalies, startAnomaly,
 } from '@core/features/anomalies';
+import { formatNumber } from '@core/format';
 import { deserialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import { balance, content, makeGame } from './helpers';
@@ -35,8 +36,29 @@ describe('anomaly stages', () => {
     // Stage III: base ×0.5 and twice ×0.8 per extra stage.
     expect(g.mods().factor('production.food') / food).toBeCloseTo(0.5 * 0.8 * 0.8);
     const goal = anomalyGoal(g, 'famine', 3) as { amount: number };
-    expect(goal.amount).toBe(Math.ceil(famineGoal * balance.anomalies.goalGrowth ** 2));
+    const expected = famineGoal * balance.anomalies.goalGrowth ** 2 * anomalyScale(g, 'famine');
+    expect(goal.amount).toBeGreaterThanOrEqual(expected);
+    expect(goal.amount).toBeLessThan(expected * 1.1);
     expect(anomalyGoalText(g, 'famine', 3)).toContain('Nahrung in diesem Lauf verdienen');
+  });
+
+  it('goals grow with the production bonus and stay fixed while the run goes', () => {
+    const g = anomalyGame();
+    g.state.resources.heritage = D(20); // +200 % production
+    g.invalidate();
+    const scale = g.mods().factor('production.food');
+    expect(scale).toBeGreaterThan(2);
+    expect(anomalyScale(g, 'famine')).toBeCloseTo(scale);
+    const preview = (anomalyGoal(g, 'famine', 1) as { amount: number }).amount;
+    expect(preview).toBeGreaterThanOrEqual(famineGoal * scale);
+    expect(preview).toBeLessThan(famineGoal * scale * 1.1); // rounded to two digits
+    expect(startAnomaly(g, 'famine').ok).toBe(true);
+    expect(g.state.anomaly?.scales?.famine).toBeCloseTo(scale);
+    // More bonuses during the run (and the anomaly's own halving) do not move the goal.
+    g.state.resources.heritage = D(500);
+    g.invalidate();
+    expect((anomalyGoal(g, 'famine', 1) as { amount: number }).amount).toBe(preview);
+    expect(anomalyGoalText(g, 'famine', 1)).toContain(formatNumber(preview));
   });
 
   it('run several at once – won when all goals are met, with rules of both', () => {
@@ -44,12 +66,12 @@ describe('anomaly stages', () => {
     g.state.anomalyBest.famine = 1;
     expect(startAnomalies(g, { ascetic: 1, famine: 2 }).ok).toBe(true);
     expect(ruleActive(g, 'noPotions')).toBe(true);
-    const goldGoal = (content.anomalies.get('ascetic').goal as { amount: number }).amount;
-    g.state.earned.gold = D(goldGoal);
+    const amount = (id: string, level: number) => (anomalyGoal(g, id, level) as { amount: number }).amount;
+    g.state.earned.gold = D(amount('ascetic', 1));
     g.step(100);
     expect(g.state.anomaly).not.toBeNull(); // famine goal still open
     expect(anomalyProgress(g)).toBeLessThan(1);
-    g.state.earned.food = D(Math.ceil(famineGoal * balance.anomalies.goalGrowth));
+    g.state.earned.food = D(amount('famine', 2));
     g.step(100);
     expect(g.state.anomaly).toBeNull();
     expect(g.state.anomalyBest).toMatchObject({ ascetic: 1, famine: 2 });
