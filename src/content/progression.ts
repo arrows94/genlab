@@ -68,7 +68,7 @@ export const features: FeatureDef[] = [
   },
   {
     id: 'dynasties', name: 'Stammbaum-Dynastien', hint: 'Stammbaum-Dynastien: Züchte reine Linien – beide Eltern und das Kind von derselben Art. Jede Generation in Folge macht die Linie stärker, und der Rekord jeder Art bleibt für immer (Brutstation).',
-    condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+    condition: { type: 'prestigeCount', layer: 'inheritance', count: 3 },
   },
   {
     id: 'specialBreeding', name: 'Besondere Brut', hint: 'Besondere Brut: Rituale in der Brutstation dauern Stunden, bringen aber seltenere Nachkommen und mehr Hybride.',

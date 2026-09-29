@@ -10,9 +10,10 @@ import { unlockFeature } from '@core/systems/unlocks';
 import type { Creature } from '@core/state';
 import { balance, makeGame } from './helpers';
 
-function dynastyGame(seed = 11) {
+function dynastyGame(seed = 11, unlocked = true) {
   const g = makeGame(seed);
   unlockFeature(g, 'breeding');
+  if (unlocked) unlockFeature(g, 'dynasties');
   g.state.resources.food = D(1e12);
   g.state.resources.gold = D(1e12);
   return g;
@@ -71,17 +72,25 @@ describe('Stammbaum-Dynastien', () => {
     expect(g.state.resources.aeonShards!.toNumber()).toBe(shards);
   });
 
-  it('bonuses apply once the feature is unlocked: own line, species tier and production', () => {
-    const g = dynastyGame();
+  it('nothing counts before the unlock: no line, no record', () => {
+    const g = dynastyGame(11, false);
+    expect(hatch(g, pup(g, 4), pup(g, 4)).lineage).toBe(0);
+    recordLineage(g, pup(g, 12));
+    expect(g.state.dynasties).toEqual({});
+    expect(g.content.features.get('dynasties').condition).toEqual({ type: 'prestigeCount', layer: 'inheritance', count: 3 });
+  });
+
+  it('bonuses: own line, species tier and production', () => {
+    const g = dynastyGame(11, false);
     const deep = pup(g, 12);
     const plain = pup(g, 0, 'emberpup');
-    recordLineage(g, deep);
     const before = effectiveStats(g, deep).atk!;
     const plainBefore = effectiveStats(g, plain).atk!;
     const production = g.mods().factor('production.food');
     expect(before).toBe(plainBefore);
 
     unlockFeature(g, 'dynasties');
+    recordLineage(g, deep);
     const tierBonus = dynastyTier(g, 12) * balance.dynasty.statPerTier;
     expect(lineageBonus(g, deep)).toBeCloseTo(12 * balance.dynasty.statPerDepth);
     expect(effectiveStats(g, deep).atk).toBe(Math.round(before * (1 + lineageBonus(g, deep) + tierBonus)));

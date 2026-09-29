@@ -16,15 +16,15 @@ import type { Creature } from '../state';
  *    threshold reached is a dynasty tier: more stats for the species, more
  *    production for everything, Äon-Splitter for the high tiers.
  *
- * Records are kept from the start; the bonuses only apply once the feature
- * is unlocked (so lines bred before count as well, and nothing works hidden).
+ * Nothing counts before the feature is unlocked: lines start at the first
+ * pure egg after the unlock, and only then are records kept.
  */
 
 export const DYNASTY_FEATURE = 'dynasties';
 
-/** Line depth of a child with these parents (0 = not a pure line). */
-export function lineageDepth(speciesId: string, a: Creature, b: Creature): number {
-  if (a.speciesId !== speciesId || b.speciesId !== speciesId) return 0;
+/** Line depth of a child with these parents (0 = not a pure line, or not unlocked yet). */
+export function lineageDepth(ctx: GameContext, speciesId: string, a: Creature, b: Creature): number {
+  if (!ctx.state.features[DYNASTY_FEATURE] || a.speciesId !== speciesId || b.speciesId !== speciesId) return 0;
   return Math.min(a.lineage ?? 0, b.lineage ?? 0) + 1;
 }
 
@@ -72,7 +72,7 @@ export function dynastyModifiers(ctx: GameContext, c: Creature): SourcedModifier
  */
 export function recordLineage(ctx: GameContext, c: Creature): void {
   const depth = c.lineage ?? 0;
-  if (depth <= dynastyRecord(ctx, c.speciesId)) return;
+  if (!ctx.state.features[DYNASTY_FEATURE] || depth <= dynastyRecord(ctx, c.speciesId)) return;
   const before = dynastyTier(ctx, dynastyRecord(ctx, c.speciesId));
   ctx.state.dynasties[c.speciesId] = depth;
   const tier = dynastyTier(ctx, depth);

@@ -209,7 +209,7 @@ registerProcessHandler(EGG, {
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const nameFor = () => blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.offspringName, ctx.content.species.get(speciesId).name);
-    const lineage = lineageDepth(speciesId, a, b);
+    const lineage = lineageDepth(ctx, speciesId, a, b);
     const child = createCreature(ctx, {
       speciesId,
       rarity,
