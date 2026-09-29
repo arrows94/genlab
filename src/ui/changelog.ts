@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 13,
+    date: '2026-09-30',
+    title: 'Reihen und Rollen im Turm, kompakte Genbibliothek',
+    items: [
+      { text: 'Turm-Teams stehen jetzt in zwei Reihen: Die vordere Reihe steckt die meisten Treffer ein, die hintere ist geschützt. Umschalten direkt am Team-Platz („Vorne“/„Hinten“).', feature: 'tower' },
+      { text: 'Jede Kreatur zeigt ihre Rolle – 🛡️ Tank, ⚔️ Angreifer oder 💨 Flink – als Tipp für die Aufstellung. Verteidigung schützt jetzt spürbar besser.', feature: 'tower' },
+      { text: 'Manche Bosse wählen ihre Ziele selbst: Der Wandler jagt das schwächste Teammitglied, die Regeneration greift lieber die hintere Reihe an. Die Vorschau verrät, worauf du dich einstellen musst.', feature: 'tower' },
+      { text: 'Kämpfe im Turm laufen jetzt in einheitlichem Tempo ab: Lange Kämpfe dauern sichtbar länger als kurze. Die Tempo-Leisten sind deutlicher, leuchten kurz vor dem Zug und zeigen die Sekunden bis zur nächsten Aktion.', feature: 'tower' },
+      { text: 'Gen-Splicing und „Genom ansehen“ sortieren wie die anderen Kreaturenlisten (Gesamtstärke, Seltenheit, Generation, Werte, Name … und ⇅ zum Umkehren) – plus „Top-Allele“ und beim Splicing „Versuche übrig“.', feature: 'sequencing' },
+      { text: 'Die Genbibliothek ist kompakter: eine Zeile pro Gen mit kleinen Allel-Punkten, komplette Gene lassen sich ausblenden und die ganze Bibliothek einklappen.', feature: 'sequencing' },
+    ],
+  },
+  {
     id: 12,
     date: '2026-09-29',
     title: 'Neues Kampfsystem im Turm, Hintergrundmusik, Genom-Suche',

@@ -306,11 +306,23 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 2 – Verteidigung und Rollen
 
-- [ ] Verteidigung stärker: fester Schadensabzug plus Prozent (heute nur `defScale / (defScale + VER)`)
-- [ ] Reihen: Vorne (wird bevorzugt getroffen, z. B. 60 %) und Hinten; der Spieler stellt das Team auf
-- [ ] Rollen aus den Werten ableiten und anzeigen: Tank (KP/VER), Angreifer (ANG), Schneller (TMP) – als Hinweis,
-      keine Pflicht
-- [ ] Gegner mit eigener Zielwahl je Boss-Eigenheit (z. B. „jagt den Schwächsten“, „trifft alle Hinteren“)
+- [x] Verteidigung stärker: nach `defScale / (defScale + VER)` blockt VER noch bis zu 40 % mehr, je nach VER im
+      Verhältnis zum Angriff des Gegners (`defRatio`, skalenfrei). Mess-Test (Basis 41 %): +10 % KP 67 %, ANG 76 %,
+      VER 57,5 %, TMP 86,5 %; +25 %: VER 70 %, die anderen 99–100 %. Ein fester Abzug je Punkt und eine Mindest-
+      Schadensquote wurden verworfen: Sie wachsen nicht mit den Etagen mit (im Äon-Bot Turm 58 statt 28 an Tag 5).
+      Äon-Bot 12 Tage mit der jetzigen Formel: Turm 15/17 an Tag 1–5 (vorher 18/28), 37 an Tag 8 (vorher 36),
+      ab Tag 9 wie vorher 39; Wochen-Boss, Äonen und Splitter ähnlich
+- [ ] `defScale` ist fest (50), die Werte wachsen exponentiell – ab Etage ~40 kommen nur noch ~5 % durch, und
+      Verteidigung bleibt schwächer als die anderen Werte. Anteil skalenfrei machen (VER gegen ANG des Angreifers)
+      und die Turm-Kurve danach neu einstellen
+- [x] Reihen: Vorne und Hinten (`tower.back`), Gegner treffen zu 75 % die vordere Reihe, wenn beide besetzt sind;
+      Umschalten am Team-Platz, in der Arena steht die hintere Reihe weiter weg
+- [x] Rollen aus den Werten abgeleitet (`roleOf`, verglichen mit dem Profil der Turm-Gegner): Tank 🛡️, Angreifer ⚔️,
+      Flink 💨 – als Hinweis an Team-Plätzen und Kandidaten
+- [x] Zielwahl je Boss-Eigenheit (`targeting` in `bossTraits`): Wandler jagt den Schwächsten, Regeneration greift
+      bevorzugt die hintere Reihe an; die Vorschau nennt die Zielwahl des Gegners
+- [ ] Test-Bot stellt Reihen und Rollen auf (heute alle vorne, also gleichmäßig verteilte Treffer)
+- [ ] „Trifft alle Hinteren“ (Flächenangriff) kommt mit den Techniken in Schritt 3
 
 ## Schritt 3 – Elemente und Fähigkeiten im Kampf
 
@@ -336,6 +348,8 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Arena: Aktionsleisten unter den Kämpfern, Zugfolge, Kampfuhr mit Zeitlimit-Balken, Zahlen nach Art
       (sehr effektiv, resistiert, ausgewichen, Heilung, Elementwechsel), Treffer-Funken, Boden in Perspektive
 - [ ] Technik-Namen einblenden, Zustands-Symbole (mit Schritt 3)
+- [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
+      nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
 - [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
 - [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
 

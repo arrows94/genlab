@@ -7,7 +7,7 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import type { System } from '../systems/types';
-import type { RelicDef } from '../content/types';
+import type { RelicDef, TargetingMode } from '../content/types';
 import type { ModifierProvider } from '../providers';
 
 /**
@@ -35,6 +35,32 @@ export interface Fighter {
   team: boolean;
   /** Boss trait id (`bossTraits`), enemies only. */
   trait?: string;
+  /** Team row: the front row takes most enemy attacks. */
+  row?: Row;
+}
+
+export type Row = 'front' | 'back';
+
+/** Role derived from the stats (a hint for the line-up, no rule). */
+export type Role = 'tank' | 'attacker' | 'fast';
+
+export const ROLE_INFO: Record<Role, { name: string; icon: string; hint: string }> = {
+  tank: { name: 'Tank', icon: '🛡️', hint: 'Viel KP und Verteidigung – gehört nach vorne.' },
+  attacker: { name: 'Angreifer', icon: '⚔️', hint: 'Hoher Angriff – hinten geschützt teilt er am meisten aus.' },
+  fast: { name: 'Flink', icon: '💨', hint: 'Hohes Tempo – handelt oft und weicht aus.' },
+};
+
+/**
+ * Role from the stat profile: each stat is compared with the tower's enemy
+ * base profile, the strongest one wins (KP and VER both count for the tank).
+ */
+export function roleOf(ctx: GameContext, stats: { hp?: number; atk?: number; def?: number; spd?: number }): Role {
+  const base = ctx.balance.tower.enemyBase;
+  const rel = (k: string, v: number | undefined) => (v ?? 0) / Math.max(1, base[k] ?? 1);
+  const tank = (rel('hp', stats.hp) + rel('def', stats.def)) / 2;
+  const attacker = rel('atk', stats.atk);
+  const fast = rel('spd', stats.spd);
+  return tank >= attacker && tank >= fast ? 'tank' : attacker >= fast ? 'attacker' : 'fast';
 }
 
 export function teamSize(ctx: GameContext): number {
@@ -97,6 +123,7 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
     power: global.factor('tower.damage') * own.factor('tower.damage'),
     elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage') * boost('element'),
     team: true,
+    row: rowOf(ctx, c.id),
   };
 }
 
@@ -157,11 +184,55 @@ export function elementMultiplier(ctx: GameContext, attacker: string, defender: 
   return 1;
 }
 
+/**
+ * Damage of one hit: attack × multipliers, reduced by defence in two steps –
+ * a percentage (defScale / (defScale + VER)) and then a share that depends on
+ * VER against the attacker's ANG (up to `defRatio` when VER ≫ ANG), so it
+ * works the same on every floor. A hit always does at least 1.
+ */
 export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): number {
+  const t = ctx.balance.tower;
   const mult = elementMultiplier(ctx, att.element, def.element);
   const elem = mult > 1 ? mult * att.elementPower : mult;
-  const scale = ctx.balance.tower.defScale;
-  return Math.max(1, Math.round(att.atk * att.power * elem * (scale / (scale + def.def)) * rng.range(0.9, 1.1)));
+  const raw = att.atk * att.power * elem * rng.range(0.9, 1.1);
+  const guard = 1 - t.defRatio * (def.def / Math.max(1, def.def + att.atk));
+  const reduced = raw * (t.defScale / (t.defScale + def.def)) * guard;
+  return Math.max(1, Math.round(reduced));
+}
+
+/** Row of a team member (front unless marked for the back). */
+export function rowOf(ctx: GameContext, creatureId: number): Row {
+  return ctx.state.tower.back.includes(creatureId) ? 'back' : 'front';
+}
+
+/** Puts a team member into the front or back row. */
+export function setRow(ctx: GameContext, creatureId: number, row: Row): ActionResult {
+  const tw = ctx.state.tower;
+  if (tw.run) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
+  if (!tw.team.includes(creatureId)) return { ok: false, reason: 'Die Kreatur ist nicht im Team.' };
+  tw.back = tw.back.filter((id) => id !== creatureId);
+  if (row === 'back') tw.back.push(creatureId);
+  return { ok: true };
+}
+
+/** How the enemy of a floor picks its targets (boss traits can change it). */
+export function targetingOf(ctx: GameContext, enemy: Fighter): TargetingMode {
+  const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
+  return trait?.targeting ?? 'rows';
+}
+
+/**
+ * Target of an enemy attack. rows: the front row with `frontShare` (if both
+ * rows stand), back: the same for the back row, weakest: least HP left.
+ */
+export function pickTarget(ctx: GameContext, mode: TargetingMode, alive: Fighter[], rng: Rng): Fighter {
+  if (mode === 'weakest') return alive.reduce((a, b) => (b.hp < a.hp ? b : a));
+  const front = alive.filter((f) => f.row !== 'back');
+  const back = alive.filter((f) => f.row === 'back');
+  if (front.length === 0 || back.length === 0) return rng.pick(alive);
+  const preferred = mode === 'back' ? back : front;
+  const other = mode === 'back' ? front : back;
+  return rng.pick(rng.chance(ctx.balance.tower.frontShare) ? preferred : other);
 }
 
 /**
@@ -193,6 +264,8 @@ export interface FighterSnapshot {
   team: boolean;
   /** Seconds between two actions (Aktionsleiste). */
   interval: number;
+  /** Team row (team only). */
+  row?: Row;
 }
 
 export interface FightResult {
@@ -232,7 +305,8 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
   const events: FightEvent[] = [];
   const order = [...team, enemy];
   const intervals = actionIntervals(ctx, order);
-  const fighters: FighterSnapshot[] = order.map((f, i) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]! }));
+  const fighters: FighterSnapshot[] = order.map((f, i) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]!, ...(f.team ? { row: f.row ?? 'front' } : {}) }));
+  const targeting = targetingOf(ctx, enemy);
   const note = (line: string) => log.length < maxLog && log.push(line);
   const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
   const done = (win: boolean, seconds: number): FightResult => ({ win, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
@@ -280,7 +354,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
     }
     const att = order[who]!;
     next[who] = now + intervals[who]!;
-    const target = att.team ? enemy : rng.pick(team.filter((t) => t.hp > 0));
+    const target = att.team ? enemy : pickTarget(ctx, targeting, team.filter((t) => t.hp > 0), rng);
     const ti = order.indexOf(target);
     const m = elementMultiplier(ctx, att.element, target.element);
     if (rng.chance(evadeChance(ctx, att, target))) {
@@ -323,6 +397,7 @@ export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   const unique = [...new Set(ids)].filter((id) => findCreature(ctx, id));
   if (unique.length > teamSize(ctx)) return { ok: false, reason: `Höchstens ${teamSize(ctx)} Kreaturen.` };
   ctx.state.tower.team = unique;
+  ctx.state.tower.back = ctx.state.tower.back.filter((id) => unique.includes(id));
   return { ok: true };
 }
 

@@ -20,11 +20,11 @@ interface ViewState {
   breeding: { species: string; rarity: string; sort: BreedingSort; invert: boolean };
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
   /** Splicing bench: hide creatures without attempts left or with a perfect genome. */
-  splicing: { hideDone: boolean };
+  splicing: { hideDone: boolean; sort: string; invert: boolean };
   /** Infusion quick selection: rarity limit and "only allele donors". */
   infusion: { maxRarity: string; donorsOnly: boolean };
   /** Genome viewer in the Genlabor: search and filters of the creature gallery. */
-  genome: { sequencedOnly: boolean; species: string };
+  genome: { sequencedOnly: boolean; species: string; libraryOpen: boolean; hideCompleteGenes: boolean; sort: string; invert: boolean };
 }
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
@@ -37,9 +37,9 @@ const defaults = (): ViewState => ({
   expedition: { region: 'short', voyageOpen: false, hideWorking: false, hideLocked: false },
   breeding: { species: '', rarity: '', sort: 'power', invert: false },
   research: { theme: '', affordableOnly: false, grandOpen: false },
-  splicing: { hideDone: true },
+  splicing: { hideDone: true, sort: 'left', invert: false },
   infusion: { maxRarity: 'common', donorsOnly: false },
-  genome: { sequencedOnly: false, species: '' },
+  genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false, sort: 'power', invert: false },
 });
 
 function load(): ViewState {

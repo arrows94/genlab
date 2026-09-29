@@ -2,16 +2,17 @@
   import { onMount } from 'svelte';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
-  import { creaturePower, findCreature } from '@core/creatures';
+  import { findCreature } from '@core/creatures';
   import { expressedAppearance, genomeReport, libraryHas } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
-  import { describeModifier } from '@core/queries';
+  import { describeModifier, sortCreatures, type CreatureSort } from '@core/queries';
   import { instabilityChance, isFullySpliced, maxSplices, splice, spliceCost, splicePreview, splicesLeft } from '@core/features/splicing';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
+  import CreatureSortSelect from './CreatureSortSelect.svelte';
 
   /**
    * Gene splicing workbench: pick a sequenced creature from a filterable
@@ -42,15 +43,20 @@
     view.slowFrame;
     const sequenced = game.state.creatures.filter((c) => c.sequenced);
     const q = search.trim().toLowerCase();
-    const all = sequenced
-      .filter((c) => !q || c.name.toLowerCase().includes(q) || species(c).name.toLowerCase().includes(q))
-      .map((c) => ({ c, left: splicesLeft(game, c), done: isFullySpliced(game, c), top: topScore(c), power: creaturePower(game, c) }));
+    const { sort, invert } = viewState.splicing;
+    const matching = sequenced.filter((c) => !q || c.name.toLowerCase().includes(q) || species(c).name.toLowerCase().includes(q));
+    // The shared creature sort; „Versuche übrig“ is the bench's own (strongest first on ties).
+    const ordered = sort === 'left'
+      ? sortCreatures(game, matching, 'power').sort((a, b) => splicesLeft(game, b) - splicesLeft(game, a))
+      : sortCreatures(game, matching, sort as CreatureSort);
+    if (invert) ordered.reverse();
+    const all = ordered.map((c) => ({ c, left: splicesLeft(game, c), done: isFullySpliced(game, c), top: topScore(c) }));
     const shown = viewState.splicing.hideDone ? all.filter((t) => !t.done || t.c.id === targetId) : all;
     return {
       total: sequenced.length,
       hidden: all.length - shown.length,
-      // Unfinished first, then the ones with most attempts left, then the strongest.
-      tiles: shown.sort((a, b) => Number(a.done) - Number(b.done) || b.left - a.left || b.power - a.power),
+      // Finished ones (when shown) stay behind the others.
+      tiles: [...shown.filter((t) => !t.done), ...shown.filter((t) => t.done)],
     };
   });
 
@@ -145,6 +151,7 @@
     <div class="gallery">
       <div class="toolbar">
         <input type="search" placeholder="Name oder Art suchen …" bind:value={search} />
+        <CreatureSortSelect bind:value={viewState.splicing.sort} bind:inverted={viewState.splicing.invert} genetics extra={[{ id: 'left', label: 'Versuche übrig' }]} />
         <label class="toggle" class:on={viewState.splicing.hideDone} title="Kreaturen ohne Versuche oder mit perfektem Genom ausblenden">
           <input type="checkbox" bind:checked={viewState.splicing.hideDone} /> Fertige ausblenden
         </label>

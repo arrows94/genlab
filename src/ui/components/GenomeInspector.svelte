@@ -5,7 +5,7 @@
 
 <script lang="ts">
   import { content } from '@content/index';
-  import { creaturePower, findCreature } from '@core/creatures';
+  import { findCreature } from '@core/creatures';
   import { expressedAppearance, genomeReport } from '@core/genetics';
   import { maxSplices } from '@core/features/splicing';
   import type { Creature } from '@core/state';
@@ -13,6 +13,8 @@
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import GenomeView from './GenomeView.svelte';
+  import CreatureSortSelect from './CreatureSortSelect.svelte';
+  import { sortCreatures, type CreatureSort } from '@core/queries';
 
   /**
    * "Genom ansehen": a searchable, filterable creature gallery (shown in
@@ -20,18 +22,10 @@
    * with ‹ › to step through the filtered list, and the genome below.
    */
   const PAGE = 20;
-  type Sort = 'power' | 'top' | 'newest' | 'name';
-  const SORTS: { id: Sort; label: string }[] = [
-    { id: 'power', label: 'Stärkste' },
-    { id: 'top', label: 'Meiste Top-Allele' },
-    { id: 'newest', label: 'Neueste' },
-    { id: 'name', label: 'Name' },
-  ];
 
   let inspect = $state<number | null>(lastInspected);
   let choosing = $state(false);
   let search = $state('');
-  let sort = $state<Sort>('power');
   let shown = $state(PAGE);
 
   const species = (c: Creature) => content.species.get(c.speciesId);
@@ -45,17 +39,12 @@
     const { sequencedOnly } = viewState.genome;
     // A remembered species filter whose creatures are all gone would show an empty list.
     const sp = all.some((c) => c.speciesId === viewState.genome.species) ? viewState.genome.species : '';
-    const list = all
+    const matching = all
       .filter((c) => (!sequencedOnly || c.sequenced) && (!sp || c.speciesId === sp))
-      .filter((c) => !q || c.name.toLowerCase().includes(q) || species(c).name.toLowerCase().includes(q))
-      .map((c) => ({ c, power: creaturePower(game, c), top: topCount(c) }));
-    const by: Record<Sort, (a: (typeof list)[number], b: (typeof list)[number]) => number> = {
-      power: (a, b) => b.power - a.power,
-      top: (a, b) => b.top - a.top || b.power - a.power,
-      newest: (a, b) => b.c.id - a.c.id,
-      name: (a, b) => a.c.name.localeCompare(b.c.name, 'de'),
-    };
-    list.sort(by[sort]);
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || species(c).name.toLowerCase().includes(q));
+    const sorted = sortCreatures(game, matching, viewState.genome.sort as CreatureSort);
+    if (viewState.genome.invert) sorted.reverse();
+    const list = sorted.map((c) => ({ c, top: topCount(c) }));
     // Species present in the stable, for the filter.
     const present = [...new Set(all.map((c) => c.speciesId))].map((id) => content.species.get(id)).sort((a, b) => a.name.localeCompare(b.name, 'de'));
     return { list, total: all.length, present, species: sp };
@@ -82,7 +71,8 @@
   // A new filter starts at the first page again.
   $effect(() => {
     search;
-    sort;
+    viewState.genome.sort;
+    viewState.genome.invert;
     viewState.genome.species;
     viewState.genome.sequencedOnly;
     shown = PAGE;
@@ -103,9 +93,7 @@
           <option value="">Alle Arten</option>
           {#each gallery.present as sp (sp.id)}<option value={sp.id}>{sp.name}</option>{/each}
         </select>
-        <select bind:value={sort} title="Sortierung">
-          {#each SORTS as s (s.id)}<option value={s.id}>{s.label}</option>{/each}
-        </select>
+        <CreatureSortSelect bind:value={viewState.genome.sort} bind:inverted={viewState.genome.invert} genetics />
         <label class="toggle" class:on={viewState.genome.sequencedOnly}>
           <input type="checkbox" bind:checked={viewState.genome.sequencedOnly} /> nur sequenzierte
         </label>

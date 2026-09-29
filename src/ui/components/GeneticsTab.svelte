@@ -6,7 +6,7 @@
   import { DEEP_SEQUENCE, SEQUENCE, isBeingSequenced, sequencerSlots, sequencingCost, sequencingTimeMs, startSequencing, type SequenceData } from '@core/features/sequencing';
   import { setAutoSequence } from '@core/features/automation';
   import { deepSequencingBlocker, deepSequencingCost, deepSequencingTimeMs, startDeepSequencing } from '@core/features/deepSequencing';
-  import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
+  import { activeLoci, expressedAppearance } from '@core/genetics';
   import { processRemainingMs } from '@core/systems/processes';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
@@ -14,6 +14,7 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import GenomeInspector from './GenomeInspector.svelte';
+  import GeneLibrary from './GeneLibrary.svelte';
   import SplicingBench from './SplicingBench.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
 
@@ -21,9 +22,6 @@
   let picking = $state<'seq' | 'deep' | null>(null);
   let chosen = $state<number | null>(null);
 
-  const CATEGORY_NAMES: Record<string, string> = { stat: 'Werte', trait: 'Eigenschaften', visual: 'Aussehen' };
-  /** Alleles at most this common count as rare finds. */
-  const RARE_WEIGHT = 10;
 
   const data = $derived.by(() => {
     view.frame;
@@ -72,17 +70,6 @@
     return picking === 'seq' ? sequencingCost(game, c) : data.deepCost;
   });
 
-  const library = $derived.by(() => {
-    view.slowFrame;
-    const groups = new Map<string, { locus: (typeof data.loci)[number]; found: number; alleles: { a: (typeof data.loci)[number]['alleles'][number]; found: boolean; rare: boolean }[] }[]>();
-    for (const locus of data.loci) {
-      const alleles = locus.alleles.map((a) => ({ a, found: libraryHas(game, locus.id, a.id), rare: a.weight <= RARE_WEIGHT }));
-      const list = groups.get(locus.category) ?? [];
-      list.push({ locus, found: alleles.filter((x) => x.found).length, alleles });
-      groups.set(locus.category, list);
-    }
-    return [...groups.entries()].map(([cat, loci]) => ({ cat, name: CATEGORY_NAMES[cat] ?? cat, loci }));
-  });
 
   function openPicker(mode: 'seq' | 'deep') {
     picking = picking === mode ? null : mode;
@@ -207,36 +194,7 @@
 
 <GenomeInspector />
 
-<section class="library">
-  <div class="lab-head">
-    <h3>📚 Genbibliothek <span class="muted num">{data.found}/{data.total}</span></h3>
-    <div class="libbar" title="{data.found} von {data.total} Allelen"><div style="width: {(data.found / Math.max(1, data.total)) * 100}%"></div></div>
-  </div>
-  {#each library as g (g.cat)}
-    <h4>{g.name}</h4>
-    <div class="genes">
-      {#each g.loci as l (l.locus.id)}
-        <article class="panel gene" class:complete={l.found === l.alleles.length}>
-          <div class="ghead">
-            <b title={l.locus.description}>{l.locus.name}</b>
-            <span class="num small" class:full={l.found === l.alleles.length}>{l.found}/{l.alleles.length}{l.found === l.alleles.length ? ' ✓' : ''}</span>
-          </div>
-          <div class="gbar"><div style="width: {(l.found / l.alleles.length) * 100}%"></div></div>
-          <div class="alleles">
-            {#each l.alleles as { a, found, rare } (a.id)}
-              <span class="allele" class:found class:rare style="--c: {a.color}" title={found ? `${a.name} (${a.symbol})${rare ? ' · selten' : ''}` : rare ? 'seltenes Allel – unbekannt' : 'unbekannt'}>
-                {found ? a.symbol : '?'}
-                <small>{found ? a.name : '???'}</small>
-                {#if rare}<span class="star">★</span>{/if}
-              </span>
-            {/each}
-          </div>
-        </article>
-      {/each}
-    </div>
-  {/each}
-  <p class="small muted">★ = seltenes Allel. Neue Allele kommen aus dem Sequenzieren, dem Genom-Turm und Gen-Aufträgen.</p>
-</section>
+<GeneLibrary />
 
 {#if data.splicing}
   <SplicingBench />
@@ -246,7 +204,6 @@
   section { margin-bottom: 1rem; }
   .small { font-size: 0.8rem; margin: 0.2rem 0; }
   h3 { margin: 0; }
-  h4 { margin: 0.6rem 0 0.4rem; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .kpi.live { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
 
   .lab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
@@ -303,27 +260,6 @@
   .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .confirm button { min-width: 12rem; }
 
-
-  /* Gene library */
-  .libbar { flex: 1; max-width: 16rem; height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
-  .libbar div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); }
-  .genes { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
-  .gene { display: grid; gap: 0.35rem; padding: 0.55rem 0.65rem; }
-  .gene.complete { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
-  .ghead { display: flex; justify-content: space-between; align-items: baseline; }
-  .full { color: var(--gold); font-weight: 700; }
-  .gbar { height: 5px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .gbar div { height: 100%; background: var(--teal); }
-  .gene.complete .gbar div { background: var(--gold); }
-  .alleles { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-  .allele {
-    position: relative; display: flex; flex-direction: column; align-items: center; min-width: 3.9rem; padding: 0.2rem 0.35rem;
-    border-radius: 8px; border: 1px dashed var(--line); color: var(--muted); font-family: var(--mono);
-  }
-  .allele small { font-family: system-ui, sans-serif; font-size: 0.62rem; }
-  .allele.found { border: 1px solid var(--c); color: var(--text); background: color-mix(in srgb, var(--c) 18%, transparent); }
-  .star { position: absolute; top: -6px; right: -3px; font-size: 0.65rem; color: var(--gold); }
-  .allele:not(.found) .star { opacity: 0.5; }
 
   @media (max-width: 480px) {
     .machine { grid-template-columns: 70px 1fr; }

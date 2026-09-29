@@ -145,6 +145,8 @@ export interface TowerState {
   autoRestart: boolean;
   /** Where the auto-restart begins: like the last run started by hand (checkpoint or floor 1). */
   restartFromCheckpoint: boolean;
+  /** Team members in the back row (creature ids); everyone else stands in front. */
+  back: number[];
   /** Relikt per team place (relic id or null), same order as `team`. */
   relicSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
@@ -157,7 +159,7 @@ export interface TowerState {
     log: string[];
     /** Replay data for the arena (missing in older saves). */
     /** `interval` (seconds between actions) and the event times `at` are missing in saves before the Aktionsleiste. */
-    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number }[];
+    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number; row?: 'front' | 'back' }[];
     events?: { at?: number; a: number; t: number; dmg: number; hp: number; m: number; kind?: 'miss' | 'heal' | 'shift'; element?: string }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
@@ -348,7 +350,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
+    tower: { team: [], back: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

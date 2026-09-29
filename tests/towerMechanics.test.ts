@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, buyRelic, elementMultiplier, evadeChance, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Fighter } from '@core/features/tower';
@@ -125,7 +125,7 @@ describe('Aktionsleiste', () => {
     const g = towerGame();
     const enemy = enemyFor(g, 25);
     const team = (boost: Partial<Record<'atk' | 'spd', number>>) =>
-      ['fire', 'water', 'earth'].map((e) => unit(Math.round(16 * (boost.spd ?? 1)), { element: e, hp: 200, maxHp: 200, atk: Math.round(66 * (boost.atk ?? 1)), def: 33 }));
+      ['fire', 'water', 'earth'].map((e) => unit(Math.round(16 * (boost.spd ?? 1)), { element: e, hp: 200, maxHp: 200, atk: Math.round(70 * (boost.atk ?? 1)), def: 33 }));
     const wins = (boost: Partial<Record<'atk' | 'spd', number>>) => {
       let w = 0;
       for (let seed = 1; seed <= 40; seed++) if (simulateFight(g, team(boost), { ...enemy }, Rng.fromSeed(seed)).win) w++;
@@ -135,6 +135,78 @@ describe('Aktionsleiste', () => {
     expect(base).toBeLessThan(35);
     expect(wins({ spd: 1.5 })).toBeGreaterThanOrEqual(38);
     expect(wins({ atk: 1.5 })).toBeGreaterThanOrEqual(38);
+  });
+});
+
+describe('rows, roles and defence', () => {
+  const unit = (over: Partial<Fighter> = {}): Fighter => ({
+    name: 'x', speciesId: 'emberpup', element: 'fire', hp: 1e6, maxHp: 1e6, atk: 100, def: 0, spd: 10, power: 1, elementPower: 1, team: true, ...over,
+  });
+
+  it('defence blocks a percentage and then a share that grows with VER against ANG', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const hit = (def: number) => damage(g, unit({ atk: 100 }), unit({ def }), Rng.fromSeed(1));
+    // The same seed rolls the same ±10 % spread.
+    const rawNoDef = 100 * Rng.fromSeed(1).range(0.9, 1.1);
+    const expected = (def: number) => Math.max(1, Math.round(rawNoDef * (t.defScale / (t.defScale + def)) * (1 - t.defRatio * (def / (def + 100)))));
+    expect(hit(50)).toBe(expected(50));
+    expect(hit(50)).toBeLessThan(Math.round(rawNoDef * (t.defScale / (t.defScale + 50))));
+    // Twice the defence of the attack blocks 2/3 of defRatio in the second step.
+    expect(hit(200)).toBe(expected(200));
+    expect(hit(1e9)).toBe(1);
+  });
+
+  it('enemies mostly hit the front row, back-row hunters and the weakest-hunter differ', () => {
+    const g = towerGame();
+    const front = unit({ name: 'front', row: 'front' });
+    const back = unit({ name: 'back', row: 'back', hp: 10 });
+    const count = (mode: 'rows' | 'back' | 'weakest') => {
+      let f = 0;
+      const rng = Rng.fromSeed(4);
+      for (let i = 0; i < 400; i++) if (pickTarget(g, mode, [front, back], rng) === front) f++;
+      return f / 400;
+    };
+    expect(count('rows')).toBeGreaterThan(balance.tower.frontShare - 0.08);
+    expect(count('rows')).toBeLessThan(balance.tower.frontShare + 0.08);
+    expect(count('back')).toBeLessThan(1 - balance.tower.frontShare + 0.08);
+    expect(count('weakest')).toBe(0);
+    // Only one row occupied: everyone is fair game.
+    const r = Rng.fromSeed(5);
+    const hits = new Set(Array.from({ length: 50 }, () => pickTarget(g, 'rows', [unit({ name: 'a' }), unit({ name: 'b' })], r).name));
+    expect(hits.size).toBe(2);
+  });
+
+  it('rows belong to the team and are locked during a run', () => {
+    const g = towerGame();
+    const a = champion(g, 100);
+    const b = champion(g, 100, 'bubbloon');
+    expect(setRow(g, a.id, 'back').ok).toBe(false); // not in the team
+    setTeam(g, [a.id, b.id]);
+    expect(setRow(g, b.id, 'back').ok).toBe(true);
+    expect(rowOf(g, b.id)).toBe('back');
+    expect(fighterFor(g, b).row).toBe('back');
+    expect(fighterFor(g, a).row).toBe('front');
+    setTeam(g, [a.id]);
+    expect(g.state.tower.back).toEqual([]);
+    setTeam(g, [a.id, b.id]);
+    setRow(g, b.id, 'back');
+    startRun(g);
+    expect(setRow(g, b.id, 'front').ok).toBe(false);
+  });
+
+  it('derives a role from the stat profile', () => {
+    const g = towerGame();
+    const base = balance.tower.enemyBase;
+    expect(roleOf(g, { hp: base.hp! * 3, atk: base.atk!, def: base.def! * 3, spd: base.spd! })).toBe('tank');
+    expect(roleOf(g, { hp: base.hp!, atk: base.atk! * 3, def: base.def!, spd: base.spd! })).toBe('attacker');
+    expect(roleOf(g, { hp: base.hp!, atk: base.atk!, def: base.def!, spd: base.spd! * 3 })).toBe('fast');
+  });
+
+  it('boss traits bring their own targeting', () => {
+    const g = towerGame();
+    for (const t of content.bossTraits.list) expect(targetingOf(g, { ...unit({ team: false }), trait: t.id })).toBe(t.targeting ?? 'rows');
+    expect(targetingOf(g, unit({ team: false }))).toBe('rows');
   });
 });
 
