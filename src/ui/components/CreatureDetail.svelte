@@ -5,6 +5,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { statBreakdown } from '@core/queries';
+  import { dynastyRecord, dynastyTier, lineageBonus, nextTierDepth } from '@core/features/dynasty';
   import { toggleLock } from '@core/actions';
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
   import { fragmentValue, recycle } from '@core/features/recycler';
@@ -34,6 +35,12 @@
       blocker: consumeBlocker(game, c),
       sellValue: batchSellValue(game, [c]),
       fragments: fragmentValue(game, c),
+      dynasty: game.state.features['dynasties']
+        ? (() => {
+            const record = dynastyRecord(game, c.speciesId);
+            return { own: lineageBonus(game, c), record, tier: dynastyTier(game, record), next: nextTierDepth(game, record), statPerTier: game.balance.dynasty.statPerTier };
+          })()
+        : null,
     };
   });
 
@@ -117,7 +124,15 @@
             </p>
           {/if}
 
-          <h3>Stammbaum</h3>
+          <h3>Stammbaum{#if c.family} <span class="muted small">· Familie {c.family}</span>{/if}</h3>
+          {#if data.dynasty}
+            {@const d = data.dynasty}
+            <p class="small lineage">
+              {#if c.lineage > 0}<b>👑 Reine Linie · Tiefe {c.lineage}</b> <span class="muted">(+{formatPercent(d.own)} Werte)</span>
+              {:else}<span class="muted">Keine reine Linie – dafür müssen beide Eltern von derselben Art sein wie das Kind.</span>{/if}
+              <br /><span class="muted">Dynastie {data.species.name}: Rekord {d.record}{#if d.tier > 0}{' · '}Stufe {d.tier} (+{formatPercent(d.tier * d.statPerTier)} Werte für die Art){/if}{#if d.next !== null}{' · '}nächste Stufe ab Tiefe {d.next}{/if}</span>
+            </p>
+          {/if}
           {#if c.ancestry}
             <div class="pedigree">
               {#each c.ancestry as p, i (i)}
@@ -166,6 +181,8 @@
   .stats td.num { font-weight: 700; font-size: 1rem; }
   .plain { list-style: none; padding: 0; margin: 0 0 0.5rem; display: grid; gap: 0.25rem; font-size: 0.85rem; }
   .pedigree { display: grid; gap: 0.4rem; }
+  .lineage { margin: 0 0 0.5rem; }
+  .lineage b { color: var(--gold); }
   .anc { background: var(--bg-2); border-radius: 8px; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
   .grand { display: grid; margin-top: 0.2rem; padding-left: 0.5rem; }
   @media (max-width: 640px) {

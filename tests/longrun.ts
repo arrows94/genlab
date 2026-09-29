@@ -1,7 +1,7 @@
 import { assignJob } from '@core/actions';
 import { canAfford, toCost } from '@core/costs';
 import { creaturePower, effectiveStats } from '@core/creatures';
-import { availableRituals, eggCost, eggs, nestSlots, offspringGeneration, startBreeding } from '@core/features/breeding';
+import { availableRituals, eggCost, offspringGeneration, ritualEggs, ritualNestSlots, startBreeding } from '@core/features/breeding';
 import { contractCandidates, contractLevel, deliverContract } from '@core/features/contracts';
 import { deepSequencingBlocker, deepSequencingCost, startDeepSequencing } from '@core/features/deepSequencing';
 import { campSlots, campsUsed, missionAvailable, startMission } from '@core/features/expedition';
@@ -10,6 +10,7 @@ import { consumeBlocker } from '@core/features/stable';
 import { claimDaily, dailyAvailable } from '@core/features/daily';
 import { grandAvailable, grandCost, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@core/features/voyage';
+import { totalDynastyTiers } from '@core/features/dynasty';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
 import { playBot } from './bot';
@@ -70,9 +71,9 @@ export function useLongTermSystems(g: Game): void {
     if (journey && c && g.state.creatures.length > 4) startMission(g, c.id, journey);
   }
 
-  // Brutritual: only with a second nest, so normal breeding keeps going.
+  // Brutritual: the best one in the Ritualnest (runs next to normal breeding).
   const rituals = availableRituals(g);
-  if (rituals.length > 0 && nestSlots(g) >= 2 && eggs(g).length < nestSlots(g) && !eggs(g).some((p) => p.data.ritual)) {
+  if (rituals.length > 0 && ritualEggs(g).length < ritualNestSlots(g)) {
     const pool = g.state.creatures.filter((c) => free(c)).sort((a, b) => creaturePower(g, b) - creaturePower(g, a));
     const ritual = rituals[rituals.length - 1]!;
     const [a, b] = pool;
@@ -110,6 +111,9 @@ export interface DayReport {
   anomalyRecord: number;
   /** Sum of all relic levels. */
   relics: number;
+  /** Deepest pure line ever bred (any species) and the sum of all dynasty tiers. */
+  dynastyBest: number;
+  dynastyTiers: number;
   /** Äon-Splitter earned so far, by source (aeon, tower, anomaly, contract …). */
   shardSources: Record<string, number>;
 }
@@ -201,6 +205,8 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       observatory: g.state.megaProjects.observatory?.stage ?? 0,
       anomalyRecord: g.state.anomalyRecord,
       relics: Object.values(g.state.relics).reduce((a, b) => a + b, 0),
+      dynastyBest: Math.max(0, ...Object.values(g.state.dynasties)),
+      dynastyTiers: totalDynastyTiers(g),
       shardSources: { ...shardSources },
       bossShare: g.state.weeklyBoss.maxHp > 0 ? Math.round((g.state.weeklyBoss.damage / g.state.weeklyBoss.maxHp) * 100) / 100 : 0,
     });

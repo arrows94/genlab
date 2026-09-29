@@ -63,10 +63,14 @@ export function revealHint(ctx: GameContext): string | null {
 /**
  * Offspring species: every matching recipe gets a roll (in content order);
  * otherwise one of the parent species. `mult` scales the recipe chances
- * (breeding rituals).
+ * (breeding rituals); `guaranteed` makes a matching recipe always succeed.
  */
-export function rollOffspringSpecies(ctx: GameContext, a: Creature, b: Creature, mult = 1): string {
+export function rollOffspringSpecies(ctx: GameContext, a: Creature, b: Creature, mult = 1, guaranteed = false): string {
   if (ctx.state.features['hybrids']) {
+    if (guaranteed) {
+      const matching = ctx.content.recipes.list.filter((r) => recipeMatches(ctx, r, a, b));
+      if (matching.length > 0) return ctx.rng.pick(matching).result;
+    }
     for (const r of ctx.content.recipes.list) {
       if (recipeMatches(ctx, r, a, b) && ctx.rng.chance(Math.min(1, hybridChance(ctx, r) * mult))) return r.result;
     }

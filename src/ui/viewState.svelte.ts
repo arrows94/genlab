@@ -21,7 +21,7 @@ interface ViewState {
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
 }
 
-export type BreedingSort = 'power' | 'rarity' | 'generation' | 'species' | 'name' | `stat:${string}`;
+export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
 
 const defaults = (): ViewState => ({
   list: { filter: { ...EMPTY_FILTER, hideAway: true }, sort: 'newest', invert: false, alleleKey: '', showFilters: false },

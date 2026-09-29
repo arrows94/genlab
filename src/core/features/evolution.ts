@@ -52,6 +52,8 @@ export function evolve(ctx: GameContext, creatureId: number, evolutionId: string
   c.stats = reprofileStats(ctx, c.stats, ctx.content.species.get(from).baseStats, e.to);
   if (c.name === ctx.content.species.get(from).name) c.name = ctx.content.species.get(e.to).name;
   c.speciesId = e.to;
+  // A new species starts its own pure line (Stammbaum-Dynastie).
+  c.lineage = 0;
   registerDex(ctx, c.speciesId, c.rarity);
   ctx.invalidate();
   ctx.bus.emit('evolved', { creatureId: c.id, from, to: e.to });

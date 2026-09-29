@@ -156,6 +156,7 @@
         <option value="oldest">Älteste</option>
         <option value="rarity">Seltenheit</option>
         <option value="generation">Generation</option>
+        {#if game.state.features['dynasties']}<option value="lineage">Reine Linie</option>{/if}
         <option value="power">Gesamtstärke</option>
         {#each content.stats.list as s (s.id)}<option value={`stat:${s.id}`}>{s.name}</option>{/each}
         <option value="name">Name</option>

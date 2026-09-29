@@ -52,7 +52,7 @@ export interface CreatureFilter {
   hideAway: boolean;
 }
 
-export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'power' | 'name' | `stat:${string}`;
+export type CreatureSort = 'newest' | 'oldest' | 'rarity' | 'generation' | 'lineage' | 'power' | 'name' | `stat:${string}`;
 
 export const EMPTY_FILTER: CreatureFilter = { search: '', species: null, element: null, rarity: null, status: 'all', allele: null, hideAway: false };
 
@@ -91,6 +91,8 @@ export function sortCreatures(ctx: GameContext, list: Creature[], sort: Creature
       return out.sort((a, b) => rarity(b) - rarity(a) || b.generation - a.generation);
     case 'generation':
       return out.sort((a, b) => b.generation - a.generation || rarity(b) - rarity(a));
+    case 'lineage':
+      return out.sort((a, b) => (b.lineage ?? 0) - (a.lineage ?? 0) || b.generation - a.generation);
     case 'name':
       return out.sort((a, b) => a.name.localeCompare(b.name, 'de'));
     case 'power': {
@@ -128,6 +130,10 @@ export function sourceLabel(ctx: GameContext, source: string): string {
       return 'Kraftfutter';
     case 'infusion':
       return 'Infusion';
+    case 'lineage':
+      return 'Reine Linie';
+    case 'dynasty':
+      return id ? `Dynastie: ${name(ctx.content.species, id)}` : 'Dynastien';
     default:
       return source;
   }

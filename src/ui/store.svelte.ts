@@ -50,6 +50,8 @@ export const view = $state({
   hatchlings: [] as { id: number; key: number }[],
   /** Open in-game confirmation (replaces window.confirm, which browsers can block). */
   confirm: null as { text: string; ok: string; danger: boolean; resolve: (yes: boolean) => void } | null,
+  /** Big full-screen moments waiting to be shown, oldest first (optimal DNA, first shiny creature). */
+  celebrations: [] as { key: number; kind: 'perfect' | 'shiny'; creatureId: number; species: string }[],
   returns: [] as { id: number; missionId: string; creatureId: number; rewards: [string, string][]; wildSpecies: string | null }[],
 });
 
@@ -152,8 +154,18 @@ function wireEvents(g: Game): void {
   g.bus.on('anomalyStarted', (e) => toast(`🌀 Anomalie „${content.anomalies.get(e.anomaly).name}“ beginnt!`, 'unlock'));
   g.bus.on('anomalyCompleted', (e) => toast(`🌀 ${content.anomalies.get(e.anomaly).name} Stufe ${e.level} gemeistert: ${content.anomalies.get(e.anomaly).rewardText}`, 'rare', 7000));
   g.bus.on('anomalyRecord', (e) => toast(`🏆 Neuer Anomalie-Rekord: Schwierigkeit ${e.total}${e.shards > 0 && g.state.features.aeon ? ` · +${e.shards} ⏳` : ''}`, 'rare', 7000));
-  g.bus.on('perfectGenome', (e) => toast(`✦ Perfektes Genom: ${content.species.get(e.species).name}!`, 'rare', 7000));
-  g.bus.on('shiny', (e) => toast(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare', 7000));
+  g.bus.on('dynastyTier', (e) => {
+    if (g.state.features['dynasties']) toast(`👑 Dynastie ${content.species.get(e.species).name}: Stufe ${e.tier} (reine Linie ${e.depth})${e.shards > 0 && g.state.features.aeon ? ` · +${e.shards} ⏳` : ''}`, 'rare', 7000);
+  });
+  // Big moments get a full-screen celebration (and stay in the notification center).
+  g.bus.on('perfectGenome', (e) => {
+    record(`✦ Optimale DNS: perfektes Genom für ${content.species.get(e.species).name}!`, 'rare');
+    view.celebrations = [...view.celebrations, { key: ++listId, kind: 'perfect', creatureId: e.creatureId, species: e.species }];
+  });
+  g.bus.on('shiny', (e) => {
+    record(`🌈 Schillernd! Eine seltene Farbmutation: ${content.species.get(e.species).name}`, 'rare');
+    view.celebrations = [...view.celebrations, { key: ++listId, kind: 'shiny', creatureId: e.creatureId, species: e.species }];
+  });
   g.bus.on('recipeHinted', (e) => {
     toast(`📜 Hinweis auf eine Kreuzung: „${content.recipes.get(e.recipe).hint}“`, 'unlock', 6000);
     markUnseen('dex');

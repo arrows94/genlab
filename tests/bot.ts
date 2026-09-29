@@ -1,6 +1,6 @@
 import { assignJob, buyUpgrade, collect, nextUpgradeCost } from '@core/actions';
 import { canAfford } from '@core/costs';
-import { breedingCost, eggs, nestSlots, offspringGeneration, startBreeding } from '@core/features/breeding';
+import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding } from '@core/features/breeding';
 import { campSlots, campsUsed, startMission } from '@core/features/expedition';
 import { jobCount, jobSlots } from '@core/systems/production';
 import { visibleUpgrades } from '@core/queries';
@@ -68,7 +68,7 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
     }
 
     // Breeding: the two strongest available creatures; if too expensive, the cheapest (lowest generation) pair.
-    if (g.state.features.breeding && eggs(g).length < nestSlots(g)) {
+    if (g.state.features.breeding && nestEggs(g).length < nestSlots(g)) {
       const pool = g.state.creatures.filter((c) => c.job === null || c.job.kind === 'building');
       const strong = [...pool].sort((a, b) => creaturePower(g, b) - creaturePower(g, a));
       const cheap = [...pool].sort((a, b) => a.generation - b.generation);

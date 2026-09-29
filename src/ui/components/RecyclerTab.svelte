@@ -15,6 +15,7 @@
   import { viewState } from '../viewState.svelte';
   import { prefs } from '../prefs.svelte';
   import GeneCapsule from './GeneCapsule.svelte';
+  import RecyclerChamber from './RecyclerChamber.svelte';
 
   const recycler = viewState.recycler;
   let results = $state<CapsuleResult[] | null>(null);
@@ -67,7 +68,6 @@
       cfg,
       count: candidates.length,
       fragments: candidates.reduce((sum, c) => sum.add(fragmentValue(game, c)), D(0)),
-      next: candidates[0]?.name ?? null,
     };
   });
 
@@ -171,15 +171,10 @@
       </label>
       <label class="switch"><input type="checkbox" checked={auto.cfg.keepSequenced} onchange={(e) => setAuto({ keepSequenced: e.currentTarget.checked })} /> Sequenzierte behalten</label>
     </div>
+    <RecyclerChamber />
     <p class="small auto-status">
-      <span class="muted">Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. „Je Art behalten“ gilt auch für das Stall-Aufräumen des Zuchtautomaten.</span>
-      {#if auto.cfg.when === 'always'}
-        <span class:hit={auto.count > 0}>Betrifft gerade <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'}{#if auto.count > 0}{' '}(≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩){/if}</span>
-      {:else if auto.next}
-        <span>Als Nächstes dran: <b>{auto.next}</b></span>
-      {:else}
-        <span>Keine Kreatur erfüllt die Regeln.</span>
-      {/if}
+      <span class="muted">Der Automat nimmt eine Kreatur nach der anderen in die Kammer. Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. „Je Art behalten“ gilt auch für das Stall-Aufräumen des Zuchtautomaten.</span>
+      {#if auto.count > 0}<span class="hit">Nach den Regeln dran: <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'} (≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩)</span>{/if}
     </p>
   </div>
 {/if}

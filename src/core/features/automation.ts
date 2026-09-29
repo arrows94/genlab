@@ -1,5 +1,5 @@
 import { assignJob } from '../actions';
-import { effectiveStats, creaturePower } from '../creatures';
+import { effectiveStats, creaturePower, findCreature } from '../creatures';
 import { canAfford } from '../costs';
 import { jobCount, jobSlots } from '../systems/production';
 import type { GameContext } from '../context';
@@ -7,7 +7,7 @@ import type { ActionResult } from '../actions';
 import type { AutoBreedConfig, AutoRecycleConfig, Creature } from '../state';
 import { D } from '../num';
 import type { System } from '../systems/types';
-import { breedingCost, eggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
+import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
@@ -28,7 +28,7 @@ export function breedRuleScore(ctx: GameContext, c: Creature, rule: string): num
 }
 
 /** Breeding goals besides "power" and the stat ids. */
-export const BREED_GOALS = ['hybrid', 'dex', 'allele', 'abilities', 'cheap'] as const;
+export const BREED_GOALS = ['hybrid', 'dex', 'allele', 'abilities', 'lineage', 'cheap'] as const;
 
 export type AutoBreedPlan = { ok: true; a: Creature; b: Creature } | { ok: false; reason: string };
 
@@ -38,7 +38,8 @@ export type AutoBreedPlan = { ok: true; a: Creature; b: Creature } | { ok: false
  */
 export function autoAssign(ctx: GameContext): ActionResult {
   if (!ctx.state.features['autoAssign']) return { ok: false, reason: 'Der Arbeitsplaner ist noch nicht freigeschaltet.' };
-  const pool = ctx.state.creatures.filter((c) => c.job === null || c.job.kind === 'building');
+  // The creature in the Zerlege-Kammer stays put (only the player can take it out).
+  const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id));
   for (const c of pool) c.job = null;
   ctx.invalidate();
   const buildings = ctx.content.buildings.list.filter((b) => ctx.state.features[b.feature]);
@@ -103,6 +104,24 @@ function dexPair(ctx: GameContext, pool: Creature[]): [Creature, Creature] | nul
   return best?.pair ?? null;
 }
 
+/**
+ * Stammbaum-Dynastie: the two deepest lines of one species (the child gets
+ * the shallower line + 1). Lower generations first at the same depth – cheaper eggs.
+ */
+function lineagePair(pool: Creature[]): [Creature, Creature] | null {
+  const bySpecies = new Map<string, Creature[]>();
+  for (const c of pool) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
+  let best: { depth: number; generation: number; pair: [Creature, Creature] } | null = null;
+  for (const list of bySpecies.values()) {
+    if (list.length < 2) continue;
+    const [a, b] = [...list].sort((x, y) => (y.lineage ?? 0) - (x.lineage ?? 0) || x.generation - y.generation);
+    const depth = Math.min(a!.lineage ?? 0, b!.lineage ?? 0);
+    const generation = Math.max(a!.generation, b!.generation);
+    if (!best || depth > best.depth || (depth === best.depth && generation < best.generation)) best = { depth, generation, pair: [a!, b!] };
+  }
+  return best?.pair ?? null;
+}
+
 /** Copies of the target allele – only for sequenced creatures (the genome must be known). */
 function alleleCopies(c: Creature, target: string | null): number {
   if (!target || !c.sequenced) return 0;
@@ -117,9 +136,9 @@ function abilityScore(ctx: GameContext, c: Creature): number {
 /** The pair the automaton would breed next, or why it waits. */
 export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
-  if (eggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0 && cfg.cleanup === 'off') return { ok: false, reason: 'Der Stall ist voll.' };
-  const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
+  const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
   let pair: [Creature, Creature] | null = null;
   let none = 'Keine zwei freien Kreaturen.';
   switch (cfg.rule) {
@@ -139,6 +158,10 @@ export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
     }
     case 'abilities':
       pair = topTwo(ctx, pool, (c) => abilityScore(ctx, c));
+      break;
+    case 'lineage':
+      pair = lineagePair(pool);
+      none = 'Keine zwei freien Kreaturen derselben Art.';
       break;
     case 'cheap':
       pair = topTwo(ctx, pool, (c) => -c.generation);
@@ -211,16 +234,91 @@ export function autoRecycleCandidates(ctx: GameContext): Creature[] {
   return out.length >= ctx.state.creatures.length ? out.slice(0, -1) : out;
 }
 
-/** Recycles by the rules; returns how many creatures were recycled. */
-export function autoRecycleOnce(ctx: GameContext): number {
-  if (!ctx.state.features['recycler']) return 0;
-  const cfg = ctx.state.automation.autoRecycle;
-  if (cfg.when === 'full' && stableFree(ctx) > 0) return 0;
-  const candidates = autoRecycleCandidates(ctx);
-  const batch = cfg.when === 'full' ? candidates.slice(0, 1) : candidates;
-  if (batch.length === 0) return 0;
-  return recycle(ctx, batch.map((c) => c.id), true).ok ? batch.length : 0;
+// ---- Zerlege-Kammer: the Recycling-Automat takes one creature at a time ----
+
+/** Creature is in the Zerlege-Kammer (the other automations leave it alone). */
+export function inRecycler(ctx: GameContext, id: number): boolean {
+  return ctx.state.automation.recycling?.creatureId === id;
 }
+
+/** Time the Recycling-Automat needs per creature (research „Schnellzerlegung“ shortens it). */
+export function recycleDurationMs(ctx: GameContext): number {
+  const r = ctx.balance.recycler;
+  return Math.max(r.autoMinSec, ctx.mods().apply('recycler.time', r.autoSec)) * 1000;
+}
+
+function recyclerRunning(ctx: GameContext): boolean {
+  return ctx.state.automation.autoRecycle.enabled && !!ctx.state.features['autoRecycle'] && !!ctx.state.features['recycler'];
+}
+
+/** Next creature for the chamber by the rules („nur wenn der Stall voll ist“ waits for a full stable). */
+function nextForChamber(ctx: GameContext): Creature | null {
+  if (ctx.state.automation.autoRecycle.when === 'full' && stableFree(ctx) > 0) return null;
+  return autoRecycleCandidates(ctx)[0] ?? null;
+}
+
+/** Cheap per-step check: the player may rescue the creature (favourite, put to work, sequencing …). */
+function stillExpendable(ctx: GameContext, c: Creature | undefined): c is Creature {
+  const cfg = ctx.state.automation.autoRecycle;
+  return !!c && expendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
+}
+
+/** The creature in the Zerlege-Kammer with its progress, or null. */
+export function recyclingNow(ctx: GameContext): { creature: Creature; progress: number; remainingMs: number; durationMs: number } | null {
+  const cur = ctx.state.automation.recycling;
+  const creature = cur ? findCreature(ctx, cur.creatureId) : undefined;
+  if (!cur || !creature) return null;
+  const durationMs = recycleDurationMs(ctx);
+  return { creature, progress: Math.min(1, cur.elapsedMs / durationMs), remainingMs: Math.max(0, durationMs - cur.elapsedMs), durationMs };
+}
+
+/** Puts the next creature into the empty chamber; returns whether one went in. */
+export function fillRecycler(ctx: GameContext): boolean {
+  if (!recyclerRunning(ctx) || ctx.state.automation.recycling) return false;
+  const next = nextForChamber(ctx);
+  if (!next) return false;
+  ctx.state.automation.recycling = { creatureId: next.id, elapsedMs: 0 };
+  return true;
+}
+
+/**
+ * Runs the chamber for `dtMs`: a finished creature is recycled (if the rules
+ * still allow it) and the next one goes in right away, so offline steps
+ * process several creatures.
+ */
+export function advanceRecycler(ctx: GameContext, dtMs: number): void {
+  const a = ctx.state.automation;
+  if (!a.recycling) return;
+  if (!recyclerRunning(ctx)) {
+    a.recycling = null; // switched off: the creature is free again
+    return;
+  }
+  let budget = dtMs;
+  for (let i = 0; i < 1000 && a.recycling && budget > 0; i++) {
+    const cur = a.recycling;
+    if (!stillExpendable(ctx, findCreature(ctx, cur.creatureId))) {
+      a.recycling = null;
+      break;
+    }
+    const need = recycleDurationMs(ctx) - cur.elapsedMs;
+    if (budget < need) {
+      cur.elapsedMs += budget;
+      break;
+    }
+    budget -= need;
+    a.recycling = null;
+    const allowed = autoRecycleCandidates(ctx).some((c) => c.id === cur.creatureId) && !(a.autoRecycle.when === 'full' && stableFree(ctx) > 0);
+    if (allowed) recycle(ctx, [cur.creatureId], true);
+    fillRecycler(ctx);
+  }
+}
+
+export const recyclerSystem: System = {
+  id: 'recycler',
+  update(ctx, dtMs) {
+    advanceRecycler(ctx, dtMs);
+  },
+};
 
 /** Breeds the planned pair; frees a stable place first if the cleanup is on. */
 export function autoBreedOnce(ctx: GameContext): boolean {
@@ -298,7 +396,7 @@ export const automationSystem: System = {
     if (ctx.state.simTimeMs - a.lastRunMs < ctx.balance.automation.intervalSec * 1000) return;
     a.lastRunMs = ctx.state.simTimeMs;
     // Recycle first, so a full stable has room for the next egg.
-    if (a.autoRecycle.enabled && ctx.state.features['autoRecycle']) autoRecycleOnce(ctx);
+    if (a.autoRecycle.enabled && ctx.state.features['autoRecycle']) fillRecycler(ctx);
     if (a.autoBreed.enabled && ctx.state.features['autoBreed']) autoBreedOnce(ctx);
     if (a.autoAssign && ctx.state.features['autoAssign']) autoAssign(ctx);
     if (a.autoSequence && ctx.state.features['autoSequence']) autoSequenceOnce(ctx);

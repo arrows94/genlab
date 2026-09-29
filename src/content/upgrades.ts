@@ -211,6 +211,12 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [], unlocksFeatures: ['autoRecycle'],
   },
   {
+    id: 'recyclerSpeed', theme: 'automation', name: 'Schnellzerlegung', category: 'research', requires: { type: 'feature', feature: 'autoRecycle' },
+    description: 'Der Recycling-Automat zerlegt 30 % schneller (je Stufe).',
+    cost: { fragments: 40, essence: 200 }, costGrowth: 1.9, maxLevel: 10,
+    modifiers: [{ target: 'recycler.time', op: 'mult', value: 0.7 }],
+  },
+  {
     id: 'infusionBooster', theme: 'management', name: 'Infusionsbeschleuniger', category: 'research', requires: { type: 'feature', feature: 'infusion' },
     description: '+10 % Infusions-EP.',
     cost: { essence: 40 }, costGrowth: 2, maxLevel: 10,

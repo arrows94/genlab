@@ -130,6 +130,13 @@ export function validateContent(data: ContentData): string[] {
   }
   for (const e of data.elements) {
     for (const other of e.strongAgainst) ref(`${at('elements', e.id)}.strongAgainst`, 'elements', other);
+    if (!Array.isArray(e.familyPrefixes) || e.familyPrefixes.length === 0) issues.push(`${at('elements', e.id)}.familyPrefixes: mindestens ein Wort`);
+    else e.familyPrefixes.forEach((wd, i) => text(`${at('elements', e.id)}.familyPrefixes[${i}]`, wd));
+  }
+  for (const id of ['given', 'familySuffix']) if (!ids.nameLists.has(id)) issues.push(`nameLists: Liste "${id}" fehlt`);
+  for (const l of data.nameLists) {
+    if (!Array.isArray(l.words) || l.words.length === 0) issues.push(`${at('nameLists', l.id)}.words: mindestens ein Wort`);
+    else l.words.forEach((wd, i) => text(`${at('nameLists', l.id)}.words[${i}]`, wd));
   }
   for (const g of data.genes) {
     const w = at('genes', g.id);

@@ -36,6 +36,8 @@ export interface GameEvents {
   anomalyStarted: { anomaly: string };
   anomalyCompleted: { anomaly: string; level: number };
   anomalyRecord: { total: number; shards: number };
+  /** A species reached a new Stammbaum-Dynastie tier. */
+  dynastyTier: { species: string; tier: number; depth: number; shards: number };
   perfectGenome: { creatureId: number; species: string };
   shiny: { creatureId: number; species: string };
   /** `auto`: done by an automation (no toast per run). */

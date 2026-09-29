@@ -1,13 +1,14 @@
 import { D } from '../num';
 import { inheritAbilities } from '../abilities';
-import { createCreature, creatureModifiers, findCreature, inheritLatent } from '../creatures';
+import { createCreature, creatureModifiers, creaturePower, findCreature, inheritLatent } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { checkCondition } from '../conditions';
 import { rarityWeights, rollRarity } from '../rarity';
 import type { BreedingRitualDef } from '../content/types';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
-import { blendNames } from '../names';
+import { lineageDepth, recordLineage } from './dynasty';
+import { foundFamily, givenName } from '../names';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -22,14 +23,32 @@ export interface EggData extends Record<string, unknown> {
   generation: number;
   /** Besondere Brut: ritual id (missing = normal egg). */
   ritual?: string;
+  /** Ritual eggs: Keimprobe – the parents as they were when the ritual began (they stay free). */
+  sample?: [Creature, Creature];
 }
 
 export function nestSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.nest', ctx.balance.breeding.baseNests));
 }
 
+/** Places in the Ritualnest (Besondere Brut runs there, next to the normal nests). */
+export function ritualNestSlots(ctx: GameContext): number {
+  return Math.floor(ctx.mods().apply('slots.ritualNest', ctx.balance.breeding.ritualNests));
+}
+
+/** Every egg, normal and ritual. */
 export function eggs(ctx: GameContext) {
   return ctx.state.processes.filter((p) => p.kind === EGG);
+}
+
+/** Eggs in the normal nests. */
+export function nestEggs(ctx: GameContext) {
+  return eggs(ctx).filter((p) => !(p.data as EggData).ritual);
+}
+
+/** Eggs in the Ritualnest. */
+export function ritualEggs(ctx: GameContext) {
+  return eggs(ctx).filter((p) => !!(p.data as EggData).ritual);
 }
 
 export function offspringGeneration(a: Creature | undefined, b: Creature | undefined): number {
@@ -121,13 +140,15 @@ export function eggTimeMs(ctx: GameContext, generation: number, parents: (Creatu
   return ritual ? ritual.hours * 3_600_000 : breedingTimeMs(ctx, generation, parents);
 }
 
-export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined): ActionResult {
+export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined, ritual?: BreedingRitualDef): ActionResult {
   if (!ctx.state.features['breeding']) return { ok: false, reason: 'Die Brutstation ist noch nicht freigeschaltet.' };
   if (!a || !b) return { ok: false, reason: 'Wähle zwei Kreaturen.' };
   if (a.id === b.id) return { ok: false, reason: 'Wähle zwei verschiedene Kreaturen.' };
   // Working creatures are pulled from their building automatically.
   if ((a.job && a.job.kind !== 'building') || (b.job && b.job.kind !== 'building')) return { ok: false, reason: 'Beide Kreaturen müssen frei sein.' };
-  if (eggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (ritual) {
+    if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: 'Das Ritualnest ist belegt.' };
+  } else if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0) return { ok: false, reason: 'Der Stall ist voll.' };
   return { ok: true };
 }
@@ -135,16 +156,23 @@ export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature 
 export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
   const a = findCreature(ctx, aId);
   const b = findCreature(ctx, bId);
-  const check = canBreed(ctx, a, b);
-  if (!check.ok) return check;
   const ritual = ritualId ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
   if (ritualId && !ritual) return { ok: false, reason: 'Dieses Brutritual ist nicht verfügbar.' };
+  const check = canBreed(ctx, a, b, ritual);
+  if (!check.ok) return check;
   const generation = offspringGeneration(a, b);
   if (!trySpend(ctx, eggCost(ctx, generation, ritual))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
-  const data: EggData = { parents: [aId, bId], generation, ...(ritual ? { ritual: ritual.id } : {}) };
+  const data: EggData = { parents: [aId, bId], generation };
+  if (ritual) {
+    // A ritual only needs a Keimprobe: the parents stay free for everything else.
+    data.ritual = ritual.id;
+    data.sample = [structuredClone(a!), structuredClone(b!)];
+  }
   const proc = startProcess(ctx, EGG, eggTimeMs(ctx, generation, [a, b], ritual), data);
-  a!.job = { kind: 'nest', target: String(proc.id) };
-  b!.job = { kind: 'nest', target: String(proc.id) };
+  if (!ritual) {
+    a!.job = { kind: 'nest', target: String(proc.id) };
+    b!.job = { kind: 'nest', target: String(proc.id) };
+  }
   ctx.invalidate();
   return { ok: true };
 }
@@ -182,6 +210,21 @@ export function inheritAppearance(ctx: GameContext, a: Creature, b: Creature): A
   };
 }
 
+/**
+ * Family of a child: the stronger parent's, else the other one's. Without any,
+ * the stronger parent founds a family (named after its element) and carries
+ * it from now on, so its later children share it.
+ */
+function inheritFamily(ctx: GameContext, a: Creature, b: Creature): string {
+  const [strong, weak] = creaturePower(ctx, a) >= creaturePower(ctx, b) ? [a, b] : [b, a];
+  const known = strong.family ?? weak.family;
+  if (known) return known;
+  const family = foundFamily(ctx, ctx.content.species.get(strong.speciesId).element);
+  const founder = findCreature(ctx, strong.id);
+  if (founder && !founder.family) founder.family = family;
+  return family;
+}
+
 /** Pedigree snapshot: the creature plus its own parents (grandparents of the child). */
 function snapshot(c: Creature): AncestorInfo {
   return {
@@ -196,18 +239,22 @@ function snapshot(c: Creature): AncestorInfo {
 registerProcessHandler(EGG, {
   complete(ctx, proc) {
     const data = proc.data as EggData;
-    const [a, b] = data.parents.map((id) => findCreature(ctx, id));
-    for (const p of [a, b]) if (p?.job?.kind === 'nest') p.job = null;
+    const live = data.parents.map((id) => findCreature(ctx, id));
+    for (const p of live) if (p?.job?.kind === 'nest' && p.job.target === String(proc.id)) p.job = null;
+    // Ritual eggs hatch from their Keimprobe, normal eggs from the parents in the nest.
+    const [a, b] = data.sample ?? live;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
     const ritual = data.ritual && ctx.content.breedingRituals.has(data.ritual) ? ctx.content.breedingRituals.get(data.ritual) : undefined;
     const mutation = mutationChance(ctx, ritual);
-    const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1);
+    const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1, ritual?.guaranteedHybrid ?? false);
     // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.
     const rarity = hatchRarity(ctx, ritual);
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
-    const nameFor = () => blendNames(ctx.rng, a.name, b.name, ctx.balance.creature.offspringName, ctx.content.species.get(speciesId).name);
+    const family = inheritFamily(ctx, a, b);
+    const nameFor = () => `${givenName(ctx, family)} ${family}`;
+    const lineage = lineageDepth(ctx, speciesId, a, b);
     const child = createCreature(ctx, {
       speciesId,
       rarity,
@@ -221,8 +268,11 @@ registerProcessHandler(EGG, {
       abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
       genome: inheritGenome(ctx, a.genome, b.genome, mutation),
       ancestry: [snapshot(a), snapshot(b)],
+      lineage,
+      family,
       source: 'hatch',
     });
+    recordLineage(ctx, child);
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });
 
     // Twin births (Äon talent): a second child from the same parents, if the stable has room.
@@ -241,6 +291,8 @@ registerProcessHandler(EGG, {
         abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
         genome: inheritGenome(ctx, a.genome, b.genome, mutation),
         ancestry: [snapshot(a), snapshot(b)],
+        lineage,
+        family,
         source: 'hatch',
       });
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents });

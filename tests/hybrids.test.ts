@@ -182,7 +182,7 @@ describe('evolution', () => {
 
   it('changes the species, reprofiles stats and registers the dex', () => {
     const g = evoGame();
-    const c = createCreature(g, { speciesId: 'steamling', rarity: 'rare', generation: 4, stats: { hp: 26, atk: 8, def: 6, spd: 6 }, exactStats: true });
+    const c = createCreature(g, { speciesId: 'steamling', rarity: 'rare', generation: 4, lineage: 3, stats: { hp: 26, atk: 8, def: 6, spd: 6 }, exactStats: true });
     const events: string[] = [];
     g.bus.on('evolved', (e) => events.push(`${e.from}>${e.to}`));
     const catalyst = g.state.resources.catalyst!.toNumber();
@@ -190,6 +190,7 @@ describe('evolution', () => {
     expect(c.speciesId).toBe('geysirus');
     expect(c.name).toBe('Geysirus');
     expect(c.stats).toEqual({ hp: 38, atk: 12, def: 9, spd: 9 });
+    expect(c.lineage).toBe(0); // a new species starts its own pure line
     expect(g.state.dex['geysirus:rare']).toBe(true);
     expect(g.state.resources.catalyst!.toNumber()).toBe(catalyst - 2);
     expect(events).toEqual(['steamling>geysirus']);

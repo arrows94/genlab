@@ -8,6 +8,7 @@
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toasts from './components/Toasts.svelte';
+  import Celebration from './components/Celebration.svelte';
   import NotificationBell from './components/NotificationBell.svelte';
   import NotificationCenter from './components/NotificationCenter.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
@@ -122,6 +123,7 @@
 {#if view.applyUpdate}<UpdateBanner />{/if}
 {/if}
 <Toasts />
+{#if view.ready}<Celebration />{/if}
 <NotificationCenter />
 <ConfirmDialog />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />

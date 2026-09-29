@@ -15,7 +15,7 @@ const print = (reports: DayReport[]) => {
     console.log(
       `Tag ${String(d.day).padStart(2)}  Vererbungen ${String(d.inheritances).padStart(3)}  Erbgut ${String(d.heritage).padStart(6)}  Turm ${String(d.towerBest).padStart(3)}` +
         `  Boss ${Math.round(d.bossShare * 100)} %  Äonen ${d.aeons}  Splitter ${d.shards}  Talente ${d.talents}  Resonanz ${d.resonance}  Observatorium ${d.observatory}/4` +
-        `  Relikte ${d.relics}  Anomalie-Rekord ${d.anomalyRecord}  Splitter-Quellen ${Object.entries(d.shardSources).map(([k, v]) => `${k} ${v}`).join(', ') || '–'}` +
+        `  Relikte ${d.relics}  Dynastie ${d.dynastyBest} (${d.dynastyTiers} Stufen)  Anomalie-Rekord ${d.anomalyRecord}  Splitter-Quellen ${Object.entries(d.shardSources).map(([k, v]) => `${k} ${v}`).join(', ') || '–'}` +
         `${d.unlocked.length ? `  neu: ${d.unlocked.join(', ')}` : ''}`,
     );
   }

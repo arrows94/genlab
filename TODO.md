@@ -109,8 +109,15 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         3 Äon-Splitter – eine weitere Splitter-Quelle
   - [x] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
   - [x] Relikte waren viel zu billig (alle 50 Stufen an Tag 3). Jetzt ×2,2 je Stufe statt ×1,6: alle Stufen an Tag 21
-  - [ ] Der Turm blieb im Bot-Lauf bei Etage 39 stehen (Boss auf Etage 40); im sechsten Lauf bei Etage 49 ab Tag 15
-        (Boss auf Etage 50, gleichzeitig der erste Meilenstein) – Boss-Wände ansehen
+  - [x] Der Turm blieb im Bot-Lauf bei Etage 39 stehen (Boss auf Etage 40); im sechsten Lauf bei Etage 49 ab Tag 15
+        (Boss auf Etage 50, gleichzeitig der erste Meilenstein). Befund: Der Regenerations-Boss heilte 8 % seiner KP
+        pro Runde und verlangte ein 6-mal so starkes Team wie Etage 39 (mehr als Etage 49). Jetzt heilt er 40 % des
+        Schadens der Runde (×2,3 wie Schild und Wandler). Etage 50 ist ein Element-Schild – der Test-Bot wählt sein
+        Team vor einem Boss jetzt nach Element-Vorteil, wie ein Spieler mit „Vorteil vs. …“
+  - [ ] Siebter 28-Tage-Lauf (Regeneration neu, Bot mit Element-Wahl): Turm 39 von Tag 6 bis 14, dann 51 ab Tag 15
+        bis Tag 28 – Etage 50 fällt jetzt, Etage 40 hält trotzdem (das Team wäre auch ohne Heilung zu schwach).
+        Die Team-Stärke wächst nur in Sprüngen (letzte Relikt-Stufen, Talente), der Turm um ×1,11 je Etage – dazwischen
+        acht bis dreizehn Tage Stillstand. Ansehen: eine Turm-Stärke, die mit jeder Vererbung oder jedem Äon wächst?
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
         Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×4 (`balance.anomalies.goalGrowth`)
@@ -127,7 +134,17 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         5 Äonen (Tag 5/10/15/19/24), 49 Vererbungen (vorher 70: fehlgeschlagene Anomalie-Läufe kosten den Bot Zeit)
   - [ ] Test-Bot: klügere Anomalie-Wahl (einzelne Anomalie eine Stufe höher statt immer alle zusammen), damit der
         Äon-Lauf nicht mit zwölfstündigen Fehlversuchen Vererbungen verliert
-- [ ] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
+- [x] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
+  - [x] Reine Linie = beide Eltern und das Kind dieselbe Art; Tiefe = kürzere Elternlinie + 1 (`lineage` an der
+        Kreatur, +1 % Werte je Tiefe, höchstens +50 %; beginnt nach jedem Neustart von vorn)
+  - [x] Dauerhafter Rekord je Art (`dynasties`, übersteht Vererbung und Äon): Stufen ab Tiefe 5/10/20/35/50 geben
+        der Art +5 % Werte je Stufe und allen +1 % Produktion je Stufe; Stufe 4 und 5 bringen 2 bzw. 3 Äon-Splitter
+  - [x] Brutstation: Linie des nächsten Kindes, Dynastie-Übersicht, Sortierung „Reine Linie“, Zuchtautomat-Ziel
+        „Reine Linie vertiefen“; Freischaltung über das Äon-Talent „Stammbaum-Dynastien“ (Stufe 2, 3 Splitter, nach „Zeitlose Ernte“);
+        Linien und Rekorde zählen erst ab dann
+  - [ ] Balancing mit dem Test-Bot: Ohne gezielte Zucht erreicht der Bot Tiefe 11 und 9 Stufen (+9 % Produktion)
+        bis Tag 23, keine Splitter. Tempo der hohen Stufen und Splitter-Ertrag erst messen, wenn der Bot das
+        Zuchtautomat-Ziel „Reine Linie vertiefen“ nutzt
 
 ## Später
 

@@ -2,6 +2,7 @@ import { ModifierSet, type SourcedModifier } from './modifiers';
 import { rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
 import { genomeModifiers, isPerfectGenome, rollGenome } from './genetics';
+import { dynastyModifiers } from './features/dynasty';
 import type { GameContext } from './context';
 import type { LatentTraitDef } from './content/types';
 import { Rng } from './rng';
@@ -31,6 +32,10 @@ export interface CreateCreatureOptions {
   name?: string;
   /** Erbanlage; omitted → rolled with `deepSequencing.latentChance`. */
   latent?: string | null;
+  /** Depth of a pure line (Stammbaum-Dynastie); omitted → 0. */
+  lineage?: number;
+  /** Family name; omitted → none. */
+  family?: string | null;
   source?: CreatureSource;
 }
 
@@ -74,6 +79,8 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     deepSequenced: false,
     splices: 0,
     shiny: opts.shiny ?? ctx.rng.chance(Math.min(1, ctx.mods().apply('creature.shinyChance', balance.perfection.shinyChance))),
+    lineage: opts.lineage ?? 0,
+    family: opts.family ?? null,
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,
@@ -189,6 +196,7 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
   if (c.genome) out.push(...genomeModifiers(ctx, c.genome));
   const latent = activeLatent(ctx, c);
   if (latent && latent.scope !== 'global') for (const m of latent.modifiers) out.push({ ...m, source: `latent:${latent.id}` });
+  out.push(...dynastyModifiers(ctx, c));
   return out;
 }
 
