@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 10,
+    date: '2026-09-29',
+    title: 'Eigene Familiennamen, klassische Namen, aktive Spielzeit',
+    items: [
+      { text: 'Die Statistik zeigt jetzt deine aktive Spielzeit – nur die Zeit, in der du wirklich spielst – dazu Sitzungen, die längste Sitzung und den Schnitt. Unter „Meilensteine“ siehst du, nach wie viel aktiver Zeit du Freischaltungen, Erfolge und Turm-Etagen erreicht hast.' },
+      { text: 'Gib einer Kreatur beim Umbenennen einen Nachnamen („Kiko Sonnenschein“) – ihr Nachwuchs erbt diesen Familiennamen. Selbst vergebene Familien gehen vor den automatischen.', feature: 'breeding' },
+      { text: 'Unter Optionen → Namen kannst du wieder die klassischen Namen einstellen: Nachwuchs heißt dann wie früher nach einer Mischung aus den Namen beider Eltern („Glussling“). Die Einstellung gilt für deinen Spielstand; vorhandene Namen bleiben.', feature: 'breeding' },
+    ],
+  },
+  {
     id: 9,
     date: '2026-09-29',
     title: 'Ein Spielstand für alle Geräte',

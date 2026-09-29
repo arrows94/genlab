@@ -3,7 +3,8 @@
   import { SAVE_VERSION } from '@core/save';
   import { formatDuration, formatNumber } from '@core/format';
   import type { GameState } from '@core/state';
-  import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask } from '../store.svelte';
+  import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask, act } from '../store.svelte';
+  import { setNameStyle } from '@core/actions';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { play } from '../sound';
   import { CHANGELOG, formatReleaseDate } from '../changelog';
@@ -14,6 +15,8 @@
   import SyncPanel from './SyncPanel.svelte';
 
   let text = $state('');
+  /** Mirrors the save's naming option (game state itself is not reactive). */
+  let nameStyle = $state(game.state.nameStyle);
   let fileInput: HTMLInputElement | undefined = $state();
   /** A read export waiting for the player to compare and confirm it. */
   let pending: { state: GameState; savedAt: number } | null = $state(null);
@@ -151,6 +154,20 @@
     {/if}
   </article>
 
+  {#if game.state.features['breeding']}
+    <article class="panel">
+      <h3>Namen</h3>
+      <label class="opt">
+        <span>Namen für Nachwuchs</span>
+        <select value={nameStyle} onchange={(e) => act(setNameStyle(game, e.currentTarget.value)) && (nameStyle = game.state.nameStyle)}>
+          <option value="family">Rufname + Familie</option>
+          <option value="classic">Klassisch (Elternnamen gemischt)</option>
+        </select>
+      </label>
+      <p class="small muted">{nameStyle === 'classic' ? 'Zum Beispiel „Glussling“ aus Glutwelpe × Sprössling.' : 'Zum Beispiel „Wuselbert Funkenstein“ – Kinder mischen meist die Rufnamen der Eltern.'} Gilt für diesen Spielstand und neuen Nachwuchs; vorhandene Namen bleiben. Beinamen gibt es in beiden Varianten.</p>
+    </article>
+  {/if}
+
   <article class="panel">
     <h3>Benachrichtigungen</h3>
     {#if notificationsSupported()}
@@ -227,6 +244,7 @@
   .cols article { margin-bottom: 0; }
   .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   .opt { display: grid; gap: 0.3rem; margin-bottom: 0.5rem; }
+  .opt select { max-width: 100%; min-width: 0; }
   .opt.check { display: flex; align-items: center; gap: 0.5rem; }
   .vol-row { display: flex; align-items: center; gap: 0.5rem; }
   .vol-row input { flex: 1; min-width: 0; }

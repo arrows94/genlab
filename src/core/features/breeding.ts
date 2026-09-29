@@ -8,7 +8,7 @@ import type { BreedingRitualDef } from '../content/types';
 import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
 import { lineageDepth, recordLineage } from './dynasty';
-import { childGivenName, foundFamily } from '../names';
+import { foundFamily, offspringName } from '../names';
 import { trySpend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
@@ -211,13 +211,15 @@ export function inheritAppearance(ctx: GameContext, a: Creature, b: Creature): A
 }
 
 /**
- * Family of a child: the stronger parent's, else the other one's. Without any,
- * the stronger parent founds a family (named after its element) and carries
- * it from now on, so its later children share it.
+ * Family of a child: one the player gave (by renaming) wins, otherwise the
+ * stronger parent's, else the other one's. Without any, the stronger parent
+ * founds a family (named after its element) and carries it from now on, so
+ * its later children share it.
  */
 function inheritFamily(ctx: GameContext, a: Creature, b: Creature): string {
   const [strong, weak] = creaturePower(ctx, a) >= creaturePower(ctx, b) ? [a, b] : [b, a];
-  const known = strong.family ?? weak.family;
+  const families = [strong.family, weak.family].filter((f): f is string => !!f);
+  const known = families.find((f) => ctx.state.playerFamilies[f]) ?? families[0];
   if (known) return known;
   const family = foundFamily(ctx, ctx.content.species.get(strong.speciesId).element);
   const founder = findCreature(ctx, strong.id);
@@ -253,7 +255,7 @@ registerProcessHandler(EGG, {
     // A new species (hybrid) takes on its own stat profile.
     if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
     const family = inheritFamily(ctx, a, b);
-    const nameFor = () => `${childGivenName(ctx, a, b, family)} ${family}`;
+    const nameFor = () => offspringName(ctx, a, b, family, ctx.content.species.get(speciesId).name);
     const lineage = lineageDepth(ctx, speciesId, a, b);
     const child = createCreature(ctx, {
       speciesId,

@@ -92,6 +92,7 @@ export const balance: Balance = {
     statVariance: 0.1,
     hueVariance: 18,
     maxNameLength: 25,
+    classicName: { minLength: 4, maxLength: 12, attempts: 12 },
     maxGivenLength: 11,
     freshNameChance: 0.25,
     epithetFromRarity: 'epic',
@@ -168,6 +169,12 @@ export const balance: Balance = {
     autoSec: 180,
     manualSec: 15,
     autoMinSec: 1,
+  },
+  activity: {
+    idleSec: 120,
+    sessionGapSec: 300,
+    maxTickSec: 5,
+    towerMilestones: [10, 25, 50, 75, 100, 150, 200],
   },
   automation: {
     intervalSec: 5,

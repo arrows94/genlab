@@ -111,6 +111,8 @@ export interface Balance {
     statVariance: number;
     hueVariance: number;
     maxNameLength: number;
+    /** Classic naming (option): blend of the parents' names within these lengths. */
+    classicName: { minLength: number; maxLength: number; attempts: number };
     /** Longest Rufname (the family name gets the rest of maxNameLength). */
     maxGivenLength: number;
     /** Chance that a child gets a fresh Rufname instead of a blend of its parents'. */
@@ -204,6 +206,16 @@ export interface Balance {
     manualSec: number;
     /** Lower bound for both times. */
     autoMinSec: number;
+  };
+  activity: {
+    /** Without input for this long, time no longer counts as active. */
+    idleSec: number;
+    /** A pause longer than this starts a new session. */
+    sessionGapSec: number;
+    /** Largest step counted at once (a sleeping device must not add hours). */
+    maxTickSec: number;
+    /** Tower records that stamp a milestone. */
+    towerMilestones: number[];
   };
   automation: {
     intervalSec: number;

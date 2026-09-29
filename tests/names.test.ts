@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature, findCreature } from '@core/creatures';
 import { breedingTimeMs, startBreeding } from '@core/features/breeding';
-import { epithetFor, foundFamily, givenName, rufname, syllables } from '@core/names';
+import { blendNames, epithetFor, foundFamily, givenName, rufname, syllables } from '@core/names';
+import { renameCreature, setNameStyle } from '@core/actions';
+import { Rng } from '@core/rng';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Creature } from '@core/state';
@@ -125,6 +127,66 @@ describe('offspring names: Rufname + Familie', () => {
       return Array.from({ length: 5 }, () => `${givenName(g, null)} ${foundFamily(g, 'water')}`);
     };
     expect(names(5)).toEqual(names(5));
+  });
+
+  it('the option „Klassisch“ brings back names blended from both parents', () => {
+    const g = nameGame();
+    expect(g.state.nameStyle).toBe('family');
+    expect(setNameStyle(g, 'weird').ok).toBe(false);
+    expect(setNameStyle(g, 'classic').ok).toBe(true);
+    const a = mk(g, 'emberpup', 50);
+    const b = mk(g, 'emberpup', 10);
+    a.name = 'Funke';
+    b.name = 'Moosbart';
+    for (let i = 0; i < 5; i++) {
+      const child = hatch(g, a, b);
+      expect(child.name).not.toContain(' ');
+      expect(/^(Fu|Moo)/.test(child.name), child.name).toBe(true);
+      expect(child.name.length).toBeLessThanOrEqual(balance.creature.classicName.maxLength);
+      // The family still passes on, so switching back continues the line.
+      expect(child.family).toBe(a.family);
+      g.state.creatures = [a, b];
+    }
+    setNameStyle(g, 'family');
+    expect(hatch(g, a, b).name).toMatch(/^\S+ \S+$/);
+  });
+
+  it('classic blends stay reproducible and fall back when nothing fits', () => {
+    const rules = balance.creature.classicName;
+    const names = (seed: number) => Array.from({ length: 20 }, () => blendNames(Rng.fromSeed(seed), 'Funke', 'Blubbling', rules, 'x'));
+    expect(names(5)).toEqual(names(5));
+    expect(blendNames(Rng.fromSeed(1), 'Ab', 'C', rules, 'Glutwelpe')).toBe('Glutwelpe');
+  });
+
+  it('a surname the player gives becomes the family of the offspring – and wins over an automatic one', () => {
+    const g = nameGame();
+    const strong = mk(g, 'emberpup', 50, 'Funkenstein');
+    const weak = mk(g, 'emberpup', 10, 'Tauhain');
+    expect(renameCreature(g, weak.id, '  Kiko   Sonnenschein ').ok).toBe(true);
+    expect(weak.name).toBe('Kiko Sonnenschein');
+    expect(weak.family).toBe('Sonnenschein');
+    const child = hatch(g, strong, weak);
+    expect(child.family).toBe('Sonnenschein');
+    expect(child.name.endsWith(' Sonnenschein')).toBe(true);
+    // Several words: everything after the Rufname.
+    renameCreature(g, strong.id, 'Rex von Stein');
+    expect(strong.family).toBe('von Stein');
+    // A single word keeps the family.
+    renameCreature(g, strong.id, 'Rex');
+    expect(strong.family).toBe('von Stein');
+  });
+
+  it('a long surname still fits the name limit', () => {
+    const g = nameGame();
+    const a = mk(g, 'emberpup', 50);
+    const b = mk(g, 'emberpup', 10);
+    renameCreature(g, a.id, 'Ab Schnuckelputzhausen');
+    for (let i = 0; i < 5; i++) {
+      const child = hatch(g, a, b);
+      expect(child.family).toBe('Schnuckelputzhausen');
+      expect(child.name.length).toBeLessThanOrEqual(balance.creature.maxNameLength);
+      g.state.creatures = [a, b];
+    }
   });
 
   it('older saves get creatures without a family and Beiname', () => {

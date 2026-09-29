@@ -94,7 +94,7 @@
   {#if editing}
     <form onsubmit={(e) => { e.preventDefault(); commit(); }}>
       <!-- svelte-ignore a11y_autofocus -->
-      <input bind:value={draft} maxlength="20" autofocus onblur={commit} />
+      <input bind:value={draft} maxlength={game.balance.creature.maxNameLength} autofocus onblur={commit} title="Mit Nachnamen („Kiko Sonnenschein“) erbt der Nachwuchs diesen Familiennamen." />
     </form>
   {:else}
     <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
