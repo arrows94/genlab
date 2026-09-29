@@ -16,7 +16,9 @@
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
+/* `manipulation` turns off double-tap zoom (fast tapping on buttons zoomed the page) but keeps
+   pinch zoom. Set on every element because scroll containers do not inherit it from <html>. */
+* { box-sizing: border-box; touch-action: manipulation; }
 
 html { scroll-padding-top: calc(var(--header-h, 0px) + 0.5rem); }
 /* The sticky header's 100vw backdrop must not cause horizontal scrolling (classic scrollbars); clip keeps sticky working. */
