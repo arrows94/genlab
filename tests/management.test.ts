@@ -4,7 +4,7 @@ import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
-import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, planAutoBreed, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
+import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, inRecycler, planAutoBreed, recycleDurationMs, recyclingNow, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
 import { breedingCost, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
@@ -479,7 +479,7 @@ describe('automation', () => {
       expect(all).toHaveLength(6);
       expect(all).toEqual(expect.arrayContaining([sequenced, lonely, weaker, weak, second, best]));
       expect(all.at(-1)).toBe(best);
-      g.advance(balance.automation.intervalSec * 1000 + 100);
+      g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g) * 8);
       expect(g.state.creatures).toEqual(expect.arrayContaining([locked, shiny, rare]));
       expect(g.state.creatures).not.toContain(weak);
     });
@@ -508,10 +508,84 @@ describe('automation', () => {
       while (stableFree(g) > 0) mk('emberpup', 50);
       const before = g.state.creatures.length;
       const fragments = g.state.resources.fragments!;
-      g.advance(balance.automation.intervalSec * 1000 + 100);
+      g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g) + 100);
       expect(g.state.creatures).toHaveLength(before - 1);
       expect(g.state.creatures).not.toContain(weak);
       expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
+    });
+
+    it('takes one creature at a time into the Zerlege-Kammer and needs its time', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const weakest = mk('pebblit', 1);
+      const weak = mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(recyclingNow(g)?.creature).toBe(weakest);
+      expect(g.state.creatures).toContain(weak);
+      const fragments = g.state.resources.fragments!;
+      g.advance(recycleDurationMs(g) - 500);
+      expect(g.state.creatures).toContain(weakest);
+      expect(recyclingNow(g)!.progress).toBeGreaterThan(0.9);
+      g.advance(1000);
+      expect(g.state.creatures).not.toContain(weakest);
+      expect(g.state.resources.fragments!.gt(fragments)).toBe(true);
+      // The next one goes in right away.
+      expect(recyclingNow(g)?.creature).toBe(weak);
+      expect(recyclingNow(g)!.progress).toBeLessThan(0.1);
+    });
+
+    it('starts at minutes and research brings it down to seconds', () => {
+      const g = richGame();
+      unlockFeature(g, 'autoRecycle');
+      expect(recycleDurationMs(g)).toBe(balance.recycler.autoSec * 1000);
+      expect(recycleDurationMs(g)).toBeGreaterThanOrEqual(120_000);
+      g.state.upgrades['recyclerSpeed'] = content.upgrades.get('recyclerSpeed').maxLevel!;
+      g.invalidate();
+      expect(recycleDurationMs(g)).toBeLessThanOrEqual(10_000);
+    });
+
+    it('a creature can still be rescued from the chamber, and switching off frees it', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      const b = mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(inRecycler(g, a.id)).toBe(true);
+      a.locked = true;
+      g.advance(100);
+      expect(recyclingNow(g)).toBeNull();
+      g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g));
+      expect(g.state.creatures).toContain(a);
+      expect(inRecycler(g, b.id) || !g.state.creatures.includes(b)).toBe(true);
+      setAutoRecycle(g, { enabled: false });
+      g.advance(100);
+      expect(recyclingNow(g)).toBeNull();
+    });
+
+    it('other automations leave the creature in the chamber alone', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(inRecycler(g, a.id)).toBe(true);
+      unlockFeature(g, 'autoAssign');
+      setAutoAssign(g, true);
+      autoAssign(g);
+      expect(a.job).toBeNull();
+      expect(inRecycler(g, a.id)).toBe(true);
+    });
+
+    it('processes several creatures in one long (offline) step', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      for (let i = 0; i < 4; i++) mk('pebblit', 1 + i);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      g.step(recycleDurationMs(g) * 4);
+      expect(g.state.creatures).toHaveLength(1);
     });
 
     it('is only available after research', () => {

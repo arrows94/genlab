@@ -191,6 +191,10 @@ export interface Balance {
   recycler: {
     fragmentsByRarity: Record<string, number>;
     perGeneration: number;
+    /** Seconds the Recycling-Automat needs per creature (× `recycler.time` modifiers). */
+    autoSec: number;
+    /** Lower bound for that time. */
+    autoMinSec: number;
   };
   automation: {
     intervalSec: number;

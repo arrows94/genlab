@@ -27,8 +27,10 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 6,
     date: '2026-09-29',
-    title: 'Stammbaum-Dynastien',
+    title: 'Stammbaum-Dynastien und Zerlege-Kammer',
     items: [
+      { text: 'Der Recycling-Automat arbeitet jetzt sichtbar: Er nimmt eine Kreatur nach der anderen in seine Zerlege-Kammer, statt alle auf einmal zu recyceln. Du siehst, wer gerade dran ist, wie lange es noch dauert und wer als Nächstes kommt – und kannst sie mit „★ Retten“ noch behalten.', feature: 'autoRecycle' },
+      { text: 'Anfangs braucht die Kammer 3 Minuten je Kreatur. Die neue Forschung „Schnellzerlegung“ (10 Stufen) bringt das auf wenige Sekunden.', feature: 'autoRecycle' },
       { text: 'Neues Äon-Talent „Stammbaum-Dynastien“ (Stufe 2): Es öffnet reine Linien in der Brutstation.', feature: 'aeon' },
       { text: 'Neu: Stammbaum-Dynastien. Paare Kreaturen derselben Art – jede Generation in Folge vertieft die reine Linie und macht das Kind stärker (+1 % Werte je Generation).', feature: 'dynasties' },
       { text: 'Der Rekord jeder Art bleibt für immer. Ab Linien-Tiefe 5, 10, 20, 35 und 50 steigt die Dynastie eine Stufe: mehr Werte für die ganze Art und mehr Produktion. Die Stufen 4 und 5 bringen Äon-Splitter.', feature: 'dynasties' },

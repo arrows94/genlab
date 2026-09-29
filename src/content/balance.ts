@@ -162,6 +162,8 @@ export const balance: Balance = {
   recycler: {
     fragmentsByRarity: { common: 1, uncommon: 3, rare: 8, epic: 25, legendary: 80, mythic: 250 },
     perGeneration: 0.05,
+    autoSec: 180,
+    autoMinSec: 1,
   },
   automation: {
     intervalSec: 5,
