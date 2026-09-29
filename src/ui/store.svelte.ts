@@ -14,6 +14,7 @@ import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
 import { silently } from './sound';
+import { wireSounds } from './soundEvents';
 import { noteActive } from '@core/activity';
 
 /**
@@ -198,6 +199,7 @@ function wireEvents(g: Game): void {
   });
 }
 wireEvents(game);
+wireSounds(game, () => view.tab);
 
 export function openTab(tab: string): void {
   view.tab = tab;
