@@ -193,8 +193,11 @@ export function resetOverview(ctx: GameContext, layerId: string): { lost: ResetI
   }
   const { travelling, building, lostLong } = resetImpact(ctx);
   if (r.creatures) {
-    const home = s.creatures.filter((c) => c.job?.kind !== 'mission').length;
-    if (home > 0) lost.push({ icon: '🐾', label: 'Kreaturen', detail: `${formatNumber(home)} – du startest mit einer neuen` });
+    const home = s.creatures.filter((c) => c.job?.kind !== 'mission');
+    const favourites = home.filter((c) => c.locked).length;
+    if (home.length > 0) {
+      lost.push({ icon: '🐾', label: 'Kreaturen', detail: `${formatNumber(home.length)}${favourites > 0 ? ` (auch ${formatNumber(favourites)} Favoriten ★)` : ''} – du startest mit einer neuen` });
+    }
   }
   if (r.processes) {
     const running = s.processes.filter((p) => !survivesReset(ctx, p)).length;
