@@ -1,7 +1,8 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor,
+einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgeschlossen.
 
 ## Höchste Wirkung
 
@@ -28,7 +29,8 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
   - [x] Zeitleiste der bisherigen Durchläufe (neu im Spielstand: `prestigeLog`, Äonen als Trenner;
         ältere Durchläufe vor der Aufzeichnung werden nur gezählt)
   - [x] Animation beim Vererben
-  - [ ] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab
+  - [x] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab (gemeinsame Komponente `PrestigeOverview.svelte`,
+        Zeitleiste aus `prestigeTimeline`: Äonen mit Laufzeit und Zahl der Vererbungen dazwischen)
 
 ## Auch lohnend
 

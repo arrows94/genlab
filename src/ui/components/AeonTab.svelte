@@ -1,12 +1,12 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { formatNumber, formatPercent } from '@core/format';
-  import { performPrestige, prestigeGain, resetImpactText } from '@core/prestige';
   import {
     buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, resonanceScale, talentAvailable, talentUnlocked, AEON_CURRENCY,
   } from '@core/features/talents';
   import type { Condition } from '@core/content/types';
-  import { game, view, act, save, ask } from '../store.svelte';
+  import { game, view, act } from '../store.svelte';
+  import PrestigeOverview from './PrestigeOverview.svelte';
   import MegaProjectPanel from './MegaProjectPanel.svelte';
 
   const layer = content.prestigeLayers.get('aeon');
@@ -28,10 +28,8 @@
       return { def, level, cost, scale: resonanceScale(def, level), next: resonanceScale(def, level + 1), affordable: shards >= cost };
     });
     return {
-      gain: prestigeGain(game, layer.id),
       shards,
       count: game.state.prestige[layer.id]?.count ?? 0,
-      anomaly: game.state.anomaly !== null,
       learned: content.talents.list.filter((t) => game.state.talents[t.id]).length,
       mega: !!game.state.features['megaProjects'],
       tiers: tiers.map((tier) => {
@@ -58,9 +56,6 @@
     return m.op === 'add' && m.target === 'breeding.mutation' ? `+${formatPercent(v)}` : m.op === 'mult' ? `×${v.toFixed(2)}` : `+${formatPercent(v, 0)}`;
   }
 
-  async function doAeon() {
-    if ((await ask(`Äon einleiten? ${layer.description} ${resetImpactText(game)}`, { ok: 'Äon einleiten', danger: true })) && act(performPrestige(game, layer.id))) save();
-  }
 </script>
 
 <header class="tab-head">
@@ -72,13 +67,8 @@
   </div>
 </header>
 
-<article class="panel">
-  <p>{layer.description}</p>
-  <p class="small muted">Gewinn: √(Erbgut / {formatNumber(game.balance.prestige['aeon']?.divisor ?? 0)}) – je mehr Erbgut du besitzt, desto mehr Splitter.</p>
-  <button class="primary" disabled={data.gain.lte(0) || data.anomaly} onclick={doAeon}>
-    Äon einleiten für <span class="num">+{formatNumber(data.gain)}</span> ⏳
-  </button>
-</article>
+<PrestigeOverview layerId={layer.id} />
+<p class="small muted formula">Splitter beim Äon: √(Erbgut / {formatNumber(game.balance.prestige['aeon']?.divisor ?? 0)}) – je mehr Erbgut du besitzt, desto mehr Splitter.</p>
 
 {#if data.mega}
   <h3>🏗️ Großprojekt</h3>
@@ -147,6 +137,7 @@
 
 <style>
   .small { font-size: 0.8rem; margin: 0.25rem 0; }
+  .formula { margin: -0.3rem 0 0.8rem; }
   h3 { margin: 1rem 0 0.5rem; }
   .intro { margin: -0.3rem 0 0.6rem; }
   .tree { display: grid; gap: 0.75rem; }

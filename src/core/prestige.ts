@@ -98,6 +98,52 @@ export function applyTalentGuarantees(ctx: GameContext): void {
 /** Runs kept for the timeline. */
 export const PRESTIGE_LOG_SIZE = 60;
 
+export type TimelineItem =
+  /** A finished run of this layer: gain, length since its previous reset, lower-layer resets inside it. */
+  | { kind: 'run'; at: number; gain: number; runMs: number; inner: number }
+  /** A reset of a higher layer (e.g. an Äon inside the Vererbung timeline). */
+  | { kind: 'marker'; at: number; gain: number; layer: string };
+
+/**
+ * The prestige log from the point of view of one layer, oldest first: its
+ * own runs (length measured from its previous reset, counting lower-layer
+ * resets in between), resets of higher layers as markers, lower layers only
+ * counted. Layer order is the order of `prestigeLayers`.
+ */
+export function prestigeTimeline(ctx: GameContext, layerId: string): { items: TimelineItem[]; unrecorded: number; best: number; avgMs: number } {
+  const order = (id: string) => ctx.content.prestigeLayers.list.findIndex((l) => l.id === id);
+  const self = order(layerId);
+  const items: TimelineItem[] = [];
+  let since = ctx.state.createdAt;
+  let inner = 0;
+  for (const e of ctx.state.prestigeLog) {
+    const o = order(e.layer);
+    if (o === self) {
+      items.push({ kind: 'run', at: e.at, gain: e.gain, runMs: Math.max(0, e.at - since), inner });
+      since = e.at;
+      inner = 0;
+    } else if (o > self) {
+      items.push({ kind: 'marker', at: e.at, gain: e.gain, layer: e.layer });
+      since = e.at;
+    } else inner++;
+  }
+  const runs = items.filter((x): x is Extract<TimelineItem, { kind: 'run' }> => x.kind === 'run');
+  return {
+    items,
+    unrecorded: Math.max(0, (ctx.state.prestige[layerId]?.count ?? 0) - runs.length),
+    best: runs.length ? Math.max(...runs.map((r) => r.gain)) : 0,
+    avgMs: runs.length ? runs.reduce((s, r) => s + r.runMs, 0) / runs.length : 0,
+  };
+}
+
+/** When the current run of this layer started (its last reset or a higher one, else the game start). */
+export function currentRunStart(ctx: GameContext, layerId: string): number {
+  const order = (id: string) => ctx.content.prestigeLayers.list.findIndex((l) => l.id === id);
+  const self = order(layerId);
+  const last = [...ctx.state.prestigeLog].reverse().find((e) => order(e.layer) >= self);
+  return last?.at ?? ctx.state.createdAt;
+}
+
 /**
  * Progress towards the next currency point: the source total now, the
  * total needed for one more point, and the share of the way there.
@@ -168,6 +214,14 @@ export function resetOverview(ctx: GameContext, layerId: string): { lost: ResetI
   const library = Object.keys(s.geneLibrary).length;
   if (library > 0) kept.push({ icon: '📚', label: 'Genbibliothek', detail: `${library} Allele` });
   if (s.tower.best > 0) kept.push({ icon: '🗼', label: 'Turm-Rekord', detail: `Etage ${s.tower.best}` });
+  const talents = Object.values(s.talents).filter(Boolean).length;
+  if (talents > 0) kept.push({ icon: '⏳', label: 'Äon-Talente', detail: `${talents} gelernt` });
+  const grand = Object.values(s.grandResearch).reduce((n, l) => n + l, 0);
+  if (grand > 0) kept.push({ icon: '📜', label: 'Großforschung', detail: `${grand} Stufen` });
+  const mega = Object.values(s.megaProjects).reduce((n, m) => n + m.stage, 0);
+  if (mega > 0) kept.push({ icon: '🏗️', label: 'Großprojekte', detail: `${mega} Bauphasen` });
+  const anomalies = Object.values(s.anomaliesCompleted).filter(Boolean).length;
+  if (anomalies > 0) kept.push({ icon: '🌀', label: 'Anomalie-Belohnungen', detail: `${anomalies} gemeistert` });
   if (travelling > 0) kept.push({ icon: '🧭', label: 'Reisende', detail: `${travelling} kommen in den neuen Lauf zurück` });
   if (building > 0) kept.push({ icon: '🏗️', label: 'Großforschung und Bauten', detail: 'laufen weiter' });
   return { lost, kept };
