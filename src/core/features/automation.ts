@@ -216,7 +216,8 @@ export function keptPerSpecies(ctx: GameContext): Set<number> {
 export function cleanupCandidate(ctx: GameContext, keep: readonly number[] = []): Creature | null {
   const cfg = ctx.state.automation.autoBreed;
   const kept = keptPerSpecies(ctx);
-  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && !kept.has(c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
+  // The creature in the Zerlege-Kammer is already on its way – take the next one.
+  return weakestFirst(ctx, ctx.state.creatures.filter((c) => !keep.includes(c.id) && !kept.has(c.id) && !inRecycler(ctx, c.id) && expendable(ctx, c, cfg.cleanupMaxRarity)))[0] ?? null;
 }
 
 /** Everything the Recycling-Automat may take right now, weakest first. */
@@ -307,8 +308,9 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
     }
     budget -= need;
     a.recycling = null;
-    const allowed = autoRecycleCandidates(ctx).some((c) => c.id === cur.creatureId) && !(a.autoRecycle.when === 'full' && stableFree(ctx) > 0);
-    if (allowed) recycle(ctx, [cur.creatureId], true);
+    // Once inside, it is recycled – only a rescue (checked above) or „je Art behalten“ stops it.
+    // The rules for picking (e.g. the Zuchtautomat's next pair) were checked when it went in.
+    if (!keptPerSpecies(ctx).has(cur.creatureId)) recycle(ctx, [cur.creatureId], true);
     fillRecycler(ctx);
   }
 }

@@ -578,6 +578,44 @@ describe('automation', () => {
       expect(inRecycler(g, a.id)).toBe(true);
     });
 
+    it('works side by side with the Zuchtautomat: its cleanup never takes the creature in the chamber', () => {
+      const { g, mk } = setup();
+      unlockFeature(g, 'autoBreed');
+      for (let i = 0; i < 12; i++) mk('pebblit', 10 + i);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 2 });
+      setAutoBreed(g, { enabled: true, rule: 'power', cleanup: 'recycle' });
+      const d = recycleDurationMs(g);
+      let finished = 0;
+      let taken = 0;
+      let last: { id: number; elapsed: number } | null = null;
+      for (let t = 0; t < 300; t++) {
+        g.advance(d / 30);
+        const cur = g.state.automation.recycling;
+        if (last && cur?.creatureId !== last.id && !g.state.creatures.some((c) => c.id === last!.id)) {
+          if (last.elapsed > d * 0.9) finished++;
+          else taken++;
+        }
+        last = cur ? { id: cur.creatureId, elapsed: cur.elapsedMs } : null;
+      }
+      expect(taken).toBe(0);
+      expect(finished).toBeGreaterThan(2);
+    });
+
+    it('finishes a creature even if the Zuchtautomat would like it as a parent by then', () => {
+      const { g, mk } = setup();
+      unlockFeature(g, 'autoBreed');
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(inRecycler(g, a.id)).toBe(true);
+      // Now the breeder wants the cheapest pair – which would include the chamber creature.
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      g.advance(recycleDurationMs(g));
+      expect(g.state.creatures).not.toContain(a);
+    });
+
     it('processes several creatures in one long (offline) step', () => {
       const { g, mk } = setup();
       mk('pebblit', 90);
