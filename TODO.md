@@ -81,7 +81,12 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         (+1 Wochen-Boss-Angriff pro Tag). „Turm startet ab dem halben Rekord“ entfällt – die Kontrollpunkte
         alle 10 Etagen starten schon näher am Rekord.
   - [x] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag (Ernte, Erbgut, Gene, Kampf; Wirkung Stufe^0,7)
-  - [ ] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (der Bot spielt noch keinen Turm und kein Äon)
+  - [x] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (`GENLAB_AEON=1`, 28 Tage): Äon ab Tag 2
+        freigeschaltet, Äonen an Tag 5/11/16/24, Talentstufen 1–3 nach 4 Äonen voll (9 Talente), Observatorium
+        fertig an Tag 25 – aber Stufe 4 (ab Tag 11 offen) und Stufe 5 sind am Ende noch nicht bezahlbar, Resonanz 0
+  - [ ] Splitter und Observatorium angleichen: Das Observatorium öffnet Stufe 4/5 deutlich früher, als die Splitter
+        reichen (Tag 28: 2 Splitter übrig, Stufe 4 kostet je 8). Vorschlag: Stufe 4/5 günstiger (z. B. 6/9) oder
+        mehr Splitter pro Äon
 - [ ] **Turm-Mechaniken vertiefen**
   - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
   - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
@@ -97,7 +102,7 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
 - [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
 - [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
-- [ ] Balancing der neuen Systeme mit dem Test-Bot über mehrere Äonen prüfen
+- [x] Balancing der neuen Systeme mit dem Test-Bot über mehrere Äonen prüfen (siehe Äon-Talentbaum)
 
 # TODO – Langzeitmotivation (Idle über Tage und Wochen)
 
@@ -159,7 +164,8 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Leitplanken
 
-- [ ] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
-- [ ] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen
+- [x] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
+      (`tests/guardrails.test.ts`: alles über 1 h braucht eine Vererbung; die „Große Reise“ mit genau 1 h ist freiwillig)
+- [x] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen (`tests/guardrails.test.ts`)
 - [x] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
       (`tests/longrun.ts`; Funde: Reisende überstehen jetzt Vererbungen, eine Tagesreise pro Region gleichzeitig)

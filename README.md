@@ -96,6 +96,14 @@ GENLAB_TIMELINE=1 npx vitest run tests/longrun.test.ts --silent=false
 GENLAB_LONGRUN=1 npx vitest run tests/longrun.test.ts --silent=false
 ```
 
+`tests/aeon.test.ts` spielt zusätzlich das Endgame (`tests/endgameBot.ts`): Turm-Team und Turm-Routine, Wochen-Boss, Einzahlungen ins Äon-Observatorium, Äon ab einem wachsenden Mindestgewinn, Splitter für Talente und Resonanz. Der schnelle Test startet aus einem Spielstand kurz vor dem ersten Äon; der lange Lauf (4 Wochen, rund 20 Minuten) druckt eine Tagestabelle mit Turm-Rekord, Äonen, Talenten und Observatorium:
+
+```bash
+GENLAB_AEON=1 npx vitest run tests/aeon.test.ts --silent=false          # Tage per GENLAB_AEON_DAYS (Standard 28)
+```
+
+`tests/guardrails.test.ts` prüft die Leitplanken der Langzeitmotivation an den Inhalten: Alles über 1 h Laufzeit kommt erst nach der ersten Vererbung, und kein Grundsystem hängt von einem langen Projekt ab.
+
 Wie man Inhalte hinzufügt, steht in [`CONTENT.md`](CONTENT.md).
 
 ## Stand
