@@ -1,4 +1,5 @@
 import type { ResourceAmounts } from './types';
+import type { ModifierDef } from '../modifiers';
 
 /**
  * Shape of the central balancing file (`src/content/balance.ts`). Core logic
@@ -214,6 +215,14 @@ export interface Balance {
     alleleEvery: number;
     leaderboardSize: number;
     checkpointEvery: number;
+    /** Bosses from this floor on have a trait (`bossTraits`). */
+    bossTraitFromFloor: number;
+    /** A new record on every multiple of this floor is a milestone. */
+    milestoneEvery: number;
+    /** Äon-Splitter for reaching a milestone the first time. */
+    milestoneShards: number;
+    /** Permanent bonus per milestone reached (stacks). */
+    milestoneModifiers: ModifierDef[];
   };
   perfection: {
     /** Base chance for the "Schillernd" colour mutation (modified by `creature.shinyChance`). */

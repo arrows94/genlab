@@ -7,6 +7,8 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import type { System } from '../systems/types';
+import type { RelicDef } from '../content/types';
+import type { ModifierProvider } from '../providers';
 
 /**
  * Genom-Turm: an endless auto-battle. A team of 3–5 creatures fights floor
@@ -30,6 +32,8 @@ export interface Fighter {
   /** Extra multiplier on super-effective hits (tower.elementDamage). */
   elementPower: number;
   team: boolean;
+  /** Boss trait id (`bossTraits`), enemies only. */
+  trait?: string;
 }
 
 export function teamSize(ctx: GameContext): number {
@@ -46,6 +50,8 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
   const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * (boss ? t.bossHpMult : 1));
   const names = ctx.content.species.list.filter((s) => s.element === element);
   const species = rng.pick(names.length ? names : ctx.content.species.list);
+  const traits = ctx.content.bossTraits.list;
+  const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
   return {
     name: `${boss ? 'Boss: ' : ''}${species.name}`,
     speciesId: species.id,
@@ -58,27 +64,91 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
     power: 1,
     elementPower: 1,
     team: false,
+    trait,
   };
+}
+
+/** Relikt in the team place of this creature, with its level (null if none). */
+export function relicFor(ctx: GameContext, c: Creature): { def: RelicDef; level: number } | null {
+  const slot = ctx.state.tower.team.indexOf(c.id);
+  const id = slot >= 0 ? ctx.state.tower.relicSlots[slot] : null;
+  if (!id || !ctx.content.relics.has(id)) return null;
+  const level = relicLevel(ctx, id);
+  return level > 0 ? { def: ctx.content.relics.get(id), level } : null;
 }
 
 export function fighterFor(ctx: GameContext, c: Creature): Fighter {
   const s = effectiveStats(ctx, c);
   const own = creatureModifiers(ctx, c);
   const global = ctx.mods();
+  const relic = relicFor(ctx, c);
+  const boost = (key: keyof RelicDef['bonus']) => 1 + (relic ? (relic.def.bonus[key] ?? 0) * relic.level : 0);
+  const hp = Math.round((s.hp ?? 1) * boost('hp'));
   return {
     name: c.name,
     speciesId: c.speciesId,
     element: ctx.content.species.get(c.speciesId).element,
-    hp: s.hp ?? 1,
-    maxHp: s.hp ?? 1,
-    atk: s.atk ?? 1,
-    def: s.def ?? 0,
-    spd: s.spd ?? 1,
+    hp,
+    maxHp: hp,
+    atk: Math.round((s.atk ?? 1) * boost('atk')),
+    def: Math.round((s.def ?? 0) * boost('def')),
+    spd: Math.round((s.spd ?? 1) * boost('spd')),
     power: global.factor('tower.damage') * own.factor('tower.damage'),
-    elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage'),
+    elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage') * boost('element'),
     team: true,
   };
 }
+
+// ---- Relikte --------------------------------------------------------------
+
+export function relicLevel(ctx: GameContext, id: string): number {
+  return ctx.state.relics[id] ?? 0;
+}
+
+/** Turm-Marken for the next level (null at the maximum). */
+export function relicCost(ctx: GameContext, id: string): Decimal | null {
+  const def = ctx.content.relics.get(id);
+  const level = relicLevel(ctx, id);
+  return level >= def.maxLevel ? null : D(def.cost).mul(D(def.costGrowth).pow(level)).ceil();
+}
+
+export function buyRelic(ctx: GameContext, id: string): ActionResult {
+  if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  const cost = relicCost(ctx, id);
+  if (!cost) return { ok: false, reason: 'Das Relikt ist bereits auf der höchsten Stufe.' };
+  const owned = ctx.state.resources['towerTokens'] ?? D(0);
+  if (owned.lt(cost)) return { ok: false, reason: 'Nicht genug Turm-Marken.' };
+  ctx.state.resources['towerTokens'] = owned.sub(cost);
+  ctx.state.relics[id] = relicLevel(ctx, id) + 1;
+  ctx.invalidate();
+  return { ok: true };
+}
+
+/** Puts a relic into a team place (or clears it with null). A relic sits in one place at most. */
+export function equipRelic(ctx: GameContext, slot: number, id: string | null): ActionResult {
+  if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  if (ctx.state.tower.run) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
+  if (!Number.isInteger(slot) || slot < 0 || slot >= teamSize(ctx)) return { ok: false, reason: 'Diesen Platz gibt es nicht.' };
+  if (id !== null && (!ctx.content.relics.has(id) || relicLevel(ctx, id) < 1)) return { ok: false, reason: 'Dieses Relikt besitzt du noch nicht.' };
+  const slots = ctx.state.tower.relicSlots;
+  while (slots.length < teamSize(ctx)) slots.push(null);
+  if (id !== null) for (let i = 0; i < slots.length; i++) if (slots[i] === id) slots[i] = null;
+  slots[slot] = id;
+  return { ok: true };
+}
+
+// ---- Meilensteine -----------------------------------------------------------
+
+/** Milestones reached (every `milestoneEvery` floors of the record). */
+export function towerMilestones(ctx: GameContext): number {
+  return Math.floor(ctx.state.tower.best / ctx.balance.tower.milestoneEvery);
+}
+
+/** Permanent bonus per milestone reached. */
+export const towerMilestoneProvider: ModifierProvider = (ctx, into) => {
+  const n = towerMilestones(ctx);
+  if (n > 0) into.addAll('tower:milestone', ctx.balance.tower.milestoneModifiers, n);
+};
 
 export function elementMultiplier(ctx: GameContext, attacker: string, defender: string): number {
   if (ctx.content.elements.get(attacker).strongAgainst.includes(defender)) return ctx.balance.tower.strongMult;
@@ -136,11 +206,20 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
   };
   const all = [...order].sort((a, b) => b.spd - a.spd);
   const done = (win: boolean, rounds: number) => ({ win, rounds, log, fighters, events });
+  const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
+  const elements = ctx.content.elements.list.map((e) => e.id);
   for (let round = 1; round <= ctx.balance.tower.maxRounds; round++) {
+    // Wandler: a new element every round.
+    if (trait?.kind === 'shift' && round > 1) {
+      enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
+      if (log.length < 12) log.push(`${enemy.name} wechselt zu ${ctx.content.elements.get(enemy.element).name}`);
+    }
     for (const f of all) {
       if (f.hp <= 0) continue;
       if (f.team) {
-        const dmg = damage(ctx, f, enemy, rng);
+        let dmg = damage(ctx, f, enemy, rng);
+        // Element-Schild: only hits with element advantage get through in full.
+        if (trait?.kind === 'shield' && elementMultiplier(ctx, f.element, enemy.element) <= 1) dmg = Math.max(1, Math.round(dmg * trait.value));
         enemy.hp -= dmg;
         hit(f, enemy, dmg);
         if (log.length < 12) log.push(`${f.name} trifft für ${dmg}`);
@@ -159,6 +238,14 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
           log.push(`Team besiegt (Runde ${round})`);
           return done(false, round);
         }
+      }
+    }
+    // Regeneration: heals after every round.
+    if (trait?.kind === 'regen' && enemy.hp > 0) {
+      const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(enemy.maxHp * trait.value));
+      if (healed > 0) {
+        enemy.hp += healed;
+        if (log.length < 12) log.push(`${enemy.name} heilt ${healed}`);
       }
     }
   }
@@ -223,7 +310,7 @@ function missingRareAlleles(ctx: GameContext): { locus: string; allele: string }
 }
 
 /** Side-effect-free preview of what clearing a floor pays. */
-export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; checkpoint: boolean } {
+export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; checkpoint: boolean; milestone: boolean } {
   const t = ctx.balance.tower;
   const alleleFloor = floor % t.alleleEvery === 0;
   const allele = alleleFloor && missingRareAlleles(ctx).length > 0;
@@ -235,6 +322,7 @@ export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Deci
     allele,
     boss: floor % t.bossEvery === 0,
     checkpoint: floor % t.checkpointEvery === 0,
+    milestone: floor % t.milestoneEvery === 0,
   };
 }
 
@@ -276,6 +364,11 @@ export function fightNextFloor(ctx: GameContext): void {
   const { rewards, allele } = floorRewards(ctx, floor);
   // Milestone records (first time only, the best floor survives every reset) give a time crystal.
   if (record && floor % ctx.balance.timeCrystals.towerEvery === 0) rewards['timeCrystals'] = D(1);
+  // Milestones (first time only): Äon-Splitter; the permanent bonus follows the record (towerMilestoneProvider).
+  if (record && floor % ctx.balance.tower.milestoneEvery === 0) {
+    rewards['aeonShards'] = D(ctx.balance.tower.milestoneShards);
+    ctx.invalidate();
+  }
   for (const [res, v] of Object.entries(rewards)) grant(ctx, res, v, 'tower');
   ctx.bus.emit('towerFloor', { floor, win: true, rewards, allele });
 }

@@ -460,6 +460,38 @@ export interface ResonanceDef {
   modifiers: ModifierDef[];
 }
 
+/** A special trick of a tower boss (from `balance.tower.bossTraitFromFloor`). */
+export interface BossTraitDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /**
+   * shield: damage without element advantage × value; shift: changes element
+   * every round (value unused); regen: heals value × max HP after every round.
+   */
+  kind: 'shield' | 'shift' | 'regen';
+  value: number;
+}
+
+/**
+ * Relikt: bought and levelled with Turm-Marken, owned by the player (never
+ * reset) and put into a place of the tower team. It boosts whoever stands
+ * there – in the tower and against the weekly boss.
+ */
+export interface RelicDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Turm-Marken for level 1; each level costs `costGrowth` times more. */
+  cost: number;
+  costGrowth: number;
+  maxLevel: number;
+  /** Bonus per level (0.1 = +10 %) on fight stats; `element` raises the element advantage. */
+  bonus: Partial<Record<'hp' | 'atk' | 'def' | 'spd' | 'element', number>>;
+}
+
 /** One construction stage of a Großprojekt: pay in over time, then build. */
 export interface MegaProjectStageDef {
   name: string;
@@ -587,6 +619,8 @@ export interface ContentData {
   resonances: ResonanceDef[];
   megaProjects: MegaProjectDef[];
   researchThemes: ResearchThemeDef[];
+  bossTraits: BossTraitDef[];
+  relics: RelicDef[];
 }
 
 export interface Registry<T extends { id: string }> {

@@ -13,6 +13,7 @@ import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@cor
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
 import { playBot } from './bot';
+import type { EndgameOptions } from './endgameBot';
 
 /**
  * Long-term player for balancing: uses the slow systems (Gen-Aufträge,
@@ -98,6 +99,14 @@ export interface DayReport {
   share: Record<string, number>;
   /** Features unlocked on this day (in order). */
   unlocked: string[];
+  // Endgame (filled when playing with `endgame`).
+  towerBest: number;
+  aeons: number;
+  shards: number;
+  talents: number;
+  resonance: number;
+  observatory: number;
+  bossShare: number;
 }
 
 export interface LongRunOptions {
@@ -105,6 +114,8 @@ export interface LongRunOptions {
   /** Check-ins per day and minutes played per check-in. */
   sessions?: number;
   sessionMin?: number;
+  /** Also play tower, Äon, talents and the Großprojekt. */
+  endgame?: EndgameOptions | boolean;
 }
 
 const DAY_MS = 86_400_000;
@@ -116,7 +127,7 @@ const NEW_SOURCES = /^(contract:|voyage:|daily$|mission:(mistmoor|cloudridge))/;
  * through the real offline path (capped production, timers by the clock).
  */
 export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
-  const { days, sessions = 3, sessionMin = 20 } = opts;
+  const { days, sessions = 3, sessionMin = 20, endgame = false } = opts;
   const reports: DayReport[] = [];
   const count = { journeys: 0, rituals: 0, voyages: 0 };
   g.bus.on('missionCompleted', (e) => (e.missionId === 'mistmoor' || e.missionId === 'cloudridge') && count.journeys++);
@@ -145,7 +156,7 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
     unlocked.length = 0;
 
     for (let s = 0; s < sessions; s++) {
-      playBot(g, sessionMin, { prestigeAt: 2, prestigeGrowth: 0.5, longTerm: true, wallClock: true });
+      playBot(g, sessionMin, { prestigeAt: 2, prestigeGrowth: 0.5, longTerm: true, wallClock: true, endgame });
       g.update(g.state.lastTickAt + gap);
     }
 
@@ -172,6 +183,13 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       essencePerSec: Math.round((rates.essence?.toNumber() ?? 0) * 10) / 10,
       share,
       unlocked: [...unlocked],
+      towerBest: g.state.tower.best,
+      aeons: g.state.prestige.aeon?.count ?? 0,
+      shards: Math.floor(g.state.resources.aeonShards?.toNumber() ?? 0),
+      talents: Object.values(g.state.talents).filter(Boolean).length,
+      resonance: Object.values(g.state.resonance).reduce((a, b) => a + b, 0),
+      observatory: g.state.megaProjects.observatory?.stage ?? 0,
+      bossShare: g.state.weeklyBoss.maxHp > 0 ? Math.round((g.state.weeklyBoss.damage / g.state.weeklyBoss.maxHp) * 100) / 100 : 0,
     });
   }
   return reports;

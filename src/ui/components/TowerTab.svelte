@@ -6,12 +6,13 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration } from '@core/format';
   import {
-    checkpoint, elementMultiplier, enemyFor, fightIntervalMs, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    checkpoint, elementMultiplier, enemyFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
+  import RelicPanel from './RelicPanel.svelte';
 
   /**
    * Genom-Turm: tower column with the floors around the team, an arena that
@@ -129,7 +130,8 @@
     const floors = [];
     for (let f = top; f >= Math.max(1, nextFloor - 4); f--) {
       const info = floorRewardInfo(game, f);
-      floors.push({ f, ...info, cleared: tw.run ? f <= tw.run.floor : f <= tw.best, next: f === nextFloor, best: f === tw.best && tw.best > 0 });
+      const trait = info.boss ? enemyFor(game, f).trait : undefined;
+      floors.push({ f, ...info, trait: trait ? content.bossTraits.get(trait) : null, cleared: tw.run ? f <= tw.run.floor : f <= tw.best, next: f === nextFloor, best: f === tw.best && tw.best > 0 });
     }
     const candidates = [...game.state.creatures]
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
@@ -148,6 +150,9 @@
       nextFloor,
       enemy,
       boss: nextFloor % game.balance.tower.bossEvery === 0,
+      trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
+      milestones: towerMilestones(game),
+      nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
       reward: floorRewardInfo(game, nextFloor),
       floors,
       aboveBest: tw.best > top,
@@ -236,6 +241,7 @@
     <span class="kpi"><b class="num">🚩 {data.cp}</b><small>Checkpoint</small></span>
     <span class="kpi" class:live={!!data.tw.run}><b class="num">{data.tw.run ? data.tw.run.floor : '–'}</b><small>{data.tw.run ? 'Aktueller Lauf' : 'Kein Lauf'}</small></span>
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
+    <span class="kpi" title="Alle {game.balance.tower.milestoneEvery} Etagen: einmalig {game.balance.tower.milestoneShards} Äon-Splitter und dauerhaft +15 % Turm-Schaden, +10 % Produktion"><b class="num">🏅 {data.milestones}</b><small>Meilensteine · nächster {data.nextMilestone}</small></span>
   </div>
 </header>
 
@@ -250,7 +256,9 @@
       <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:best={fl.best}>
         <span class="fnum num">{fl.f}</span>
         <span class="icons">
-          {#if fl.boss}<span title="Boss">👑</span>{/if}
+          {#if fl.boss}<span title="Boss{fl.trait ? `: ${fl.trait.name}` : ''}">👑</span>{/if}
+          {#if fl.trait}<span title="{fl.trait.name}: {fl.trait.description}">{fl.trait.icon}</span>{/if}
+          {#if fl.milestone}<span title="Meilenstein">🏅</span>{/if}
           {#if fl.checkpoint}<span title="Checkpoint">🚩</span>{/if}
           {#if fl.catalyst}<span title="Evolutionskristall">💎</span>{/if}
           {#if fl.allele}<span title="Seltenes Allel">🧬</span>{/if}
@@ -326,6 +334,9 @@
         <span class="num small">🛡 {formatNumber(data.enemy.def)}</span>
         <span class="num small">💨 {formatNumber(data.enemy.spd)}</span>
       </div>
+      {#if data.trait}
+        <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
+      {/if}
       {#if data.matchups.length}
         <div class="matchups">
           {#each data.matchups as m (m.c.id)}
@@ -346,6 +357,7 @@
       {#if data.reward.catalyst}<span class="rw pink">💎 {data.reward.catalyst}</span>{/if}
       {#if data.reward.allele}<span class="rw teal">🧬 seltenes Allel</span>{/if}
       {#if data.reward.checkpoint}<span class="rw gold">🚩 Checkpoint</span>{/if}
+      {#if data.reward.milestone && data.nextFloor > data.tw.best}<span class="rw gold">🏅 Meilenstein: +{game.balance.tower.milestoneShards} ⏳</span>{/if}
     </div>
 
     <div class="controls">
@@ -425,6 +437,8 @@
     </div>
   {/if}
 </article>
+
+<RelicPanel />
 
 <!-- Leaderboard -->
 <article class="panel board">
@@ -529,6 +543,7 @@
   .banner.win { background: color-mix(in srgb, var(--teal) 22%, var(--panel)); border-color: var(--teal); box-shadow: 0 0 22px #2fd3c466; }
 
   .enemy-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }
+  .trait { margin: 0.3rem 0 0; padding: 0.3rem 0.55rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--line)); background: color-mix(in srgb, var(--danger) 10%, transparent); }
   .elchip { padding: 0.05rem 0.5rem; border-radius: 99px; border: 1px solid var(--c); color: var(--c); font-size: 0.75rem; }
   .matchups { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
   .mu { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.75rem; }

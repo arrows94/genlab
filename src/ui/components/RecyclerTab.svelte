@@ -114,7 +114,7 @@
       <label class="switch"><input type="checkbox" checked={auto.cfg.keepSequenced} onchange={(e) => setAuto({ keepSequenced: e.currentTarget.checked })} /> Sequenzierte behalten</label>
     </div>
     <p class="small auto-status">
-      <span class="muted">Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten.</span>
+      <span class="muted">Nie recycelt: Favoriten ★, Schillernde, infundierte und beschäftigte Kreaturen sowie das nächste Paar des Zuchtautomaten. „Je Art behalten“ gilt auch für das Stall-Aufräumen des Zuchtautomaten.</span>
       {#if auto.cfg.when === 'always'}
         <span class:hit={auto.count > 0}>Betrifft gerade <b class="num">{auto.count}</b> {auto.count === 1 ? 'Kreatur' : 'Kreaturen'}{#if auto.count > 0}{' '}(≈ <span class="num">{formatNumber(auto.fragments)}</span> 🧩){/if}</span>
       {:else if auto.next}

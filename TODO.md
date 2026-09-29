@@ -1,7 +1,8 @@
 # TODO – visuelle Überarbeitung
 
 Bereits erledigt: Gen-Splicing (Werkbank), Infusion (Kammer), Genom-Turm, Erkundung (Weltkarte),
-Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor.
+Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, Forschung, Vererbung, Markt, Monster-Dex, Genlabor,
+einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgeschlossen.
 
 ## Höchste Wirkung
 
@@ -28,7 +29,8 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
   - [x] Zeitleiste der bisherigen Durchläufe (neu im Spielstand: `prestigeLog`, Äonen als Trenner;
         ältere Durchläufe vor der Aufzeichnung werden nur gezählt)
   - [x] Animation beim Vererben
-  - [ ] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab
+  - [x] Dieselbe Übersicht und Zeitleiste auch im Äon-Tab (gemeinsame Komponente `PrestigeOverview.svelte`,
+        Zeitleiste aus `prestigeTimeline`: Äonen mit Laufzeit und Zahl der Vererbungen dazwischen)
 
 ## Auch lohnend
 
@@ -81,11 +83,24 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         (+1 Wochen-Boss-Angriff pro Tag). „Turm startet ab dem halben Rekord“ entfällt – die Kontrollpunkte
         alle 10 Etagen starten schon näher am Rekord.
   - [x] Unendliche „Resonanz“-Knoten mit abnehmendem Ertrag (Ernte, Erbgut, Gene, Kampf; Wirkung Stufe^0,7)
-  - [ ] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (der Bot spielt noch keinen Turm und kein Äon)
-- [ ] **Turm-Mechaniken vertiefen**
-  - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
-  - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
-  - [ ] Meilensteine alle 50 Etagen mit dauerhaftem Bonus
+  - [x] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (`GENLAB_AEON=1`, 28 Tage): Äon ab Tag 2
+        freigeschaltet, Äonen an Tag 5/11/16/24, Talentstufen 1–3 nach 4 Äonen voll (9 Talente), Observatorium
+        fertig an Tag 25 – aber Stufe 4 (ab Tag 11 offen) und Stufe 5 sind am Ende noch nicht bezahlbar, Resonanz 0
+  - [x] Stufe 4/5 günstiger (6/9 statt 8/12 Splitter). Zweiter 28-Tage-Lauf: noch ohne sichtbare Wirkung – nach
+        Stufe 1–3 bleiben an Tag 28 wieder 2 Splitter; die Senkung greift erst ab dem 5. Äon (um Tag 30)
+  - [x] Splitter-Einkommen und Observatorium angleichen: Äon-Formel √(Erbgut / 25) statt / 50, dazu Splitter aus
+        Turm-Meilensteinen (alle 50 Etagen). Dritter 28-Tage-Lauf (ohne Meilensteine, der Bot erreicht Etage ~40):
+        5 statt 4 Äonen (Tag 4/10/16/21/27), 11 statt 9 Talente – Stufe 4 ab Tag 17 offen, 2 von 3 bis Tag 28
+        gekauft; Observatorium an Tag 28 bei 3/4 (vorher fertig an Tag 25). Splitter und Observatorium laufen
+        jetzt etwa im Gleichschritt; Stufe 5 und Resonanz folgen nach Tag 28
+  - [ ] Weitere Splitter-Quellen bei Bedarf: die Ideen unter „Ideen (noch grob)“
+- [x] **Turm-Mechaniken vertiefen**
+  - [x] Bosse mit Eigenheiten ab Etage 20 (Element-Schild, Wandler, Regeneration; `bossTraits` in `content/endgame.ts`)
+  - [x] Relikte für Turm-Marken (dauerhafte Verwendung für Marken) – sie gehören dem Spieler und stecken in den
+        Plätzen des Turm-Teams statt an einer Kreatur, damit sie jede Vererbung überstehen (`relics`)
+  - [x] Meilensteine alle 50 Etagen mit dauerhaftem Bonus (+15 % Turm-Schaden, +10 % Produktion) und einmalig
+        3 Äon-Splitter – eine weitere Splitter-Quelle
+  - [ ] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
 - [ ] **Anomalien mit Stufen und Kombinationen**
   - [ ] Schwierigkeitsstufen I–V pro Anomalie
   - [ ] Mehrere Anomalien gleichzeitig aktivierbar
@@ -97,7 +112,16 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
 - [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
 - [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
-- [ ] Balancing der neuen Systeme mit dem Test-Bot über mehrere Äonen prüfen
+- [x] Balancing der neuen Systeme mit dem Test-Bot über mehrere Äonen prüfen (siehe Äon-Talentbaum)
+
+## Ideen (noch grob)
+
+Mögliche neue Splitter-Quellen (siehe „Splitter-Einkommen und Observatorium angleichen“). Beide Ideen sind noch
+nicht ausgearbeitet – vor dem Umsetzen Umfang, Freischaltung und Splitter-Ertrag festlegen.
+
+- [ ] **Basebuilding / Worldbuilding / Universebuilding**
+- [ ] **Isekai mit einem ausgewählten Monster**: RPG-Gefühl – stärkere Monster kosten neue Ressourcen oder
+      starten wieder auf Stufe 1
 
 # TODO – Langzeitmotivation (Idle über Tage und Wochen)
 
@@ -159,7 +183,8 @@ Grundidee: **Zeitskalen staffeln statt alles verlängern** – für jede Zeitspa
 
 ## Leitplanken
 
-- [ ] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
-- [ ] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen
+- [x] Der Anfang bleibt schnell: lange Laufzeiten erst nach und nach (z. B. ab der ersten Vererbung)
+      (`tests/guardrails.test.ts`: alles über 1 h braucht eine Vererbung; die „Große Reise“ mit genau 1 h ist freiwillig)
+- [x] Lange Projekte sind Bonus, nie Sperre für Grundfunktionen (`tests/guardrails.test.ts`)
 - [x] Test-Bot erweitern, damit er mehrere Tage Spielzeit durchspielt und das Tempo prüfbar ist
       (`tests/longrun.ts`; Funde: Reisende überstehen jetzt Vererbungen, eine Tagesreise pro Region gleichzeitig)

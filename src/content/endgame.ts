@@ -1,4 +1,4 @@
-import type { AnomalyDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, BossTraitDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
 
 /** Talent tiers 4 and 5 open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
@@ -28,23 +28,23 @@ export const talents: TalentDef[] = [
   { id: 'aeonTeam2', name: 'Fünfter Kämpfer', tier: 3, cost: 5, requires: ['aeonTeam'], description: '+1 Platz im Turm-Team (5 insgesamt).',
     modifiers: [{ target: 'slots.tower', op: 'add', value: 1 }] },
   // Tier 4 (Observatorium: Kuppel)
-  { id: 'bloodline', name: 'Starke Blutlinie', tier: 4, cost: 8, requires: ['shinyAura'], unlock: dome,
+  { id: 'bloodline', name: 'Starke Blutlinie', tier: 4, cost: 6, requires: ['shinyAura'], unlock: dome,
     description: 'Nachkommen erben jede Fähigkeit ihrer Eltern sicher (sonst 50 % je Fähigkeit).',
     modifiers: [{ target: 'breeding.abilityInherit', op: 'add', value: 1 }] },
-  { id: 'wildHybrids', name: 'Wilde Kreuzungen', tier: 4, cost: 8, requires: ['deepTime'], unlock: dome,
+  { id: 'wildHybrids', name: 'Wilde Kreuzungen', tier: 4, cost: 6, requires: ['deepTime'], unlock: dome,
     description: '30 % der wilden Funde auf Erkundungen sind Hybride – entdeckte Hybride, deren Rezept eine Art der Region enthält.',
     modifiers: [{ target: 'mission.hybridChance', op: 'add', value: 0.3 }] },
-  { id: 'towerRush', name: 'Sturmlauf', tier: 4, cost: 8, requires: ['aeonTeam2'], unlock: dome,
+  { id: 'towerRush', name: 'Sturmlauf', tier: 4, cost: 6, requires: ['aeonTeam2'], unlock: dome,
     description: 'Kämpfe im Genom-Turm dauern nur halb so lang – auch offline.',
     modifiers: [{ target: 'tower.interval', op: 'mult', value: 0.5 }] },
   // Tier 5 (Observatorium: Sternkarte)
-  { id: 'risingBrood', name: 'Aufstrebende Brut', tier: 5, cost: 12, requires: ['bloodline'], unlock: starMap,
+  { id: 'risingBrood', name: 'Aufstrebende Brut', tier: 5, cost: 9, requires: ['bloodline'], unlock: starMap,
     description: '15 % Chance, dass ein Ei eine Seltenheitsstufe höher schlüpft.',
     modifiers: [{ target: 'breeding.rarityUp', op: 'add', value: 0.15 }] },
-  { id: 'scholarCircle', name: 'Gelehrtenkreis', tier: 5, cost: 12, requires: ['wildHybrids'], unlock: starMap,
+  { id: 'scholarCircle', name: 'Gelehrtenkreis', tier: 5, cost: 9, requires: ['wildHybrids'], unlock: starMap,
     description: '+1 Platz für die Großforschung: zwei Projekte laufen gleichzeitig.',
     modifiers: [{ target: 'slots.grandResearch', op: 'add', value: 1 }] },
-  { id: 'titanHunter', name: 'Titanenjäger', tier: 5, cost: 12, requires: ['towerRush'], unlock: starMap,
+  { id: 'titanHunter', name: 'Titanenjäger', tier: 5, cost: 9, requires: ['towerRush'], unlock: starMap,
     description: '+1 Angriff pro Tag auf den Wochen-Boss (Vorrat bis 8).',
     modifiers: [{ target: 'tower.bossAttempts', op: 'add', value: 1 }] },
 ];
@@ -117,4 +117,28 @@ export const weeklyMutations: WeeklyMutationDef[] = [
     { target: 'rarity.weight.rare', op: 'pct', value: 0.3 }, { target: 'rarity.weight.epic', op: 'pct', value: 0.3 },
     { target: 'rarity.weight.legendary', op: 'pct', value: 0.3 }, { target: 'creature.shinyChance', op: 'mult', value: 2 },
   ] },
+];
+
+/** Tricks of tower bosses from `balance.tower.bossTraitFromFloor` on (one per boss, fixed per floor). */
+export const bossTraits: BossTraitDef[] = [
+  { id: 'elementShield', name: 'Element-Schild', icon: '🛡️', kind: 'shield', value: 0.25,
+    description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
+  { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0,
+    description: 'Wechselt jede Runde sein Element. Ein bunt gemischtes Team hilft.' },
+  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.08,
+    description: 'Heilt nach jeder Runde 8 % seiner KP. Nur hoher Schaden bringt ihn zu Fall.' },
+];
+
+/** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */
+export const relics: RelicDef[] = [
+  { id: 'towerBlade', name: 'Turmklinge', icon: '⚔️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+    description: '+10 % Angriff je Stufe für die Kreatur auf diesem Platz.', bonus: { atk: 0.1 } },
+  { id: 'scaleArmor', name: 'Schuppenpanzer', icon: '🛡️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+    description: '+12 % Verteidigung und +6 % KP je Stufe.', bonus: { def: 0.12, hp: 0.06 } },
+  { id: 'lifeAmulet', name: 'Lebensamulett', icon: '❤️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+    description: '+15 % KP je Stufe.', bonus: { hp: 0.15 } },
+  { id: 'stormFeather', name: 'Sturmfeder', icon: '🪶', cost: 80, costGrowth: 1.6, maxLevel: 10,
+    description: '+10 % Tempo je Stufe – wer zuerst zuschlägt, gewinnt öfter.', bonus: { spd: 0.1 } },
+  { id: 'elementPrism', name: 'Elementprisma', icon: '🔷', cost: 100, costGrowth: 1.7, maxLevel: 10,
+    description: '+12 % Schaden bei Element-Vorteil je Stufe.', bonus: { element: 0.12 } },
 ];

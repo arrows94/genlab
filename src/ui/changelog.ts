@@ -25,6 +25,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 3,
+    date: '2026-09-29',
+    title: 'Sicherer Stall',
+    items: [
+      { text: 'Der Zuchtautomat räumt bei vollem Stall nicht mehr die letzten Kreaturen einer Art weg: Die stärksten jeder Art bleiben stehen – so viele, wie beim Recycling-Automaten unter „Je Art behalten“ eingestellt ist (Standard: 2).', feature: 'autoBreed' },
+      { text: 'Der Zuchtautomat zeigt, welche Kreatur beim nächsten vollen Stall als Nächstes gehen würde. Favoriten ★ sind wie immer geschützt.', feature: 'autoBreed' },
+      { text: 'Ein Äon bringt mehr Splitter: √(Erbgut / 25) statt √(Erbgut / 50) – etwa 40 % mehr für dasselbe Erbgut.', feature: 'aeon' },
+      { text: 'Die Talente der Stufen 4 und 5 im Äon-Talentbaum sind günstiger (6 und 9 statt 8 und 12 Splitter).', feature: 'megaProjects' },
+      { text: 'Genom-Turm: Ab Etage 20 haben Bosse eine Eigenheit – Element-Schild, Wandler oder Regeneration. Sie steht vor dem Kampf beim Gegner.', feature: 'tower' },
+      { text: 'Genom-Turm: Relikte für Turm-Marken. Du steckst sie in die Plätze deines Turm-Teams, und sie bleiben über jeden Neustart.', feature: 'tower' },
+      { text: 'Genom-Turm: Alle 50 Etagen ein Meilenstein – dauerhaft mehr Turm-Schaden und Produktion, beim ersten Mal dazu Äon-Splitter.', feature: 'tower' },
+      { text: 'Der Äon-Tab zeigt jetzt dieselbe Übersicht wie die Vererbung: Splitter-Gewinn, was verloren geht und was bleibt, und eine Zeitleiste deiner Äonen samt der Vererbungen dazwischen.', feature: 'aeon' },
+    ],
+  },
+  {
     id: 2,
     date: '2026-09-29',
     title: 'Feinschliff',

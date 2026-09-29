@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
-import { nextPrestigePoint, performPrestige, prestigeBonusPreview, prestigeGain, resetOverview } from '@core/prestige';
+import { currentRunStart, nextPrestigePoint, performPrestige, prestigeBonusPreview, prestigeGain, prestigeTimeline, resetOverview } from '@core/prestige';
 import { unlockFeature } from '@core/systems/unlocks';
 import { createCreature } from '@core/creatures';
 import { startProcess } from '@core/systems/processes';
@@ -107,5 +107,39 @@ describe('Vererbung overview', () => {
     g.state.lastTickAt += 600_000;
     expect(performPrestige(g, 'inheritance').ok).toBe(true);
     expect(g.state.prestigeLog[1]!.runMs).toBe(600_000);
+  });
+});
+
+describe('prestige timeline (Vererbung and Äon views)', () => {
+  const H = 3_600_000;
+  function logged() {
+    const g = makeGame();
+    const t0 = g.state.createdAt;
+    g.state.prestige = { inheritance: { count: 4 }, aeon: { count: 1 } };
+    g.state.prestigeLog = [
+      { layer: 'inheritance', at: t0 + 2 * H, gain: 3, runMs: 2 * H },
+      { layer: 'inheritance', at: t0 + 5 * H, gain: 6, runMs: 3 * H },
+      { layer: 'aeon', at: t0 + 6 * H, gain: 4, runMs: H },
+      { layer: 'inheritance', at: t0 + 10 * H, gain: 2, runMs: 4 * H },
+    ];
+    g.state.lastTickAt = t0 + 12 * H;
+    return { g, t0 };
+  }
+
+  it('shows own runs as bars and higher layers as markers', () => {
+    const { g } = logged();
+    const t = prestigeTimeline(g, 'inheritance');
+    expect(t.items.map((x) => x.kind)).toEqual(['run', 'run', 'marker', 'run']);
+    expect(t.items.map((x) => (x.kind === 'run' ? x.runMs : 0))).toEqual([2 * H, 3 * H, 0, 4 * H]);
+    expect(t.best).toBe(6);
+    expect(t.unrecorded).toBe(1);
+  });
+
+  it('measures Äons from Äon to Äon and counts the inheritances inside', () => {
+    const { g, t0 } = logged();
+    const t = prestigeTimeline(g, 'aeon');
+    expect(t.items).toEqual([{ kind: 'run', at: t0 + 6 * H, gain: 4, runMs: 6 * H, inner: 2 }]);
+    expect(currentRunStart(g, 'aeon')).toBe(t0 + 6 * H);
+    expect(currentRunStart(g, 'inheritance')).toBe(t0 + 10 * H);
   });
 });

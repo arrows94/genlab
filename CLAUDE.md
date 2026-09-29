@@ -22,6 +22,7 @@ Balancing bots (slow, print timelines):
 GENLAB_TIMELINE=1 npx vitest run tests/progression.test.ts --silent=false   # first hour, unlock order
 GENLAB_TIMELINE=1 npx vitest run tests/longrun.test.ts --silent=false       # multi-day idle player
 GENLAB_LONGRUN=1  npx vitest run tests/longrun.test.ts --silent=false       # two weeks, several minutes
+GENLAB_AEON=1     npx vitest run tests/aeon.test.ts --silent=false           # endgame over 4 weeks (tower, Äon, talents, Großprojekt), ~20 min; days via GENLAB_AEON_DAYS
 ```
 
 ## Architecture

@@ -184,6 +184,15 @@ export const balance: Balance = {
     alleleEvery: 25,
     leaderboardSize: 10,
     checkpointEvery: 10,
+    bossTraitFromFloor: 20,
+    milestoneEvery: 50,
+    milestoneShards: 3,
+    milestoneModifiers: [
+      { target: 'tower.damage', op: 'pct', value: 0.15 },
+      { target: 'production.food', op: 'pct', value: 0.1 },
+      { target: 'production.gold', op: 'pct', value: 0.1 },
+      { target: 'production.essence', op: 'pct', value: 0.1 },
+    ],
   },
   perfection: {
     shinyChance: 0.0005,
@@ -203,7 +212,7 @@ export const balance: Balance = {
   },
   prestige: {
     inheritance: { divisor: 1e5, exponent: 0.5, minGain: 1 },
-    aeon: { divisor: 50, exponent: 0.5, minGain: 1 },
+    aeon: { divisor: 25, exponent: 0.5, minGain: 1 },
   },
   weekly: { epoch: '2024-01-01' },
 };
