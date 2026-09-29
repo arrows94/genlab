@@ -58,6 +58,30 @@ describe('boss traits', () => {
     const regen = fight(g, 'regenerator', team);
     expect(regen.result.log.some((l) => l.includes('heilt'))).toBe(true);
   });
+
+  it('Regeneration heals a share of the damage taken in the round', () => {
+    const g = towerGame();
+    const team = [fighterFor(g, champion(g, 5000))];
+    const { result } = fight(g, 'regenerator', team);
+    const firstHit = result.events.find((e) => e.a === 0)!.dmg;
+    const heal = Number(result.log.find((l) => l.includes('heilt'))!.match(/heilt (\d+)/)![1]);
+    expect(heal).toBe(Math.round(firstHit * content.bossTraits.get('regenerator').value));
+  });
+
+  it('a regenerating boss is no wall: twice the power of its plain version is enough', () => {
+    const g = towerGame();
+    const boss = enemyFor(g, 40);
+    expect(boss.trait).toBe('regenerator');
+    const wins = (power: number, trait: string | undefined) => {
+      const team = ['emberpup', 'bubbloon', 'voltmouse'].map((s) => fighterFor(g, champion(g, power, s)));
+      let w = 0;
+      for (let seed = 1; seed <= 10; seed++) if (simulateFight(g, team.map((f) => ({ ...f })), { ...boss, trait }, Rng.fromSeed(seed)).win) w++;
+      return w;
+    };
+    let power = 50;
+    while (wins(power, undefined) < 8) power *= 1.25;
+    expect(wins(power * 2, 'regenerator')).toBeGreaterThanOrEqual(8);
+  });
 });
 
 describe('relics', () => {

@@ -472,7 +472,8 @@ export interface BossTraitDef {
   description: string;
   /**
    * shield: damage without element advantage × value; shift: changes element
-   * every round (value unused); regen: heals value × max HP after every round.
+   * every round (value unused); regen: heals value × the damage
+   * it took in that round, after every round.
    */
   kind: 'shield' | 'shift' | 'regen';
   value: number;

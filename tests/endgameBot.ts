@@ -2,10 +2,11 @@ import { creaturePower } from '@core/creatures';
 import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
-import { buyRelic, equipRelic, relicCost, relicLevel, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { buyRelic, elementMultiplier, enemyFor, equipRelic, relicCost, relicLevel, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
 import { attackWeeklyBoss } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import type { Game } from '@core/game';
+import type { Creature } from '@core/state';
 
 /**
  * Endgame player for balancing over several Äons: keeps a tower team
@@ -77,14 +78,32 @@ export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
   }
 }
 
-/** Strongest free creatures as tower team; a new run whenever none is going. */
+/**
+ * How much a creature is worth against the next boss above the record (the
+ * run starts at the checkpoint below it), like a player sorting by „Vorteil vs.“:
+ * the element matchup, and an Element-Schild lets only advantaged hits through.
+ */
+function bossMatchup(g: Game): (c: Creature) => number {
+  const every = g.balance.tower.bossEvery;
+  const boss = enemyFor(g, (Math.floor(g.state.tower.best / every) + 1) * every);
+  const trait = boss.trait && g.content.bossTraits.has(boss.trait) ? g.content.bossTraits.get(boss.trait) : null;
+  if (trait?.kind === 'shift') return () => 1;
+  return (c) => {
+    const m = elementMultiplier(g, g.content.species.get(c.speciesId).element, boss.element);
+    return trait?.kind === 'shield' && m <= 1 ? m * trait.value : m;
+  };
+}
+
+/** Strongest free creatures against the next boss as tower team; a new run whenever none is going. */
 function climbTower(g: Game): void {
   if (!g.state.features.tower || g.state.tower.run) return;
   if (g.state.features.towerAuto && !g.state.tower.autoRestart) setTowerAutoRestart(g, true);
   const size = teamSize(g);
+  const matchup = bossMatchup(g);
+  const score = new Map(g.state.creatures.map((c) => [c.id, creaturePower(g, c) * matchup(c)]));
   const free = g.state.creatures
     .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
-    .sort((a, b) => creaturePower(g, b) - creaturePower(g, a))
+    .sort((a, b) => score.get(b.id)! - score.get(a.id)!)
     .slice(0, size);
   if (free.length === 0) return;
   // Keep production going while the stable is small.

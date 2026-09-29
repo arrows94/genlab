@@ -134,8 +134,8 @@ export const bossTraits: BossTraitDef[] = [
     description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
   { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0,
     description: 'Wechselt jede Runde sein Element. Ein bunt gemischtes Team hilft.' },
-  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.08,
-    description: 'Heilt nach jeder Runde 8 % seiner KP. Nur hoher Schaden bringt ihn zu Fall.' },
+  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4,
+    description: 'Heilt nach jeder Runde 40 % des Schadens, den er in dieser Runde genommen hat. Je schneller er fällt, desto weniger kann er heilen.' },
 ];
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */
