@@ -8,9 +8,23 @@ Kleiner [Cloudflare Worker](https://developers.cloudflare.com/workers/) mit eine
 - **Aufräumen:** Ein täglicher Cron löscht Spielstände, die ein Jahr lang nicht abgeglichen wurden.
 - **Kosten:** Ein aktiver Spieler lädt beim Spielen etwa alle 5 Minuten hoch, dazu beim Öffnen und Schließen der App – grob 15–20 Anfragen und geschriebene Zeilen pro Spielstunde, Idle-Zeit im Hintergrund kostet nichts. Das kostenlose Kontingent (D1: 100 000 geschriebene Zeilen pro Tag, Workers: 100 000 Anfragen pro Tag – bitte die aktuellen Zahlen auf den Preisseiten prüfen) reicht damit für einige tausend Spielstunden pro Tag. Ist es erschöpft, lehnt Cloudflare bis Mitternacht (UTC) ab; die Spiele laufen lokal weiter und gleichen danach nach. Darüber hilft der Workers-Paid-Plan (ca. 5 $/Monat).
 
-## Einrichten (einmalig)
+## Einrichten über GitHub (ohne Terminal)
 
-Voraussetzung: ein kostenloses Cloudflare-Konto.
+Der Workflow `.github/workflows/sync-server.yml` erledigt alles: Datenbank anlegen (in der EU), Tabellen anlegen, Worker veröffentlichen. Er lässt sich jederzeit erneut starten; vorhandene Spielstände bleiben erhalten.
+
+1. **Cloudflare-Konto** anlegen (kostenlos) und im Dashboard einmal **Workers & Pages** öffnen. Dort wird beim ersten Mal eine eigene `….workers.dev`-Subdomain festgelegt – ohne sie kann nichts veröffentlicht werden.
+2. **Account-ID** kopieren: steht im Dashboard unter *Workers & Pages* rechts (bzw. im Menü „Account ID kopieren“).
+3. **API-Token** anlegen: Profil → *API Tokens* → *Create Token* → Vorlage **„Edit Cloudflare Workers“** → unter *Permissions* eine Zeile ergänzen: *Account* · **D1** · **Edit** → Token erstellen und kopieren (wird nur einmal angezeigt).
+4. Auf GitHub: *Settings → Secrets and variables → Actions* → **New repository secret**:
+   - `CLOUDFLARE_API_TOKEN` = das Token
+   - `CLOUDFLARE_ACCOUNT_ID` = die Account-ID
+5. *Actions* → **„Sync-Server (Cloudflare)“** → *Run workflow*. (Der Workflow erscheint dort erst, wenn er auf `main` liegt.)
+6. Die Zusammenfassung des Laufs zeigt die URL, z. B. `https://genlab-sync.<name>.workers.dev`. Sie als **Variable** eintragen: *Settings → Secrets and variables → Actions → Variables* → `SYNC_URL`.
+7. *Actions* → **„Web-App (GitHub Pages)“** → *Run workflow*. Ab jetzt steht in den Optionen der Geräte-Sync.
+
+## Einrichten im Terminal (Alternative)
+
+Voraussetzung: ein kostenloses Cloudflare-Konto und Node.js.
 
 ```bash
 cd sync-server
@@ -24,6 +38,8 @@ Dann dem Spiel die URL mitgeben:
 
 - **GitHub:** Settings → Secrets and variables → Actions → *Variables* → `SYNC_URL` = die Worker-URL. Die Workflows für Web-App, Android und Desktop reichen sie als `VITE_SYNC_URL` an den Build weiter.
 - **Lokal:** `VITE_SYNC_URL=https://… npm run build` (oder in einer `.env.local`).
+
+Den Worker später aktualisieren: `npx wrangler deploy` (bzw. den GitHub-Workflow erneut starten).
 
 Ohne `VITE_SYNC_URL` blendet das Spiel den Geräte-Sync aus.
 
