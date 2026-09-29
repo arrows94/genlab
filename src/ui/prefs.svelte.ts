@@ -2,13 +2,15 @@ import { setNotation, type Notation } from '@core/format';
 
 /**
  * Per-device preferences (not part of the save game): number notation,
- * reduced motion and notifications. Stored separately in localStorage.
+ * reduced motion, sounds and notifications. Stored separately in localStorage.
  */
 const KEY = 'genlab.prefs';
 
 export const prefs = $state({
   notation: 'short' as Notation,
   reduceMotion: false,
+  /** Fanfares for big moments (optimal DNA, first shiny creature). */
+  sound: true,
   /** Reminders while the game is in the background (needs the system permission). */
   notifications: false,
 });

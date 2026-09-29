@@ -29,6 +29,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-09-29',
     title: 'Stammbaum-Dynastien, Familiennamen und neue Brutrituale',
     items: [
+      { text: 'Große Momente werden gefeiert: Das erste perfekte Genom einer Art erscheint bildschirmfüllend als „OPTIMALE DNS“, die erste schillernde Kreatur einer Art als „SCHILLERND!“ – jeweils mit Fanfare. Die Töne lassen sich unter Optionen ausschalten.' },
       { text: 'Neue Namen: Frisch geschlüpfte Kreaturen bekommen einen Rufnamen und den Familiennamen des stärkeren Elternteils, zum Beispiel „Kiko Funkenstein“. Hat noch keiner eine Familie, gründet der stärkere eine – passend zu seinem Element. Keine seltsamen Silbensalate mehr nach vielen Generationen.', feature: 'breeding' },
       { text: 'Besondere Brut überarbeitet: Rituale laufen im eigenen Ritualnest neben den normalen Nestern und brauchen nur eine Keimprobe – die Eltern bleiben frei.', feature: 'specialBreeding' },
       { text: 'Kürzer und sicherer: Kreuzungsritual 1 Stunde (passt ein Rezept, wird es sicher ein Hybrid), Edelbrut 3 Stunden (mindestens Selten), Meisterbrut 8 Stunden (mindestens Episch).', feature: 'specialBreeding' },

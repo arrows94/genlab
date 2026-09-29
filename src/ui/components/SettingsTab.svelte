@@ -89,6 +89,10 @@
       <input type="checkbox" checked={prefs.reduceMotion} onchange={(e) => updatePrefs({ reduceMotion: e.currentTarget.checked })} />
       <span>Weniger Animationen</span>
     </label>
+    <label class="opt check">
+      <input type="checkbox" checked={prefs.sound} onchange={(e) => updatePrefs({ sound: e.currentTarget.checked })} />
+      <span>Töne (Fanfaren bei optimaler DNS und schillernden Kreaturen)</span>
+    </label>
   </article>
 
   <article class="panel">
