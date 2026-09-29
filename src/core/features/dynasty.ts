@@ -16,8 +16,9 @@ import type { Creature } from '../state';
  *    threshold reached is a dynasty tier: more stats for the species, more
  *    production for everything, Äon-Splitter for the high tiers.
  *
- * Nothing counts before the feature is unlocked: lines start at the first
- * pure egg after the unlock, and only then are records kept.
+ * Unlocked by the Äon talent „Stammbaum-Dynastien“. Nothing counts before:
+ * lines start at the first pure egg after the unlock, and only then are
+ * records kept.
  */
 
 export const DYNASTY_FEATURE = 'dynasties';

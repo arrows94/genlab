@@ -140,7 +140,8 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [x] Dauerhafter Rekord je Art (`dynasties`, übersteht Vererbung und Äon): Stufen ab Tiefe 5/10/20/35/50 geben
         der Art +5 % Werte je Stufe und allen +1 % Produktion je Stufe; Stufe 4 und 5 bringen 2 bzw. 3 Äon-Splitter
   - [x] Brutstation: Linie des nächsten Kindes, Dynastie-Übersicht, Sortierung „Reine Linie“, Zuchtautomat-Ziel
-        „Reine Linie vertiefen“; Freischaltung nach der 3. Vererbung; Linien und Rekorde zählen erst ab dann
+        „Reine Linie vertiefen“; Freischaltung über das Äon-Talent „Stammbaum-Dynastien“ (Stufe 2, 3 Splitter, nach „Zeitlose Ernte“);
+        Linien und Rekorde zählen erst ab dann
   - [ ] Balancing mit dem Test-Bot: Ohne gezielte Zucht erreicht der Bot Tiefe 11 und 9 Stufen (+9 % Produktion)
         bis Tag 23, keine Splitter. Tempo der hohen Stufen und Splitter-Ertrag erst messen, wenn der Bot das
         Zuchtautomat-Ziel „Reine Linie vertiefen“ nutzt

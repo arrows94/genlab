@@ -3,7 +3,8 @@ import { D } from '@core/num';
 import { createCreature, effectiveStats, findCreature } from '@core/creatures';
 import { breedingTimeMs, startBreeding } from '@core/features/breeding';
 import { dynastyRecord, dynastyTier, lineageBonus, recordLineage, totalDynastyTiers } from '@core/features/dynasty';
-import { performPrestige } from '@core/prestige';
+import { applyTalentGuarantees, performPrestige } from '@core/prestige';
+import { buyTalent } from '@core/features/talents';
 import { planAutoBreed } from '@core/features/automation';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
@@ -77,7 +78,19 @@ describe('Stammbaum-Dynastien', () => {
     expect(hatch(g, pup(g, 4), pup(g, 4)).lineage).toBe(0);
     recordLineage(g, pup(g, 12));
     expect(g.state.dynasties).toEqual({});
-    expect(g.content.features.get('dynasties').condition).toEqual({ type: 'prestigeCount', layer: 'inheritance', count: 3 });
+  });
+
+  it('the Äon talent unlocks them for good', () => {
+    const g = dynastyGame(11, false);
+    expect(g.content.features.get('dynasties').condition).toBeUndefined();
+    unlockFeature(g, 'aeon');
+    g.state.resources.aeonShards = D(100);
+    expect(buyTalent(g, 'aeonHarvest').ok).toBe(true);
+    expect(buyTalent(g, 'dynasty').ok).toBe(true);
+    expect(g.state.features.dynasties).toBe(true);
+    g.state.features = {};
+    applyTalentGuarantees(g);
+    expect(g.state.features.dynasties).toBe(true);
   });
 
   it('bonuses: own line, species tier and production', () => {
