@@ -38,7 +38,14 @@
   });
 </script>
 
-<h2>Statistik</h2>
+<header class="tab-head">
+  <h2>📊 Statistik</h2>
+  <div class="kpis">
+    <span class="kpi"><b class="num">{formatDuration(data.playTime)}</b><small>Spielzeit</small></span>
+    <span class="kpi"><b class="num">{Object.keys(game.state.dex).length}</b><small>Dex-Einträge</small></span>
+    <span class="kpi"><b class="num">{data.achievements.filter((a) => a.done).length}/{data.achievements.length}</b><small>Erfolge</small></span>
+  </div>
+</header>
 <div class="grid">
   <article class="panel">
     <h3>Allgemein</h3>

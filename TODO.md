@@ -49,10 +49,14 @@ Brutstation (Nester & Paarungsaltar), mitscrollende Ressourcenleiste, Anlagen, F
 
 ## Kleinigkeiten quer durchs Spiel
 
-- [ ] Einheitliche Tab-Kopfzeilen mit Kennzahlen-Kacheln (wie bei Turm und Brutstation)
-- [ ] „Sammeln“-Knopf: aufsteigende +1 🍖 beim Klick
-- [ ] Kreaturenkarten: Seltenheit stärker am Rahmen zeigen (Schimmer ab Episch)
-- [ ] Anomalien- und Äon-Tab ansehen (im geprüften Spielstand noch nicht freigeschaltet)
+- [x] Einheitliche Tab-Kopfzeilen mit Kennzahlen-Kacheln (wie bei Turm und Brutstation) – gemeinsame Stile
+      `.tab-head` / `.kpis` / `.kpi` in `styles.css`, jetzt in allen Tabs (neu: Labor, Erkundung, Anomalien,
+      Recycler, Statistik, Optionen); der Labor-Tab heißt nicht mehr „Genlabor“
+- [x] „Sammeln“-Knopf: aufsteigende +1 🍖 beim Klick (war schon umgesetzt, im Browser geprüft)
+- [x] Kreaturenkarten: Seltenheit stärker am Rahmen zeigen (Schimmer ab Episch, Glühen ab Legendär,
+      Gewöhnlich/Ungewöhnlich gedämpft, ab Selten farbiger Kopf)
+- [x] Anomalien- und Äon-Tab ansehen – Äon-Tab ist mit den Großprojekten überarbeitet; Anomalien zeigen
+      jetzt den Fortschritt zum Ziel (`conditionProgress` in `core/conditions.ts`)
 
 # TODO – Endgame
 

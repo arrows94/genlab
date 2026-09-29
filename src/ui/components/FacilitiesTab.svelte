@@ -92,7 +92,7 @@
   const el = (c: Creature) => content.elements.get(species(c).element);
 </script>
 
-<header class="head">
+<header class="tab-head">
   <h2>🏭 Anlagen</h2>
   <div class="kpis">
     {#each data.buildings as b (b.def.id)}
@@ -197,14 +197,7 @@
 
 <style>
   .small { font-size: 0.8rem; }
-  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
-  .head h2 { margin: 0; }
-  .kpis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .kpi { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); min-width: 4.5rem; }
-  .kpi b { font-size: 1.05rem; }
-  .kpi small { color: var(--muted); font-size: 0.68rem; }
   .kpi.live { border-color: color-mix(in srgb, var(--rc) 60%, var(--line)); }
-  .kpi.warn { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
 
   .planner { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; }
 

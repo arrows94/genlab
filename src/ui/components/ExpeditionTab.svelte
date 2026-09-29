@@ -133,9 +133,13 @@
   }
 </script>
 
-<header class="head">
+<header class="tab-head">
   <h2>🧭 Erkundung</h2>
-  <span class="muted num">{data.used}/{data.slots} Camps belegt</span>
+  <div class="kpis">
+    <span class="kpi" class:live={data.used > 0}><b class="num">{data.used}/{data.slots}</b><small>Camps belegt</small></span>
+    <span class="kpi"><b class="num">{data.running.length + (data.voyage?.size ?? 0)}</b><small>unterwegs</small></span>
+    <span class="kpi"><b class="num">{data.regions.filter((r) => r.open).length}/{data.regions.length}</b><small>Regionen</small></span>
+  </div>
 </header>
 
 <!-- World map -->
@@ -372,8 +376,6 @@
 <style>
   .small { font-size: 0.8rem; }
   .tiny { font-size: 0.68rem; }
-  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
-  .head h2 { margin: 0 0 0.5rem; }
 
   /* Map */
   .map { padding: 0; overflow-x: auto; overflow-y: hidden; background: #0a1a1e; }
