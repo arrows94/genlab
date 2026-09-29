@@ -109,7 +109,8 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         3 Äon-Splitter – eine weitere Splitter-Quelle
   - [x] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
   - [x] Relikte waren viel zu billig (alle 50 Stufen an Tag 3). Jetzt ×2,2 je Stufe statt ×1,6: alle Stufen an Tag 21
-  - [ ] Der Turm bleibt im Bot-Lauf trotz voller Relikte bei Etage 39 stehen (Boss auf Etage 40) – ansehen
+  - [ ] Der Turm blieb im Bot-Lauf bei Etage 39 stehen (Boss auf Etage 40); im sechsten Lauf bei Etage 49 ab Tag 15
+        (Boss auf Etage 50, gleichzeitig der erste Meilenstein) – Boss-Wände ansehen
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
         Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×4 (`balance.anomalies.goalGrowth`)
@@ -119,9 +120,13 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         und dauerhaft +2,5 % Produktion und +1,5 % Erbgut je Rekordpunkt – eine weitere Splitter-Quelle
   - [x] Test-Bot: Anomalie-Läufe in den Äon-Lauf aufnehmen, um Splitter-Ertrag und Rekord-Bonus zu prüfen
         (nach jeder Vererbung: alle gemeisterten auf bester Stufe, eine davon eine Stufe höher)
-  - [ ] Anomalien sind zu leicht: Rekord 20 (alle vier auf Stufe V gleichzeitig) an Tag 11, mit Ziel ×10 je Stufe
-        immer noch an Tag 17. Die Ziele „in diesem Lauf verdienen“ wachsen langsamer als die Produktion über
-        mehrere Äonen – sie sollten mit dem Spielfortschritt wachsen oder andere Zielarten nutzen
+  - [x] Anomalien waren zu leicht: Rekord 20 (alle vier auf Stufe V gleichzeitig) an Tag 11, mit Ziel ×10 je Stufe
+        immer noch an Tag 17 – die Ziele „in diesem Lauf verdienen“ wuchsen langsamer als die Produktion. Jetzt
+        wachsen sie mit dem Produktionsbonus (beim Start eingefroren) und ×4 je Stufe. Sechster 28-Tage-Lauf:
+        Rekord 4 an Tag 4, 8 an Tag 9, 11 an Tag 14, danach bis Tag 28 kein weiterer – 11 Splitter aus Anomalien.
+        5 Äonen (Tag 5/10/15/19/24), 49 Vererbungen (vorher 70: fehlgeschlagene Anomalie-Läufe kosten den Bot Zeit)
+  - [ ] Test-Bot: klügere Anomalie-Wahl (einzelne Anomalie eine Stufe höher statt immer alle zusammen), damit der
+        Äon-Lauf nicht mit zwölfstündigen Fehlversuchen Vererbungen verliert
 - [ ] **Stammbaum-Dynastien**: wachsender Bonus für reine Linien über viele Generationen
 
 ## Später
