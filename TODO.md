@@ -112,7 +112,7 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [ ] Der Turm bleibt im Bot-Lauf trotz voller Relikte bei Etage 39 stehen (Boss auf Etage 40) – ansehen
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
-        Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×10 (`balance.anomalies.goalGrowth`)
+        Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×4 (`balance.anomalies.goalGrowth`)
   - [x] Mehrere Anomalien gleichzeitig aktivierbar – der Lauf ist geschafft, wenn alle Ziele erreicht sind
   - [x] Belohnung wächst mit der Gesamtschwierigkeit: Die Belohnung jeder Anomalie zählt je gemeisterter Stufe.
         Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen, max. 20) bringt 1 Äon-Splitter je Punkt

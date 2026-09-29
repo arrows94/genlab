@@ -30,6 +30,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Anomalien mit Stufen',
     items: [
       { text: 'Jede Anomalie hat jetzt die Stufen I–V. Die nächste Stufe öffnet sich, wenn du die vorige meisterst – mit härteren Regeln und größerem Ziel.', feature: 'anomalies' },
+      { text: 'Die Ziele der Anomalien wachsen mit deinem Produktionsbonus. So bleiben sie auch nach vielen Neustarts eine Herausforderung. Das Ziel wird beim Start des Laufs festgelegt.', feature: 'anomalies' },
       { text: 'Anomalien lassen sich kombinieren: Wähle für mehrere eine Stufe und starte sie zusammen. Geschafft ist der Lauf, wenn alle Ziele erreicht sind.', feature: 'anomalies' },
       { text: 'Die Belohnung einer Anomalie zählt je gemeisterter Stufe. Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen) bringt dauerhaft mehr Produktion und Erbgut.', feature: 'anomalies' },
       { text: 'Jeder neue Anomalie-Rekord bringt außerdem einen Äon-Splitter je Punkt Gesamtschwierigkeit.', feature: 'aeon' },
