@@ -88,8 +88,8 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         Stufe 1–3 bleiben an Tag 28 wieder 2 Splitter; die Senkung greift erst ab dem 5. Äon (um Tag 30)
   - [ ] Splitter-Einkommen und Observatorium angleichen: Der Engpass ist das Einkommen (~3–9 Splitter pro Äon,
         ein Äon pro Woche), das Observatorium ist schon an Tag 25 fertig. Optionen: mehr Splitter pro Äon
-        (`balance.prestige.aeon`), Splitter aus weiteren Quellen (Turm-Meilensteine, Aufträge) oder ein langsameres
-        Observatorium
+        (`balance.prestige.aeon`), Splitter aus weiteren Quellen (Turm-Meilensteine, Aufträge, oder die Ideen unter
+        „Ideen (noch grob)“) oder ein langsameres Observatorium
 - [ ] **Turm-Mechaniken vertiefen**
   - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
   - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
@@ -106,6 +106,15 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
 - [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
 - [x] Balancing der neuen Systeme mit dem Test-Bot über mehrere Äonen prüfen (siehe Äon-Talentbaum)
+
+## Ideen (noch grob)
+
+Mögliche neue Splitter-Quellen (siehe „Splitter-Einkommen und Observatorium angleichen“). Beide Ideen sind noch
+nicht ausgearbeitet – vor dem Umsetzen Umfang, Freischaltung und Splitter-Ertrag festlegen.
+
+- [ ] **Basebuilding / Worldbuilding / Universebuilding**
+- [ ] **Isekai mit einem ausgewählten Monster**: RPG-Gefühl – stärkere Monster kosten neue Ressourcen oder
+      starten wieder auf Stufe 1
 
 # TODO – Langzeitmotivation (Idle über Tage und Wochen)
 
