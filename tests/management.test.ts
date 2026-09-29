@@ -4,7 +4,7 @@ import { createCreature, effectiveStats } from '@core/creatures';
 import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/features/stable';
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
-import { autoAssign, automationSystem, autoRecycleCandidates, cleanupCandidate, inRecycler, planAutoBreed, recycleDurationMs, recyclingNow, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
+import { autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclingNow, setAutoAssign, setAutoBreed, setAutoRecycle } from '@core/features/automation';
 import { breedingCost, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
@@ -373,25 +373,16 @@ describe('automation', () => {
       expect(pair(g)).toMatch(/Budget/);
     });
 
-    it('stable cleanup sells the weakest common creature, never favourites or shiny ones', () => {
+    it('waits on a full stable and removes nobody itself', () => {
       const g = fresh();
-      const strong = make(g, 'pebblit', { stats: { hp: 90, atk: 90, def: 90, spd: 90 }, exactStats: true });
-      const strong2 = make(g, 'pebblit', { stats: { hp: 80, atk: 80, def: 80, spd: 80 }, exactStats: true });
-      const weakLocked = make(g, 'pebblit', { stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
-      weakLocked.locked = true;
-      const weakShiny = make(g, 'pebblit', { stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
-      weakShiny.shiny = true;
-      const epic = make(g, 'pebblit', { rarity: 'epic', stats: { hp: 1, atk: 1, def: 1, spd: 1 }, exactStats: true });
-      const weak = make(g, 'pebblit', { stats: { hp: 5, atk: 5, def: 5, spd: 5 }, exactStats: true });
-      while (stableFree(g) > 0) make(g, 'pebblit', { stats: { hp: 50, atk: 50, def: 50, spd: 50 }, exactStats: true });
+      make(g, 'pebblit', { stats: { hp: 90, atk: 90, def: 90, spd: 90 }, exactStats: true });
+      make(g, 'pebblit', { stats: { hp: 80, atk: 80, def: 80, spd: 80 }, exactStats: true });
+      while (stableFree(g) > 0) make(g, 'pebblit', { stats: { hp: 5, atk: 5, def: 5, spd: 5 }, exactStats: true });
       setAutoBreed(g, { enabled: true, rule: 'power' });
       expect(pair(g)).toBe('Der Stall ist voll.');
-      setAutoBreed(g, { cleanup: 'sell' });
-      expect(cleanupCandidate(g, [strong.id, strong2.id])).toBe(weak);
-      g.advance(balance.automation.intervalSec * 1000 + 100);
-      expect(g.state.creatures).not.toContain(weak);
-      expect(g.state.creatures).toContain(epic);
-      expect(strong.job?.kind).toBe('nest');
+      const before = g.state.creatures.length;
+      g.advance(balance.automation.intervalSec * 1000 * 3);
+      expect(g.state.creatures).toHaveLength(before);
     });
   });
 
@@ -405,31 +396,6 @@ describe('automation', () => {
       return { g, mk };
     };
 
-    it('the stable cleanup keeps the strongest N of every species, like the recycling automaton', () => {
-      const { g, mk } = setup();
-      // A bred high-generation common and the only water creature – both must survive a full stable.
-      const peak = mk('emberpup', 60, { generation: 23 });
-      const fire2 = mk('emberpup', 40);
-      const water = mk('bubbloon', 5);
-      const spare = mk('pebblit', 50, { rarity: 'uncommon' });
-      mk('pebblit', 60);
-      mk('pebblit', 70);
-      while (stableFree(g) > 0) mk('pebblit', 55 + g.state.creatures.length);
-      setAutoRecycle(g, { keepPerSpecies: 2 });
-      setAutoBreed(g, { enabled: true, rule: 'power', cleanup: 'sell', cleanupMaxRarity: 'uncommon' });
-      const victim = cleanupCandidate(g, [])!;
-      expect(victim.speciesId).toBe('pebblit');
-      expect([peak, fire2, water]).not.toContain(victim);
-      // Many rounds of breeding with cleanup never wipe out a species below the rule.
-      for (let i = 0; i < 40; i++) g.advance(balance.automation.intervalSec * 1000 + 100);
-      const count = (sp: string) => g.state.creatures.filter((c) => c.speciesId === sp).length;
-      expect(count('emberpup')).toBeGreaterThanOrEqual(2);
-      expect(count('bubbloon')).toBe(1);
-      expect(g.state.creatures).toContain(peak);
-      expect(g.state.creatures).toContain(water);
-      void spare;
-    });
-
     it('favourites survive both automatons even when nothing else is left to take', () => {
       const { g, mk } = setup();
       const favs = Array.from({ length: 6 }, (_, i) => mk('pebblit', 1 + i));
@@ -439,11 +405,10 @@ describe('automation', () => {
         c.locked = true;
       }
       setAutoRecycle(g, { enabled: true, keepPerSpecies: 0, keepSequenced: false, maxRarity: 'mythic' });
-      setAutoBreed(g, { enabled: true, rule: 'power', cleanup: 'recycle', cleanupMaxRarity: 'mythic' });
+      setAutoBreed(g, { enabled: true, rule: 'power' });
       const before = g.state.creatures.length;
       for (let i = 0; i < 10; i++) g.advance(balance.automation.intervalSec * 1000 + 100);
       expect(g.state.creatures.filter((c) => c.locked)).toHaveLength(before);
-      expect(cleanupCandidate(g, [])).toBeNull();
       expect(autoRecycleCandidates(g)).toEqual([]);
     });
   });
@@ -576,6 +541,48 @@ describe('automation', () => {
       autoAssign(g);
       expect(a.job).toBeNull();
       expect(inRecycler(g, a.id)).toBe(true);
+    });
+
+    it('makes room for the Zuchtautomat, which waits on a full stable – nobody else takes from the chamber', () => {
+      const { g, mk } = setup();
+      unlockFeature(g, 'autoBreed');
+      while (stableFree(g) > 0) mk('pebblit', 10 + g.state.creatures.length);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 2, when: 'full' });
+      setAutoBreed(g, { enabled: true, rule: 'power' });
+      const d = recycleDurationMs(g);
+      let finished = 0;
+      let taken = 0;
+      let hatched = 0;
+      g.bus.on('eggHatched', () => hatched++);
+      let last: { id: number; elapsed: number } | null = null;
+      for (let t = 0; t < 300; t++) {
+        g.advance(d / 30);
+        const cur = g.state.automation.recycling;
+        if (last && cur?.creatureId !== last.id && !g.state.creatures.some((c) => c.id === last!.id)) {
+          if (last.elapsed > d * 0.9) finished++;
+          else taken++;
+        }
+        last = cur ? { id: cur.creatureId, elapsed: cur.elapsedMs } : null;
+      }
+      expect(taken).toBe(0);
+      expect(finished).toBeGreaterThan(2);
+      // Every place the chamber freed went to a new egg.
+      expect(hatched).toBeGreaterThan(2);
+    });
+
+    it('finishes a creature even if the Zuchtautomat would like it as a parent by then', () => {
+      const { g, mk } = setup();
+      unlockFeature(g, 'autoBreed');
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(inRecycler(g, a.id)).toBe(true);
+      // Now the breeder wants the cheapest pair – which would include the chamber creature.
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      g.advance(recycleDurationMs(g));
+      expect(g.state.creatures).not.toContain(a);
     });
 
     it('processes several creatures in one long (offline) step', () => {

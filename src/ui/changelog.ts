@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 7,
+    date: '2026-09-29',
+    title: 'Zuchtautomat und Recycling-Automat arbeiten zusammen',
+    items: [
+      { text: 'Der Zuchtautomat räumt den Stall nicht mehr selbst auf. Ist der Stall voll, wartet er – Platz schafft der Recycling-Automat mit seiner Zerlege-Kammer. So nehmen sich die beiden nicht mehr gegenseitig die Kreaturen weg.', feature: 'autoBreed' },
+      { text: 'Die Zerlege-Kammer wird nicht mehr unterbrochen: Eine Kreatur, die drin ist, wird fertig recycelt – außer du rettest sie als Favorit ★.', feature: 'autoRecycle' },
+    ],
+  },
+  {
     id: 6,
     date: '2026-09-29',
     title: 'Stammbaum-Dynastien, Familiennamen und neue Brutrituale',
