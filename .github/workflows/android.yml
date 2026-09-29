@@ -29,6 +29,8 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_SYNC_URL: ${{ vars.SYNC_URL }}
       - run: npx cap sync android
 
       - name: Debug-APK bauen

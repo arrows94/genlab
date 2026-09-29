@@ -1,0 +1,14 @@
+# Genlab sync server (Cloudflare Worker + D1). Setup: see README.md in this folder.
+name = "genlab-sync"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "genlab-sync"
+# Replace with the id printed by `npx wrangler d1 create genlab-sync`.
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[triggers]
+# Daily cleanup of saves nobody has synced for a year.
+crons = ["17 3 * * *"]

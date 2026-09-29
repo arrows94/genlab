@@ -1,5 +1,6 @@
 import { content, balance } from '@content/index';
 import { Game, type OfflineReport } from '@core/game';
+import type { GameState } from '@core/state';
 import { deserialize, exportSave, importSave, serialize, type SaveStorage } from '@core/save';
 import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
@@ -11,6 +12,7 @@ import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
+import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
 import { silently } from './sound';
 
 /**
@@ -227,6 +229,7 @@ export function answer(yes: boolean): void {
 
 export function act(result: ActionResult): boolean {
   if (!result.ok) toast(result.reason, 'error', 3500, false);
+  else notePlay();
   refresh();
   return result.ok;
 }
@@ -235,31 +238,37 @@ export function save(): void {
   // Never overwrite the stored save with the placeholder state before loading finished.
   if (!view.ready) return;
   saveInbox();
+  notePlay();
   storage.save(serialize(game.state)).then(
     () => (view.lastSaved = Date.now()),
     (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
   );
 }
 
-export function exportText(): string {
+export function exportText(): Promise<string> {
   return exportSave(game.state);
 }
 
-export function importText(text: string): boolean {
+/** Reads an export without loading it (for the comparison before an import); null after a toast if it is invalid. */
+export async function readImport(text: string): Promise<{ state: GameState; savedAt: number } | null> {
   try {
-    const { state } = importSave(text);
-    game.loadState(state);
-    save();
-    toast('Spielstand importiert.', 'info');
-    refresh();
-    return true;
+    return await importSave(text);
   } catch (err) {
     toast((err as Error).message, 'error', 6000);
-    return false;
+    return null;
   }
 }
 
+export function applyImport(state: GameState): void {
+  game.loadState(state);
+  save();
+  toast('Spielstand importiert.', 'info');
+  refresh();
+}
+
 export function hardReset(): void {
+  // A fresh game must never be uploaded over the cloud save of the other devices.
+  unlinkLocal();
   void storage.clear();
   const fresh = new Game({ content, balance });
   game.setState(fresh.state);
@@ -267,16 +276,32 @@ export function hardReset(): void {
   refresh();
 }
 
-/** Going to the background: save and plan reminders for the time away. */
+/** Going to the background: save, upload to the other devices and plan reminders for the time away. */
 function toBackground(): void {
   save();
+  syncOnHide();
   if (prefs.notifications) scheduleNotices(plannedNotices(game, Date.now()));
 }
 
-/** Back in the foreground: the reminders are no longer needed. */
+/** Back in the foreground: the reminders are no longer needed; fetch what other devices did. */
 function toForeground(): void {
   cancelNotices();
+  syncOnShow();
 }
+
+/** Device sync hooks into the game (see sync.svelte.ts). */
+const syncHost = {
+  exportText: () => exportSave(game.state),
+  read: (text: string) => importSave(text),
+  adopt: (state: GameState) => {
+    game.loadState(state);
+    // The catch-up report of the replaced save no longer applies; the loop reports the new one.
+    view.offline = null;
+    save();
+    refresh();
+  },
+  notify: (text: string, kind: 'info' | 'error' = 'info') => toast(text, kind, kind === 'error' ? 6000 : 3500),
+};
 
 /** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent. */
 function advance() {
@@ -292,6 +317,8 @@ export async function init(): Promise<void> {
   loadInbox();
   const hadSave = await loadSave();
   view.ready = true;
+  // Before the loop starts, so the game continues on the newest save of all devices.
+  await initSync(syncHost);
   initNews(hadSave, (f) => game.state.features[f] === true);
   refresh();
   startLoop();
@@ -310,7 +337,8 @@ export async function init(): Promise<void> {
     },
     // Close the topmost dialog; false = nothing open (app gets minimised).
     back: () => {
-      if (view.detail !== null) view.detail = null;
+      if (sync.conflict) resolveConflict('later');
+      else if (view.detail !== null) view.detail = null;
       else if (news.open) closeNews();
       else if (inbox.open) inbox.open = false;
       else if (view.offline) view.offline = null;
@@ -354,4 +382,6 @@ function startLoop(): void {
     }
   });
   window.addEventListener('beforeunload', save);
+  // Closing a tab does not always report `visibilitychange`; the last upload must still leave.
+  window.addEventListener('pagehide', toBackground);
 }
