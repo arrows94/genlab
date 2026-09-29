@@ -21,6 +21,10 @@ interface ViewState {
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
   /** Splicing bench: hide creatures without attempts left or with a perfect genome. */
   splicing: { hideDone: boolean };
+  /** Infusion quick selection: rarity limit and "only allele donors". */
+  infusion: { maxRarity: string; donorsOnly: boolean };
+  /** Genome viewer in the Genlabor: search and filters of the creature gallery. */
+  genome: { sequencedOnly: boolean; species: string };
 }
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
@@ -34,6 +38,8 @@ const defaults = (): ViewState => ({
   breeding: { species: '', rarity: '', sort: 'power', invert: false },
   research: { theme: '', affordableOnly: false, grandOpen: false },
   splicing: { hideDone: true },
+  infusion: { maxRarity: 'common', donorsOnly: false },
+  genome: { sequencedOnly: false, species: '' },
 });
 
 function load(): ViewState {
@@ -51,6 +57,8 @@ function load(): ViewState {
       breeding: { ...base.breeding, ...saved.breeding },
       research: { ...base.research, ...saved.research },
       splicing: { ...base.splicing, ...saved.splicing },
+      infusion: { ...base.infusion, ...saved.infusion },
+      genome: { ...base.genome, ...saved.genome },
     };
   } catch {
     return base;

@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 12,
+    date: '2026-09-29',
+    title: 'Genom ansehen mit Suche, Infusion merkt sich die Auswahl',
+    items: [
+      { text: '„Genom ansehen“ im Genlabor: Statt einer langen Liste wählst du Kreaturen jetzt aus einer Galerie mit Suche, Art-Filter, „nur sequenzierte“ und Sortierung (z. B. meiste Top-Allele). Mit ‹ › blätterst du durch die gefilterten Kreaturen, die gewählte bleibt beim Tab-Wechsel erhalten.', feature: 'sequencing' },
+      { text: 'Infusion: Die Schnellwahl („bis Seltenheit“, „nur Allel-Spender“) wird gespeichert, und die ausgewählten Artgenossen bleiben erhalten, wenn du die Kreaturdetails schließt und wieder öffnest.', feature: 'infusion' },
+    ],
+  },
+  {
     id: 11,
     date: '2026-09-29',
     title: 'Typvorteil in den Anlagen, neue Genom-Ansicht',
