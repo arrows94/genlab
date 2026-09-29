@@ -12,7 +12,7 @@
   import { inRecycler, sendToRecycler, takeBackFromRecycler } from '@core/features/automation';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
-  import DnaSequence from './DnaSequence.svelte';
+  import GenomeView from './GenomeView.svelte';
   import EvolvePanel from './EvolvePanel.svelte';
   import CostLabel from './CostLabel.svelte';
   import InfusionChamber from './InfusionChamber.svelte';
@@ -120,7 +120,7 @@
 
         <section>
           <h3>Genom {#if !c.sequenced}<span class="muted small">(unbekannt)</span>{/if}</h3>
-          <DnaSequence genome={c.genome} known={c.sequenced} detailed />
+          <GenomeView genome={c.genome} known={c.sequenced} />
           {#if game.state.features['deepSequencing']}
             {@const latent = activeLatent(game, c)}
             <p class="latent">

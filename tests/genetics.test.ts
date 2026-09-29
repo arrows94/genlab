@@ -308,6 +308,37 @@ describe('splicing workbench helpers', () => {
     expect(c.genome.strength).toEqual(['k', 'k']);
   });
 
+  it('knows when a creature is done at the bench', async () => {
+    const { isFullySpliced, splicesLeft } = await import('@core/features/splicing');
+    const g = makeGame();
+    const c = createCreature(g, { speciesId: 'pebblit', rarity: 'common', abilities: [], genome: normal() });
+    c.sequenced = true;
+    expect(splicesLeft(g, c)).toBe(maxSplices(g));
+    expect(isFullySpliced(g, c)).toBe(false);
+    c.splices = maxSplices(g);
+    expect(splicesLeft(g, c)).toBe(0);
+    expect(isFullySpliced(g, c)).toBe(true);
+    // A perfect genome has nothing left to improve, attempts or not.
+    c.splices = 0;
+    for (const l of g.content.genes.list) {
+      const top = l.alleles.find((a) => a.top);
+      if (top) c.genome[l.id] = [top.id, top.id];
+    }
+    expect(isFullySpliced(g, c)).toBe(true);
+  });
+
+  it('reports zygosity, masking and top alleles per locus', async () => {
+    const { genomeReport } = await import('@core/genetics');
+    const g = makeGame();
+    const genome = { ...normal(), strength: ['Kt', 'Kt'], stamina: ['A', 'a'], yield: ['E', 'e'] } as Genome;
+    const report = new Map(genomeReport(g, genome).map((r) => [r.locus.id, r]));
+    expect(report.get('strength')).toMatchObject({ zygosity: 'homozygous', perfect: true, expressed: [true, true] });
+    expect(report.get('stamina')).toMatchObject({ zygosity: 'heterozygous', perfect: false, expressed: [true, false] });
+    expect(report.get('yield')).toMatchObject({ zygosity: 'codominant', expressed: [true, true] });
+    // Gated loci (Urgen) stay hidden until their talent exists.
+    expect(report.has('primal')).toBe(false);
+  });
+
   it('describes modifiers in German', async () => {
     const { describeModifier } = await import('@core/queries');
     const g = makeGame();

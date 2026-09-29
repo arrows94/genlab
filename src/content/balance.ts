@@ -83,6 +83,8 @@ export const balance: Balance = {
   },
   production: {
     statScaling: 0.02,
+    /** Type advantage: creatures of a building's elements produce this much more (0.3 = +30 %). */
+    affinityBonus: 0.3,
   },
   rarity: {
     weights: { common: 600, uncommon: 250, rare: 100, epic: 38, legendary: 10, mythic: 2 },

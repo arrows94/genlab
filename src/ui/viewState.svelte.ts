@@ -19,6 +19,8 @@ interface ViewState {
   expedition: { region: string; voyageOpen: boolean; hideWorking: boolean; hideLocked: boolean };
   breeding: { species: string; rarity: string; sort: BreedingSort; invert: boolean };
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
+  /** Splicing bench: hide creatures without attempts left or with a perfect genome. */
+  splicing: { hideDone: boolean };
 }
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
@@ -31,6 +33,7 @@ const defaults = (): ViewState => ({
   expedition: { region: 'short', voyageOpen: false, hideWorking: false, hideLocked: false },
   breeding: { species: '', rarity: '', sort: 'power', invert: false },
   research: { theme: '', affordableOnly: false, grandOpen: false },
+  splicing: { hideDone: true },
 });
 
 function load(): ViewState {
@@ -47,6 +50,7 @@ function load(): ViewState {
       expedition: { ...base.expedition, ...saved.expedition },
       breeding: { ...base.breeding, ...saved.breeding },
       research: { ...base.research, ...saved.research },
+      splicing: { ...base.splicing, ...saved.splicing },
     };
   } catch {
     return base;

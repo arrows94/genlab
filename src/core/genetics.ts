@@ -58,7 +58,8 @@ export function phenotypeLabel(locus: GeneLocusDef, pair: readonly [string, stri
     .join('/');
 }
 
-function scaled(m: ModifierDef, share: number): number {
+/** Modifier value of an allele expressed at `share` (codominant = 0.5). */
+export function scaledValue(m: ModifierDef, share: number): number {
   return m.op === 'mult' ? Math.pow(m.value, share) : m.value * share;
 }
 
@@ -68,7 +69,7 @@ export function genomeModifiers(ctx: GameContext, genome: Genome): SourcedModifi
     if (!ctx.content.genes.has(locusId)) continue;
     const locus = ctx.content.genes.get(locusId);
     for (const { allele, share } of expressLocus(locus, pair)) {
-      for (const m of allele.modifiers) out.push({ ...m, value: scaled(m, share), source: `gene:${locusId}:${allele.id}` });
+      for (const m of allele.modifiers) out.push({ ...m, value: scaledValue(m, share), source: `gene:${locusId}:${allele.id}` });
     }
   }
   return out;
@@ -210,6 +211,44 @@ export function alleleBases(allele: string, length = 4): string {
   let out = '';
   for (let i = 0; i < length; i++) {
     out += bases[(h >>> (i * 2)) & 3];
+  }
+  return out;
+}
+
+export interface LocusReport {
+  locus: GeneLocusDef;
+  /** Allele defs in slot order; undefined for unknown ids. */
+  alleles: [AlleleDef | undefined, AlleleDef | undefined];
+  expression: Expression;
+  /** Per slot: false when the allele is masked by a more dominant one. */
+  expressed: [boolean, boolean];
+  zygosity: 'homozygous' | 'heterozygous' | 'codominant';
+  /** The locus' best allele (Perfektions-Jagd), if it has one. */
+  top: AlleleDef | undefined;
+  /** Homozygous for the top allele. */
+  perfect: boolean;
+}
+
+/** Per-locus breakdown of a genome for the genome views (active loci only). */
+export function genomeReport(ctx: GameContext, genome: Genome): LocusReport[] {
+  const out: LocusReport[] = [];
+  for (const locus of activeLoci(ctx)) {
+    const pair = genome[locus.id];
+    if (!pair) continue;
+    const a = alleleDef(locus, pair[0]);
+    const b = alleleDef(locus, pair[1]);
+    const expression = expressLocus(locus, pair);
+    const shown = new Set(expression.map((e) => e.allele.id));
+    const top = locus.alleles.find((x) => x.top);
+    out.push({
+      locus,
+      alleles: [a, b],
+      expression,
+      expressed: [shown.has(pair[0]), shown.has(pair[1])],
+      zygosity: pair[0] === pair[1] ? 'homozygous' : expression.length > 1 ? 'codominant' : 'heterozygous',
+      top,
+      perfect: !!top && pair[0] === top.id && pair[1] === top.id,
+    });
   }
   return out;
 }

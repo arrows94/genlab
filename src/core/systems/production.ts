@@ -22,11 +22,24 @@ export function productionRates(ctx: GameContext): Record<string, Decimal> {
   return rates;
 }
 
-/** What one creature adds to a building's resource before global `production.*` modifiers. */
-function workerBase(ctx: GameContext, b: BuildingDef, c: Creature): number {
+/** True when the creature's element has a type advantage in this building. */
+export function hasAffinity(ctx: GameContext, b: BuildingDef, c: Creature): boolean {
+  return b.elements.includes(ctx.content.species.get(c.speciesId).element);
+}
+
+/** Output factor from the type advantage (1 without). */
+export function affinityFactor(ctx: GameContext, b: BuildingDef, c: Creature): number {
+  return hasAffinity(ctx, b, c) ? 1 + ctx.balance.production.affinityBonus : 1;
+}
+
+/**
+ * What one creature adds to a building's resource before global `production.*`
+ * modifiers: work stat, type advantage and element bonuses.
+ */
+export function workerBase(ctx: GameContext, b: BuildingDef, c: Creature): number {
   const stat = effectiveStats(ctx, c)[b.workStat] ?? 0;
   const element = ctx.content.species.get(c.speciesId).element;
-  const perCreature = b.baseRate * (1 + stat * ctx.balance.production.statScaling) * ctx.mods().factor(`element.${element}.production`);
+  const perCreature = b.baseRate * (1 + stat * ctx.balance.production.statScaling) * affinityFactor(ctx, b, c) * ctx.mods().factor(`element.${element}.production`);
   // Job-scoped abilities / creature buffs targeting this resource.
   const own = creatureModifiers(ctx, c).apply(`production.${b.produces}`, perCreature) - perCreature;
   return perCreature + own;

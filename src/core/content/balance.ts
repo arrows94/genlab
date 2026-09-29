@@ -100,6 +100,8 @@ export interface Balance {
   production: {
     /** Each point of the building's work stat adds this fraction of output. */
     statScaling: number;
+    /** Type advantage: extra output (0.3 = +30 %) for creatures of one of the building's `elements`. */
+    affinityBonus: number;
   };
   rarity: {
     /** Base drop weights (modified by `rarity.weight.<id>`, pct/mult). */

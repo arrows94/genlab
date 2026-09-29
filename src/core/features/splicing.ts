@@ -1,6 +1,6 @@
 import { D } from '../num';
 import { checkPerfection, effectiveStats, findCreature } from '../creatures';
-import { activeLoci, alleleDef, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
+import { activeLoci, alleleDef, isPerfectGenome, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
 import { trySpend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -23,6 +23,16 @@ export function spliceCost(ctx: GameContext, c: Creature): Cost {
 
 export function maxSplices(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('splicing.max', ctx.balance.genetics.splicing.maxPerCreature));
+}
+
+/** Splice attempts this creature has left. */
+export function splicesLeft(ctx: GameContext, c: Creature): number {
+  return Math.max(0, maxSplices(ctx) - (c.splices ?? 0));
+}
+
+/** Nothing left to do at the splicing bench: no attempts left or already a perfect genome. */
+export function isFullySpliced(ctx: GameContext, c: Creature): boolean {
+  return splicesLeft(ctx, c) === 0 || isPerfectGenome(ctx, c.genome);
 }
 
 export function instabilityChance(ctx: GameContext): number {

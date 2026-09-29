@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 11,
+    date: '2026-09-29',
+    title: 'Typvorteil in den Anlagen, neue Genom-Ansicht',
+    items: [
+      { text: 'Anlagen haben jetzt einen Typvorteil: Kreaturen passender Elemente arbeiten dort 30 % ergiebiger. Die Farm liebt Natur, Wasser, Licht und Luft.', feature: 'farm' },
+      { text: 'Die Mine bevorzugt Erde, Metall, Feuer und Kristall. Ein ★ markiert Kreaturen mit Typvorteil, und der Vorschlag beim Zuweisen rechnet ihn mit ein.', feature: 'mine' },
+      { text: 'Im Bio-Labor haben Elektro, Gift, Schatten und Eis den Typvorteil.', feature: 'biolab' },
+      { text: 'Der Arbeitsplaner verteilt nicht mehr nur nach dem höchsten Wert, sondern nach dem tatsächlichen Ertrag – samt Typvorteil.', feature: 'autoAssign' },
+      { text: 'Neue Genom-Ansicht im Genlabor und in den Kreaturdetails: Gene nach Werten, Eigenschaften und Aussehen sortiert, verdeckte Allele sind abgeblendet, dazu reinerbig/mischerbig, die Wirkung jedes Gens und ★ für Top-Allele.', feature: 'sequencing' },
+      { text: 'Gen-Splicing überarbeitet: Kreaturen wählst du jetzt aus einer Galerie mit Suche. „Fertige ausblenden“ versteckt Kreaturen ohne Versuche oder mit perfektem Genom. ↑ zeigt Gene, deren bestes Allel schon in deiner Bibliothek liegt.', feature: 'splicing' },
+    ],
+  },
+  {
     id: 10,
     date: '2026-09-29',
     title: 'Eigene Familiennamen, klassische Namen, aktive Spielzeit',
