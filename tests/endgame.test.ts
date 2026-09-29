@@ -13,7 +13,7 @@ import { usePotion } from '@core/features/market';
 import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, setTowerAutoRestart, simulateFight, startRun, stopRun, teamSize } from '@core/features/tower';
 import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
-import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
+import { activeMutation, mutationForWeek, upcomingMutation, weekIndex } from '@core/features/weekly';
 import { activeLoci } from '@core/genetics';
 import { splice } from '@core/features/splicing';
 import { sell } from '@core/features/stable';
@@ -338,6 +338,14 @@ describe('weekly mutation', () => {
     const m = activeMutation(g, NOW)!;
     expect(m).not.toBeNull();
     for (const mod of m.modifiers) expect(g.mods().list(mod.target).some((x) => x.source === `weekly:${m.id}`)).toBe(true);
+  });
+
+  it('shows next week\'s mutation in advance', () => {
+    const g = makeGame();
+    expect(upcomingMutation(g, NOW)).toBeNull();
+    unlockFeature(g, 'weekly');
+    const week = 7 * 24 * 3600 * 1000;
+    expect(upcomingMutation(g, NOW)).toBe(activeMutation(g, NOW + week));
   });
 
   it('element mutations boost matching workers', () => {
