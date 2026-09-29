@@ -107,6 +107,11 @@ export interface DayReport {
   resonance: number;
   observatory: number;
   bossShare: number;
+  anomalyRecord: number;
+  /** Sum of all relic levels. */
+  relics: number;
+  /** Äon-Splitter earned so far, by source (aeon, tower, anomaly, contract …). */
+  shardSources: Record<string, number>;
 }
 
 export interface LongRunOptions {
@@ -144,7 +149,12 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
     unlockedEver.add(e.feature);
   });
   const unlockedEver = new Set(Object.keys(g.state.features));
+  const shardSources: Record<string, number> = {};
   g.bus.on('resourceGained', (e) => {
+    if (e.resource === 'aeonShards') {
+      const src = e.source.replace(/^prestige:/, '').split(':')[0]!;
+      shardSources[src] = (shardSources[src] ?? 0) + e.amount.toNumber();
+    }
     if (NEW_SOURCES.test(e.source)) fromNew[e.resource] = (fromNew[e.resource] ?? 0) + e.amount.toNumber();
   });
 
@@ -189,6 +199,9 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       talents: Object.values(g.state.talents).filter(Boolean).length,
       resonance: Object.values(g.state.resonance).reduce((a, b) => a + b, 0),
       observatory: g.state.megaProjects.observatory?.stage ?? 0,
+      anomalyRecord: g.state.anomalyRecord,
+      relics: Object.values(g.state.relics).reduce((a, b) => a + b, 0),
+      shardSources: { ...shardSources },
       bossShare: g.state.weeklyBoss.maxHp > 0 ? Math.round((g.state.weeklyBoss.damage / g.state.weeklyBoss.maxHp) * 100) / 100 : 0,
     });
   }

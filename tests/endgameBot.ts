@@ -1,15 +1,17 @@
 import { creaturePower } from '@core/creatures';
-import { depositMegaProject, megaAvailable, megaConstruction, currentStage } from '@core/features/megaProjects';
+import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
+import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
-import { setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { buyRelic, equipRelic, relicCost, relicLevel, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
 import { attackWeeklyBoss } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import type { Game } from '@core/game';
 
 /**
  * Endgame player for balancing over several Äons: keeps a tower team
- * climbing, spends boss attacks, feeds the Großprojekt, learns talents and
- * resonance, and starts an Äon once the shard gain is worth it.
+ * climbing (with relics), spends boss attacks, feeds the Großprojekt, learns
+ * talents and resonance, plays anomaly runs for new records, and starts an
+ * Äon once the shard gain is worth it.
  */
 export interface EndgameOptions {
   /** Start an Äon once it pays this many shards … */
@@ -18,12 +20,35 @@ export interface EndgameOptions {
   aeonGrowth?: number;
   /** Share of the owned resources paid into the Großprojekt at each check-in (the rest before an Äon). */
   depositShare?: number;
+  /** Play anomaly runs right after an inheritance (default true). */
+  anomalies?: boolean;
+  /** Give up an anomaly run after this many hours (the plan is not tried again until the next Äon). */
+  anomalyTimeoutH?: number;
+}
+
+/** What the bot remembers between calls (not part of the save). */
+interface BotMemory {
+  inheritances: number;
+  aeons: number;
+  startedAt: number;
+  plan: string;
+  failed: Set<string>;
+}
+const memories = new WeakMap<Game, BotMemory>();
+function memory(g: Game): BotMemory {
+  let m = memories.get(g);
+  if (!m) {
+    m = { inheritances: g.state.prestige.inheritance?.count ?? 0, aeons: g.state.prestige.aeon?.count ?? 0, startedAt: 0, plan: '', failed: new Set() };
+    memories.set(g, m);
+  }
+  return m;
 }
 
 /** Called once at the start of every play session. */
 export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
   const { depositShare = 0.3 } = opts;
   feedMegaProjects(g, depositShare);
+  buyRelics(g);
   // The tower routine keeps the same team forever: rebuild it from the strongest creatures each visit.
   if (g.state.tower.run) stopRun(g);
   climbTower(g);
@@ -35,9 +60,10 @@ export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
 
 /** Called every few simulated seconds while a session runs. */
 export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
-  const { aeonAt = 3, aeonGrowth = 2 } = opts;
+  const { aeonAt = 3, aeonGrowth = 2, anomalies = true, anomalyTimeoutH = 12 } = opts;
   climbTower(g);
   spendShards(g);
+  if (anomalies) playAnomalies(g, anomalyTimeoutH);
 
   if (g.state.features.aeon && !g.state.anomaly) {
     const done = g.state.prestige.aeon?.count ?? 0;
@@ -64,8 +90,74 @@ function climbTower(g: Game): void {
   // Keep production going while the stable is small.
   if (g.state.creatures.length < size + 4) return;
   setTeam(g, free.map((c) => c.id));
+  // Best relics to the strongest creatures (the team is sorted by power).
+  const owned = g.content.relics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
+  for (let i = 0; i < size; i++) equipRelic(g, i, owned[i]?.id ?? null);
   startRun(g);
 }
+
+/**
+ * Turm-Marken the observatory still needs for its current stage stay put;
+ * the rest buys relic levels, cheapest first.
+ */
+function buyRelics(g: Game): void {
+  if (!g.state.features.tower) return;
+  let reserve = 0;
+  for (const def of g.content.megaProjects.list) if (megaAvailable(g, def)) reserve += megaRemaining(g, def)['towerTokens']?.toNumber() ?? 0;
+  for (let i = 0; i < 30; i++) {
+    const spare = (g.state.resources['towerTokens']?.toNumber() ?? 0) - reserve;
+    const next = g.content.relics.list
+      .map((r) => ({ id: r.id, cost: relicCost(g, r.id)?.toNumber() ?? Infinity }))
+      .filter((x) => x.cost <= spare)
+      .sort((a, b) => a.cost - b.cost)[0];
+    if (!next || !buyRelic(g, next.id).ok) break;
+  }
+}
+
+/**
+ * Anomaly runs right after an inheritance (the reset then costs little):
+ * every anomaly already mastered at its best stage, plus one of them a stage
+ * higher – so each success raises the record by one. A run that takes too
+ * long is given up, and that plan waits until the next Äon.
+ */
+function playAnomalies(g: Game, timeoutH: number): void {
+  if (!g.state.features.anomalies) return;
+  const m = memory(g);
+  const aeons = g.state.prestige.aeon?.count ?? 0;
+  if (aeons !== m.aeons) {
+    m.aeons = aeons;
+    m.failed.clear();
+  }
+  if (g.state.anomaly) {
+    if (g.state.lastTickAt - m.startedAt > timeoutH * 3_600_000) {
+      abandonAnomaly(g);
+      m.failed.add(m.plan);
+    }
+    return;
+  }
+  const count = g.state.prestige.inheritance?.count ?? 0;
+  if (count === m.inheritances) return;
+  m.inheritances = count;
+  const plan = anomalyPlan(g, m.failed);
+  if (plan && startAnomalies(g, plan).ok) {
+    m.startedAt = g.state.lastTickAt;
+    m.plan = planKey(plan);
+  }
+}
+
+function anomalyPlan(g: Game, failed: Set<string>): Record<string, number> | null {
+  const list = g.content.anomalies.list.filter((a) => anomalyAvailable(g, a.id));
+  const base: Record<string, number> = {};
+  for (const a of list) if (anomalyBest(g, a.id) > 0) base[a.id] = anomalyBest(g, a.id);
+  const up = list.filter((a) => anomalyBest(g, a.id) < g.balance.anomalies.maxLevel).sort((a, b) => anomalyBest(g, a.id) - anomalyBest(g, b.id));
+  for (const a of up) {
+    const plan = { ...base, [a.id]: anomalyBest(g, a.id) + 1 };
+    if (!failed.has(planKey(plan))) return plan;
+  }
+  return null;
+}
+
+const planKey = (plan: Record<string, number>) => Object.entries(plan).sort(([a], [b]) => a.localeCompare(b)).map(([id, l]) => `${id}${l}`).join(' ');
 
 /** Cheapest learnable talent first, then the cheapest resonance. */
 function spendShards(g: Game): void {
