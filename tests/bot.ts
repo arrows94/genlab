@@ -9,6 +9,7 @@ import type { Game } from '@core/game';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import { canConsume, sell, stableFree } from '@core/features/stable';
 import { useLongTermSystems } from './longrun';
+import { endgameCheckIn, useEndgameSystems, type EndgameOptions } from './endgameBot';
 
 export interface TimelineEntry {
   min: number;
@@ -29,10 +30,13 @@ export interface BotOptions {
   longTerm?: boolean;
   /** Move the wall clock with the simulation (daily/weekly systems follow it). */
   wallClock?: boolean;
+  /** Play the endgame too: tower, weekly boss, Äon, talents, Großprojekt, resonance. */
+  endgame?: EndgameOptions | boolean;
 }
 
 export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}): TimelineEntry[] {
-  const { clicksPerSec = 2, prestigeAt = 0, prestigeGrowth = 0, longTerm = false, wallClock = false } = typeof opts === 'number' ? { clicksPerSec: opts } : opts;
+  const { clicksPerSec = 2, prestigeAt = 0, prestigeGrowth = 0, longTerm = false, wallClock = false, endgame = false } = typeof opts === 'number' ? { clicksPerSec: opts } : opts;
+  const endgameOpts = endgame === true ? {} : endgame || null;
   const timeline: TimelineEntry[] = [];
   const now = () => Math.round((g.state.simTimeMs / 60_000) * 10) / 10;
   g.bus.on('featureUnlocked', (e) => timeline.push({ min: now(), what: `Freigeschaltet: ${e.feature}` }));
@@ -46,6 +50,7 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
     if (tier !== 'base') timeline.push({ min: now(), what: `Neue Art (${tier}): ${e.species}` });
   });
 
+  if (endgameOpts) endgameCheckIn(g, endgameOpts);
   for (let sec = 0; sec < minutes * 60; sec++) {
     for (let i = 0; i < clicksPerSec; i++) collect(g);
 
@@ -64,7 +69,7 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
 
     // Breeding: the two strongest available creatures; if too expensive, the cheapest (lowest generation) pair.
     if (g.state.features.breeding && eggs(g).length < nestSlots(g)) {
-      const pool = g.state.creatures.filter((c) => c.job?.kind !== 'nest' && c.job?.kind !== 'mission');
+      const pool = g.state.creatures.filter((c) => c.job === null || c.job.kind === 'building');
       const strong = [...pool].sort((a, b) => creaturePower(g, b) - creaturePower(g, a));
       const cheap = [...pool].sort((a, b) => a.generation - b.generation);
       for (const pair of [strong, cheap]) {
@@ -77,6 +82,7 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
 
     // Long-term systems first: they claim camps, nests and sequencers before the short loop.
     if (longTerm && sec % 10 === 0) useLongTermSystems(g);
+    if (endgameOpts && sec % 10 === 5) useEndgameSystems(g, endgameOpts);
 
     // Missions: short missions whenever a camp is free and food allows.
     if (g.state.features.expedition && campsUsed(g) < campSlots(g)) {
