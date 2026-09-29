@@ -487,7 +487,14 @@ export interface BossTraitDef {
    */
   kind: 'shield' | 'shift' | 'regen';
   value: number;
+  /**
+   * Whom the boss attacks: rows (default) prefers the front row,
+   * weakest hunts the team member with the least HP, back prefers the back row.
+   */
+  targeting?: TargetingMode;
 }
+
+export type TargetingMode = 'rows' | 'weakest' | 'back';
 
 /**
  * Relikt: bought and levelled with Turm-Marken, owned by the player (never

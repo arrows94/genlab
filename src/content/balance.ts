@@ -190,6 +190,11 @@ export const balance: Balance = {
     // Dodge chance per 100 % speed lead over the attacker, capped.
     evadePerSpeedLead: 0.15,
     maxEvade: 0.25,
+    // Defence: after the percentage reduction each point of VER blocks this much more, but a hit keeps at least minHitShare.
+    defFlat: 0.2,
+    minHitShare: 0.15,
+    // Enemies hit the front row with this chance (as long as someone stands there and someone behind).
+    frontShare: 0.75,
     enemyBase: { hp: 60, atk: 9, def: 5, spd: 6 },
     enemyGrowth: 1.11,
     bossEvery: 10,

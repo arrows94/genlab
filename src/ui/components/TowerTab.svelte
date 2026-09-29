@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration } from '@core/format';
   import {
-    actionIntervals, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
@@ -34,6 +34,7 @@
     maxHp: number;
     team: boolean;
     creature: Creature | null;
+    row?: Row;
   }
 
   // ---- fight replay -------------------------------------------------------
@@ -223,7 +224,8 @@
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
       .map((c) => {
         const el = content.species.get(c.speciesId).element;
-        return { c, power: creaturePower(game, c), spd: effectiveStats(game, c).spd ?? 0, inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
+        const stats = effectiveStats(game, c);
+        return { c, power: creaturePower(game, c), spd: stats.spd ?? 0, role: roleOf(game, stats), inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
       })
       .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : sortBy === 'speed' ? b.spd - a.spd : 0) || b.power - a.power))
       .slice(0, 40);
@@ -237,6 +239,7 @@
       enemy,
       boss: nextFloor % game.balance.tower.bossEvery === 0,
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
+      targeting: targetingOf(game, enemy),
       milestones: towerMilestones(game),
       nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
       reward: floorRewardInfo(game, nextFloor),
@@ -268,7 +271,7 @@
       return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end };
     }
     const units: Unit[] = [
-      ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c })),
+      ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c, row: rowOf(game, c.id) })),
       { name: data.enemy.name, speciesId: data.enemy.speciesId, element: data.enemy.element, maxHp: data.enemy.maxHp, team: false, creature: null },
     ];
     // Preview: the same relative time line the next fight will use.
@@ -281,6 +284,9 @@
     return upcoming(arena.intervals, alive, arena.clock, 8);
   });
   const teamUnits = $derived(arena.units.map((u, i) => ({ u, i })).filter((x) => x.u.team));
+  /** Team in two lines: the back row stands further from the enemy. */
+  const backUnits = $derived(teamUnits.filter((x) => x.u.row === 'back'));
+  const frontUnits = $derived(teamUnits.filter((x) => x.u.row !== 'back'));
   const foe = $derived(arena.units.map((u, i) => ({ u, i })).find((x) => !x.u.team));
 
   function look(u: Unit) {
@@ -294,6 +300,11 @@
   async function stop() {
     if (await ask('Lauf beenden? Er wird in der Bestenliste eingetragen.', { ok: 'Beenden', danger: true })) act(stopRun(game));
   }
+  const TARGETING = {
+    rows: `Greift zu ${Math.round(game.balance.tower.frontShare * 100)} % die vordere Reihe an (wenn beide Reihen besetzt sind).`,
+    back: `Greift zu ${Math.round(game.balance.tower.frontShare * 100)} % die hintere Reihe an – schütze deine Angreifer anders.`,
+    weakest: 'Jagt immer das Teammitglied mit den wenigsten KP – Reihen schützen nicht.',
+  } as const;
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
@@ -419,12 +430,21 @@
     {/if}
 
     <div class="field" class:shake>
-      <div class="side team">
-        {#each teamUnits as { u, i } (i)}
-          {@render unit(u, i, false)}
-        {:else}
+      <div class="side team" class:rows={backUnits.length > 0 && frontUnits.length > 0}>
+        {#if teamUnits.length === 0}
           <p class="muted small empty">Kein Team gewählt</p>
-        {/each}
+        {:else}
+          {#if backUnits.length}
+            <div class="line back" title="Hintere Reihe – wird seltener angegriffen">
+              {#each backUnits as { u, i } (i)}{@render unit(u, i, false)}{/each}
+            </div>
+          {/if}
+          {#if frontUnits.length}
+            <div class="line front" title="Vordere Reihe – steckt die meisten Treffer ein">
+              {#each frontUnits as { u, i } (i)}{@render unit(u, i, false)}{/each}
+            </div>
+          {/if}
+        {/if}
       </div>
 
       <div class="vs">
@@ -462,6 +482,7 @@
       {#if data.trait}
         <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
       {/if}
+      <p class="aim small">🎯 {TARGETING[data.targeting]}</p>
       {#if data.matchups.length}
         <div class="matchups">
           {#each data.matchups as m (m.c.id)}
@@ -520,12 +541,19 @@
         <div class="socket locked" title="Weitere Plätze über Äon-Talente">🔒</div>
       {:else if c}
         {@const sp = content.species.get(c.speciesId)}
-        <button class="socket filled" style="--el: {el(sp.element).color}" disabled={!!data.tw.run} title="Aus dem Team nehmen" onclick={() => toggle(c.id)}>
+        {@const role = ROLE_INFO[roleOf(game, effectiveStats(game, c))]}
+        {@const row = rowOf(game, c.id)}
+        <div class="socket filled" class:back={row === 'back'} style="--el: {el(sp.element).color}">
+          <span class="role" title="{role.name}: {role.hint}">{role.icon}</span>
           <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={52} shiny={c.shiny} />
           <span class="sname">{c.name}</span>
           <span class="small num muted">Σ {formatNumber(creaturePower(game, c))}</span>
-          {#if !data.tw.run}<span class="x">×</span>{/if}
-        </button>
+          <span class="rowseg" role="group" aria-label="Reihe">
+            <button class:on={row === 'front'} disabled={!!data.tw.run} title="Vordere Reihe: steckt die meisten Treffer ein" onclick={() => act(setRow(game, c.id, 'front'))}>Vorne</button>
+            <button class:on={row === 'back'} disabled={!!data.tw.run} title="Hintere Reihe: wird seltener angegriffen" onclick={() => act(setRow(game, c.id, 'back'))}>Hinten</button>
+          </span>
+          {#if !data.tw.run}<button class="x" title="Aus dem Team nehmen" onclick={() => toggle(c.id)}>×</button>{/if}
+        </div>
       {:else}
         <div class="socket empty-slot">+</div>
       {/if}
@@ -559,6 +587,7 @@
           <span class="tname">{t.c.name}</span>
           <span class="num small muted">{sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}</span>
           {#if t.dealt > 1}<span class="adv good">▲</span>{:else if t.dealt < 1}<span class="adv bad">▼</span>{/if}
+          <span class="trole" title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
         </button>
       {:else}
         <p class="muted small">Keine freien Kreaturen.</p>
@@ -678,6 +707,12 @@
   @keyframes quake { 25% { transform: translate(-3px, 1px); } 50% { transform: translate(3px, -1px); } 75% { transform: translate(-2px, 0); } }
   .side { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
   .side.team { justify-content: flex-end; }
+  .side.team.rows { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: center; gap: 0.6rem; }
+  .line { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+  .line.back { flex-direction: column; opacity: 0.92; }
+  .line.back :global(.unit) { transform: scale(0.9); }
+  .line.front { flex-direction: column; }
+  .side.team:not(.rows) .line { flex-direction: row; }
   .empty { align-self: center; }
 
   .unit { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 5.2rem; transition: transform 0.15s, opacity 0.4s, filter 0.4s; }
@@ -730,6 +765,7 @@
   .banner.win { background: color-mix(in srgb, var(--teal) 22%, var(--panel)); border-color: var(--teal); box-shadow: 0 0 22px #2fd3c466; }
 
   .enemy-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }
+  .aim { margin: 0.3rem 0 0; color: var(--muted); }
   .trait { margin: 0.3rem 0 0; padding: 0.3rem 0.55rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--line)); background: color-mix(in srgb, var(--danger) 10%, transparent); }
   .elchip { padding: 0.05rem 0.5rem; border-radius: 99px; border: 1px solid var(--c); color: var(--c); font-size: 0.75rem; }
   .matchups { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
@@ -762,8 +798,14 @@
   .socket.filled { border: 2px solid var(--el); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--el) 18%, transparent), var(--bg-2) 70%); color: var(--text); font-size: 0.8rem; }
   .socket.locked { opacity: 0.45; font-size: 1.1rem; }
   .sname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-  .x { position: absolute; top: 2px; right: 7px; color: var(--muted); font-size: 1rem; }
-  .socket.filled:hover:not(:disabled) .x { color: var(--danger); }
+  .x { position: absolute; top: 2px; right: 3px; padding: 0 0.35rem; border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1.2; }
+  .x:hover { color: var(--danger); }
+  .socket.back { border-style: dashed; }
+  .role { position: absolute; top: 3px; left: 6px; font-size: 0.85rem; }
+  .rowseg { display: inline-flex; margin-top: 0.15rem; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .rowseg button { border: 0; border-radius: 0; padding: 0.1rem 0.4rem; font-size: 0.68rem; background: var(--bg-2); }
+  .rowseg button.on { background: var(--petrol); color: #fff; }
+  .trole { position: absolute; bottom: 2px; left: 5px; font-size: 0.72rem; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .seg button { border: 0; border-radius: 0; font-size: 0.78rem; padding: 0.25rem 0.6rem; background: var(--bg-2); }
   .seg button.on { background: var(--petrol); color: #fff; }

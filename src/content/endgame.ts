@@ -135,10 +135,10 @@ export const weeklyMutations: WeeklyMutationDef[] = [
 export const bossTraits: BossTraitDef[] = [
   { id: 'elementShield', name: 'Element-Schild', icon: '🛡️', kind: 'shield', value: 0.25,
     description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
-  { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0,
-    description: 'Wechselt jede Sekunde Kampfzeit sein Element. Ein bunt gemischtes Team hilft.' },
-  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4,
-    description: 'Heilt jede Sekunde Kampfzeit 40 % des Schadens, den er in dieser Sekunde genommen hat. Je schneller er fällt, desto weniger kann er heilen.' },
+  { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0, targeting: 'weakest',
+    description: 'Wechselt jede Sekunde Kampfzeit sein Element und jagt das Teammitglied mit den wenigsten KP. Ein bunt gemischtes Team hilft.' },
+  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4, targeting: 'back',
+    description: 'Heilt jede Sekunde Kampfzeit 40 % des Schadens, den er in dieser Sekunde genommen hat, und greift bevorzugt die hintere Reihe an. Je schneller er fällt, desto weniger kann er heilen.' },
 ];
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */

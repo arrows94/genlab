@@ -24,7 +24,7 @@ interface ViewState {
   /** Infusion quick selection: rarity limit and "only allele donors". */
   infusion: { maxRarity: string; donorsOnly: boolean };
   /** Genome viewer in the Genlabor: search and filters of the creature gallery. */
-  genome: { sequencedOnly: boolean; species: string };
+  genome: { sequencedOnly: boolean; species: string; libraryOpen: boolean; hideCompleteGenes: boolean };
 }
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
@@ -39,7 +39,7 @@ const defaults = (): ViewState => ({
   research: { theme: '', affordableOnly: false, grandOpen: false },
   splicing: { hideDone: true },
   infusion: { maxRarity: 'common', donorsOnly: false },
-  genome: { sequencedOnly: false, species: '' },
+  genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false },
 });
 
 function load(): ViewState {

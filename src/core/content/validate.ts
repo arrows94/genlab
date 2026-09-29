@@ -336,6 +336,7 @@ export function validateContent(data: ContentData): string[] {
     text(`${w}.name`, b.name);
     if (!['shield', 'shift', 'regen'].includes(b.kind)) issues.push(`${w}.kind: ungültig "${b.kind}"`);
     num(`${w}.value`, b.value, 0, 1);
+    if (b.targeting !== undefined && !['rows', 'weakest', 'back'].includes(b.targeting)) issues.push(`${w}.targeting: ungültig "${b.targeting}"`);
   }
   for (const r of data.relics) {
     const w = at('relics', r.id);

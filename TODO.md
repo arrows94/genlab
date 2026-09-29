@@ -306,11 +306,17 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 2 – Verteidigung und Rollen
 
-- [ ] Verteidigung stärker: fester Schadensabzug plus Prozent (heute nur `defScale / (defScale + VER)`)
-- [ ] Reihen: Vorne (wird bevorzugt getroffen, z. B. 60 %) und Hinten; der Spieler stellt das Team auf
-- [ ] Rollen aus den Werten ableiten und anzeigen: Tank (KP/VER), Angreifer (ANG), Schneller (TMP) – als Hinweis,
-      keine Pflicht
-- [ ] Gegner mit eigener Zielwahl je Boss-Eigenheit (z. B. „jagt den Schwächsten“, „trifft alle Hinteren“)
+- [x] Verteidigung stärker: nach `defScale / (defScale + VER)` blockt jeder VER-Punkt noch 0,2 Schaden, mindestens
+      15 % des Treffers kommen durch (`defFlat`, `minHitShare`). Mess-Test: +10 % VER hebt die Siegquote jetzt von
+      38,5 % auf 70,5 % (vorher 63 % → 84 %)
+- [x] Reihen: Vorne und Hinten (`tower.back`), Gegner treffen zu 75 % die vordere Reihe, wenn beide besetzt sind;
+      Umschalten am Team-Platz, in der Arena steht die hintere Reihe weiter weg
+- [x] Rollen aus den Werten abgeleitet (`roleOf`, verglichen mit dem Profil der Turm-Gegner): Tank 🛡️, Angreifer ⚔️,
+      Flink 💨 – als Hinweis an Team-Plätzen und Kandidaten
+- [x] Zielwahl je Boss-Eigenheit (`targeting` in `bossTraits`): Wandler jagt den Schwächsten, Regeneration greift
+      bevorzugt die hintere Reihe an; die Vorschau nennt die Zielwahl des Gegners
+- [ ] Test-Bot stellt Reihen und Rollen auf (heute alle vorne, also gleichmäßig verteilte Treffer)
+- [ ] „Trifft alle Hinteren“ (Flächenangriff) kommt mit den Techniken in Schritt 3
 
 ## Schritt 3 – Elemente und Fähigkeiten im Kampf
 
