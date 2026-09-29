@@ -242,7 +242,9 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 - Ein Gen-Locus mit `requires: { type: 'talent', talent: '…' }` existiert erst mit dem Talent – vorhandene Kreaturen bekommen ihn automatisch.
 - Allele mit `top: true` definieren das „perfekte Genom“ der Perfektions-Jagd.
 - Unendliche Forschung: `category: 'infinite'`, `maxLevel: null` und `levelPower` (< 1 = abnehmender Ertrag).
-- Turm-Gegner, Belohnungen und Kontrollpunkte stehen in `balance.ts` unter `tower`.
+- Turm-Gegner, Belohnungen, Kontrollpunkte und Meilensteine (`milestoneEvery`, `milestoneShards`, `milestoneModifiers`) stehen in `balance.ts` unter `tower`.
+- Boss-Eigenheiten (`bossTraits`): `kind` ist `shield` (Schaden ohne Element-Vorteil × `value`), `shift` (Elementwechsel jede Runde) oder `regen` (heilt `value` × max. KP pro Runde). Bosse ab `balance.tower.bossTraitFromFloor` bekommen eine davon, fest pro Etage.
+- Relikte (`relics`): `cost` in Turm-Marken für Stufe 1, jede Stufe × `costGrowth`; `bonus` pro Stufe auf `hp`, `atk`, `def`, `spd` oder `element` (Element-Vorteil). Sie gehören dem Spieler und wirken auf die Kreatur im Turm-Platz, in dem sie stecken – im Turm und gegen den Wochen-Boss.
 
 ## Weitere Inhaltsarten
 

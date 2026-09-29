@@ -68,6 +68,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Zufall | `core/rng.ts` | Seedbarer RNG (mulberry32), Zustand im Spielstand → reproduzierbar. |
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
+| Turm-Relikte & Meilensteine | `core/features/tower.ts`, `content/endgame.ts` (`relics`, `bossTraits`) | Relikte für Turm-Marken stecken in den Plätzen des Turm-Teams (bleiben über jeden Neustart). Bosse ab Etage 20 haben Eigenheiten. Alle 50 Etagen ein Meilenstein mit dauerhaftem Bonus und Äon-Splittern. |
 | Wochen-Boss | `core/features/weeklyBoss.ts`, `balance.weeklyBoss` | Ein Titan pro Woche im Turm (Element wie Wochenexpedition und Wochen-Mutation, Stärke nach Turm-Rekord); Angriffe mit dem Turm-Team, Schaden sammelt sich, Belohnungen in Stufen. |
 | Großforschung | `core/features/grandResearch.ts`, `content/grandResearch.ts` | Eigener Forschungsplatz mit Projekten über Stunden bis Tage (Nester, Camps, Sequenzierer, Offline-Zeit, Produktion …); Stufen bleiben über jeden Reset, laufende Projekte forschen weiter. |
 | Großprojekte | `core/features/megaProjects.ts`, `content/megaProjects.ts` | Bauwerke über Tage: Jede Bauphase wird über mehrere Besuche bezahlt (Einzahlungen gehen bei keinem Neustart verloren) und baut danach nach echter Uhrzeit. Das Äon-Observatorium öffnet die Talentstufen 4 und 5 und die Äon-Resonanz. |

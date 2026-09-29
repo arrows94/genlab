@@ -92,10 +92,13 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
         ein Äon pro Woche), das Observatorium ist schon an Tag 25 fertig. Optionen: mehr Splitter pro Äon
         (`balance.prestige.aeon`), Splitter aus weiteren Quellen (Turm-Meilensteine, Aufträge, oder die Ideen unter
         „Ideen (noch grob)“) oder ein langsameres Observatorium
-- [ ] **Turm-Mechaniken vertiefen**
-  - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
-  - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
-  - [ ] Meilensteine alle 50 Etagen mit dauerhaftem Bonus
+- [x] **Turm-Mechaniken vertiefen**
+  - [x] Bosse mit Eigenheiten ab Etage 20 (Element-Schild, Wandler, Regeneration; `bossTraits` in `content/endgame.ts`)
+  - [x] Relikte für Turm-Marken (dauerhafte Verwendung für Marken) – sie gehören dem Spieler und stecken in den
+        Plätzen des Turm-Teams statt an einer Kreatur, damit sie jede Vererbung überstehen (`relics`)
+  - [x] Meilensteine alle 50 Etagen mit dauerhaftem Bonus (+15 % Turm-Schaden, +10 % Produktion) und einmalig
+        3 Äon-Splitter – eine weitere Splitter-Quelle
+  - [ ] Test-Bot: Relikte kaufen und ausrüsten, damit der Äon-Lauf die neuen Turm-Systeme mit misst
 - [ ] **Anomalien mit Stufen und Kombinationen**
   - [ ] Schwierigkeitsstufen I–V pro Anomalie
   - [ ] Mehrere Anomalien gleichzeitig aktivierbar

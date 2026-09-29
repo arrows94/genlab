@@ -14,7 +14,7 @@ import { species } from './species';
 import { stats } from './stats';
 import { researchThemes, upgrades } from './upgrades';
 import { capsules } from './capsules';
-import { anomalies, resonances, talents, weeklyMutations } from './endgame';
+import { anomalies, bossTraits, relics, resonances, talents, weeklyMutations } from './endgame';
 import { megaProjects } from './megaProjects';
 import { contracts } from './contracts';
 import { voyageDecisions, voyageDestinations, voyageEvents } from './voyages';
@@ -56,6 +56,8 @@ export const contentData: ContentData = {
   resonances,
   megaProjects,
   researchThemes,
+  bossTraits,
+  relics,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

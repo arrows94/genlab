@@ -320,6 +320,24 @@ export function validateContent(data: ContentData): string[] {
     mods(`${w}.modifiers`, r.modifiers);
   }
   for (const t of data.researchThemes) text(`${at('researchThemes', t.id)}.name`, t.name);
+  for (const b of data.bossTraits) {
+    const w = at('bossTraits', b.id);
+    text(`${w}.name`, b.name);
+    if (!['shield', 'shift', 'regen'].includes(b.kind)) issues.push(`${w}.kind: ungültig "${b.kind}"`);
+    num(`${w}.value`, b.value, 0, 1);
+  }
+  for (const r of data.relics) {
+    const w = at('relics', r.id);
+    text(`${w}.name`, r.name);
+    num(`${w}.cost`, r.cost, 1);
+    num(`${w}.costGrowth`, r.costGrowth, 1);
+    num(`${w}.maxLevel`, r.maxLevel, 1);
+    for (const [k, v] of Object.entries(r.bonus)) {
+      if (!['hp', 'atk', 'def', 'spd', 'element'].includes(k)) issues.push(`${w}.bonus: unbekannter Wert "${k}"`);
+      num(`${w}.bonus.${k}`, v, 0, 5);
+    }
+    if (Object.keys(r.bonus).length === 0) issues.push(`${w}.bonus: mindestens ein Wert`);
+  }
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);
