@@ -84,9 +84,12 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [x] Splitter-Tempo mit dem Test-Bot über mehrere Äonen prüfen (`GENLAB_AEON=1`, 28 Tage): Äon ab Tag 2
         freigeschaltet, Äonen an Tag 5/11/16/24, Talentstufen 1–3 nach 4 Äonen voll (9 Talente), Observatorium
         fertig an Tag 25 – aber Stufe 4 (ab Tag 11 offen) und Stufe 5 sind am Ende noch nicht bezahlbar, Resonanz 0
-  - [ ] Splitter und Observatorium angleichen: Das Observatorium öffnet Stufe 4/5 deutlich früher, als die Splitter
-        reichen (Tag 28: 2 Splitter übrig, Stufe 4 kostet je 8). Vorschlag: Stufe 4/5 günstiger (z. B. 6/9) oder
-        mehr Splitter pro Äon
+  - [x] Stufe 4/5 günstiger (6/9 statt 8/12 Splitter). Zweiter 28-Tage-Lauf: noch ohne sichtbare Wirkung – nach
+        Stufe 1–3 bleiben an Tag 28 wieder 2 Splitter; die Senkung greift erst ab dem 5. Äon (um Tag 30)
+  - [ ] Splitter-Einkommen und Observatorium angleichen: Der Engpass ist das Einkommen (~3–9 Splitter pro Äon,
+        ein Äon pro Woche), das Observatorium ist schon an Tag 25 fertig. Optionen: mehr Splitter pro Äon
+        (`balance.prestige.aeon`), Splitter aus weiteren Quellen (Turm-Meilensteine, Aufträge) oder ein langsameres
+        Observatorium
 - [ ] **Turm-Mechaniken vertiefen**
   - [ ] Bosse mit Eigenheiten (Element-Schild, Elementwechsel pro Runde, Heilung)
   - [ ] Relikte: Ausrüstung pro Kreatur für Turm-Marken (dauerhafte Verwendung für Marken)
