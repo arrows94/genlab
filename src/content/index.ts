@@ -21,6 +21,7 @@ import { voyageDecisions, voyageDestinations, voyageEvents } from './voyages';
 import { breedingRituals } from './rituals';
 import { latentTraits } from './latent';
 import { grandResearch } from './grandResearch';
+import { nameLists } from './names';
 
 export { balance } from './balance';
 
@@ -58,6 +59,7 @@ export const contentData: ContentData = {
   researchThemes,
   bossTraits,
   relics,
+  nameLists,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

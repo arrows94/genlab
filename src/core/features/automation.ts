@@ -7,7 +7,7 @@ import type { ActionResult } from '../actions';
 import type { AutoBreedConfig, AutoRecycleConfig, Creature } from '../state';
 import { D } from '../num';
 import type { System } from '../systems/types';
-import { breedingCost, eggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
+import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
@@ -136,7 +136,7 @@ function abilityScore(ctx: GameContext, c: Creature): number {
 /** The pair the automaton would breed next, or why it waits. */
 export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
-  if (eggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0 && cfg.cleanup === 'off') return { ok: false, reason: 'Der Stall ist voll.' };
   const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
   let pair: [Creature, Creature] | null = null;

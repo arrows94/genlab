@@ -55,10 +55,11 @@ export const MIGRATIONS: Record<number, Migration> = {
       anomalyRecord: Object.keys(best).length > 0 ? 1 : 0,
     };
   },
-  // v7 → v8: Stammbaum-Dynastien (line depth per creature; older lines start at 0).
+  // v7 → v8: Stammbaum-Dynastien (line depth per creature; older lines start at 0) and family names
+  // (older creatures have none; their next children found one).
   7: (s) => ({
     ...s,
-    creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ lineage: 0, ...c })),
+    creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ lineage: 0, family: null, ...c })),
   }),
 };
 

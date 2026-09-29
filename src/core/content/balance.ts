@@ -112,7 +112,6 @@ export interface Balance {
     hueVariance: number;
     maxNameLength: number;
     /** Offspring names are blended from the parents' names within these limits. */
-    offspringName: { minLength: number; maxLength: number; attempts: number };
   };
   abilities: {
     /** Chance for the 1st, 2nd, 3rd … ability when a creature is created without parents. */
@@ -138,6 +137,8 @@ export interface Balance {
     abilityInheritChance: number;
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
+    /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */
+    ritualNests: number;
   };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */

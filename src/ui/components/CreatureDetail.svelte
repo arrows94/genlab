@@ -124,7 +124,7 @@
             </p>
           {/if}
 
-          <h3>Stammbaum</h3>
+          <h3>Stammbaum{#if c.family} <span class="muted small">· Familie {c.family}</span>{/if}</h3>
           {#if data.dynasty}
             {@const d = data.dynasty}
             <p class="small lineage">

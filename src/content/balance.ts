@@ -92,7 +92,6 @@ export const balance: Balance = {
     statVariance: 0.1,
     hueVariance: 18,
     maxNameLength: 20,
-    offspringName: { minLength: 4, maxLength: 12, attempts: 12 },
   },
   abilities: {
     slotChances: [0.35, 0.15, 0.05],
@@ -110,6 +109,7 @@ export const balance: Balance = {
     mutationStatRange: [1.05, 1.25],
     abilityInheritChance: 0.5,
     baseNests: 1,
+    ritualNests: 1,
   },
   genetics: {
     alleleMutationFactor: 0.5,

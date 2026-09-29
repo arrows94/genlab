@@ -27,8 +27,11 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 6,
     date: '2026-09-29',
-    title: 'Stammbaum-Dynastien und Zerlege-Kammer',
+    title: 'Stammbaum-Dynastien, Familiennamen und neue Brutrituale',
     items: [
+      { text: 'Neue Namen: Frisch geschlüpfte Kreaturen bekommen einen Rufnamen und den Familiennamen des stärkeren Elternteils, zum Beispiel „Kiko Funkenstein“. Hat noch keiner eine Familie, gründet der stärkere eine – passend zu seinem Element. Keine seltsamen Silbensalate mehr nach vielen Generationen.', feature: 'breeding' },
+      { text: 'Besondere Brut überarbeitet: Rituale laufen im eigenen Ritualnest neben den normalen Nestern und brauchen nur eine Keimprobe – die Eltern bleiben frei.', feature: 'specialBreeding' },
+      { text: 'Kürzer und sicherer: Kreuzungsritual 1 Stunde (passt ein Rezept, wird es sicher ein Hybrid), Edelbrut 3 Stunden (mindestens Selten), Meisterbrut 8 Stunden (mindestens Episch).', feature: 'specialBreeding' },
       { text: 'Der Recycling-Automat arbeitet jetzt sichtbar: Er nimmt eine Kreatur nach der anderen in seine Zerlege-Kammer, statt alle auf einmal zu recyceln. Du siehst, wer gerade dran ist, wie lange es noch dauert und wer als Nächstes kommt – und kannst sie mit „★ Retten“ noch behalten.', feature: 'autoRecycle' },
       { text: 'Anfangs braucht die Kammer 3 Minuten je Kreatur. Die neue Forschung „Schnellzerlegung“ (10 Stufen) bringt das auf wenige Sekunden.', feature: 'autoRecycle' },
       { text: 'Neues Äon-Talent „Stammbaum-Dynastien“ (Stufe 2): Es öffnet reine Linien in der Brutstation.', feature: 'aeon' },

@@ -34,6 +34,8 @@ export interface CreateCreatureOptions {
   latent?: string | null;
   /** Depth of a pure line (Stammbaum-Dynastie); omitted → 0. */
   lineage?: number;
+  /** Family name; omitted → none. */
+  family?: string | null;
   source?: CreatureSource;
 }
 
@@ -78,6 +80,7 @@ export function createCreature(ctx: GameContext, opts: CreateCreatureOptions): C
     splices: 0,
     shiny: opts.shiny ?? ctx.rng.chance(Math.min(1, ctx.mods().apply('creature.shinyChance', balance.perfection.shinyChance))),
     lineage: opts.lineage ?? 0,
+    family: opts.family ?? null,
     boosts: {},
     boostUses: 0,
     parents: opts.parents ?? null,

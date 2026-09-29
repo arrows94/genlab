@@ -43,9 +43,10 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature, ritu
   const species: { id: string | null; p: number }[] = [];
   let remaining = 1;
   if (ctx.state.features['hybrids']) {
-    for (const r of ctx.content.recipes.list) {
-      if (!recipeMatches(ctx, r, a, b)) continue;
-      const p = remaining * Math.min(1, hybridChance(ctx, r) * (ritual?.hybridMult ?? 1));
+    const matching = ctx.content.recipes.list.filter((r) => recipeMatches(ctx, r, a, b));
+    for (const r of matching) {
+      // Kreuzungsritual: a matching recipe is certain (split evenly if several match).
+      const p = ritual?.guaranteedHybrid ? 1 / matching.length : remaining * Math.min(1, hybridChance(ctx, r) * (ritual?.hybridMult ?? 1));
       species.push({ id: isRecipeDiscovered(ctx, r) ? r.result : null, p });
       remaining -= p;
     }

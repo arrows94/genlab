@@ -5,11 +5,11 @@
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { availableRituals, eggCost, eggTimeMs, eggs, mutationChance, nestSlots, offspringGeneration, startBreeding, type EggData } from '@core/features/breeding';
+  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, startBreeding, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
   import { cleanupCandidate, planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
-  import type { AutoBreedConfig, Creature } from '@core/state';
+  import type { AutoBreedConfig, Creature, Process } from '@core/state';
   import { game, view, act } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CostLabel from './CostLabel.svelte';
@@ -71,19 +71,9 @@
       knownAlleles: activeLoci(game).flatMap((l) => l.alleles.filter((al) => libraryHas(game, l.id, al.id)).map((al) => ({ id: `${l.id}:${al.id}`, label: `${l.name}: ${al.name} (${al.symbol})` }))),
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
-      eggs: eggs(game).map((p) => {
-        const d = p.data as EggData;
-        const parents = d.parents.map((id) => findCreature(game, id));
-        return {
-          id: p.id,
-          progress: Math.min(1, p.elapsedMs / p.durationMs),
-          remaining: processRemainingMs(game, p),
-          parents,
-          hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
-          generation: d.generation,
-          ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
-        };
-      }),
+      eggs: nestEggs(game).map(eggView),
+      ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
+      ritualEggs: ritualEggs(game).map(eggView),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -115,6 +105,27 @@
   });
 
   const nestsFull = $derived(data.eggs.length >= data.slots);
+  const ritualFull = $derived(data.ritualEggs.length >= data.ritualSlots);
+  /** Normal nests first, then the Ritualnest (Besondere Brut). */
+  const nestList = $derived([
+    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: data.eggs[i], ritual: false })),
+    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: data.ritualEggs[i], ritual: true })),
+  ]);
+
+  function eggView(p: Process) {
+    const d = p.data as EggData;
+    // Ritual eggs show their Keimprobe (the parents may have changed or gone since).
+    const parents = d.sample ?? d.parents.map((id) => findCreature(game, id));
+    return {
+      id: p.id,
+      progress: Math.min(1, p.elapsedMs / p.durationMs),
+      remaining: processRemainingMs(game, p),
+      parents,
+      hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
+      generation: d.generation,
+      ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
+    };
+  }
 
   const BUDGETS = [[1, 'alle Vorräte'], [0.5, '50 %'], [0.25, '25 %'], [0.1, '10 %']] as const;
   const GOAL_HINTS: Record<string, string> = {
@@ -289,9 +300,10 @@
 
 <!-- Nests -->
 <div class="nests">
-  {#each Array.from({ length: data.slots }, (_, i) => i) as i (i)}
-    {@const egg = data.eggs[i]}
-    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85}>
+  {#each nestList as n (n.key)}
+    {@const egg = n.egg}
+    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ritualnest={n.ritual}>
+      {#if n.ritual}<span class="rn-label tiny">✨ Ritualnest</span>{/if}
       <div class="egg-wrap">
         {#if egg}
           <span class="glow" style="--h: {egg.hues[0]}; opacity: {0.25 + egg.progress * 0.6}"></span>
@@ -319,10 +331,10 @@
         </div>
         <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
         <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
-        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span> {/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span>{' '}{/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
         <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
       {:else}
-        <span class="small muted">Freies Nest</span>
+        <span class="small muted">{n.ritual ? 'Frei für ein Brutritual' : 'Freies Nest'}</span>
       {/if}
     </article>
   {/each}
@@ -370,7 +382,7 @@
         </button>
       {/each}
     </div>
-    {#if data.ritual}<p class="small muted note">Nest und beide Eltern sind {data.ritual.hours} Stunden belegt.</p>{/if}
+    {#if data.ritual}<p class="small muted note">Dauert {data.ritual.hours} {data.ritual.hours === 1 ? 'Stunde' : 'Stunden'} im Ritualnest, neben den normalen Nestern. Die Eltern bleiben frei – eine Keimprobe genügt.</p>{/if}
   {/if}
 
   <div class="facts">
@@ -379,11 +391,11 @@
     <span class="fact">✨ Mutation <b class="num">{formatPercent(data.mutation)}</b></span>
     {#if data.dynasties && data.lineage > 0}<span class="fact" title="Reine Linie, solange das Kind dieselbe Art wird (ein Hybrid bricht sie)">👑 Linie <b class="num">{data.lineage}</b></span>{/if}
   </div>
-  <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || nestsFull || data.stableFull} onclick={breed}>
+  <button class="primary go" disabled={parentA === null || parentB === null || !data.affordable || (data.ritual ? ritualFull : nestsFull) || data.stableFull} onclick={breed}>
     🥚 Brüten · <CostLabel cost={data.cost} />
   </button>
   <p class="small muted note">
-    {#if nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
+    {#if data.ritual && ritualFull}Das Ritualnest ist belegt.{:else if !data.ritual && nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else if data.ritual}Die Eltern arbeiten weiter.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
   </p>
 
   {#if data.a && data.b}
@@ -477,6 +489,8 @@
   }
   .nest.busy { border: 1px solid var(--line); background: radial-gradient(circle at 50% 30%, #f2c14e14, var(--panel) 70%); }
   .nest.soon { border-color: var(--gold); }
+  .nest.ritualnest { position: relative; border: 1px dashed color-mix(in srgb, var(--violet) 60%, var(--line)); background: radial-gradient(circle at 50% 30%, #9b6bff1f, var(--panel) 70%); }
+  .rn-label { position: absolute; top: 0.3rem; left: 0.5rem; color: var(--violet); font-weight: 700; }
   .egg-wrap { position: relative; width: 120px; height: 86px; display: grid; justify-items: center; align-items: end; }
   .twigs { position: absolute; bottom: 0; width: 120px; height: 40px; }
   .egg { position: relative; z-index: 1; margin-bottom: 12px; transform-origin: 50% 90%; }

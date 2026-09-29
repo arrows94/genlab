@@ -51,6 +51,14 @@ export interface ElementDef {
   color: string;
   /** Elements this one deals bonus damage against (tower). */
   strongAgainst: string[];
+  /** First halves of family names founded by a creature of this element. */
+  familyPrefixes: string[];
+}
+
+/** Word list for creature names (`given`: Rufnamen, `familySuffix`: endings of family names). */
+export interface NameListDef {
+  id: string;
+  words: string[];
 }
 
 export interface RarityDef {
@@ -534,6 +542,8 @@ export interface BreedingRitualDef {
   requires?: Condition;
   /** Multiplies every hybrid recipe chance. */
   hybridMult?: number;
+  /** A matching hybrid recipe always succeeds (one of them at random if several match). */
+  guaranteedHybrid?: boolean;
   /** The offspring has at least this rarity. */
   minRarity?: string;
   /** Extra weight for rare and better (0.5 = +50 %). */
@@ -626,6 +636,7 @@ export interface ContentData {
   researchThemes: ResearchThemeDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
+  nameLists: NameListDef[];
 }
 
 export interface Registry<T extends { id: string }> {

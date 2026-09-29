@@ -55,6 +55,8 @@ export interface Creature {
   shiny: boolean;
   /** Stammbaum-Dynastie: generations in a row of a pure line (same species as both parents); 0 = none. */
   lineage: number;
+  /** Family name, passed on to offspring (the stronger parent's); null = none yet (wild, start, capsule). */
+  family: string | null;
   parents: [number, number] | null;
   /** Parents and grandparents as snapshots for the pedigree view. */
   ancestry: AncestorInfo[] | null;
