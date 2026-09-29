@@ -8,7 +8,8 @@ import { EMPTY_FILTER, type CreatureFilter, type CreatureSort } from '@core/quer
 const KEY = 'genlab.view';
 
 interface ViewState {
-  list: { filter: CreatureFilter; sort: CreatureSort; alleleKey: string; showFilters: boolean };
+  /** `invert` flips the chosen sort (weakest first, most common first …). */
+  list: { filter: CreatureFilter; sort: CreatureSort; invert: boolean; alleleKey: string; showFilters: boolean };
   /** Dex view; the key replaced the old `mode` so everyone starts on the new gallery once. */
   dex: { view: 'cards' | 'table' | 'tree' };
   recycler: { element: string };
@@ -16,19 +17,19 @@ interface ViewState {
   lab: { dailyOpen: boolean };
   /** Creature pickers (missions, Wochenexpedition) can hide working creatures and favourites. */
   expedition: { region: string; voyageOpen: boolean; hideWorking: boolean; hideLocked: boolean };
-  breeding: { species: string; rarity: string; sort: BreedingSort };
+  breeding: { species: string; rarity: string; sort: BreedingSort; invert: boolean };
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
 }
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'species' | 'name' | `stat:${string}`;
 
 const defaults = (): ViewState => ({
-  list: { filter: { ...EMPTY_FILTER, hideAway: true }, sort: 'newest', alleleKey: '', showFilters: false },
+  list: { filter: { ...EMPTY_FILTER, hideAway: true }, sort: 'newest', invert: false, alleleKey: '', showFilters: false },
   dex: { view: 'cards' },
   recycler: { element: 'fire' },
   lab: { dailyOpen: false },
   expedition: { region: 'short', voyageOpen: false, hideWorking: false, hideLocked: false },
-  breeding: { species: '', rarity: '', sort: 'power' },
+  breeding: { species: '', rarity: '', sort: 'power', invert: false },
   research: { theme: '', affordableOnly: false, grandOpen: false },
 });
 

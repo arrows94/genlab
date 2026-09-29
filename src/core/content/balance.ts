@@ -214,6 +214,8 @@ export interface Balance {
     catalystEvery: number;
     alleleEvery: number;
     leaderboardSize: number;
+    /** Number of recent runs kept in the tower history. */
+    historySize: number;
     checkpointEvery: number;
     /** Bosses from this floor on have a trait (`bossTraits`). */
     bossTraitFromFloor: number;

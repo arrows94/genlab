@@ -13,6 +13,7 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
+  import SortToggle from './SortToggle.svelte';
 
   /**
    * Genom-Turm: tower column with the floors around the team, an arena that
@@ -40,6 +41,7 @@
   let popups = $state<{ id: number; t: number; dmg: number; m: number }[]>([]);
   let banner = $state<{ win: boolean; floor: number } | null>(null);
   let sortBy = $state<'power' | 'matchup'>('power');
+  let invertSort = $state(false);
   let lastKey: string | null = null;
   let popupId = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -139,7 +141,7 @@
         const el = content.species.get(c.speciesId).element;
         return { c, power: creaturePower(game, c), inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
       })
-      .sort((a, b) => (sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : 0) || b.power - a.power)
+      .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : 0) || b.power - a.power))
       .slice(0, 40);
     return {
       tw,
@@ -410,9 +412,12 @@
   {#if !data.tw.run}
     <div class="team-head">
       <h3>Kandidaten</h3>
-      <div class="seg">
-        <button class:on={sortBy === 'power'} onclick={() => (sortBy = 'power')}>Stärke</button>
-        <button class:on={sortBy === 'matchup'} onclick={() => (sortBy = 'matchup')}>Vorteil vs. {el(data.enemy.element).name}</button>
+      <div class="sorting">
+        <div class="seg">
+          <button class:on={sortBy === 'power'} onclick={() => (sortBy = 'power')}>Stärke</button>
+          <button class:on={sortBy === 'matchup'} onclick={() => (sortBy = 'matchup')}>Vorteil vs. {el(data.enemy.element).name}</button>
+        </div>
+        <SortToggle bind:inverted={invertSort} />
       </div>
     </div>
     <div class="tiles">
@@ -440,31 +445,48 @@
 
 <RelicPanel />
 
-<!-- Leaderboard -->
+<!-- Leaderboard: the best runs, plus the most recent ones -->
 <article class="panel board">
   <h3>🏆 Bestenliste</h3>
   {#if data.tw.leaderboard.length === 0}
     <p class="muted small">Noch keine Läufe.</p>
   {:else}
     <ol>
-      {#each data.tw.leaderboard as e, i (i)}
-        <li class:podium={i < 3}>
+      {#each data.tw.leaderboard.slice(0, game.balance.tower.leaderboardSize) as e, i (i)}
+        <li class="podium">
           <span class="medal">{medal(i)}</span>
           <span class="bfloor num">Etage {e.floor}</span>
-          <span class="minis">
-            {#each e.team as s, j (j)}
-              {#if content.species.has(s)}
-                {@const sp = content.species.get(s)}
-                <span title={sp.name}><CreatureSvg appearance={{ ...neutral, hue: sp.hue }} shape={sp.shape} tier={sp.tier} size={26} /></span>
-              {/if}
-            {/each}
-          </span>
+          {@render minis(e.team)}
           <span class="small muted when">{new Date(e.at).toLocaleDateString('de-DE')}</span>
         </li>
       {/each}
     </ol>
   {/if}
+  {#if data.tw.history.length > 0}
+    <h4>🕑 Letzte Läufe</h4>
+    <ol class="history">
+      {#each data.tw.history as e, i (i)}
+        <li class:record={e.floor > 0 && e.floor === data.tw.best}>
+          <span class="bfloor num">Etage {e.floor}</span>
+          <span class="small muted range num" title="Start ab Etage {e.startFloor}">ab {e.startFloor}</span>
+          {@render minis(e.team)}
+          <span class="small muted when">{new Date(e.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+        </li>
+      {/each}
+    </ol>
+  {/if}
 </article>
+
+{#snippet minis(team: string[])}
+  <span class="minis">
+    {#each team as s, j (j)}
+      {#if content.species.has(s)}
+        {@const sp = content.species.get(s)}
+        <span title={sp.name}><CreatureSvg appearance={{ ...neutral, hue: sp.hue }} shape={sp.shape} tier={sp.tier} size={26} /></span>
+      {/if}
+    {/each}
+  </span>
+{/snippet}
 
 <style>
   .small { font-size: 0.8rem; }
@@ -566,6 +588,7 @@
   .team-panel { margin-top: 0.75rem; }
   .team-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; margin: 0.3rem 0 0.5rem; }
   .team-head h3 { margin: 0; }
+  .sorting { display: flex; gap: 0.3rem; align-items: stretch; }
   .sockets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
   .socket {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
@@ -597,8 +620,12 @@
   .board li.podium { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .medal { width: 1.8rem; text-align: center; font-size: 1.1rem; }
   .bfloor { font-weight: 700; min-width: 5.5rem; }
+  .board h4 { margin: 0.8rem 0 0.4rem; }
+  .history li { padding-block: 0.1rem; }
+  .history li.record { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+  .range { min-width: 3.5rem; }
   .minis { display: flex; gap: 2px; }
-  .when { margin-left: auto; }
+  .when { margin-left: auto; white-space: nowrap; }
 
   @media (max-width: 760px) {
     .stage { grid-template-columns: 1fr; }

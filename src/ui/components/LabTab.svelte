@@ -13,6 +13,7 @@
   import EvolvePanel from './EvolvePanel.svelte';
   import CostLabel from './CostLabel.svelte';
   import DailyCard from './DailyCard.svelte';
+  import SortToggle from './SortToggle.svelte';
 
   // Filters live in viewState so they survive tab switches.
   const list = viewState.list;
@@ -25,7 +26,8 @@
     view.frame;
     const [locus, allele] = list.alleleKey ? list.alleleKey.split(':') : [];
     const f = { ...list.filter, allele: locus && allele ? { locus, allele } : null };
-    const shown = sortCreatures(game, filterCreatures(game, f), list.sort);
+    const sorted = sortCreatures(game, filterCreatures(game, f), list.sort);
+    const shown = list.invert ? sorted.reverse() : sorted;
     const chosen = game.state.creatures.filter((c) => selected.has(c.id) && canConsume(game, c));
     return {
       list: shown,
@@ -148,15 +150,18 @@
         {#each data.alleles as a (a.key)}<option value={a.key}>{a.label}</option>{/each}
       </select>
     {/if}
-    <select bind:value={list.sort}>
-      <option value="newest">Neueste</option>
-      <option value="oldest">Älteste</option>
-      <option value="rarity">Seltenheit</option>
-      <option value="generation">Generation</option>
-      <option value="power">Gesamtstärke</option>
-      {#each content.stats.list as s (s.id)}<option value={`stat:${s.id}`}>{s.name}</option>{/each}
-      <option value="name">Name</option>
-    </select>
+    <span class="sortgroup">
+      <select bind:value={list.sort} title="Sortierung">
+        <option value="newest">Neueste</option>
+        <option value="oldest">Älteste</option>
+        <option value="rarity">Seltenheit</option>
+        <option value="generation">Generation</option>
+        <option value="power">Gesamtstärke</option>
+        {#each content.stats.list as s (s.id)}<option value={`stat:${s.id}`}>{s.name}</option>{/each}
+        <option value="name">Name</option>
+      </select>
+      <SortToggle bind:inverted={list.invert} />
+    </span>
     {#if activeFilters > 0}
       <button class="reset" onclick={resetListFilters}>Filter zurücksetzen ({activeFilters})</button>
     {/if}
@@ -206,6 +211,7 @@
   .toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem; margin-bottom: 0.6rem; }
   .toolbar input { flex: 1 1 10rem; }
   .toolbar select { flex: 0 1 auto; }
+  .sortgroup { display: flex; gap: 0.3rem; flex: 0 1 auto; }
   .batch { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; margin-bottom: 0.6rem; position: sticky; top: calc(var(--header-h, 0px) + 0.4rem); z-index: 5; }
   .small { font-size: 0.8rem; }
   .more { width: 100%; margin-top: 0.75rem; }
@@ -213,7 +219,8 @@
   .head-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .filter-toggle { display: none; }
   @media (max-width: 640px) {
-    .toolbar select, .toolbar input { flex: 1 1 45%; }
+    .toolbar select, .toolbar input, .sortgroup { flex: 1 1 45%; }
+    .sortgroup select { flex: 1 1 auto; min-width: 0; }
     .filter-toggle { display: inline-block; }
     .toolbar:not(.open) { display: none; }
     .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }

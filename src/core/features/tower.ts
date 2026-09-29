@@ -297,9 +297,11 @@ export function endRun(ctx: GameContext): void {
     const c = findCreature(ctx, id);
     if (c?.job?.kind === 'tower') c.job = null;
   }
-  tw.leaderboard.push({ floor: run.floor, team: run.team.map((id) => findCreature(ctx, id)?.speciesId ?? '?'), at: ctx.state.lastTickAt });
+  const entry = { floor: run.floor, team: run.team.map((id) => findCreature(ctx, id)?.speciesId ?? '?'), at: ctx.state.lastTickAt };
+  tw.leaderboard.push(entry);
   tw.leaderboard.sort((a, b) => b.floor - a.floor);
   tw.leaderboard = tw.leaderboard.slice(0, ctx.balance.tower.leaderboardSize);
+  tw.history = [{ ...entry, team: [...entry.team], startFloor: run.startFloor }, ...tw.history].slice(0, ctx.balance.tower.historySize);
   tw.run = null;
   ctx.invalidate();
   ctx.bus.emit('towerRunEnded', { floor: run.floor });

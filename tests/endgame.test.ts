@@ -171,6 +171,23 @@ describe('genome tower', () => {
     for (let i = 0; i < 50; i++) g.step(balance.tower.fightIntervalSec * 1000);
     expect(g.state.tower.leaderboard.length).toBeGreaterThan(1);
   });
+
+  it('keeps the top runs in the leaderboard and the most recent runs in the history', () => {
+    const g = endgame();
+    setTeam(g, [champion(g, 3).id]);
+    buyUpgrade(g, 'towerRoutine');
+    g.state.tower.autoRestart = true;
+    startRun(g);
+    const tw = g.state.tower;
+    for (let i = 0; i < 400 && tw.history.length < balance.tower.historySize + 2; i++) g.step(balance.tower.fightIntervalSec * 1000);
+    expect(tw.leaderboard.length).toBe(balance.tower.leaderboardSize);
+    expect(tw.history.length).toBe(balance.tower.historySize);
+    expect(tw.leaderboard.map((e) => e.floor)).toEqual([...tw.leaderboard.map((e) => e.floor)].sort((a, b) => b - a));
+    expect(tw.leaderboard[0]!.floor).toBe(Math.max(...tw.history.map((e) => e.floor)));
+    // Newest first.
+    for (let i = 1; i < tw.history.length; i++) expect(tw.history[i - 1]!.at).toBeGreaterThanOrEqual(tw.history[i]!.at);
+    expect(tw.history.every((e) => e.startFloor >= 1 && e.team.length === 1)).toBe(true);
+  });
 });
 
 describe('Äon prestige and talents', () => {
