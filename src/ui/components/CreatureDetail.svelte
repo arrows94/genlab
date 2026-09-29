@@ -162,7 +162,7 @@
       </div>
 
       {#if game.state.features['infusion']}
-        <InfusionChamber creature={c} />
+        {#key c.id}<InfusionChamber creature={c} />{/key}
       {/if}
     </div>
   </div>

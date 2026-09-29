@@ -1,3 +1,8 @@
+<script lang="ts" module>
+  /** Picked victims per target, kept while the game runs (the detail view is re-created on every open). */
+  const remembered = new Map<number, Set<number>>();
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import { scale } from 'svelte/transition';
@@ -12,6 +17,7 @@
   } from '@core/features/infusion';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
+  import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CostLabel from './CostLabel.svelte';
 
@@ -22,10 +28,13 @@
    */
   let { creature }: { creature: Creature } = $props();
 
-  let selected = $state<Set<number>>(new Set());
-  /** Quick selection settings: rarity limit and "only allele donors". */
-  let maxRarity = $state('common');
-  let donorsOnly = $state(false);
+  // svelte-ignore state_referenced_locally
+  // The chamber is keyed to one creature (see CreatureDetail), so reading the prop once is fine.
+  let selected = $state<Set<number>>(new Set([...(remembered.get(creature.id) ?? [])].filter((id) => game.state.creatures.some((x) => x.id === id))));
+  $effect(() => {
+    if (selected.size) remembered.set(creature.id, selected);
+    else remembered.delete(creature.id);
+  });
   let partner = $state<number | null>(null);
   let burst = $state<{ id: number; lines: string[]; color: string } | null>(null);
   let burstId = 0;
@@ -78,7 +87,7 @@
   });
 
   function quick(c: Creature, goal: InfusionPick['goal']): number[] {
-    return pickInfusionVictims(game, c, { maxRarity, goal, donorsOnly: donorsOnly && c.sequenced }).map((v) => v.id);
+    return pickInfusionVictims(game, c, { maxRarity: viewState.infusion.maxRarity, goal, donorsOnly: viewState.infusion.donorsOnly && c.sequenced }).map((v) => v.id);
   }
 
   function toggle(id: number) {
@@ -178,12 +187,12 @@
     </div>
     <div class="quick">
       <label>bis
-        <select bind:value={maxRarity}>
+        <select bind:value={viewState.infusion.maxRarity}>
           {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
         </select>
       </label>
       {#if creature.sequenced}
-        <label title="Nur sequenzierte Artgenossen, die ein besseres Allel weitergeben könnten"><input type="checkbox" bind:checked={donorsOnly} /> nur 🧬 Allel-Spender</label>
+        <label title="Nur sequenzierte Artgenossen, die ein besseres Allel weitergeben könnten"><input type="checkbox" bind:checked={viewState.infusion.donorsOnly} /> nur 🧬 Allel-Spender</label>
       {/if}
       <span class="qbtns">
         <button disabled={!data.picks.nextLevel.length} title="Die günstigsten, bis die nächste Stufe erreicht ist" onclick={() => (selected = new Set(data.picks.nextLevel))}>Bis +{data.level + 1} ({data.picks.nextLevel.length})</button>

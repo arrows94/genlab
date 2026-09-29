@@ -184,7 +184,12 @@ export const balance: Balance = {
   tower: {
     fightIntervalSec: 8,
     baseTeamSize: 3,
-    maxRounds: 40,
+    // Aktionsleiste: a fighter acts every (average speed / own speed)^speedExponent seconds of fight time.
+    speedExponent: 0.8,
+    maxFightSec: 40,
+    // Dodge chance per 100 % speed lead over the attacker, capped.
+    evadePerSpeedLead: 0.15,
+    maxEvade: 0.25,
     enemyBase: { hp: 60, atk: 9, def: 5, spd: 6 },
     enemyGrowth: 1.11,
     bossEvery: 10,

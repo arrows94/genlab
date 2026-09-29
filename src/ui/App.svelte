@@ -4,7 +4,8 @@
   import { fulfillableCount } from '@core/features/contracts';
   import { dailyAvailable } from '@core/features/daily';
   import { game, view, init, openTab } from './store.svelte';
-  import { loadPrefs } from './prefs.svelte';
+  import { loadPrefs, prefs } from './prefs.svelte';
+  import { moodFor, setMusic } from './music';
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import SyncDialog from './components/SyncDialog.svelte';
@@ -12,6 +13,7 @@
   import Celebration from './components/Celebration.svelte';
   import NotificationBell from './components/NotificationBell.svelte';
   import NotificationCenter from './components/NotificationCenter.svelte';
+  import MusicToggle from './components/MusicToggle.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
   import DnaHelix from './components/DnaHelix.svelte';
   import LabTab from './components/LabTab.svelte';
@@ -70,6 +72,9 @@
   loadPrefs();
   void init();
 
+  // Background music follows the settings and changes its mood with the area.
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, moodFor(view.tab)));
+
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
   /** Header shadow once the page is scrolled under it. */
@@ -94,6 +99,7 @@
     <div class="brand">
       <DnaHelix pairs={8} width={70} height={28} />
       <h1>Genlab</h1>
+      <MusicToggle />
       <NotificationBell />
     </div>
     <ResourceBar />
@@ -167,7 +173,7 @@
     header { gap: 0.4rem; margin: -0.5rem -0.6rem 0.5rem; padding: calc(0.4rem + env(safe-area-inset-top)) 0.6rem 0.4rem; }
     .brand { width: 100%; }
     .brand :global(svg) { display: none; }
-    .brand :global(.bell) { margin-left: auto; }
+    .brand :global(.music) { margin-left: auto; }
     h1 { font-size: 1.2rem; }
     nav {
       position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; margin: 0;

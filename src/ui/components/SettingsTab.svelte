@@ -152,6 +152,18 @@
         <p class="small muted">Beim Nachholen der Offline-Zeit und im Hintergrund bleibt es still.</p>
       </div>
     {/if}
+    <label class="opt check">
+      <input type="checkbox" checked={prefs.music} onchange={(e) => updatePrefs({ music: e.currentTarget.checked })} />
+      <span>Hintergrundmusik</span>
+    </label>
+    {#if prefs.music}
+      <div class="opt volume">
+        <label for="music-volume">Musik-Lautstärke <span class="num muted">{Math.round(prefs.musicVolume * 100)} %</span></label>
+        <input id="music-volume" type="range" min="0" max="100" step="5" value={Math.round(prefs.musicVolume * 100)}
+          oninput={(e) => updatePrefs({ musicVolume: Number(e.currentTarget.value) / 100 })} />
+        <p class="small muted">Ruhige, live erzeugte Musik – im Turm treibender, im Äon schwebend. Auch über 🎵 oben schaltbar.</p>
+      </div>
+    {/if}
   </article>
 
   {#if game.state.features['breeding']}

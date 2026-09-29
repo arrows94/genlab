@@ -279,8 +279,9 @@ Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven. Reihenfolge = Abarbeit
 
 ## Schritt 5 – Musik (optional, später)
 
-- [ ] Ruhige Hintergrundmusik (Schleife, erzeugt oder lizenzfreie Datei), standardmäßig aus; eigener Schalter
-- [ ] Variante je Bereich (Labor, Turm, Äon) mit weichem Übergang
+- [x] Ruhige Hintergrundmusik, live mit Web Audio erzeugt (`ui/music.ts`: Pad, Bass, Zupfer, Hall), standardmäßig
+      aus; Schalter 🎵 in der Kopfzeile und unter Optionen mit eigener Lautstärke; still im Hintergrund-Tab
+- [x] Variante je Bereich (Labor ruhig, Turm treibend in Moll, Äon schwebend lydisch), Wechsel am nächsten Akkord
 - [ ] Falls Tondateien: lizenzfreie Quellen dokumentieren, als `.ogg` klein halten, nicht in den Service-Worker-Precache
 
 # TODO – Kampfsystem überarbeiten
@@ -293,12 +294,15 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 1 – Zeitleiste statt Runden (Tempo wird wichtig)
 
-- [ ] Aktionsleiste (ATB): Jeder Kämpfer füllt eine Leiste mit seinem Tempo und handelt, wenn sie voll ist.
-      Doppelt so schnell = ungefähr doppelt so viele Aktionen (mit abnehmendem Ertrag, z. B. Tempo^0,8, damit
-      Tempo nicht alles schlägt)
-- [ ] Zeitlimit statt 40 Runden (z. B. 60 s Kampfzeit), das Regenerations- und Wandler-Verhalten daran anpassen
-- [ ] Tempo zusätzlich: kleine Ausweich-Chance, abhängig vom Tempo-Unterschied (gedeckelt, z. B. max. 25 %)
-- [ ] Mit dem Mess-Test von oben prüfen: +50 % auf jeden Wert soll spürbar, aber ähnlich viel bringen
+- [x] Aktionsleiste (ATB): Jeder Kämpfer handelt alle (mittleres Tempo / eigenes Tempo)^0,8 Sekunden Kampfzeit –
+      relativ zum Kampf, damit es auf jeder Etage gleich wirkt (`actionIntervals` in `features/tower.ts`)
+- [x] Zeitlimit statt 40 Runden: 40 s Kampfzeit; Wandler wechselt und Regeneration heilt jetzt jede Sekunde
+- [x] Tempo zusätzlich: Ausweich-Chance 15 % je 100 % Tempo-Vorsprung, höchstens 25 %
+- [x] Mess-Test (Etage 25, gemischtes Team, 200 Kämpfe, Basis 63 %): +10 % KP 94 %, ANG 88 %, VER 84 %, TMP 71 %;
+      ab +25 % bringen alle vier Werte 94–100 %. Test: „speed wins fights“ in `tests/towerMechanics.test.ts`
+- [ ] Äon-Bot (12 Tage) vorher/nachher: Turm-Rekord Tag 8 42 → 36, ab Tag 9 43 → 39 (Boss auf Etage 40 hält).
+      Der Bot wählt sein Team nur nach Gesamtstärke, nicht nach Tempo – Bot-Teamwahl mit Tempo, dann neu messen
+- [ ] Wochen-Boss (`weeklyBoss.ts`) läuft noch rundenbasiert – auf die Aktionsleiste umstellen (siehe Schritt 4)
 
 ## Schritt 2 – Verteidigung und Rollen
 
@@ -329,8 +333,9 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 5 – Darstellung
 
-- [ ] Arena: Aktionsleisten unter den Kämpfern, Zahlen nach Art (kritisch, sehr effektiv, resistiert, geblockt),
-      Technik-Namen einblenden, Zustands-Symbole
+- [x] Arena: Aktionsleisten unter den Kämpfern, Zugfolge, Kampfuhr mit Zeitlimit-Balken, Zahlen nach Art
+      (sehr effektiv, resistiert, ausgewichen, Heilung, Elementwechsel), Treffer-Funken, Boden in Perspektive
+- [ ] Technik-Namen einblenden, Zustands-Symbole (mit Schritt 3)
 - [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
 - [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
 

@@ -2,14 +2,15 @@
   import { onDestroy, untrack } from 'svelte';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
-  import { creaturePower, findCreature } from '@core/creatures';
+  import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration } from '@core/format';
   import {
-    checkpoint, elementMultiplier, enemyFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
+  import { prefs } from '../prefs.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
@@ -37,62 +38,130 @@
 
   // ---- fight replay -------------------------------------------------------
 
-  let replay = $state<{ key: string; hp: number[]; step: number; total: number; attacker: number; target: number; done: boolean } | null>(null);
-  let popups = $state<{ id: number; t: number; dmg: number; m: number }[]>([]);
-  let banner = $state<{ win: boolean; floor: number } | null>(null);
-  let sortBy = $state<'power' | 'matchup'>('power');
+  type LastResult = NonNullable<typeof game.state.tower.lastResult>;
+  type ReplayEvent = NonNullable<LastResult['events']>[number] & { at: number };
+
+  /**
+   * The last fight replayed on its own time line: `clock` runs in fight
+   * seconds, events fire when the clock passes them, the action gauges fill
+   * with each fighter's interval.
+   */
+  let replay = $state<{
+    key: string; hp: number[]; elements: string[]; clock: number; end: number; idx: number; attacker: number; target: number; done: boolean;
+  } | null>(null);
+  let popups = $state<{ id: number; t: number; text: string; kind: 'hit' | 'crit' | 'weak' | 'miss' | 'heal' | 'shift' }[]>([]);
+  let sparks = $state<{ id: number; t: number; color: string }[]>([]);
+  let banner = $state<{ win: boolean; floor: number; seconds: number } | null>(null);
+  let shake = $state(false);
+  let sortBy = $state<'power' | 'matchup' | 'speed'>('power');
   let invertSort = $state(false);
   let lastKey: string | null = null;
   let popupId = 0;
+  let frame: number | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const keyOf = (lr: typeof game.state.tower.lastResult) => (lr ? `${lr.floor}-${lr.at ?? 0}-${lr.win}` : '');
+  /** Older saves have no event times: spread them evenly. */
+  const timedEvents = (lr: LastResult): ReplayEvent[] => (lr.events ?? []).map((e, i) => ({ ...e, at: e.at ?? (i + 1) * 0.6 }));
+  const intervalsOf = (lr: LastResult) => (lr.fighters ?? []).map((f) => f.interval ?? 1);
 
-  function clearTimer() {
+  function stopReplay() {
+    if (frame !== null) cancelAnimationFrame(frame);
     if (timer) clearTimeout(timer);
+    frame = null;
     timer = null;
   }
 
-  function finalHp(lr: NonNullable<typeof game.state.tower.lastResult>): number[] {
+  function finalState(lr: LastResult): { hp: number[]; elements: string[] } {
     const fighters = lr.fighters ?? [];
     const hp = fighters.map((f) => f.maxHp);
-    for (const e of lr.events ?? []) hp[e.t] = e.hp;
+    const elements = fighters.map((f) => f.element);
+    for (const e of lr.events ?? []) {
+      hp[e.t] = e.hp;
+      if (e.kind === 'shift' && e.element) elements[e.t] = e.element;
+    }
     // Events are capped – make the end state match the outcome.
     fighters.forEach((f, i) => {
       if (lr.win && !f.team) hp[i] = 0;
       if (!lr.win && f.team && lr.log.at(-1) !== 'Zeit abgelaufen') hp[i] = 0;
     });
-    return hp;
+    return { hp, elements };
   }
 
-  function startReplay(lr: NonNullable<typeof game.state.tower.lastResult>, key: string) {
-    clearTimer();
-    const events = lr.events ?? [];
+  /** Seconds the fight lasted (from the log line, else the last event). */
+  function fightSeconds(lr: LastResult, events: ReplayEvent[]): number {
+    const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
+    if (m) return Number(m[1]!.replace(',', '.'));
+    if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
+    return events.at(-1)?.at ?? 1;
+  }
+
+  function popup(e: ReplayEvent, attackerElement: string) {
+    const id = ++popupId;
+    const p =
+      e.kind === 'miss' ? { text: 'Ausgewichen!', kind: 'miss' as const }
+      : e.kind === 'heal' ? { text: `+${formatNumber(e.dmg)}`, kind: 'heal' as const }
+      : e.kind === 'shift' ? { text: el(e.element ?? 'fire').name, kind: 'shift' as const }
+      : e.m > 1 ? { text: `−${formatNumber(e.dmg)} Sehr effektiv!`, kind: 'crit' as const }
+      : e.m < 1 ? { text: `−${formatNumber(e.dmg)} resistiert`, kind: 'weak' as const }
+      : { text: `−${formatNumber(e.dmg)}`, kind: 'hit' as const };
+    popups = [...popups.slice(-6), { id, t: e.t, ...p }];
+    setTimeout(() => (popups = popups.filter((x) => x.id !== id)), 1000);
+    if (!e.kind) {
+      sparks = [...sparks.slice(-4), { id, t: e.t, color: el(attackerElement).color }];
+      setTimeout(() => (sparks = sparks.filter((x) => x.id !== id)), 420);
+      if (e.m > 1 && !prefs.reduceMotion) {
+        shake = true;
+        setTimeout(() => (shake = false), 260);
+      }
+    }
+  }
+
+  function finish(lr: LastResult, key: string, seconds: number) {
+    if (!replay || replay.key !== key) return;
+    const end = finalState(lr);
+    replay = { ...replay, ...end, clock: seconds, attacker: -1, target: -1, done: true };
+    banner = { win: lr.win, floor: lr.floor, seconds };
+    timer = setTimeout(() => (banner = null), 1900);
+  }
+
+  function startReplay(lr: LastResult, key: string) {
+    stopReplay();
+    const events = timedEvents(lr);
     const fighters = lr.fighters ?? [];
     if (!fighters.length) return;
-    replay = { key, hp: fighters.map((f) => f.maxHp), step: 0, total: events.length, attacker: -1, target: -1, done: false };
+    const seconds = fightSeconds(lr, events);
+    replay = { key, hp: fighters.map((f) => f.maxHp), elements: fighters.map((f) => f.element), clock: 0, end: seconds, idx: 0, attacker: -1, target: -1, done: false };
     banner = null;
     popups = [];
-    const budget = fightIntervalMs(game) * 0.55;
-    const stepMs = Math.max(110, Math.min(420, budget / Math.max(1, events.length)));
-    const next = () => {
+    if (prefs.reduceMotion) return finish(lr, key, seconds);
+    // The whole fight plays within ~60 % of the time until the next one.
+    const budgetMs = Math.max(1200, Math.min(fightIntervalMs(game) * 0.6, seconds * 450));
+    const rate = seconds / budgetMs;
+    let last = performance.now();
+    const step = (now: number) => {
       if (!replay || replay.key !== key) return;
-      const e = events[replay.step];
-      if (!e) {
-        replay = { ...replay, hp: finalHp(lr), attacker: -1, target: -1, done: true };
-        banner = { win: lr.win, floor: lr.floor };
-        timer = setTimeout(() => (banner = null), 1800);
-        return;
-      }
+      const clock = Math.min(seconds, replay.clock + (now - last) * rate);
+      last = now;
+      let { idx, attacker, target } = replay;
       const hp = [...replay.hp];
-      hp[e.t] = e.hp;
-      replay = { ...replay, hp, step: replay.step + 1, attacker: e.a, target: e.t };
-      const id = ++popupId;
-      popups = [...popups.slice(-5), { id, t: e.t, dmg: e.dmg, m: e.m }];
-      setTimeout(() => (popups = popups.filter((p) => p.id !== id)), 900);
-      timer = setTimeout(next, stepMs);
+      const elements = [...replay.elements];
+      while (idx < events.length && events[idx]!.at <= clock) {
+        const e = events[idx]!;
+        if (e.kind === 'shift' && e.element) elements[e.t] = e.element;
+        else hp[e.t] = e.hp;
+        if (!e.kind || e.kind === 'miss') {
+          attacker = e.a;
+          target = e.t;
+        }
+        popup(e, elements[e.a] ?? 'fire');
+        idx++;
+      }
+      replay = { ...replay, clock, idx, hp, elements, attacker, target };
+      if (clock >= seconds) return finish(lr, key, seconds);
+      frame = requestAnimationFrame(step);
     };
-    timer = setTimeout(next, 250);
+    frame = requestAnimationFrame(step);
   }
 
   $effect(() => {
@@ -108,12 +177,27 @@
         return;
       }
       // Opening the tab shows the last result; new fights are replayed.
-      if (first) replay = { key, hp: finalHp(lr), step: 0, total: 0, attacker: -1, target: -1, done: true };
-      else startReplay(lr, key);
+      if (first) {
+        const events = timedEvents(lr);
+        replay = { key, ...finalState(lr), clock: fightSeconds(lr, events), end: fightSeconds(lr, events), idx: events.length, attacker: -1, target: -1, done: true };
+      } else startReplay(lr, key);
     });
   });
 
-  onDestroy(clearTimer);
+  onDestroy(stopReplay);
+
+  /** Fill (0…1) of a fighter's action gauge at fight time `clock`. */
+  const gauge = (clock: number, interval: number) => (interval > 0 ? (clock % interval) / interval : 0);
+
+  /** The next actions from `clock` on: fighter indices in order (the turn-order strip). */
+  function upcoming(intervals: number[], alive: boolean[], clock: number, count: number): { i: number; at: number }[] {
+    const out: { i: number; at: number }[] = [];
+    intervals.forEach((iv, i) => {
+      if (!alive[i] || iv <= 0) return;
+      for (let k = Math.floor(clock / iv) + 1; out.length < count * intervals.length && k * iv <= clock + count * 2; k++) out.push({ i, at: k * iv });
+    });
+    return out.sort((a, b) => a.at - b.at).slice(0, count);
+  }
 
   // ---- derived view data -------------------------------------------------
 
@@ -139,9 +223,9 @@
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
       .map((c) => {
         const el = content.species.get(c.speciesId).element;
-        return { c, power: creaturePower(game, c), inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
+        return { c, power: creaturePower(game, c), spd: effectiveStats(game, c).spd ?? 0, inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
       })
-      .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : 0) || b.power - a.power))
+      .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : sortBy === 'speed' ? b.spd - a.spd : 0) || b.power - a.power))
       .slice(0, 40);
     return {
       tw,
@@ -180,15 +264,22 @@
         const c = f.team && ids[i] !== undefined ? findCreature(game, ids[i]!) : undefined;
         return { ...f, creature: c && c.speciesId === f.speciesId ? c : null };
       });
-      return { mode: 'fight' as const, floor: lr.floor, units, hp: replay.hp };
+      const units2 = units.map((u, i) => ({ ...u, element: replay!.elements[i] ?? u.element }));
+      return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end };
     }
     const units: Unit[] = [
       ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c })),
       { name: data.enemy.name, speciesId: data.enemy.speciesId, element: data.enemy.element, maxHp: data.enemy.maxHp, team: false, creature: null },
     ];
-    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp) };
+    // Preview: the same relative time line the next fight will use.
+    const intervals = actionIntervals(game, [...data.team.map((c) => fighterFor(game, c)), data.enemy]);
+    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0 };
   });
 
+  const order = $derived.by(() => {
+    const alive = arena.units.map((_, i) => (arena.hp[i] ?? 1) > 0);
+    return upcoming(arena.intervals, alive, arena.clock, 8);
+  });
   const teamUnits = $derived(arena.units.map((u, i) => ({ u, i })).filter((x) => x.u.team));
   const foe = $derived(arena.units.map((u, i) => ({ u, i })).find((x) => !x.u.team));
 
@@ -212,6 +303,8 @@
   {@const species = content.species.get(u.speciesId)}
   {@const hp = arena.hp[i] ?? u.maxHp}
   {@const pct = arena.mode === 'preview' ? 1 : Math.max(0, hp / u.maxHp)}
+  {@const iv = arena.intervals[i] ?? 1}
+  {@const fighting = arena.mode === 'fight' && !replay?.done}
   <div
     class="unit"
     class:big
@@ -223,13 +316,22 @@
   >
     <div class="art">
       {#if !u.team && arena.floor % game.balance.tower.bossEvery === 0}<span class="crown">👑</span>{/if}
+      <span class="platform" aria-hidden="true"></span>
       <CreatureSvg appearance={look(u)} shape={species.shape} tier={species.tier} size={big ? 104 : 60} shiny={u.creature?.shiny ?? false} />
+      {#each sparks.filter((p) => p.t === i) as p (p.id)}<span class="spark" style="--sc: {p.color}" aria-hidden="true"></span>{/each}
       {#each popups.filter((p) => p.t === i) as p (p.id)}
-        <span class="pop" class:crit={p.m > 1} class:weak={p.m < 1}>−{formatNumber(p.dmg)}{p.m > 1 ? '!' : ''}</span>
+        <span class="pop {p.kind}" style="--dx: {((p.id % 3) - 1) * 26}px; --dy: {(p.id % 2) * 12}px">{p.text}</span>
       {/each}
     </div>
     <span class="uname" title={u.name}>{u.name}</span>
-    <div class="hpbar"><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
+    <div class="hpbar" title="Lebenspunkte"><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
+    <div class="atb" class:idle={!fighting} title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
+      {#if fighting}
+        <div style="width: {(hp > 0 ? gauge(arena.clock, iv) : 0) * 100}%"></div>
+      {:else if arena.mode === 'preview'}
+        <div class="loop" style="animation-duration: {iv * 1.2}s"></div>
+      {/if}
+    </div>
     {#if !u.team}
       <span class="small muted num">{arena.mode === 'fight' ? `${formatNumber(Math.max(0, hp))} / ` : ''}{formatNumber(u.maxHp)} KP</span>
     {/if}
@@ -287,16 +389,36 @@
       <span class="floor-tag" class:boss={arena.floor % game.balance.tower.bossEvery === 0}>Etage <b class="num">{arena.floor}</b></span>
       <span class="small muted">
         {#if arena.mode === 'fight'}
-          {replay && !replay.done ? `Kampf läuft … Treffer ${replay.step}/${replay.total}` : data.tw.lastResult?.win ? 'Gewonnen' : 'Verloren'}
+          {replay && !replay.done ? 'Kampf läuft …' : data.tw.lastResult?.win ? 'Gewonnen' : 'Verloren'}
         {:else if data.tw.run}
           Nächster Gegner
         {:else}
           Vorschau – starte einen Lauf
         {/if}
       </span>
+      {#if arena.mode === 'fight'}
+        <span class="clock num" title="Kampfzeit (Limit {game.balance.tower.maxFightSec} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
+      {/if}
     </div>
+    {#if arena.mode === 'fight'}
+      <div class="timebar" title="Kampfzeit bis zum Limit von {game.balance.tower.maxFightSec} s"><div style="width: {Math.min(1, arena.clock / game.balance.tower.maxFightSec) * 100}%"></div></div>
+    {/if}
+    {#if order.length}
+      <div class="turns" aria-label="Zugfolge">
+        <span class="small muted">Zugfolge</span>
+        {#each order as o, k (`${o.i}-${o.at}`)}
+          {@const u = arena.units[o.i]}
+          {#if u}
+            {@const sp = content.species.get(u.speciesId)}
+            <span class="turn" class:foe={!u.team} class:now={k === 0} style="--el: {el(u.element).color}" title="{u.name} · {formatNumber(o.at, { decimals: 1 })} s">
+              <CreatureSvg appearance={look(u)} shape={sp.shape} tier={sp.tier} size={22} />
+            </span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-    <div class="field">
+    <div class="field" class:shake>
       <div class="side team">
         {#each teamUnits as { u, i } (i)}
           {@render unit(u, i, false)}
@@ -324,6 +446,7 @@
       {#if banner}
         <div class="banner" class:win={banner.win} transition:scale={{ duration: 250, start: 0.6 }}>
           {banner.win ? `Etage ${banner.floor} geschafft!` : `Niederlage auf Etage ${banner.floor}`}
+          <small class="num">nach {formatNumber(banner.seconds, { decimals: 1 })} s</small>
         </div>
       {/if}
     </div>
@@ -416,6 +539,7 @@
         <div class="seg">
           <button class:on={sortBy === 'power'} onclick={() => (sortBy = 'power')}>Stärke</button>
           <button class:on={sortBy === 'matchup'} onclick={() => (sortBy = 'matchup')}>Vorteil vs. {el(data.enemy.element).name}</button>
+          <button class:on={sortBy === 'speed'} onclick={() => (sortBy = 'speed')} title="Schnelle Kreaturen handeln öfter und weichen langsameren Gegnern aus">Tempo</button>
         </div>
         <SortToggle bind:inverted={invertSort} />
       </div>
@@ -433,7 +557,7 @@
         >
           <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={44} shiny={t.c.shiny} />
           <span class="tname">{t.c.name}</span>
-          <span class="num small muted">Σ {formatNumber(t.power)}</span>
+          <span class="num small muted">{sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}</span>
           {#if t.dealt > 1}<span class="adv good">▲</span>{:else if t.dealt < 1}<span class="adv bad">▼</span>{/if}
         </button>
       {:else}
@@ -519,11 +643,39 @@
   @keyframes glow { 50% { box-shadow: 0 0 12px #f2c14e88; } }
 
   /* Arena */
-  .arena { position: relative; overflow: hidden; background: radial-gradient(ellipse at 75% 45%, color-mix(in srgb, var(--foe) 16%, transparent), transparent 60%), var(--panel); }
+  .arena {
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 75% 40%, color-mix(in srgb, var(--foe) 20%, transparent), transparent 55%),
+      radial-gradient(ellipse at 25% 40%, color-mix(in srgb, var(--teal) 10%, transparent), transparent 50%),
+      linear-gradient(180deg, #0b1d24, var(--panel) 70%);
+  }
   .arena-head { display: flex; align-items: center; gap: 0.6rem; }
+  .clock { margin-left: auto; font-weight: 700; font-size: 0.85rem; padding: 0.1rem 0.5rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); }
+  .timebar { height: 3px; margin-top: 0.35rem; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+  .timebar div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold), var(--danger)); background-size: 100vw 100%; }
+  .turns { display: flex; align-items: center; gap: 0.25rem; margin-top: 0.45rem; padding: 0.2rem 0.4rem; border-radius: 99px; background: #0006; border: 1px solid var(--line); overflow: hidden; }
+  .turns > .small { margin-right: 0.25rem; white-space: nowrap; }
+  .turn { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--el) 70%, transparent); background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); transition: transform 0.2s; }
+  .turn.foe { border-color: var(--danger); }
+  .turn.foe :global(svg) { transform: scaleX(-1); }
+  .turn.now { transform: scale(1.18); box-shadow: 0 0 8px var(--el); }
   .floor-tag { padding: 0.15rem 0.6rem; border-radius: 99px; border: 1px solid var(--line); background: var(--bg-2); }
   .floor-tag.boss { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 10px #ff6b6b55; }
   .field { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; min-height: 14rem; padding: 0.75rem 0; }
+  /* Arena floor in perspective behind the fighters. */
+  .field::before {
+    content: ''; position: absolute; left: -2rem; right: -2rem; bottom: 0; height: 55%; z-index: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, #2fd3c414 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(0deg, #2fd3c414 0 1px, transparent 1px 22px),
+      radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--foe) 14%, transparent), transparent 70%);
+    transform: perspective(300px) rotateX(55deg); transform-origin: 50% 100%;
+    mask-image: linear-gradient(180deg, transparent, #000 40%);
+  }
+  .field > * { position: relative; z-index: 1; }
+  .field.shake { animation: quake 0.26s; }
+  @keyframes quake { 25% { transform: translate(-3px, 1px); } 50% { transform: translate(3px, -1px); } 75% { transform: translate(-2px, 0); } }
   .side { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
   .side.team { justify-content: flex-end; }
   .empty { align-self: center; }
@@ -531,7 +683,11 @@
   .unit { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 5.2rem; transition: transform 0.15s, opacity 0.4s, filter 0.4s; }
   .unit.big { width: 8.5rem; }
   .art { position: relative; display: grid; place-items: center; }
-  .art :global(svg) { border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--el) 28%, transparent), transparent 70%); }
+  .art :global(svg) { position: relative; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--el) 28%, transparent), transparent 70%); }
+  .platform { position: absolute; bottom: -6px; left: 8%; right: 8%; height: 14px; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--el) 45%, transparent), transparent 70%); filter: blur(1px); }
+  .unit.big .platform { box-shadow: 0 0 24px color-mix(in srgb, var(--el) 35%, transparent); }
+  .spark { position: absolute; inset: 15%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, #fff 0 10%, var(--sc) 25%, transparent 60%); animation: spark 0.4s ease-out forwards; }
+  @keyframes spark { from { transform: scale(0.3) rotate(0deg); opacity: 1; } to { transform: scale(1.5) rotate(40deg); opacity: 0; } }
   .unit.foe .art :global(svg) { transform: scaleX(-1); }
   .unit.lunge { transform: translateX(10px) scale(1.06); }
   .unit.foe.lunge { transform: translateX(-12px) scale(1.06); }
@@ -544,10 +700,18 @@
   .hpbar { width: 100%; height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
   .hpbar div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); transition: width 0.25s; }
   .hpbar div.low { background: linear-gradient(90deg, #a33, var(--danger)); }
-  .pop { position: absolute; top: 10%; font-weight: 800; color: #fff; text-shadow: 0 2px 4px #000; animation: rise 0.9s ease-out forwards; pointer-events: none; }
-  .pop.crit { color: var(--gold); font-size: 1.15rem; }
+  .atb { width: 80%; height: 3px; border-radius: 99px; background: #0008; overflow: hidden; }
+  .atb div { height: 100%; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 60%, transparent), var(--gold)); }
+  .atb .loop { width: 100%; transform-origin: 0 50%; animation: fill linear infinite; }
+  .atb.idle:not(:has(.loop)) { opacity: 0.4; }
+  @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .pop { position: absolute; top: 8%; z-index: 2; font-weight: 800; color: #fff; white-space: nowrap; text-shadow: 0 2px 4px #000; animation: rise 1s ease-out forwards; pointer-events: none; }
+  .pop.crit { color: var(--gold); font-size: 1.05rem; }
   .pop.weak { color: var(--muted); font-size: 0.8rem; }
-  @keyframes rise { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-34px); opacity: 0; } }
+  .pop.miss { color: var(--teal); font-style: italic; font-size: 0.85rem; }
+  .pop.heal { color: #7dff9a; }
+  .pop.shift { color: var(--el); font-size: 0.85rem; border: 1px solid var(--el); border-radius: 99px; padding: 0 0.4rem; background: #000a; }
+  @keyframes rise { from { transform: translate(var(--dx, 0), var(--dy, 0)); opacity: 1; } to { transform: translate(var(--dx, 0), calc(var(--dy, 0) - 38px)); opacity: 0; } }
   @keyframes shake { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
 
   .vs { position: relative; display: grid; place-items: center; width: 72px; height: 72px; }
@@ -562,6 +726,7 @@
     font-weight: 800; font-size: 1.15rem; background: color-mix(in srgb, var(--danger) 25%, var(--panel)); border: 2px solid var(--danger);
     box-shadow: 0 0 22px #ff6b6b66; white-space: nowrap;
   }
+  .banner small { display: block; font-size: 0.75rem; font-weight: 600; text-align: center; opacity: 0.8; }
   .banner.win { background: color-mix(in srgb, var(--teal) 22%, var(--panel)); border-color: var(--teal); box-shadow: 0 0 22px #2fd3c466; }
 
   .enemy-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }

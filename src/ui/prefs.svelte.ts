@@ -2,7 +2,7 @@ import { setNotation, type Notation } from '@core/format';
 
 /**
  * Per-device preferences (not part of the save game): number notation,
- * reduced motion, sounds and notifications. Stored separately in localStorage.
+ * reduced motion, sounds, music and notifications. Stored separately in localStorage.
  */
 const KEY = 'genlab.prefs';
 
@@ -13,6 +13,10 @@ export const prefs = $state({
   sound: true,
   /** Effect volume 0…1. */
   volume: 0.7,
+  /** Background music (off by default). */
+  music: false,
+  /** Music volume 0…1, separate from the effects. */
+  musicVolume: 0.5,
   /** Reminders while the game is in the background (needs the system permission). */
   notifications: false,
 });
