@@ -102,7 +102,7 @@
       {#each perClick as [res, amount] (res)}+{formatNumber(amount)} {content.resources.get(res).icon} {/each}
     </span>
   </button>
-  {#key pulse}<div class="helix"><DnaHelix progress={1} /></div>{/key}
+  <div class="helix"><DnaHelix progress={1} spin={pulse} /></div>
 </section>
 
 <section>
@@ -198,8 +198,6 @@
   .big { position: relative; overflow: visible; }
   .floater { position: absolute; pointer-events: none; font-size: 0.95rem; font-weight: 700; color: var(--gold); text-shadow: 0 1px 4px #000; white-space: nowrap; transform: translate(-50%, -50%); animation: float-up 0.9s ease-out forwards; }
   @keyframes float-up { to { transform: translate(-50%, -260%); opacity: 0; } }
-  .helix { animation: pop 0.3s ease-out; }
-  @keyframes pop { from { transform: scale(1.12); filter: brightness(1.6); } to { transform: scale(1); } }
   .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
   .head h2 { margin: 0; }
   .head .num { color: var(--muted); font-size: 0.95rem; }

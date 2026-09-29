@@ -6,7 +6,7 @@ import { createEmptyState, type GameState } from './state';
  * `MIGRATIONS[oldVersion]` (old → old+1) whenever the state shape changes in
  * a way `mergeDefaults` cannot fix on its own (renames, restructures).
  */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -42,6 +42,19 @@ export const MIGRATIONS: Record<number, Migration> = {
     ...s,
     creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ deepSequenced: false, ...c })),
   }),
+  // v6 → v7: anomalies with difficulty stages, several at once. A running anomaly becomes stage I,
+  // anomalies already mastered count as stage I, and a past single run counts as total difficulty 1.
+  6: (s) => {
+    const run = s.anomaly as { id?: string } | null | undefined;
+    const completed = (s.anomaliesCompleted as Record<string, boolean> | undefined) ?? {};
+    const best = Object.fromEntries(Object.entries(completed).filter(([, v]) => v).map(([id]) => [id, 1]));
+    return {
+      ...s,
+      anomaly: run?.id ? { levels: { [run.id]: 1 } } : null,
+      anomalyBest: best,
+      anomalyRecord: Object.keys(best).length > 0 ? 1 : 0,
+    };
+  },
 };
 
 export class SaveError extends Error {

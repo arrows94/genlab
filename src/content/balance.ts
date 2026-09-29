@@ -194,6 +194,18 @@ export const balance: Balance = {
       { target: 'production.essence', op: 'pct', value: 0.1 },
     ],
   },
+  anomalies: {
+    maxLevel: 5,
+    goalGrowth: 4,
+    progressExponent: 1,
+    shardsPerRecordPoint: 1,
+    recordModifiers: [
+      { target: 'production.food', op: 'pct', value: 0.025 },
+      { target: 'production.gold', op: 'pct', value: 0.025 },
+      { target: 'production.essence', op: 'pct', value: 0.025 },
+      { target: 'prestige.inheritance.gain', op: 'pct', value: 0.015 },
+    ],
+  },
   perfection: {
     shinyChance: 0.0005,
   },

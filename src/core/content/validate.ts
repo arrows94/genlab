@@ -273,6 +273,7 @@ export function validateContent(data: ContentData): string[] {
     const w = at('anomalies', a.id);
     mods(`${w}.modifiers`, a.modifiers);
     mods(`${w}.reward`, a.reward);
+    mods(`${w}.perLevel`, a.perLevel);
     cond(`${w}.goal`, a.goal);
     cond(`${w}.requires`, a.requires);
   }

@@ -1,7 +1,8 @@
 import type { AnomalyDef, BossTraitDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
 
-/** Talent tiers 4 and 5 open with the stages of the Äon-Observatorium (Großprojekt). */
+/** Talent tiers 4 and 5 and the resonance open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
+const lenses = { type: 'megaProject', project: 'observatory', stage: 3 } as const;
 const starMap = { type: 'megaProject', project: 'observatory', stage: 4 } as const;
 
 /** Äon talent tree – mechanics, not just percentages. */
@@ -50,24 +51,24 @@ export const talents: TalentDef[] = [
 ];
 
 /**
- * Äon-Resonanz: endless nodes after the Observatorium's star map. Each level
+ * Äon-Resonanz: endless nodes after the Observatorium's lenses. Each level
  * costs more (`cost × costGrowth^level`) and adds less (`level^levelPower`).
  */
 export const resonances: ResonanceDef[] = [
-  { id: 'harvestResonance', name: 'Ernte-Resonanz', icon: '🌾', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: starMap,
+  { id: 'harvestResonance', name: 'Ernte-Resonanz', icon: '🌾', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: lenses,
     description: '+25 % Nahrung, Gold und Essenz (abnehmend).',
     modifiers: [
       { target: 'production.food', op: 'pct', value: 0.25 },
       { target: 'production.gold', op: 'pct', value: 0.25 },
       { target: 'production.essence', op: 'pct', value: 0.25 },
     ] },
-  { id: 'heritageResonance', name: 'Erb-Resonanz', icon: '🧬', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: starMap,
+  { id: 'heritageResonance', name: 'Erb-Resonanz', icon: '🧬', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: lenses,
     description: '+15 % Erbgut aus jeder Vererbung (abnehmend).',
     modifiers: [{ target: 'prestige.inheritance.gain', op: 'pct', value: 0.15 }] },
-  { id: 'geneResonance', name: 'Gen-Resonanz', icon: '🧪', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: starMap,
+  { id: 'geneResonance', name: 'Gen-Resonanz', icon: '🧪', cost: 4, costGrowth: 1.4, levelPower: 0.7, requires: lenses,
     description: '+1 % Mutationschance und +10 % Hybrid-Chance (abnehmend).',
     modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }, { target: 'breeding.hybridChance', op: 'pct', value: 0.1 }] },
-  { id: 'battleResonance', name: 'Kampf-Resonanz', icon: '⚔️', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: starMap,
+  { id: 'battleResonance', name: 'Kampf-Resonanz', icon: '⚔️', cost: 3, costGrowth: 1.35, levelPower: 0.7, requires: lenses,
     description: '+20 % Schaden im Genom-Turm (abnehmend).',
     modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.2 }] },
 ];
@@ -77,24 +78,32 @@ export const anomalies: AnomalyDef[] = [
   {
     id: 'broodFever', name: 'Brutfieber', description: 'Halbe Brutzeit, aber doppelte Brutkosten.',
     modifiers: [{ target: 'breeding.time', op: 'mult', value: 0.5 }, { target: 'cost.breeding', op: 'mult', value: 2 }],
+    perLevel: [{ target: 'cost.breeding', op: 'mult', value: 1.5 }],
+    levelText: 'Brutkosten ×1,5',
     goal: { type: 'resourceEarned', resource: 'gold', amount: 20000 }, goalText: '20.000 Gold in diesem Lauf verdienen',
     reward: [{ target: 'breeding.time', op: 'mult', value: 0.9 }], rewardText: 'Dauerhaft −10 % Brutzeit',
   },
   {
     id: 'ascetic', name: 'Askese', description: 'Keine Tränke erlaubt.', rules: { noPotions: true },
     modifiers: [],
+    perLevel: [{ target: 'production.gold', op: 'mult', value: 0.85 }],
+    levelText: '−15 % Gold',
     goal: { type: 'resourceEarned', resource: 'gold', amount: 30000 }, goalText: '30.000 Gold in diesem Lauf verdienen',
     reward: [{ target: 'production.gold', op: 'pct', value: 0.15 }], rewardText: 'Dauerhaft +15 % Goldproduktion',
   },
   {
     id: 'famine', name: 'Hungersnot', description: 'Halbe Nahrungsproduktion.',
     modifiers: [{ target: 'production.food', op: 'mult', value: 0.5 }],
+    perLevel: [{ target: 'production.food', op: 'mult', value: 0.8 }],
+    levelText: '−20 % Nahrung',
     goal: { type: 'resourceEarned', resource: 'food', amount: 150000 }, goalText: '150.000 Nahrung in diesem Lauf verdienen',
     reward: [{ target: 'production.food', op: 'pct', value: 0.2 }], rewardText: 'Dauerhaft +20 % Nahrungsproduktion',
   },
   {
     id: 'cramped', name: 'Enge', description: 'Der Stall fasst nur 40 % seiner Plätze.',
     modifiers: [{ target: 'slots.stable', op: 'mult', value: 0.4 }],
+    perLevel: [{ target: 'slots.stable', op: 'mult', value: 0.85 }],
+    levelText: '−15 % Stallplätze',
     goal: { type: 'resourceEarned', resource: 'essence', amount: 150 }, goalText: '150 Essenz in diesem Lauf verdienen',
     reward: [{ target: 'slots.stable', op: 'add', value: 10 }], rewardText: 'Dauerhaft +10 Stallplätze',
   },
@@ -131,14 +140,14 @@ export const bossTraits: BossTraitDef[] = [
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */
 export const relics: RelicDef[] = [
-  { id: 'towerBlade', name: 'Turmklinge', icon: '⚔️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+  { id: 'towerBlade', name: 'Turmklinge', icon: '⚔️', cost: 60, costGrowth: 2.2, maxLevel: 10,
     description: '+10 % Angriff je Stufe für die Kreatur auf diesem Platz.', bonus: { atk: 0.1 } },
-  { id: 'scaleArmor', name: 'Schuppenpanzer', icon: '🛡️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+  { id: 'scaleArmor', name: 'Schuppenpanzer', icon: '🛡️', cost: 60, costGrowth: 2.2, maxLevel: 10,
     description: '+12 % Verteidigung und +6 % KP je Stufe.', bonus: { def: 0.12, hp: 0.06 } },
-  { id: 'lifeAmulet', name: 'Lebensamulett', icon: '❤️', cost: 60, costGrowth: 1.6, maxLevel: 10,
+  { id: 'lifeAmulet', name: 'Lebensamulett', icon: '❤️', cost: 60, costGrowth: 2.2, maxLevel: 10,
     description: '+15 % KP je Stufe.', bonus: { hp: 0.15 } },
-  { id: 'stormFeather', name: 'Sturmfeder', icon: '🪶', cost: 80, costGrowth: 1.6, maxLevel: 10,
+  { id: 'stormFeather', name: 'Sturmfeder', icon: '🪶', cost: 80, costGrowth: 2.2, maxLevel: 10,
     description: '+10 % Tempo je Stufe – wer zuerst zuschlägt, gewinnt öfter.', bonus: { spd: 0.1 } },
-  { id: 'elementPrism', name: 'Elementprisma', icon: '🔷', cost: 100, costGrowth: 1.7, maxLevel: 10,
+  { id: 'elementPrism', name: 'Elementprisma', icon: '🔷', cost: 100, costGrowth: 2.3, maxLevel: 10,
     description: '+12 % Schaden bei Element-Vorteil je Stufe.', bonus: { element: 0.12 } },
 ];

@@ -86,7 +86,7 @@
     {/if}
     <span class="rarity">{rarity.name}</span>
     {#if isNew}<span class="new">NEU</span>{/if}
-    <button class="lock" title={creature.locked ? 'Favorit (gesperrt)' : 'Als Favorit sperren'} onclick={() => act(toggleLock(game, creature.id))}>
+    <button class="lock" title={creature.locked ? 'Favorit – geschützt vor Verkauf, Recycling und Infusion, nicht vor einer Vererbung' : 'Als Favorit sperren (schützt vor Verkauf, Recycling und Infusion)'} onclick={() => act(toggleLock(game, creature.id))}>
       {creature.locked ? '★' : '☆'}
     </button>
   </header>

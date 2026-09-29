@@ -10,10 +10,10 @@ import { canConsume } from '@core/features/stable';
 import { startBreeding } from '@core/features/breeding';
 import { revealGenome } from '@core/features/sequencing';
 import { usePotion } from '@core/features/market';
-import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, simulateFight, startRun, teamSize } from '@core/features/tower';
+import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, setTowerAutoRestart, simulateFight, startRun, stopRun, teamSize } from '@core/features/tower';
 import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
-import { activeMutation, mutationForWeek, weekIndex } from '@core/features/weekly';
+import { activeMutation, mutationForWeek, upcomingMutation, weekIndex } from '@core/features/weekly';
 import { activeLoci } from '@core/genetics';
 import { splice } from '@core/features/splicing';
 import { sell } from '@core/features/stable';
@@ -84,6 +84,23 @@ describe('genome tower', () => {
     g.state.tower.best = 27;
     setTeam(g, [champion(g, 10).id]);
     startRun(g, true);
+    expect(g.state.tower.run?.startFloor).toBe(21);
+  });
+
+  it('auto-restart begins where the last run began (checkpoint or floor 1)', () => {
+    const g = endgame();
+    unlockFeature(g, 'towerAuto');
+    g.state.tower.best = 27;
+    setTeam(g, [champion(g, 10).id]);
+    setTowerAutoRestart(g, true);
+    startRun(g, false);
+    stopRun(g);
+    g.step(100);
+    expect(g.state.tower.run?.startFloor).toBe(1);
+    stopRun(g);
+    startRun(g, true);
+    stopRun(g);
+    g.step(100);
     expect(g.state.tower.run?.startFloor).toBe(21);
   });
 
@@ -266,7 +283,7 @@ describe('anomalies', () => {
     const g = endgame();
     const base = g.mods().apply('breeding.time', 100);
     expect(startAnomaly(g, 'broodFever').ok).toBe(true);
-    expect(g.state.anomaly?.id).toBe('broodFever');
+    expect(g.state.anomaly?.levels.broodFever).toBe(1);
     expect(g.state.creatures).toHaveLength(1);
     expect(g.mods().apply('breeding.time', 100)).toBeCloseTo(base * 0.5);
     expect(performPrestige(g, 'inheritance').ok).toBe(false);
@@ -321,6 +338,14 @@ describe('weekly mutation', () => {
     const m = activeMutation(g, NOW)!;
     expect(m).not.toBeNull();
     for (const mod of m.modifiers) expect(g.mods().list(mod.target).some((x) => x.source === `weekly:${m.id}`)).toBe(true);
+  });
+
+  it('shows next week\'s mutation in advance', () => {
+    const g = makeGame();
+    expect(upcomingMutation(g, NOW)).toBeNull();
+    unlockFeature(g, 'weekly');
+    const week = 7 * 24 * 3600 * 1000;
+    expect(upcomingMutation(g, NOW)).toBe(activeMutation(g, NOW + week));
   });
 
   it('element mutations boost matching workers', () => {

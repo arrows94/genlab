@@ -25,6 +25,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 4,
+    date: '2026-09-29',
+    title: 'Anomalien mit Stufen',
+    items: [
+      { text: 'Jede Anomalie hat jetzt die Stufen I–V. Die nächste Stufe öffnet sich, wenn du die vorige meisterst – mit härteren Regeln und größerem Ziel.', feature: 'anomalies' },
+      { text: 'Die Ziele der Anomalien wachsen mit deinem Produktionsbonus. So bleiben sie auch nach vielen Neustarts eine Herausforderung. Das Ziel wird beim Start des Laufs festgelegt.', feature: 'anomalies' },
+      { text: 'Anomalien lassen sich kombinieren: Wähle für mehrere eine Stufe und starte sie zusammen. Geschafft ist der Lauf, wenn alle Ziele erreicht sind.', feature: 'anomalies' },
+      { text: 'Die Belohnung einer Anomalie zählt je gemeisterter Stufe. Ein neuer Rekord in der Gesamtschwierigkeit (Summe der Stufen) bringt dauerhaft mehr Produktion und Erbgut.', feature: 'anomalies' },
+      { text: 'Jeder neue Anomalie-Rekord bringt außerdem einen Äon-Splitter je Punkt Gesamtschwierigkeit.', feature: 'aeon' },
+      { text: 'Die Äon-Resonanz öffnet sich schon mit den Linsen, der dritten Bauphase des Äon-Observatoriums – nicht erst mit der Sternkarte.', feature: 'megaProjects' },
+      { text: 'Genom-Turm: Relikte werden mit jeder Stufe deutlich teurer. Bereits gekaufte Stufen bleiben erhalten.', feature: 'tower' },
+      { text: 'Der Gen-Recycler ist neu gestaltet: Jede Kapsel hat ein eigenes Aussehen, die Chancen stehen als Farbbalken daneben, und du siehst, in wie vielen Kapseln die Garantie greift.', feature: 'recycler' },
+      { text: 'Kapseln öffnen sich jetzt mit Animation: Die Kapsel rüttelt und leuchtet schon in der Farbe des besten Fundes, platzt auf, und die Kreaturen drehen sich eine nach der anderen um. Ab „Episch“ gibt es ein Banner. Tippen überspringt die Animation.', feature: 'recycler' },
+      { text: 'Die Gen-Helix neben dem Sammeln-Knopf springt beim Klicken nicht mehr zurück, sondern dreht sich schneller – je schneller du sammelst, desto mehr leuchtet sie.' },
+      { text: 'Das Wochen-Banner verrät jetzt auch die Mutation der nächsten Woche und wann sie beginnt – so kannst du deine Zucht schon darauf ausrichten.', feature: 'weekly' },
+      { text: 'Genom-Turm: Der Auto-Neustart beginnt dort, wo du deinen letzten Lauf gestartet hast. Startest du „Ab Etage 1“, geht es nach einer Niederlage auch wieder bei Etage 1 los – praktisch nach einer Vererbung, wenn das Team noch schwach ist.', feature: 'towerAuto' },
+    ],
+  },
+  {
     id: 3,
     date: '2026-09-29',
     title: 'Sicherer Stall',

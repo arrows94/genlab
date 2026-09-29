@@ -24,6 +24,12 @@ export function activeMutation(ctx: GameContext, nowMs = ctx.state.lastTickAt): 
   return mutationForWeek(ctx.content.weeklyMutations.list, weekIndex(ctx.balance.weekly.epoch, nowMs));
 }
 
+/** Next week's mutation – shown in advance so players can plan for it. */
+export function upcomingMutation(ctx: GameContext, nowMs = ctx.state.lastTickAt): WeeklyMutationDef | null {
+  if (!ctx.state.features['weekly']) return null;
+  return mutationForWeek(ctx.content.weeklyMutations.list, weekIndex(ctx.balance.weekly.epoch, nowMs) + 1);
+}
+
 /** Start of the next week (for the countdown in the UI). */
 export function nextWeekStart(ctx: GameContext, nowMs: number): number {
   const epoch = Date.parse(`${ctx.balance.weekly.epoch}T00:00:00Z`);

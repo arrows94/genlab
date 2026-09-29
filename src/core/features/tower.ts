@@ -283,6 +283,7 @@ export function startRun(ctx: GameContext, fromCheckpoint = true): ActionResult 
   if (busy) return { ok: false, reason: `${busy.name} ist beschäftigt.` };
   for (const c of team) c.job = { kind: 'tower', target: 'team' };
   const start = fromCheckpoint ? checkpoint(ctx) : 0;
+  tw.restartFromCheckpoint = fromCheckpoint;
   tw.run = { floor: start, team: team.map((c) => c.id), elapsedMs: 0, startFloor: start + 1 };
   ctx.invalidate();
   return { ok: true };
@@ -379,8 +380,8 @@ export const towerSystem: System = {
     const tw = ctx.state.tower;
     const interval = fightIntervalMs(ctx);
     if (!tw.run) {
-      // Auto-restart (tower upgrade) after a defeat, from the checkpoint.
-      if (tw.autoRestart && ctx.state.features['towerAuto'] && tw.team.length > 0) startRun(ctx, true);
+      // Auto-restart (tower upgrade) after a defeat, where the last run started (checkpoint or floor 1).
+      if (tw.autoRestart && ctx.state.features['towerAuto'] && tw.team.length > 0) startRun(ctx, tw.restartFromCheckpoint);
       return;
     }
     tw.run.elapsedMs += dtMs;

@@ -335,11 +335,15 @@ export interface AnomalyDef {
   description: string;
   /** Rule changes while the anomaly runs. */
   modifiers: ModifierDef[];
+  /** Extra rule changes per difficulty stage above I (scaled by stage − 1). */
+  perLevel?: ModifierDef[];
+  /** What `perLevel` adds per further stage, for the player („−20 % Nahrung“). */
+  levelText?: string;
   rules?: { noPotions?: boolean };
-  /** Completion goal (checked on the anomaly run). */
+  /** Completion goal at stage I (checked on the anomaly run); higher stages scale countable goals. */
   goal: Condition;
   goalText: string;
-  /** Permanent bonus after completion. */
+  /** Permanent bonus after completion, times the best stage mastered. */
   reward: ModifierDef[];
   rewardText: string;
   requires?: Condition;

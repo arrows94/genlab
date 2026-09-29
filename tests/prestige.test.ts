@@ -58,6 +58,16 @@ describe('prestige (Vererbung)', () => {
     expect(g.state.achievements.firstHeir).toBe(true);
   });
 
+  it('takes favourites too – a reset clears every creature at home', () => {
+    const g = richGame();
+    const fav = g.state.creatures.find((c) => c.speciesId === 'bubbloon')!;
+    fav.locked = true;
+    const lost = resetOverview(g, 'inheritance').lost.find((x) => x.label === 'Kreaturen')!;
+    expect(lost.detail).toContain('auch 1 Favoriten ★');
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(g.state.creatures.some((c) => c.id === fav.id)).toBe(false);
+  });
+
   it('heritage points boost production via modifiers', () => {
     const g = richGame();
     const pctBefore = g.mods().totals('production.food').pct;

@@ -86,7 +86,12 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
 
     // Missions: short missions whenever a camp is free and food allows.
     if (g.state.features.expedition && campsUsed(g) < campSlots(g)) {
-      const idle = g.state.creatures.find((c) => c.job === null);
+      let idle = g.state.creatures.find((c) => c.job === null);
+      // After a reset the lone start creature would stay at work forever: send it out to find more.
+      if (!idle && g.state.creatures.length < 4) {
+        idle = g.state.creatures.find((c) => c.job?.kind === 'building');
+        if (idle && g.state.resources.food!.gte(100)) assignJob(g, idle.id, null);
+      }
       if (idle && g.state.resources.food!.gte(100)) startMission(g, idle.id, 'short');
     }
 

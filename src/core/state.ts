@@ -137,6 +137,8 @@ export interface TowerState {
   /** Highest floor ever cleared. */
   best: number;
   autoRestart: boolean;
+  /** Where the auto-restart begins: like the last run started by hand (checkpoint or floor 1). */
+  restartFromCheckpoint: boolean;
   /** Relikt per team place (relic id or null), same order as `team`. */
   relicSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
@@ -272,8 +274,16 @@ export interface GameState {
   capsulePity: Record<string, number>;
   tower: TowerState;
   talents: Record<string, boolean>;
-  anomaly: { id: string } | null;
+  /**
+   * Running anomaly challenge: difficulty stage per active anomaly (several at
+   * once) and each goal's progress scale, frozen at the start (missing = 1).
+   */
+  anomaly: { levels: Record<string, number>; scales?: Record<string, number> } | null;
   anomaliesCompleted: Record<string, boolean>;
+  /** Best stage mastered per anomaly (drives the reward). */
+  anomalyBest: Record<string, number>;
+  /** Highest total difficulty (sum of stages) of a completed anomaly run. */
+  anomalyRecord: number;
   /** Perfection hunt per species: perfect genome / shiny found. */
   perfection: { perfect: Record<string, boolean>; shiny: Record<string, boolean> };
   contracts: ContractsState;
@@ -317,10 +327,12 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1, cleanup: 'off', cleanupMaxRarity: 'common' },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], run: null, best: 0, autoRestart: false, relicSlots: [], leaderboard: [], lastResult: null },
+    tower: { team: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
+    anomalyBest: {},
+    anomalyRecord: 0,
     perfection: { perfect: {}, shiny: {} },
     contracts: { day: -1, offers: [], rerolls: 0, completed: 0 },
     voyage: { pending: null, nextBonus: 0 },
