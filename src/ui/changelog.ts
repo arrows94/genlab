@@ -27,10 +27,12 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 22,
     date: '2026-09-30',
-    title: 'Warum verloren? – Auswertung im Turm',
+    title: 'Warum verloren? – Auswertung im Turm, fairerer Wochen-Titan',
     items: [
       { text: 'Nach einer Niederlage im Turm zeigt die Arena „Warum verloren?“: wie viel KP den Gegnern noch blieb, die wichtigsten Gründe – etwa „Gegner war zu schnell“, „Element-Nachteil“ oder „Element-Schild – Vorteil fehlt“ – und zu jedem Grund einen Tipp. Dazu siehst du, wie viel Schaden jedes Teammitglied ausgeteilt und eingesteckt hat und wann es fiel. Die Auswertung bleibt stehen, bis ein späterer Lauf an dieser Etage vorbeikommt.', feature: 'tower' },
       { text: 'Das Kampfprotokoll ist neu: statt Textzeilen eine Liste mit Symbolen, Namen in Elementfarbe und farbigem Rand für gute und schlechte Momente. „Nur Wichtiges“ zeigt Techniken, kritische Treffer, besiegte Kämpfer und Boss-Momente; ausgeschaltet siehst du jeden Treffer.', feature: 'tower' },
+      { text: 'Wochen-Titan: Er richtet sich jetzt gleichmäßig nach deinem Turm-Rekord. Bisher war er deutlich stärker, wenn dein Rekord genau auf einer Boss-Etage lag (z. B. 40 statt 41). Außerdem setzt er keine Element-Technik mehr ein – wie die Bosse im Turm.', feature: 'weeklyBoss' },
+      { text: 'Tipp beim Wochen-Titan: Angriffe sammeln sich bis zu sechs – kurz vor einer Vererbung ist dein Team am stärksten. Die Vererbung erinnert dich an Angriffe, die du noch hast.', feature: 'weeklyBoss' },
     ],
   },
   {

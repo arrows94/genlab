@@ -404,9 +404,17 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
       bleibt. Der Äon-Bot streut je Seed stark, weil jede Änderung am Kampf die Würfe des ganzen Spiels verschiebt.
       Turm-Rekord Tag 1–5: Seed 7 19 26 35 39 39 (`main` 18 19 29 39 39), Seed 99 17 25 29 36 37 (`main` 18 26 32 42
       42). Äon-Bot 12 Tage (Seed 2024): 19 29 35 35 39, dann 39 bis Tag 12 (`main` 19 25 32 35 36, ab Tag 9 44)
-- [ ] Äon-Bot 12 Tage: Wochen-Boss ab Woche 2 nur 15–76 % (`main` jede Woche 100 %), Turm bleibt bei 39 (`main` 44).
-      Prüfen, ob es an der neuen Teamwahl liegt (Kampfwert statt Summe der Werte; der Bot nimmt das Turm-Team auch für
-      den Wochen-Boss) oder an der Streuung – eigenes Team für den Wochen-Boss (Schaden in 20 s zählt) ausprobieren
+- [x] Äon-Bot 12 Tage: Wochen-Boss ab Woche 2 nur 15–76 % (`main` jede Woche 100 %), Turm bleibt bei 39 (`main` 44).
+      Befund (Seed 2024, jeder Angriff mit festen Seeds nachgerechnet): Die Teamwahl war es nicht – Turm-Team, stärkste
+      nach Kampfkraft, alte Auswahl und ein gezielt auf den Titan gewähltes Team lagen je Angriff innerhalb von
+      ±0,3 Prozentpunkten; ohne Titan-Technik ebenso. Der Titan wird zu Wochenbeginn aus dem Rekord gebaut (Woche 2:
+      Etage 39) und bleibt die Woche über gleich stark, der Bot griff aber bei jedem Einchecken an – auch direkt nach
+      einer Vererbung mit frisch zurückgesetztem Stall (0 % je Angriff); nur kurz vor dem Äon brachte ein Angriff 5 %.
+      Jetzt spart der Bot seine Angriffe und setzt sie direkt vor Vererbung und Äon ein (sonst nur, was die nächste
+      Tagesfüllung verfallen ließe). Gleich mit behoben: Der Titan übernahm auf einer Boss-Etage als Rekord deren
+      ×2,2 KP und ×1,3 ANG (Rekord 40 schwerer als 41) und setzte die Technik des Etagen-Elements statt keiner ein.
+      Äon-Bot 12 Tage vorher/nachher: Woche 2 26 % → 99 %, Turm ab Tag 8 39 → 48 (Relikte aus den Boss-Belohnungen),
+      Äonen gleich (2). Für Spieler: Tipp im Panel, ungenutzte Angriffe im Bestätigungsdialog der Vererbung
 - [x] Test-Bot wählt sein Team nach Kampfwert (KP × (1 + VER/ANG des Gegners) × ANG × (TMP-Verhältnis)^0,8 × Element)
       gegen den nächsten Boss – oder gegen die Etage, an der die letzten Läufe endeten
 - [x] Wochen-Boss nutzt dieselbe Kampf-Logik (`simulateFight` mit eigenem Zeitlimit `weeklyBoss.fightSec`, zählt
