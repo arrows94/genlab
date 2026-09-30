@@ -462,31 +462,34 @@ Drei Schritte, in dieser Reihenfolge – jeder für sich mit dem Äon-Bot (28 Ta
 Aus jeder Etage werden drei kleinere, die neue Etage 3n ist genau so stark wie heute Etage n. Der Aufstieg fühlt sich
 flüssiger an; die Mauern selbst ändert erst Schritt 2.
 
-- [ ] Gegner-Wachstum je Etage 1,11^(1/3) ≈ 1,0354 statt 1,11 (`tower.enemyGrowth`), mit Versatz in `enemyFor`
-      (Exponent `floor − 3` statt `floor − 1`), damit Etage 3n genau der alten Etage n entspricht – die Etagen 1 und 2
-      werden minimal leichter als die heutige Etage 1
-- [ ] Alle Etagen-Schwellen ×3: `bossEvery` 30, `checkpointEvery` 30, `catalystEvery` 30, `bossTraitFromFloor` 60,
+- [x] Gegner-Wachstum je Etage 1,11^(1/3) ≈ 1,0354 statt 1,11 (`tower.enemyGrowth`), mit Versatz in `enemyFor`
+      (Exponent `floor − subFloors`), damit Etage 3n genau der alten Etage n entspricht – die Etagen 1 und 2 werden
+      minimal leichter als die heutige Etage 1. Etage 3n würfelt mit dem Schlüssel der alten Etage n: gleiche Gegner,
+      Elemente, Boss-Eigenheiten und Gruppen wie vorher (die bekannten Bosse bleiben an ihrer umgerechneten Stelle)
+- [x] Alle Etagen-Schwellen ×3: `bossEvery` 30, `checkpointEvery` 30, `catalystEvery` 30, `bossTraitFromFloor` 60,
       `companionsFromFloor` 60, `phaseFromFloor` 90, `groupFromFloor` 36, `alleleEvery` 75, `milestoneEvery` 150,
       `weeklyBoss.minFloor` 30, `timeCrystals.towerEvery` 75, `activity.towerMilestones` ×3
-- [ ] Inhalte: Freischaltung Wochen-Boss Etage 10 → 30, Äon 15 → 45; Erfolge „Etage 10/50/100“ → 30/150/300
+- [x] Inhalte: Freischaltung Wochen-Boss Etage 10 → 30, Äon 15 → 45; Erfolge „Etage 10/50/100“ → 30/150/300
       (Namen, Beschreibungen, Boni bleiben)
-- [ ] Kampfpause `fightIntervalSec` 8 → 4 s: in alten Etagen gerechnet 1,5-mal so langsam wie heute, dafür bleibt die
+- [x] Kampfpause `fightIntervalSec` 8 → 4 s: in alten Etagen gerechnet 1,5-mal so langsam wie heute, dafür bleibt die
       Arena-Wiedergabe verfolgbar (ein Durchschnittskampf von 9 s Kampfzeit läuft etwa doppelt so schnell statt 3,4-mal
       bei 2,7 s). Talent „Sturmlauf“ halbiert weiter (2 s, Untergrenze 1 s bleibt)
-- [ ] Turm-Marken: gleich viele pro Stunde wie heute – je neue Etage die Hälfte der Marken der entsprechenden alten
+- [x] Turm-Marken: gleich viele pro Stunde wie heute – je neue Etage die Hälfte der Marken der entsprechenden alten
       Etage. Weil Marken abgerundet werden (0,67 pro Etage ergäbe 0), wird die Differenz einer Summenformel ausgezahlt:
       ganze Zahlen, über mehrere Etagen genau die gewünschte Menge
-- [ ] Spielstand-Migration (`SAVE_VERSION` 9 → 10): ×3 für `tower.best`, `bestEver`, `run.floor`, Bestenliste,
+- [x] Spielstand-Migration (`SAVE_VERSION` 9 → 10): ×3 für `tower.best`, `bestEver`, `run.floor`, Bestenliste,
       letzte Läufe, `lastResult.floor`, `lastDefeat.floor`, `weeklyBoss.floor`, Statistik `record.towerFloor`;
       Startetage eines Laufs s → 3·(s − 1) + 1; Zeitmarken `tower:10` … umbenennen. Die KP des Wochen-Titans bleiben
       durch die exakte Abbildung gleich; Checkpoint, Meilenstein-Boni und Zeitkristall-Rekorde folgen aus dem Rekord
-- [ ] Offline-Last: gemessen 0,16 ms je Kampf (Desktop); 12 h offline mit Dauerkampf 0,9 s heute, etwa 1,8 s mit 4 s.
-      Auf dem Handy nachmessen; falls spürbar, Offline-Kämpfe ohne Wiedergabe-Daten (Ereignisse, Protokoll) rechnen
-- [ ] Turm-Spalte: Hinweis „nächster Boss in N Etagen“ (die Spalte zeigt nur ±4 Etagen, bis zum Boss sind es bis zu 30)
-- [ ] Texte mit Etagenzahlen: die meisten lesen die Zahlen aus `balance`; fest eingetragen sind Erfolge und
+- [x] Offline-Last: gemessen 0,16 ms je Kampf (Desktop); 12 h offline mit Dauerkampf 0,9 s heute, etwa 1,8 s mit 4 s.
+      Jetzt behält nur der letzte Kampf eines großen Zeitschritts seine Wiedergabe-Daten (`simulateFight` mit
+      `replay: false`) – ein Kampf ohne sie ist 35–45 % schneller, das gleicht die doppelte Kampfzahl fast aus
+- [ ] Auf dem Handy nachmessen, wie lange das Laden nach 12 h mit Dauerkampf (Auto-Neustart) dauert
+- [x] Turm-Spalte: Hinweis „nächster Boss in N Etagen“ (die Spalte zeigt nur ±4 Etagen, bis zum Boss sind es bis zu 30)
+- [x] Texte mit Etagenzahlen (auch `CONTENT.md`, `README.md`): die meisten lesen die Zahlen aus `balance`; fest eingetragen sind Erfolge und
       Freischaltungen. Alte Versionshinweise bleiben als Geschichte stehen
 - [ ] Tests und Test-Bots auf die neue Zählung; Äon-Bot vorher/nachher (neu ÷ 3 ≈ alt, wegen 4 s etwas später erreicht)
-- [ ] Versionshinweis: Der Rekord springt auf das Dreifache – nichts geht verloren, jede alte Etage ist jetzt drei
+- [x] Versionshinweis: Der Rekord springt auf das Dreifache – nichts geht verloren, jede alte Etage ist jetzt drei
       kleinere
 
 ## Schritt 2 – Boss-Mauer abflachen
@@ -503,8 +506,8 @@ ohne Vorteil deutlich schwerer (Ziel ≈ 8 Etagen statt 15+).
 - [ ] Boss-Eigenheiten behalten ihren Charakter – nur ihre Stärke wird angepasst
 - [ ] Äon-Bot 28 Tage: Stillstand an einem Boss höchstens etwa 3 Tage; Turm-Marken, Wochen-Boss und Meilenstein-Splitter
       im Blick behalten (höhere Rekorde bringen mehr davon)
-- [ ] Optional: in der feineren Zählung ein kleiner „Wächter“ alle 10 Etagen (etwa eine Etage Stärke mehr, kein
-      Checkpoint), damit zwischen zwei Bossen nicht 29 gleichförmige Etagen liegen
+- [x] Wächter alle 10 Etagen (vorgezogen in Schritt 1): ein Gegner allein mit ×1,12 KP und ×1,1 ANG – etwa eine
+      frühere Etage stärker –, kein Checkpoint, keine Eigenheit; 🛡️ in der Turm-Spalte, Hinweis in der Vorschau
 
 ## Schritt 3 – Kampferfahrung (Turm-Stärke, die jede Vererbung und jedes Äon übersteht)
 

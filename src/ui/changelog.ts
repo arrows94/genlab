@@ -27,8 +27,11 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 22,
     date: '2026-09-30',
-    title: 'Warum verloren? – Auswertung im Turm, fairerer Wochen-Titan',
+    title: 'Feinere Turm-Etagen, Auswertung nach Niederlagen, fairerer Wochen-Titan',
     items: [
+      { text: 'Der Genom-Turm hat jetzt dreimal so viele, dafür kleinere Etagen: Jede bisherige Etage ist zu drei geworden, deine Rekorde zählen deshalb dreifach (aus Etage 40 wird Etage 120). Nichts geht verloren – Etage 120 ist genau die alte Etage 40, mit demselben Boss. Dazwischen wachsen die Gegner in kleineren Schritten, und ein Kampf folgt schon nach 4 statt 8 Sekunden.', feature: 'tower' },
+      { text: 'Bosse, Checkpoints, Meilensteine und Belohnungen sind mitgewandert (Boss und Checkpoint alle 30 Etagen, Meilenstein alle 150); Turm-Marken gibt es pro Stunde gleich viele wie bisher. Erfolge und Freischaltungen am Turm zählen ebenfalls in der neuen Zählung.', feature: 'tower' },
+      { text: 'Neu: Wächter. Alle 10 Etagen (außer auf Boss-Etagen) wartet ein stärkerer Gegner allein – etwa so stark wie drei Etagen weiter oben. Die Turm-Spalte zeigt außerdem, wie viele Etagen es noch bis zum nächsten Boss sind.', feature: 'tower' },
       { text: 'Nach einer Niederlage im Turm zeigt die Arena „Warum verloren?“: wie viel KP den Gegnern noch blieb, die wichtigsten Gründe – etwa „Gegner war zu schnell“, „Element-Nachteil“ oder „Element-Schild – Vorteil fehlt“ – und zu jedem Grund einen Tipp. Dazu siehst du, wie viel Schaden jedes Teammitglied ausgeteilt und eingesteckt hat und wann es fiel. Die Auswertung bleibt stehen, bis ein späterer Lauf an dieser Etage vorbeikommt.', feature: 'tower' },
       { text: 'Das Kampfprotokoll ist neu: statt Textzeilen eine Liste mit Symbolen, Namen in Elementfarbe und farbigem Rand für gute und schlechte Momente. „Nur Wichtiges“ zeigt Techniken, kritische Treffer, besiegte Kämpfer und Boss-Momente; ausgeschaltet siehst du jeden Treffer.', feature: 'tower' },
       { text: 'Wochen-Titan: Er richtet sich jetzt gleichmäßig nach deinem Turm-Rekord. Bisher war er deutlich stärker, wenn dein Rekord genau auf einer Boss-Etage lag (z. B. 40 statt 41). Außerdem setzt er keine Element-Technik mehr ein – wie die Bosse im Turm.', feature: 'weeklyBoss' },
