@@ -5,6 +5,7 @@
   import { findCreature } from '@core/creatures';
   import { game, view, portalCovered, portalDone } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
+  import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
@@ -26,6 +27,7 @@
     const key = portalKey;
     if (key === null) return;
     const mode = untrack(() => (prefs.reduceMotion ? 'reduced' : 'full'));
+    untrack(() => play('portal', view.portal?.dir === 'out' ? 1 : 0));
     const t1 = setTimeout(() => view.portal?.key === key && portalCovered(), COVER_MS[mode]);
     const t2 = setTimeout(() => view.portal?.key === key && portalDone(), END_MS[mode]);
     return () => {

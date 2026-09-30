@@ -137,7 +137,7 @@
   });
 
   // Background music follows the settings and changes its mood with the area.
-  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, moodFor(view.tab)));
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, view.world !== 'off' ? 'isekai' : moodFor(view.tab)));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();

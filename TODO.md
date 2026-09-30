@@ -634,7 +634,8 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       Knopfliste, neue Kampfszene
       (Steinwände mit flackerndem Fackelschein in der Farbe des Dungeons, Pergament-Karten, Serifenschrift, Wege als
       Tore, Gaben als Runensteine, Pfad aus `run.path` mit Boss-Krone; das Labor-Menü für das RPG bleibt im Labor-Stil)
-- [ ] Schritt 6: eigene Musikstimmung und Portal-Klang
+- [x] Schritt 6: eigene Musikstimmung und Portal-Klang (Stimmung `isekai` in `ui/music.ts`: dunkles, modales Moll;
+      Klang `portal` hinein und rückwärts heraus, einzeln abschaltbar)
 - [ ] Schritt 7: Versionshinweis, Doku, PR
 
 ## Schritt 1 – Grundlage und Spam-Schutz

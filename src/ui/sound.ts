@@ -334,6 +334,14 @@ const SOUNDS = {
     for (let i = 0; i < 3; i++) s.noise(i * 0.15, 0.05, 0.4, 1500);
     for (const m of [60, 67, 72]) s.note(m, 0.5, 0.8, 'triangle', 0.25, 3000);
   },
+  /** GenLab RPG portal: a swelling pull into the vortex and a dull thud (0 = in); backwards on the way home (1). */
+  portal: (s: Synth, v: number) => {
+    const into = v === 0;
+    s.slide(into ? 36 : 72, into ? 72 : 36, 0, 1.6, 'sawtooth', 0.12, 900);
+    s.slide(into ? 43 : 79, into ? 79 : 43, 0.08, 1.5, 'sine', 0.14, 2200);
+    for (let i = 0; i < 6; i++) s.noise(i * 0.24, 0.32, into ? 0.08 + i * 0.03 : 0.23 - i * 0.03, 700 + i * 450);
+    s.note(33, 1.6, 1.3, 'sine', 0.4, 260);
+  },
   /** Anomaly starts: a warped tone. */
   anomalyStart: (s: Synth) => {
     s.slide(60, 54, 0, 0.8, 'sawtooth', 0.2, 900);
@@ -386,6 +394,7 @@ export const SOUND_GROUPS: { name: string; sounds: { id: SoundKey; name: string 
     { id: 'milestone', name: 'Meilenstein' }, { id: 'relic', name: 'Relikt gekauft' }, { id: 'bossHit', name: 'Wochen-Boss: Angriff' },
     { id: 'bossTier', name: 'Wochen-Boss: Belohnungsstufe' },
   ] },
+  { name: 'GenLab RPG', sounds: [{ id: 'portal', name: 'Portal in die andere Welt' }] },
   { name: 'Endgame', sounds: [
     { id: 'prestige', name: 'Vererbung' }, { id: 'aeon', name: 'Äon' }, { id: 'talent', name: 'Talent, Resonanz, Heilung im Turm' },
     { id: 'construction', name: 'Großprojekt' }, { id: 'anomalyStart', name: 'Anomalie beginnt' }, { id: 'anomalyDone', name: 'Anomalie gemeistert' },

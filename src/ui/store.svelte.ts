@@ -90,7 +90,7 @@ export function portalDone(): void {
 }
 
 /** Sounds of the other world (fights, level-ups, UI) – everything else waits in the lab. */
-const WORLD_SOUNDS = ['hit', 'hitCrit', 'hitWeak', 'whoosh', 'technique', 'ko', 'floorClear', 'milestone', 'runEnded', 'talent', 'click', 'bonk'] as const;
+const WORLD_SOUNDS = ['hit', 'hitCrit', 'hitWeak', 'whoosh', 'technique', 'ko', 'floorClear', 'milestone', 'runEnded', 'talent', 'click', 'bonk', 'portal'] as const;
 
 /** Follows the game: a running RPG run pulls the app into the other world; its end leaves the result screen. */
 function syncWorld(): void {
