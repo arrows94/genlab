@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseEventOption, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -334,7 +334,7 @@ describe('GenLab RPG – Dungeon', () => {
     expect(leaveRpgRun(g).ok).toBe(false); // no fleeing mid-fight
     expect(g.content.rpgDungeons.get('rootMaze').elements).toContain(r.battle!.foe.element);
     winFight(g);
-    expect(r.loot).toEqual(roomLoot(g, r, 'fight'));
+    expect(r.loot).toMatchObject(roomLoot(g, r, 'fight'));
     expect(r.choices.length).toBeGreaterThan(0);
     r.depth = 5;
     expect(roomFloor(g, r)).toBeGreaterThan(roomFloor(g, { ...r, depth: 1 }));
@@ -345,14 +345,15 @@ describe('GenLab RPG – Dungeon', () => {
     const r = g.state.rpg.run!;
     r.choices = ['treasure'];
     enterRoom(g, 0);
-    expect(r.loot).toEqual(roomLoot(g, r, 'treasure'));
+    expect(r.loot).toMatchObject(roomLoot(g, r, 'treasure'));
+    const carried = { ...r.loot };
     r.hp = 1;
     r.choices = ['rest'];
     enterRoom(g, 0);
     expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * balance.rpg.restHeal));
     expect(r.loot).toEqual({});
-    expect(r.secured).toEqual(roomLoot(g, r, 'treasure'));
-    expect(g.state.resources['towerTokens']!.toNumber()).toBe(roomLoot(g, r, 'treasure')['towerTokens']);
+    expect(r.secured).toEqual(carried);
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(carried['towerTokens']);
   });
 
   it('an event waits for a choice, then its outcome happens and the ways open', () => {
@@ -532,5 +533,54 @@ describe('GenLab RPG – Erfahrungsrang', () => {
     startRpgRun(g, c.id, 'rootMaze');
     expect(g.state.rpg.ranks['999999']).toBeUndefined();
     expect(g.state.rpg.ranks[String(c.id)]).toBe(1e12);
+  });
+});
+
+describe('GenLab RPG – Beute', () => {
+  function run(dungeon = 'rootMaze') {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    for (const d of g.content.rpgDungeons.list) g.state.rpg.cleared[d.id] = 1;
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1e6, atk: 1e5, def: 1e4, spd: 100 };
+    startRpgRun(g, c.id, dungeon);
+    return { g, r: g.state.rpg.run! };
+  }
+
+  it('deeper dungeons pay more and have better chances', () => {
+    const a = run('rootMaze');
+    const b = run('crystalCore');
+    expect(roomLoot(b.g, b.r, 'boss')['towerTokens']!).toBeGreaterThan(roomLoot(a.g, a.r, 'boss')['towerTokens']!);
+    expect(lootChance(b.g, b.r, 'boss', 'aeonShards')).toBeGreaterThan(lootChance(a.g, a.r, 'boss', 'aeonShards'));
+    expect(lootChance(b.g, b.r, 'boss', 'timeCrystals')).toBe(1);
+  });
+
+  it('time crystals and Äon-Splitter stop at the weekly cap, a new week starts over', () => {
+    const { g, r } = run('crystalCore');
+    const cap = balance.rpg.weeklyCap['timeCrystals']!;
+    // Plenty of rooms with a good chance: carried crystals never go beyond the cap.
+    for (let i = 0; i < 60; i++) {
+      r.choices = ['treasure'];
+      enterRoom(g, 0);
+      expect(r.loot['timeCrystals'] ?? 0).toBeLessThanOrEqual(cap);
+    }
+    expect(r.loot['timeCrystals']).toBe(cap);
+    expect(weeklyRoom(g, 'timeCrystals')).toBe(0);
+    leaveRpgRun(g);
+    expect(g.state.resources['timeCrystals']!.toNumber()).toBe(cap);
+    expect(weeklyRoom(g, 'timeCrystals')).toBe(0);
+    expect(weeklyRoom(g, 'towerTokens')).toBe(Infinity);
+    g.state.lastTickAt += 7 * 86_400_000;
+    expect(weeklyRoom(g, 'timeCrystals')).toBe(cap);
+  });
+
+  it('gene samples catalogue missing alleles when paid out', () => {
+    const { g, r } = run();
+    const before = Object.keys(g.state.geneLibrary).length;
+    r.loot[ALLELE_SAMPLES] = 2;
+    leaveRpgRun(g);
+    expect(Object.keys(g.state.geneLibrary).length).toBe(before + 2);
+    expect(g.state.resources[ALLELE_SAMPLES]).toBeUndefined();
   });
 });

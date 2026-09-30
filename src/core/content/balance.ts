@@ -113,8 +113,13 @@ export interface Balance {
     rankUpgradeEvery: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
-    /** Loot per room kind, multiplied by the dungeon's `loot`. */
-    loot: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', ResourceAmounts>>;
+    /**
+     * Loot per room kind: `fixed` × the dungeon's `loot`; each `chance` entry gives one piece with that
+     * probability × the dungeon's `loot` (at most 1). Key `alleleSamples` catalogues missing alleles.
+     */
+    loot: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', { fixed: ResourceAmounts; chance?: Record<string, number> }>>;
+    /** Most of these per week (paid out) from the dungeon. */
+    weeklyCap: ResourceAmounts;
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */

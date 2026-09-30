@@ -7,6 +7,8 @@ import type { Creature, RpgRun } from '../state';
 import type { RpgEventOutcome, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
+import { weekIndex } from './weekly';
+import { catalogueSamples } from '../genetics';
 import { heroCombatant, heroStats, makeFoe, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker, upgradePerks } from './rpgCombat';
 
 /**
@@ -147,8 +149,35 @@ function addLoot(into: Record<string, number>, from: Record<string, number>, sha
   }
 }
 
+/** Loot key that is no resource: each sample catalogues an allele missing in the gene library. */
+export const ALLELE_SAMPLES = 'alleleSamples';
+
+/** This week's record of capped loot (a new week starts empty). */
+function weekly(ctx: GameContext): { week: number; got: Record<string, number> } {
+  const w = ctx.state.rpg.weekly;
+  const week = weekIndex(ctx.balance.weekly.epoch, ctx.state.lastTickAt);
+  if (w.week !== week) {
+    w.week = week;
+    w.got = {};
+  }
+  return w;
+}
+
+/** How much more of a capped loot the dungeon may still give this week (Infinity = no cap). */
+export function weeklyRoom(ctx: GameContext, res: string): number {
+  const cap = ctx.balance.rpg.weeklyCap[res];
+  if (cap === undefined) return Infinity;
+  const carried = ctx.state.rpg.run?.loot[res] ?? 0;
+  return Math.max(0, cap - (weekly(ctx).got[res] ?? 0) - carried);
+}
+
 function payOut(ctx: GameContext, loot: Record<string, number>): void {
-  for (const [res, amount] of Object.entries(loot)) grant(ctx, res, amount, 'rpg');
+  const w = weekly(ctx);
+  for (const [res, amount] of Object.entries(loot)) {
+    if (res === ALLELE_SAMPLES) catalogueSamples(ctx, amount);
+    else grant(ctx, res, amount, 'rpg');
+    if (ctx.balance.rpg.weeklyCap[res] !== undefined) w.got[res] = (w.got[res] ?? 0) + amount;
+  }
 }
 
 /** Makes the carried loot safe (rest points): it is paid out at once. */
@@ -228,7 +257,7 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
 function winBattle(ctx: GameContext, run: RpgRun): void {
   const kind = run.room === 'boss' ? 'boss' : run.room === 'elite' ? 'elite' : 'fight';
   run.battle = null;
-  addLoot(run.loot, roomLoot(ctx, run, kind));
+  rollLoot(ctx, run, kind);
   if (kind === 'boss') {
     addRankXp(ctx, run.creatureId, ctx.balance.rpg.rankXpBoss);
     finishRpgRun(ctx, true, true);
@@ -304,15 +333,34 @@ export function roomFloor(ctx: GameContext, run: RpgRun): number {
   return Math.round(d.floor + Math.max(0, run.depth - 1) * d.floorsPerRoom);
 }
 
-/** Loot of a room kind in this dungeon. */
+/** Fixed loot of a room kind in this dungeon (before chances and the weekly cap). */
 export function roomLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss'): Record<string, number> {
   const mult = ctx.content.rpgDungeons.get(run.dungeon).loot;
   const out: Record<string, number> = {};
-  for (const [res, amount] of Object.entries(ctx.balance.rpg.loot[kind] ?? {})) {
+  for (const [res, amount] of Object.entries(ctx.balance.rpg.loot[kind]?.fixed ?? {})) {
     const v = Math.round(amount * mult);
     if (v > 0) out[res] = v;
   }
   return out;
+}
+
+/** Chance of one piece of `res` from a room kind in this dungeon. */
+export function lootChance(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss', res: string): number {
+  const p = ctx.balance.rpg.loot[kind]?.chance?.[res] ?? 0;
+  return Math.min(1, p * ctx.content.rpgDungeons.get(run.dungeon).loot);
+}
+
+/** Rolls a room's loot (fixed amounts and chances) into the carried loot, within the weekly cap. */
+function rollLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss', times = 1): void {
+  const found: Record<string, number> = {};
+  addLoot(found, roomLoot(ctx, run, kind), times);
+  for (const res of Object.keys(ctx.balance.rpg.loot[kind]?.chance ?? {})) {
+    if (ctx.rng.chance(Math.min(1, lootChance(ctx, run, kind, res) * times))) found[res] = (found[res] ?? 0) + 1;
+  }
+  for (const [res, amount] of Object.entries(found)) {
+    const v = Math.min(amount, weeklyRoom(ctx, res));
+    if (v > 0) run.loot[res] = (run.loot[res] ?? 0) + v;
+  }
 }
 
 /** Offers the next ways: 2–3 different rooms, or the boss after the last room. */
@@ -374,7 +422,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomFloor(ctx, run));
     }
     case 'treasure':
-      addLoot(run.loot, roomLoot(ctx, run, 'treasure'));
+      rollLoot(ctx, run, 'treasure');
       break;
     case 'event': {
       const events = ctx.content.rpgEvents.list;
@@ -400,7 +448,7 @@ export function chooseEventOption(ctx: GameContext, index: number): ActionResult
   const outcome: RpgEventOutcome = works ? option : option.fail!;
   const maxHp = rpgMaxHp(ctx, rpgHero(ctx)!, run.upgrades);
   if (outcome.hp) run.hp = Math.min(maxHp, Math.max(1, run.hp + Math.round(maxHp * outcome.hp)));
-  if (outcome.loot) addLoot(run.loot, roomLoot(ctx, run, 'treasure'), outcome.loot);
+  if (outcome.loot) rollLoot(ctx, run, 'treasure', outcome.loot);
   if (outcome.secure) secureLoot(ctx);
   run.event = null;
   run.eventResult = outcome.result;

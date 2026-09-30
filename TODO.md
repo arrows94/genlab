@@ -626,7 +626,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
   - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst wenn das RPG ins normale Spiel kommt
 - [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
       (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
-- [ ] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
+- [x] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
 
 ## Schritt 2 – Rundenkampf
 
@@ -654,7 +654,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Schritt 4 – Belohnungen und Ausrüstung
 
-- [ ] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
+- [x] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
 - [ ] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
       und Äon, kann jedem Monster angelegt werden
 - [ ] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,

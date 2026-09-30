@@ -94,13 +94,16 @@ export const balance: Balance = {
     rankUpgradeEvery: 3,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
-    // Loot per room (× the dungeon's loot factor).
+    // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
+    // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {
-      fight: { towerTokens: 3 },
-      elite: { towerTokens: 8 },
-      treasure: { towerTokens: 6 },
-      boss: { towerTokens: 25 },
+      fight: { fixed: { towerTokens: 3 }, chance: { catalyst: 0.08, alleleSamples: 0.05 } },
+      elite: { fixed: { towerTokens: 8 }, chance: { catalyst: 0.35, alleleSamples: 0.25, timeCrystals: 0.1 } },
+      treasure: { fixed: { towerTokens: 6 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
+      boss: { fixed: { towerTokens: 25, catalyst: 1 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
     },
+    // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
+    weeklyCap: { timeCrystals: 6, aeonShards: 2 },
   },
   timeCrystals: {
     skipHours: 4,
