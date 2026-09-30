@@ -13,6 +13,7 @@
   import { shareSupported, shareText } from '../platform/share';
   import SaveCompare from './SaveCompare.svelte';
   import SyncPanel from './SyncPanel.svelte';
+  import RescuePanel from './RescuePanel.svelte';
 
   let text = $state('');
   /** Mirrors the save's naming option (game state itself is not reactive). */
@@ -245,6 +246,8 @@
 {/if}
 
 <SyncPanel />
+
+<RescuePanel />
 
 <article class="panel danger-zone">
   <h3>Gefahrenzone</h3>

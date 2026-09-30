@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { attackWeeklyBoss, bossDefeated, refreshWeeklyBoss } from '@core/features/weeklyBoss';
+import { attackWeeklyBoss, bossDefeated, lowerRecordAndBoss, refreshWeeklyBoss } from '@core/features/weeklyBoss';
 import { voyageDestination } from '@core/features/voyage';
-import { enemyFor, setTeam } from '@core/features/tower';
+import { checkpoint, enemyFor, fightNextFloor, setTeam, towerMilestones } from '@core/features/tower';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import { NOW, balance, content, makeGame } from './helpers';
@@ -85,5 +85,56 @@ describe('Wochen-Boss', () => {
     const json = JSON.parse(serialize(makeGame().state, NOW));
     delete json.state.weeklyBoss;
     expect(deserialize(JSON.stringify(json)).state.weeklyBoss.week).toBe(-1);
+  });
+});
+
+describe('Turm-Rekord senken (Hilfe für festgefahrene Spielstände)', () => {
+  it('lowers the record and adapts this week’s boss, keeping the damage share', () => {
+    const g = bossGame();
+    g.state.tower.best = 120;
+    g.state.weeklyBoss.week = -1;
+    refreshWeeklyBoss(g, NOW);
+    const b = g.state.weeklyBoss;
+    b.damage = Math.round(b.maxHp * 0.3);
+    b.tiers = 1;
+    const oldMax = b.maxHp;
+    expect(lowerRecordAndBoss(g, 30).ok).toBe(true);
+    expect(g.state.tower.best).toBe(30);
+    expect(g.state.tower.bestEver).toBe(120);
+    expect(b.floor).toBe(Math.max(balance.weeklyBoss.minFloor, 30));
+    expect(b.maxHp).toBeLessThan(oldMax);
+    expect(b.maxHp).toBe(Math.round(enemyFor(g, b.floor).maxHp * balance.weeklyBoss.hpMult));
+    expect(b.damage / b.maxHp).toBeCloseTo(0.3, 2);
+    expect(b.tiers).toBe(1);
+    // Milestones and floor conditions follow the highest record ever.
+    expect(towerMilestones(g)).toBe(Math.floor(120 / balance.tower.milestoneEvery));
+    expect(checkpoint(g)).toBe(30);
+  });
+
+  it('only lowers, never during a run, and pays first-time rewards only once', () => {
+    const g = bossGame();
+    g.state.tower.best = 60;
+    expect(lowerRecordAndBoss(g, 60).ok).toBe(false);
+    expect(lowerRecordAndBoss(g, -1).ok).toBe(false);
+    expect(lowerRecordAndBoss(g, 49).ok).toBe(true);
+    // Clearing floor 50 again is no new record: no second milestone shards.
+    g.state.tower.run = { floor: 49, team: g.state.tower.team, elapsedMs: 0, startFloor: 50 };
+    expect(lowerRecordAndBoss(g, 10).ok).toBe(false);
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1e9, atk: 1e9, def: 1e9, spd: 1e9 };
+    g.invalidate();
+    const shards = g.state.resources.aeonShards?.toNumber() ?? 0;
+    fightNextFloor(g);
+    expect(g.state.tower.best).toBe(50);
+    expect(g.state.resources.aeonShards?.toNumber() ?? 0).toBe(shards);
+  });
+
+  it('keeps the highest record across save and load', () => {
+    const g = bossGame();
+    g.state.tower.best = 80;
+    lowerRecordAndBoss(g, 20);
+    const { state } = deserialize(serialize(g.state));
+    expect(state.tower.best).toBe(20);
+    expect(state.tower.bestEver).toBe(80);
   });
 });

@@ -47,6 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Äon, Talente und Großprojekte haben eigene Klänge.', feature: 'aeon' },
       { text: 'Anomalien beginnen verzerrt und enden mit einem Akkord.', feature: 'anomalies' },
       { text: 'Was die Automatik ständig auslöst, hörst du nur im jeweiligen Tab – seltene Ergebnisse überall.' },
+      { text: 'Neu unter Optionen: „Hilfe bei festgefahrenen Spielständen“. Ist dein Turm-Rekord höher, als dein Team heute schafft, kannst du ihn senken – Checkpoint und Wochen-Boss passen sich an, Meilenstein-Boni bleiben.', feature: 'tower' },
     ],
   },
   {

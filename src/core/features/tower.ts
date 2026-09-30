@@ -167,9 +167,31 @@ export function equipRelic(ctx: GameContext, slot: number, id: string | null): A
 
 // ---- Meilensteine -----------------------------------------------------------
 
-/** Milestones reached (every `milestoneEvery` floors of the record). */
+/** Highest record ever (a lowered record keeps what was earned). */
+export function towerBestEver(ctx: GameContext): number {
+  return Math.max(ctx.state.tower.best, ctx.state.tower.bestEver ?? 0);
+}
+
+/** Milestones reached (every `milestoneEvery` floors of the highest record ever). */
 export function towerMilestones(ctx: GameContext): number {
-  return Math.floor(ctx.state.tower.best / ctx.balance.tower.milestoneEvery);
+  return Math.floor(towerBestEver(ctx) / ctx.balance.tower.milestoneEvery);
+}
+
+/**
+ * Help for stuck saves (options): lowers the record, so the checkpoint and
+ * this week's boss fit the team again. Milestone bonuses stay, first-time
+ * rewards (time crystal, Äon-Splitter) are not paid again.
+ */
+export function lowerTowerRecord(ctx: GameContext, floor: number): ActionResult {
+  const tw = ctx.state.tower;
+  if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  if (tw.run) return { ok: false, reason: 'Beende zuerst den laufenden Turm-Lauf.' };
+  if (!Number.isInteger(floor) || floor < 0) return { ok: false, reason: 'Bitte eine Etage ab 0 angeben.' };
+  if (floor >= tw.best) return { ok: false, reason: `Der Rekord kann nur gesenkt werden (aktuell Etage ${tw.best}).` };
+  tw.bestEver = towerBestEver(ctx);
+  tw.best = floor;
+  ctx.invalidate();
+  return { ok: true };
 }
 
 /** Permanent bonus per milestone reached. */
@@ -490,8 +512,10 @@ export function fightNextFloor(ctx: GameContext): void {
     return;
   }
   run.floor = floor;
-  const record = floor > tw.best;
+  // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
+  const record = floor > towerBestEver(ctx);
   tw.best = Math.max(tw.best, floor);
+  tw.bestEver = Math.max(tw.bestEver ?? 0, tw.best);
   const { rewards, allele } = floorRewards(ctx, floor);
   // Milestone records (first time only, the best floor survives every reset) give a time crystal.
   if (record && floor % ctx.balance.timeCrystals.towerEvery === 0) rewards['timeCrystals'] = D(1);
