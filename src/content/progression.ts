@@ -90,7 +90,7 @@ export const features: FeatureDef[] = [
   },
   // GenLab RPG: still a preview apart from the normal game – no condition, it is switched on by hand (options).
   {
-    id: 'rpg', name: 'GenLab RPG', hint: 'GenLab RPG: Schicke ein einzelnes Monster in den Dungeon – rundenbasiert, mit Fackeln als Eintritt.',
+    id: 'rpg', name: 'GenLab RPG', tab: 'rpg', hint: 'GenLab RPG: Schicke ein einzelnes Monster in den Dungeon – rundenbasiert, mit Fackeln als Eintritt.',
   },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];

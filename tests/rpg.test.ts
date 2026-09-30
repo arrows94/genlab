@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -582,5 +582,24 @@ describe('GenLab RPG – Beute', () => {
     leaveRpgRun(g);
     expect(Object.keys(g.state.geneLibrary).length).toBe(before + 2);
     expect(g.state.resources[ALLELE_SAMPLES]).toBeUndefined();
+  });
+});
+
+describe('GenLab RPG – Vorschau', () => {
+  it('is switched on and off by hand, not while a run is going', () => {
+    const g = makeGame();
+    expect(setRpgPreview(g, true).ok).toBe(true);
+    expect(g.state.features['rpg']).toBe(true);
+    expect(torches(g)).toBe(balance.rpg.maxTorches);
+    expect(rpgCandidates(g).map((c) => c.id)).toEqual([g.state.creatures[0]!.id]);
+    startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
+    expect(rpgCandidates(g)).toEqual([]);
+    expect(setRpgPreview(g, false).ok).toBe(false);
+    leaveRpgRun(g);
+    expect(setRpgPreview(g, false).ok).toBe(true);
+    expect(g.state.features['rpg']).toBe(false);
+    // Switching on again does not refill the stock a second time.
+    setRpgPreview(g, true);
+    expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
   });
 });

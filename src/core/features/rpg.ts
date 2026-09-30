@@ -1,10 +1,11 @@
 import { D } from '../num';
-import { findCreature } from '../creatures';
+import { creaturePower, findCreature } from '../creatures';
+import { unlockFeature } from '../systems/unlocks';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature, RpgRun } from '../state';
-import type { RpgEventOutcome, RpgRoomKind, RpgSkillDef } from '../content/types';
+import type { RpgEventOutcome, RpgIntent, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
@@ -455,3 +456,42 @@ export function chooseEventOption(ctx: GameContext, index: number): ActionResult
   roomDone(ctx, run);
   return { ok: true };
 }
+
+// ---- Vorschau und Anzeige ---------------------------------------------------
+
+/** The RPG is still a preview apart from the normal game: switched on and off by hand (options). */
+export function setRpgPreview(ctx: GameContext, on: boolean): ActionResult {
+  if (on) {
+    if (!ctx.state.features['rpg']) unlockFeature(ctx, 'rpg');
+    refreshTorches(ctx);
+    return { ok: true };
+  }
+  if (ctx.state.rpg.run) return { ok: false, reason: 'Beende zuerst den laufenden Lauf.' };
+  ctx.state.features['rpg'] = false;
+  ctx.invalidate();
+  return { ok: true };
+}
+
+/** Monsters that could enter the dungeon now, strongest first. */
+export function rpgCandidates(ctx: GameContext): Creature[] {
+  const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));
+  return ctx.state.creatures.filter((c) => rpgStartBlocker(ctx, c) === null).sort((a, b) => power.get(b.id)! - power.get(a.id)!);
+}
+
+export const ROOM_INFO: Record<RpgRoomKind, { name: string; icon: string; hint: string }> = {
+  fight: { name: 'Kampf', icon: '⚔️', hint: 'Ein Gegner – Beute und Erfahrung.' },
+  elite: { name: 'Elite', icon: '💀', hint: 'Ein starker Gegner – mehr Beute und Erfahrung.' },
+  treasure: { name: 'Schatz', icon: '💰', hint: 'Beute ohne Kampf.' },
+  rest: { name: 'Rast', icon: '🏕️', hint: 'Heilen und die Beute sichern.' },
+  event: { name: 'Ereignis', icon: '❔', hint: 'Etwas Unerwartetes – du entscheidest.' },
+  boss: { name: 'Boss', icon: '👑', hint: 'Der Herr des Dungeons. Sieg = Dungeon geschafft.' },
+};
+
+export const INTENT_INFO: Record<RpgIntent, { name: string; icon: string; hint: string }> = {
+  attack: { name: 'Angriff', icon: '🗡️', hint: 'Greift normal an.' },
+  charge: { name: 'Lädt auf', icon: '⚡', hint: 'Sammelt Kraft – danach kommt ein schwerer Schlag.' },
+  heavy: { name: 'Schwerer Schlag', icon: '💢', hint: 'Ein sehr starker Treffer. Schild, Deckung oder Betäubung helfen.' },
+  guard: { name: 'Deckung', icon: '🛡️', hint: 'Ein Schild fängt in dieser Runde Schaden ab.' },
+  heal: { name: 'Heilung', icon: '💚', hint: 'Heilt sich.' },
+  tech: { name: 'Element-Technik', icon: '✨', hint: 'Setzt seine Element-Technik ein.' },
+};

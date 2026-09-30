@@ -664,8 +664,10 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Schritt 5 – Darstellung
 
-- [ ] Eigener Bildschirm „GenLab RPG“ (auf dem Handy Vollbild), Raumkarte, Fähigkeitsknöpfe unten in Daumenreichweite
+- [x] Eigener Bildschirm „GenLab RPG“ (auf dem Handy Vollbild), Raumkarte, Fähigkeitsknöpfe unten in Daumenreichweite
+      (Reiter „GenLab RPG“ unter Abenteuer, als Vorschau unter Optionen einschaltbar; Fähigkeiten klebend unten)
 - [ ] Kämpfer, Zustände und Zahlen wie in der Turm-Arena wiederverwenden; `.reduce-motion` beachten
+  - [x] Kreaturbilder, Zustands-Symbole, KP-Balken; noch ohne Treffer-Animationen
 - [ ] Sound-Hooks gleich mit anlegen (siehe „TODO – Sound“)
 
 ## Weitere Ideen

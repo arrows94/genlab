@@ -232,7 +232,7 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
       const def = asFighter(other, !side.isHero, 1);
       const evade = Math.min(0.9, evadeChance(ctx, att, def) + (statusOf(other, 'evade')?.value ?? 0));
       if (ctx.rng.chance(evade)) {
-        log(`${other.name} weicht ${skill.name} aus.`);
+        log(`${other.name} weicht aus.`);
         continue;
       }
       let dmg = damage(ctx, att, def, ctx.rng);

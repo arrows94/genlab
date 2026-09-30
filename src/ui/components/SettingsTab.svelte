@@ -5,6 +5,7 @@
   import type { GameState } from '@core/state';
   import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask, act } from '../store.svelte';
   import { setNameStyle } from '@core/actions';
+  import { setRpgPreview } from '@core/features/rpg';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { play } from '../sound';
   import { CHANGELOG, formatReleaseDate } from '../changelog';
@@ -19,6 +20,7 @@
   let text = $state('');
   /** Mirrors the save's naming option (game state itself is not reactive). */
   let nameStyle = $state(game.state.nameStyle);
+  let rpgPreview = $state(game.state.features['rpg'] === true);
   let fileInput: HTMLInputElement | undefined = $state();
   /** A read export waiting for the player to compare and confirm it. */
   /** Raw: a deeply reactive save would be adopted as Svelte proxies (see `sync.conflict`). */
@@ -190,6 +192,15 @@
       <p class="small muted">{nameStyle === 'classic' ? 'Zum Beispiel „Glussling“ aus Glutwelpe × Sprössling.' : 'Zum Beispiel „Wuselbert Funkenstein“ – Kinder mischen meist die Rufnamen der Eltern.'} Gilt für diesen Spielstand und neuen Nachwuchs; vorhandene Namen bleiben. Beinamen gibt es in beiden Varianten.</p>
     </article>
   {/if}
+
+  <article class="panel">
+    <h3>Vorschau</h3>
+    <label class="opt check">
+      <input type="checkbox" checked={rpgPreview} onchange={(e) => { if (act(setRpgPreview(game, e.currentTarget.checked))) rpgPreview = game.state.features['rpg'] === true; else e.currentTarget.checked = rpgPreview; }} />
+      <span>🔥 GenLab RPG ausprobieren</span>
+    </label>
+    <p class="small muted">Ein einzelnes Monster zieht rundenbasiert durch Dungeons. Noch in Arbeit und abseits vom normalen Spiel – erscheint unter „Abenteuer“.</p>
+  </article>
 
   <article class="panel">
     <h3>Benachrichtigungen</h3>
