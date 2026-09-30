@@ -114,8 +114,9 @@ export interface DayReport {
   anomalyRecord: number;
   /** Sum of all relic levels. */
   relics: number;
-  /** Rank of Kampferfahrung (tower XP). */
+  /** Rank of Kampferfahrung (tower XP) and the current Entschlossenheit bonus. */
   veteranRank: number;
+  resolve: number;
   /** Deepest pure line ever bred (any species) and the sum of all dynasty tiers. */
   dynastyBest: number;
   dynastyTiers: number;
@@ -211,6 +212,7 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       anomalyRecord: g.state.anomalyRecord,
       relics: Object.values(g.state.relics).reduce((a, b) => a + b, 0),
       veteranRank: veteranRank(g).rank,
+      resolve: g.state.tower.resolve ?? 0,
       dynastyBest: Math.max(0, ...Object.values(g.state.dynasties)),
       dynastyTiers: totalDynastyTiers(g),
       shardSources: { ...shardSources },

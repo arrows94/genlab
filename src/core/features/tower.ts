@@ -316,6 +316,8 @@ export function lowerTowerRecord(ctx: GameContext, floor: number): ActionResult 
   if (floor >= tw.best) return { ok: false, reason: `Der Rekord kann nur gesenkt werden (aktuell Etage ${tw.best}).` };
   tw.bestEver = towerBestEver(ctx);
   tw.best = floor;
+  tw.recordAt = ctx.state.lastTickAt;
+  tw.resolve = 0;
   ctx.invalidate();
   return { ok: true };
 }
@@ -332,17 +334,34 @@ export const towerMilestoneProvider: ModifierProvider = (ctx, into) => {
  */
 export function veteranRank(ctx: GameContext, xp = ctx.state.tower.xp ?? 0): { rank: number; into: number; need: number; bonus: number } {
   const t = ctx.balance.tower;
-  const total = (n: number) => (t.xpRankBase * (Math.pow(t.xpRankGrowth, n) - 1)) / (t.xpRankGrowth - 1);
-  let rank = Math.max(0, Math.floor(Math.log(1 + (xp * (t.xpRankGrowth - 1)) / t.xpRankBase) / Math.log(t.xpRankGrowth)));
+  // Rank n → n + 1 costs base × (1 + step × n): the total up to rank n is quadratic.
+  const total = (n: number) => t.xpRankBase * (n + (t.xpRankStep * n * (n - 1)) / 2);
+  const a = (t.xpRankBase * t.xpRankStep) / 2;
+  const b = t.xpRankBase - a;
+  let rank = Math.max(0, Math.floor(a > 0 ? (-b + Math.sqrt(b * b + 4 * a * xp)) / (2 * a) : xp / t.xpRankBase));
   // Guard against rounding at the edge of a rank.
   while (total(rank + 1) <= xp) rank++;
   while (rank > 0 && total(rank) > xp) rank--;
-  return { rank, into: xp - total(rank), need: t.xpRankBase * Math.pow(t.xpRankGrowth, rank), bonus: rank * t.xpRankBonus };
+  return { rank, into: xp - total(rank), need: t.xpRankBase * (1 + t.xpRankStep * rank), bonus: rank * t.xpRankBonus };
 }
 
-/** Kampferfahrung as a bonus on KP and damage of every tower fighter. */
+/** Kampferfahrung for winning a floor: more the higher it is, a boss counts several times. */
+export function floorXp(ctx: GameContext, floor: number): number {
+  const t = ctx.balance.tower;
+  return t.xpPerFloor * floor * (isBossFloor(ctx, floor) ? t.xpBossMult : 1);
+}
+
+/** Entschlossenheit: hours since the record last rose and the bonus they give (hourly steps, capped). */
+export function resolveInfo(ctx: GameContext): { hours: number; bonus: number } {
+  const t = ctx.balance.tower;
+  const since = ctx.state.tower.recordAt || ctx.state.lastTickAt;
+  const hours = Math.max(0, Math.floor((ctx.state.lastTickAt - since) / 3_600_000));
+  return { hours, bonus: Math.min(t.resolveCap, (t.resolvePerDay * hours) / 24) };
+}
+
+/** Kampferfahrung and Entschlossenheit as a bonus on KP and damage of every tower fighter. */
 export const towerVeteranProvider: ModifierProvider = (ctx, into) => {
-  const { bonus } = veteranRank(ctx);
+  const bonus = veteranRank(ctx).bonus + (ctx.state.tower.resolve ?? 0);
   if (bonus <= 0) return;
   into.addAll('tower:veteran', [
     { target: 'tower.hp', op: 'pct', value: bonus },
@@ -352,9 +371,8 @@ export const towerVeteranProvider: ModifierProvider = (ctx, into) => {
 
 /** Adds Kampferfahrung for a won floor; a new rank refreshes the bonuses. */
 function gainXp(ctx: GameContext, floor: number): void {
-  const t = ctx.balance.tower;
   const before = veteranRank(ctx).rank;
-  ctx.state.tower.xp = (ctx.state.tower.xp ?? 0) + (isBossFloor(ctx, floor) ? t.xpPerBoss : t.xpPerFloor);
+  ctx.state.tower.xp = (ctx.state.tower.xp ?? 0) + floorXp(ctx, floor);
   const after = veteranRank(ctx).rank;
   if (after > before) {
     ctx.invalidate();
@@ -965,6 +983,14 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   gainXp(ctx, floor);
   // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
   const record = floor > towerBestEver(ctx);
+  if (floor > tw.best) {
+    // A new record: the Entschlossenheit starts over.
+    tw.recordAt = ctx.state.lastTickAt;
+    if (tw.resolve) {
+      tw.resolve = 0;
+      ctx.invalidate();
+    }
+  }
   tw.best = Math.max(tw.best, floor);
   tw.bestEver = Math.max(tw.bestEver ?? 0, tw.best);
   const { rewards, allele } = floorRewards(ctx, floor);
@@ -983,6 +1009,14 @@ export const towerSystem: System = {
   id: 'tower',
   update(ctx, dtMs) {
     const tw = ctx.state.tower;
+    if (!ctx.state.features['tower']) return;
+    // Entschlossenheit grows by the hour while the record stands still.
+    if (!tw.recordAt) tw.recordAt = ctx.state.lastTickAt;
+    const resolve = resolveInfo(ctx).bonus;
+    if (resolve !== (tw.resolve ?? 0)) {
+      tw.resolve = resolve;
+      ctx.invalidate();
+    }
     const interval = fightIntervalMs(ctx);
     if (!tw.run) {
       // Auto-restart (tower upgrade) after a defeat, where the last run started (checkpoint or floor 1).

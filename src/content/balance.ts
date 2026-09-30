@@ -250,12 +250,15 @@ export const balance: Balance = {
     bossTraitFromFloor: 60,
     milestoneEvery: 150,
     milestoneShards: 3,
-    // Kampferfahrung (start values, tuned with the Äon-Bot; see TODO.md).
-    xpPerFloor: 1,
-    xpPerBoss: 10,
+    // Kampferfahrung: a moderate lasting bonus that keeps growing (tuned with the Äon-Bot, see TODO.md).
+    xpPerFloor: 1 / 30,
+    xpBossMult: 10,
     xpRankBase: 100,
-    xpRankGrowth: 1.12,
+    xpRankStep: 6.5,
     xpRankBonus: 0.02,
+    // Entschlossenheit against long stalls: +10 % per day without a new record, at most +50 %.
+    resolvePerDay: 0.1,
+    resolveCap: 0.5,
     milestoneModifiers: [
       { target: 'tower.damage', op: 'pct', value: 0.15 },
       { target: 'production.food', op: 'pct', value: 0.1 },

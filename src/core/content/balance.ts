@@ -305,14 +305,17 @@ export interface Balance {
     milestoneShards: number;
     /** Permanent bonus per milestone reached (stacks). */
     milestoneModifiers: ModifierDef[];
-    /** Kampferfahrung: per won floor and per won boss floor (survives every reset). */
+    /** Kampferfahrung per won floor: xpPerFloor × floor (higher floors teach more), a boss × xpBossMult. Survives every reset. */
     xpPerFloor: number;
-    xpPerBoss: number;
-    /** Rank n → n + 1 costs xpRankBase × xpRankGrowth^n. */
+    xpBossMult: number;
+    /** Rank n → n + 1 costs xpRankBase × (1 + xpRankStep × n) – linear, so ranks keep coming late. */
     xpRankBase: number;
-    xpRankGrowth: number;
+    xpRankStep: number;
     /** Per rank: this share more KP and damage in the tower (and against the weekly boss). */
     xpRankBonus: number;
+    /** Entschlossenheit: while the record does not rise, +resolvePerDay KP and damage per day (hourly steps), at most resolveCap; a new record resets it. */
+    resolvePerDay: number;
+    resolveCap: number;
   };
   anomalies: {
     /** Highest difficulty stage (I–V). */

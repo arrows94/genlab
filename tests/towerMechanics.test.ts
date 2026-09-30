@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, enemiesFor, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import { resetLayer } from '@core/prestige';
@@ -378,13 +378,18 @@ describe('Gegner und Turm (Schritt 4)', () => {
 });
 
 describe('Kampferfahrung', () => {
-  it('ranks cost base × growthⁿ each', () => {
+  it('rank n → n + 1 costs base × (1 + step × n)', () => {
     const g = towerGame();
     const t = balance.tower;
     expect(veteranRank(g, 0)).toMatchObject({ rank: 0, into: 0, need: t.xpRankBase, bonus: 0 });
     expect(veteranRank(g, t.xpRankBase - 1).rank).toBe(0);
     expect(veteranRank(g, t.xpRankBase).rank).toBe(1);
-    const two = t.xpRankBase * (1 + t.xpRankGrowth);
+    const two = t.xpRankBase * (1 + (1 + t.xpRankStep));
+    for (const n of [5, 17, 40]) {
+      const total = t.xpRankBase * (n + (t.xpRankStep * n * (n - 1)) / 2);
+      expect(veteranRank(g, total).rank).toBe(n);
+      expect(veteranRank(g, total - 0.5).rank).toBe(n - 1);
+    }
     expect(veteranRank(g, two - 1).rank).toBe(1);
     expect(veteranRank(g, two)).toMatchObject({ rank: 2, bonus: 2 * t.xpRankBonus });
     expect(veteranRank(g, two + 5).into).toBeCloseTo(5);
@@ -400,9 +405,12 @@ describe('Kampferfahrung', () => {
     g.bus.on('towerRank', (e) => ranks.push(e.rank));
     expect(startRun(g, false).ok).toBe(true);
     for (let i = 0; i < t.bossEvery; i++) fightNextFloor(g);
-    expect(g.state.tower.xp).toBe((t.bossEvery - 1) * t.xpPerFloor + t.xpPerBoss);
+    let expected = 0;
+    for (let f = 1; f <= t.bossEvery; f++) expected += floorXp(g, f);
+    expect(g.state.tower.xp).toBeCloseTo(expected, 6);
+    expect(floorXp(g, t.bossEvery)).toBeCloseTo(t.xpPerFloor * t.bossEvery * t.xpBossMult, 6);
     expect(ranks).toEqual([]);
-    g.state.tower.xp = t.xpRankBase - t.xpPerFloor;
+    g.state.tower.xp = t.xpRankBase - floorXp(g, t.bossEvery + 1) / 2;
     fightNextFloor(g);
     expect(ranks).toEqual([1]);
     g.state.tower.xp = t.xpRankBase * 10;
@@ -412,6 +420,30 @@ describe('Kampferfahrung', () => {
     const vet = fighterFor(g, c);
     expect(vet.hp).toBe(Math.round(plain.hp * (1 + rank.bonus)));
     expect(vet.power / plain.power).toBeCloseTo(1 + rank.bonus, 5);
+  });
+
+  it('Entschlossenheit grows by the hour while the record stands still and resets with a new one', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    g.step(100);
+    const start = g.state.lastTickAt;
+    expect(g.state.tower.recordAt).toBe(start);
+    const plain = fighterFor(g, c).hp;
+    g.state.lastTickAt = start + 36 * 3_600_000;
+    g.step(100);
+    expect(resolveInfo(g).bonus).toBeCloseTo((t.resolvePerDay * 36) / 24, 6);
+    expect(g.state.tower.resolve).toBeCloseTo((t.resolvePerDay * 36) / 24, 6);
+    expect(fighterFor(g, c).hp).toBeGreaterThan(plain);
+    g.state.lastTickAt = start + 100 * 24 * 3_600_000;
+    g.step(100);
+    expect(g.state.tower.resolve).toBe(t.resolveCap);
+    // A new record: back to zero.
+    expect(startRun(g, false).ok).toBe(true);
+    fightNextFloor(g);
+    expect(g.state.tower.resolve).toBe(0);
+    expect(g.state.tower.recordAt).toBe(g.state.lastTickAt);
   });
 
   it('survives inheritance and Äon', () => {
