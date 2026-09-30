@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 21,
+    date: '2026-09-30',
+    title: 'Unterreiter in Daumenreichweite',
+    items: [
+      { text: 'Auf dem Handy liegen die Unterreiter jetzt unten direkt über den Bereichen – alles in Daumenreichweite.' },
+      { text: 'Behoben: Auf dem Handy ließ sich die Forschung seitlich verschieben, sobald eine Forschung ganz abgeschlossen war.', feature: 'research' },
+    ],
+  },
+  {
     id: 20,
     date: '2026-09-30',
     title: 'Aufgeräumte Reiter und Ritual-Eier zum Selbstöffnen',
