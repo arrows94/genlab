@@ -204,12 +204,15 @@ export function describeModifier(ctx: GameContext, m: { target: string; op: stri
       'breeding.mutation': 'Mutationschance',
       'tower.elementDamage': 'Element-Schaden (Turm)',
       'tower.damage': 'Turm-Schaden',
+      'tower.crit': 'kritische Treffer (Turm)',
+      'tower.thorns': 'Rückschaden (Turm)',
     };
     return known[m.target] ?? m.target;
   })();
   const pct = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v * 1000) / 10} %`.replace('.', ',');
   if (m.op === 'pct') return `${pct(m.value)} ${label}`;
   if (m.op === 'mult') return `${label} ×${String(Math.round(m.value * 100) / 100).replace('.', ',')}`;
-  if (m.target === 'breeding.mutation') return `${pct(m.value)} ${label}`;
+  if (m.target === 'breeding.mutation' || m.target === 'tower.crit' || m.target === 'tower.thorns') return `${pct(m.value)} ${label}`;
+  if (m.target === 'tower.firstStrike') return 'Erstschlag im Turm';
   return `${m.value >= 0 ? '+' : ''}${m.value} ${label}`;
 }

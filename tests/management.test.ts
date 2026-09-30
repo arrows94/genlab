@@ -6,9 +6,9 @@ import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview,
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
 import {
   autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
-  setAutoAssign, setAutoBreed, setAutoRecycle, takeBackFromRecycler,
+  setAutoAssign, setAutoBreed, setAutoRecycle, speciesLostWith, takeBackFromRecycler,
 } from '@core/features/automation';
-import { breedingCost, startBreeding } from '@core/features/breeding';
+import { breedByHand, breedingCost, lastPair, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
 import { rarityChances, rarityWeights } from '@core/rarity';
@@ -426,6 +426,16 @@ describe('automation', () => {
       return { g, mk };
     };
 
+    it('knows which species a hand-picked batch would take from the stable (warning)', () => {
+      const { g, mk } = setup();
+      const lone = mk('zephyrix', 1);
+      mk('pebblit', 90);
+      const weakPebblit = mk('pebblit', 2);
+      expect(speciesLostWith(g, [lone.id])).toEqual(['zephyrix']);
+      expect(speciesLostWith(g, [weakPebblit.id])).toEqual([]);
+      expect(sendToRecycler(g, [lone.id]).ok).toBe(true);
+    });
+
     it('keeps the strongest per species and protected creatures', () => {
       const { g, mk } = setup();
       const best = mk('pebblit', 90);
@@ -739,5 +749,26 @@ describe('infusion chamber helpers', () => {
     const c = createCreature(g, { speciesId: 'pebblit', rarity: 'common', abilities: [], genome: normal(), stats: { hp: 100, atk: 100, def: 100, spd: 100 }, exactStats: true });
     expect(statsAtInfusion(g, c, 4).atk).toBe(120);
     expect(c.infusion.level).toBe(0);
+  });
+});
+
+describe('Zuchtbuch', () => {
+  it('remembers the last pair bred by hand, not the automat’s', () => {
+    const g = richGame();
+    g.state.upgrades.nestExpansion = 1; // a second nest for the automat's egg
+    g.invalidate();
+    const [a, b, c, d] = ['emberpup', 'emberpup', 'bubbloon', 'bubbloon'].map((s) => createCreature(g, { speciesId: s, source: 'other' }));
+    expect(breedByHand(g, a!.id, b!.id).ok).toBe(true);
+    expect(g.state.lastPair).toEqual({ a: a!.id, b: b!.id, ritual: null });
+    // Needs the research.
+    expect(lastPair(g)).toBeNull();
+    unlockFeature(g, 'breedRepeat');
+    expect(lastPair(g)).toMatchObject({ a: { id: a!.id }, b: { id: b!.id }, ritual: null });
+    // The Zuchtautomat breeds with startBreeding: the memory stays.
+    expect(startBreeding(g, c!.id, d!.id).ok).toBe(true);
+    expect(g.state.lastPair!.b).toBe(b!.id);
+    // Gone parents: nothing to repeat.
+    g.state.creatures = g.state.creatures.filter((x) => x.id !== b!.id);
+    expect(lastPair(g)).toBeNull();
   });
 });

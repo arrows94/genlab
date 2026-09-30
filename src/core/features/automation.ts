@@ -259,6 +259,16 @@ export function sendToRecycler(ctx: GameContext, ids: number[]): ActionResult {
   return { ok: true };
 }
 
+/**
+ * Species that would be gone from the stable if these creatures were
+ * recycled or sold (for the warning before sending them).
+ */
+export function speciesLostWith(ctx: GameContext, ids: number[]): string[] {
+  const leaving = new Set(ids);
+  const species = new Set(ctx.state.creatures.filter((c) => leaving.has(c.id)).map((c) => c.speciesId));
+  return [...species].filter((sp) => ctx.state.creatures.every((c) => c.speciesId !== sp || leaving.has(c.id)));
+}
+
 /** Takes a creature the player sent back out of the chamber or the queue. */
 export function takeBackFromRecycler(ctx: GameContext, id: number): ActionResult {
   const a = ctx.state.automation;

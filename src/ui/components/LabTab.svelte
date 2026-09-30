@@ -7,7 +7,7 @@
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments } from '@core/features/recycler';
-  import { inRecycler, sendToRecycler } from '@core/features/automation';
+  import { inRecycler, sendToRecycler, speciesLostWith } from '@core/features/automation';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
@@ -72,14 +72,20 @@
   function selectAllVisible() {
     selected = new Set(data.list.filter((c) => canConsume(game, c)).map((c) => c.id));
   }
+  /** Warning when a batch would take the last creature(s) of a species from the stable. */
+  function lossWarning(ids: number[]): string {
+    const lost = speciesLostWith(game, ids).map((id) => content.species.get(id).name);
+    return lost.length ? ` ⚠️ Damit gibst du deine letzte${lost.length > 1 ? 'n' : ''} ${lost.join(', ')} ab – die Art ist dann nicht mehr in deinem Stall.` : '';
+  }
   async function doSell() {
     const ids = data.chosen.map((c) => c.id);
-    if (ids.length && (await ask(`${ids.length} Kreatur(en) verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, ids))) selected = new Set();
+    if (!ids.length) return;
+    if ((await ask(`${ids.length} Kreatur(en) verkaufen?${lossWarning(ids)}`, { ok: 'Verkaufen', danger: true })) && act(sell(game, ids))) selected = new Set();
   }
   async function doRecycle() {
     const ids = data.chosen.filter((c) => !inRecycler(game, c.id)).map((c) => c.id);
     if (!ids.length) return;
-    const text = `${ids.length} Kreatur(en) zum Gen-Recycler schicken? Sie werden in der Zerlege-Kammer nacheinander recycelt – bis dahin kannst du sie dort zurückholen.`;
+    const text = `${ids.length} Kreatur(en) zum Gen-Recycler schicken? Sie werden in der Zerlege-Kammer nacheinander recycelt – bis dahin kannst du sie dort zurückholen.${lossWarning(ids)}`;
     if ((await ask(text, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, ids))) {
       selected = new Set();
       toast(`♻️ ${ids.length} ${ids.length === 1 ? 'Kreatur wartet' : 'Kreaturen warten'} auf die Zerlege-Kammer.`);

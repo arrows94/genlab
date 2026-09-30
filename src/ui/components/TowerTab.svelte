@@ -4,9 +4,9 @@
   import { content } from '@content/index';
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
-  import { formatNumber, formatDuration } from '@core/format';
+  import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
@@ -51,7 +51,9 @@
   let replay = $state<{
     key: string; hp: number[]; elements: string[]; clock: number; end: number; idx: number; attacker: number; target: number; done: boolean;
   } | null>(null);
-  let popups = $state<{ id: number; t: number; text: string; kind: 'hit' | 'crit' | 'weak' | 'miss' | 'heal' | 'shift' }[]>([]);
+  let popups = $state<{ id: number; t: number; text: string; kind: 'hit' | 'crit' | 'weak' | 'miss' | 'heal' | 'shift' | 'tech' | 'dot' | 'reflect' | 'critHit' | 'status' }[]>([]);
+  /** Active statuses per fighter in the replay: status id → until (fight seconds). */
+  let marks = $state<Record<number, Record<string, number>>>({});
   let sparks = $state<{ id: number; t: number; color: string }[]>([]);
   let banner = $state<{ win: boolean; floor: number; seconds: number } | null>(null);
   let shake = $state(false);
@@ -100,20 +102,40 @@
     return events.at(-1)?.at ?? 1;
   }
 
+  function show(t: number, text: string, kind: (typeof popups)[number]['kind']) {
+    const id = ++popupId;
+    popups = [...popups.slice(-7), { id, t, text, kind }];
+    setTimeout(() => (popups = popups.filter((x) => x.id !== id)), 1000);
+  }
+
   function popup(e: ReplayEvent, attackerElement: string) {
     const id = ++popupId;
+    const tech = e.tech && content.techniques.has(e.tech) ? content.techniques.get(e.tech) : null;
+    // The technique's name above its user.
+    if (e.kind === 'tech' && tech) {
+      show(e.a, `${tech.icon} ${tech.name}!`, 'tech');
+      play('technique');
+      if (e.dmg <= 0) return;
+    }
+    if (e.kind === 'status') {
+      if (e.status && STATUS[e.status]?.harmful) show(e.t, STATUS[e.status]!.icon, 'status');
+      return;
+    }
+    const hit = !e.kind || e.kind === 'tech';
     const p =
-      e.kind === 'miss' ? { text: 'Ausgewichen!', kind: 'miss' as const }
+      e.kind === 'miss' ? { text: tech ? `${tech.name} verfehlt` : 'Ausgewichen!', kind: 'miss' as const }
       : e.kind === 'heal' ? { text: `+${formatNumber(e.dmg)}`, kind: 'heal' as const }
       : e.kind === 'shift' ? { text: el(e.element ?? 'fire').name, kind: 'shift' as const }
+      : e.kind === 'dot' ? { text: `${STATUS[e.status ?? 'burn']?.icon ?? ''} −${formatNumber(e.dmg)}`, kind: 'dot' as const }
+      : e.kind === 'reflect' ? { text: `↩ −${formatNumber(e.dmg)}`, kind: 'reflect' as const }
+      : e.crit ? { text: `−${formatNumber(e.dmg)} Kritisch!`, kind: 'critHit' as const }
       : e.m > 1 ? { text: `−${formatNumber(e.dmg)} Sehr effektiv!`, kind: 'crit' as const }
       : e.m < 1 ? { text: `−${formatNumber(e.dmg)} resistiert`, kind: 'weak' as const }
-      : { text: `−${formatNumber(e.dmg)}`, kind: 'hit' as const };
-    popups = [...popups.slice(-6), { id, t: e.t, ...p }];
-    play(p.kind === 'crit' ? 'hitCrit' : p.kind === 'weak' ? 'hitWeak' : p.kind === 'miss' ? 'whoosh' : p.kind === 'hit' ? 'hit' : p.kind === 'heal' ? 'talent' : 'toastInfo');
-    if (!e.kind && e.hp <= 0) play('ko');
-    setTimeout(() => (popups = popups.filter((x) => x.id !== id)), 1000);
-    if (!e.kind) {
+      : { text: `−${formatNumber(e.dmg)}${e.absorbed ? ` (🪨 ${formatNumber(e.absorbed)})` : ''}`, kind: 'hit' as const };
+    show(e.t, p.text, p.kind);
+    if (p.kind !== 'dot') play(p.kind === 'crit' || p.kind === 'critHit' ? 'hitCrit' : p.kind === 'weak' ? 'hitWeak' : p.kind === 'miss' ? 'whoosh' : p.kind === 'heal' ? 'talent' : p.kind === 'shift' ? 'toastInfo' : 'hit');
+    if ((hit || e.kind === 'dot' || e.kind === 'reflect') && e.hp <= 0) play('ko');
+    if (hit) {
       sparks = [...sparks.slice(-4), { id, t: e.t, color: el(attackerElement).color }];
       setTimeout(() => (sparks = sparks.filter((x) => x.id !== id)), 420);
       if (e.m > 1 && !prefs.reduceMotion) {
@@ -141,6 +163,7 @@
     replay = { key, hp: fighters.map((f) => f.maxHp), elements: fighters.map((f) => f.element), clock: 0, end: seconds, idx: 0, attacker: -1, target: -1, done: false };
     banner = null;
     popups = [];
+    marks = {};
     if (lr.floor % game.balance.tower.bossEvery === 0) play('drum');
     if (prefs.reduceMotion) return finish(lr, key, seconds);
     // One fixed time scale for every fight (short fights stay short, long ones long);
@@ -159,7 +182,8 @@
         const e = events[idx]!;
         if (e.kind === 'shift' && e.element) elements[e.t] = e.element;
         else hp[e.t] = e.hp;
-        if (!e.kind || e.kind === 'miss') {
+        if (e.kind === 'status' && e.status) marks = { ...marks, [e.t]: { ...marks[e.t], [e.status]: e.until ?? e.at } };
+        if (!e.kind || e.kind === 'miss' || (e.kind === 'tech' && e.dmg > 0)) {
           attacker = e.a;
           target = e.t;
         }
@@ -250,6 +274,7 @@
       targeting: targetingOf(game, enemy),
       // Rows as data, so the Vorne/Hinten switches re-render with every change.
       rows: Object.fromEntries(team.map((c) => [c.id, rowOf(game, c.id)])) as Record<number, Row>,
+      synergies: teamSynergies(game, team.map((c) => content.species.get(c.speciesId).element), enemy.trait),
       roles: Object.fromEntries(team.map((c) => [c.id, roleOf(game, effectiveStats(game, c))])) as Record<number, ReturnType<typeof roleOf>>,
       milestones: towerMilestones(game),
       nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
@@ -316,6 +341,20 @@
     back: `Greift zu ${Math.round(game.balance.tower.frontShare * 100)} % die hintere Reihe an – schütze deine Angreifer anders.`,
     weakest: 'Jagt immer das Teammitglied mit den wenigsten KP – Reihen schützen nicht.',
   } as const;
+  /** Status symbols in the arena. */
+  const STATUS: Record<string, { icon: string; name: string; harmful: boolean }> = {
+    burn: { icon: '🔥', name: 'Brand', harmful: true },
+    poison: { icon: '☠️', name: 'Gift', harmful: true },
+    stun: { icon: '⚡', name: 'Betäubt', harmful: true },
+    slow: { icon: '❄️', name: 'Verlangsamt', harmful: true },
+    shield: { icon: '🪨', name: 'Schild', harmful: false },
+    evade: { icon: '🌬️', name: 'Ausweichen', harmful: false },
+    regen: { icon: '🌿', name: 'Regeneration', harmful: false },
+    armor: { icon: '🛡️', name: 'Panzer', harmful: false },
+    reflect: { icon: '💎', name: 'Rückstrahlung', harmful: false },
+  };
+  /** Statuses of a fighter still running at the replay clock. */
+  const activeMarks = (i: number) => (arena.mode === 'fight' ? Object.entries(marks[i] ?? {}).filter(([, until]) => until > arena.clock).map(([id]) => STATUS[id]).filter((x) => !!x) : []);
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
@@ -347,6 +386,9 @@
       {/each}
     </div>
     <span class="uname" title={u.name}>{u.name}</span>
+    {#if activeMarks(i).length}
+      <span class="marks">{#each activeMarks(i) as m (m.name)}<span class="mark" class:bad={m.harmful} title={m.name}>{m.icon}</span>{/each}</span>
+    {/if}
     <div class="hpbar" title="Lebenspunkte"><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
     <div class="atbrow" title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
       <div class="atb" class:idle={!fighting} class:ready={fill > 0.8}>
@@ -549,6 +591,21 @@
     <h3>Team <span class="muted num">{data.team.length}/{data.size}</span></h3>
     <span class="small muted">{data.tw.run ? 'Während eines Laufs gesperrt.' : 'Teammitglieder können während eines Laufs nicht arbeiten oder brüten.'}</span>
   </div>
+  {#if data.synergies.length}
+    <div class="synergies">
+      {#each data.synergies as syn, k (k)}
+        {#if syn.kind === 'pair'}
+          <span class="syn on" style="--c: {el(syn.elements[0]!).color}" title="Zwei oder mehr {el(syn.elements[0]!).name}-Kreaturen: +{formatPercent(syn.value, 0)} Angriff für sie">
+            🤝 {el(syn.elements[0]!).name}-Paar · +{formatPercent(syn.value, 0)} ANG
+          </span>
+        {:else}
+          <span class="syn" class:on={syn.active} title="Drei verschiedene Elemente: +{formatPercent(syn.value, 0)} Schaden gegen den Wandler">
+            🌈 Vielfalt · +{formatPercent(syn.value, 0)} gegen den Wandler{syn.active ? '' : ' (nicht auf dieser Etage)'}
+          </span>
+        {/if}
+      {/each}
+    </div>
+  {/if}
   <div class="sockets">
     {#each Array.from({ length: MAX_SLOTS }, (_, i) => i) as i (i)}
       {@const c = data.team[i]}
@@ -558,11 +615,13 @@
         {@const sp = content.species.get(c.speciesId)}
         {@const role = ROLE_INFO[data.roles[c.id] ?? 'tank']}
         {@const row = data.rows[c.id] ?? 'front'}
+        {@const tech = techniqueFor(game, sp.element)}
         <div class="socket filled" class:back={row === 'back'} style="--el: {el(sp.element).color}">
           <span class="role" title="{role.name}: {role.hint}">{role.icon}</span>
           <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={52} shiny={c.shiny} />
           <span class="sname">{c.name}</span>
           <span class="small num muted">Σ {formatNumber(creaturePower(game, c))}</span>
+          {#if tech}<span class="stech" title="{tech.name}: {tech.description} (jede {game.balance.tower.techniqueEvery}. Aktion)">{tech.icon} {tech.name}</span>{/if}
           <span class="rowseg" role="group" aria-label="Reihe">
             <button class:on={row === 'front'} disabled={!!data.tw.run} title="Vordere Reihe: steckt die meisten Treffer ein" onclick={() => act(setRow(game, c.id, 'front'))}>Vorne</button>
             <button class:on={row === 'back'} disabled={!!data.tw.run} title="Hintere Reihe: wird seltener angegriffen" onclick={() => act(setRow(game, c.id, 'back'))}>Hinten</button>
@@ -764,6 +823,14 @@
   .pop.weak { color: var(--muted); font-size: 0.8rem; }
   .pop.miss { color: var(--teal); font-style: italic; font-size: 0.85rem; }
   .pop.heal { color: #7dff9a; }
+  .pop.tech { color: #fff; font-size: 0.85rem; background: color-mix(in srgb, var(--el) 55%, #000a); border: 1px solid var(--el); border-radius: 99px; padding: 0 0.45rem; top: -6px; }
+  .pop.critHit { color: #ff9f43; font-size: 1.05rem; }
+  .pop.dot { color: #ffb36b; font-size: 0.8rem; }
+  .pop.reflect { color: #d7a7ff; font-size: 0.8rem; }
+  .pop.status { font-size: 1.1rem; }
+  .marks { display: flex; gap: 1px; font-size: 0.8rem; line-height: 1; min-height: 1rem; }
+  .mark { padding: 0 1px; border-radius: 4px; background: #0007; }
+  .mark.bad { background: color-mix(in srgb, var(--danger) 30%, #0008); }
   .pop.shift { color: var(--el); font-size: 0.85rem; border: 1px solid var(--el); border-radius: 99px; padding: 0 0.4rem; background: #000a; }
   @keyframes rise { from { transform: translate(var(--dx, 0), var(--dy, 0)); opacity: 1; } to { transform: translate(var(--dx, 0), calc(var(--dy, 0) - 38px)); opacity: 0; } }
   @keyframes shake { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
@@ -824,6 +891,10 @@
   .rowseg { display: inline-flex; margin-top: 0.15rem; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
   .rowseg button { border: 0; border-radius: 0; padding: 0.1rem 0.4rem; font-size: 0.68rem; background: var(--bg-2); }
   .rowseg button.on { background: var(--petrol); color: #fff; }
+  .stech { font-size: 0.66rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .synergies { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.45rem; }
+  .syn { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .syn.on { color: var(--text); border-color: var(--c, var(--gold)); background: color-mix(in srgb, var(--c, var(--gold)) 15%, transparent); }
   .trole { position: absolute; bottom: 2px; left: 5px; font-size: 0.72rem; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .seg button { border: 0; border-radius: 0; font-size: 0.78rem; padding: 0.25rem 0.6rem; background: var(--bg-2); }

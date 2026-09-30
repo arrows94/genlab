@@ -9,7 +9,7 @@ export const genes: GeneLocusDef[] = [
   {
     id: 'strength', name: 'Kraft', category: 'stat', description: 'Beeinflusst den Angriff.',
     alleles: [
-      { id: 'Kt', top: true, name: 'Titanenkraft', symbol: 'Kᵗ', dominance: 3, weight: 3, color: '#ff3d00', modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.45 }] },
+      { id: 'Kt', top: true, name: 'Titanenkraft', symbol: 'Kᵗ', dominance: 3, weight: 3, color: '#ff3d00', modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.45 }, { target: 'tower.crit', op: 'add', value: 0.1 }] },
       { id: 'K', name: 'Kraftvoll', symbol: 'K', dominance: 2, weight: 30, color: '#ff7043', modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.2 }] },
       { id: 'k', name: 'Normal', symbol: 'k', dominance: 1, weight: 70, color: '#795548', modifiers: [] },
     ],
@@ -25,7 +25,7 @@ export const genes: GeneLocusDef[] = [
   {
     id: 'speed', name: 'Tempo', category: 'stat', description: 'Beeinflusst das Tempo.',
     alleles: [
-      { id: 'Tb', top: true, name: 'Blitzschnell', symbol: 'Tᵇ', dominance: 3, weight: 3, color: '#ffd600', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.45 }] },
+      { id: 'Tb', top: true, name: 'Blitzschnell', symbol: 'Tᵇ', dominance: 3, weight: 3, color: '#ffd600', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.45 }, { target: 'tower.firstStrike', op: 'add', value: 1 }] },
       { id: 'T', name: 'Flink', symbol: 'T', dominance: 2, weight: 30, color: '#ffee58', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.2 }] },
       { id: 't', name: 'Normal', symbol: 't', dominance: 1, weight: 70, color: '#8d8a4f', modifiers: [] },
     ],
@@ -33,7 +33,7 @@ export const genes: GeneLocusDef[] = [
   {
     id: 'armor', name: 'Panzer', category: 'stat', description: 'Beeinflusst die Verteidigung.',
     alleles: [
-      { id: 'Pd', top: true, name: 'Diamanthaut', symbol: 'Pᵈ', dominance: 3, weight: 3, color: '#80d8ff', modifiers: [{ target: 'stat.def', op: 'pct', value: 0.5 }] },
+      { id: 'Pd', top: true, name: 'Diamanthaut', symbol: 'Pᵈ', dominance: 3, weight: 3, color: '#80d8ff', modifiers: [{ target: 'stat.def', op: 'pct', value: 0.5 }, { target: 'tower.thorns', op: 'add', value: 0.1 }] },
       { id: 'P', name: 'Gepanzert', symbol: 'P', dominance: 2, weight: 25, color: '#b0bec5', modifiers: [{ target: 'stat.def', op: 'pct', value: 0.25 }] },
       { id: 'p', name: 'Normal', symbol: 'p', dominance: 1, weight: 75, color: '#607d8b', modifiers: [] },
     ],

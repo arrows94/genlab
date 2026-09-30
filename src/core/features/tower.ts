@@ -7,7 +7,7 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import type { System } from '../systems/types';
-import type { RelicDef, TargetingMode } from '../content/types';
+import type { RelicDef, StatusId, TargetingMode, TechniqueDef } from '../content/types';
 import type { ModifierProvider } from '../providers';
 
 /**
@@ -37,6 +37,14 @@ export interface Fighter {
   trait?: string;
   /** Team row: the front row takes most enemy attacks. */
   row?: Row;
+  /** Element-Technik id (used every `techniqueEvery`-th action). */
+  technique?: string;
+  /** Chance of a critical hit (tower.crit). */
+  crit?: number;
+  /** Share of the damage taken that goes back to the attacker (tower.thorns, „Dornenhaut“). */
+  thorns?: number;
+  /** Acts almost at once in a fight (tower.firstStrike ≥ 1). */
+  firstStrike?: boolean;
 }
 
 export type Row = 'front' | 'back';
@@ -124,7 +132,43 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
     elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage') * boost('element'),
     team: true,
     row: rowOf(ctx, c.id),
+    technique: techniqueFor(ctx, ctx.content.species.get(c.speciesId).element)?.id,
+    crit: own.apply('tower.crit', 0) + global.apply('tower.crit', 0),
+    thorns: own.apply('tower.thorns', 0) + global.apply('tower.thorns', 0),
+    firstStrike: own.apply('tower.firstStrike', 0) + global.apply('tower.firstStrike', 0) >= 1,
   };
+}
+
+/** The Element-Technik of an element. */
+export function techniqueFor(ctx: GameContext, element: string): TechniqueDef | undefined {
+  return ctx.content.techniques.list.find((t) => t.element === element);
+}
+
+export interface Synergy {
+  kind: 'pair' | 'diversity';
+  /** Elements involved. */
+  elements: string[];
+  /** Bonus share (ANG for pairs, damage against the Wandler for diversity). */
+  value: number;
+  /** Only against a shifting boss. */
+  active: boolean;
+}
+
+/**
+ * Team synergies: every element with two or more members gives those
+ * members +pairBonus ANG; three or more different elements give the whole
+ * team +diversityBonus damage against the Wandler.
+ */
+export function teamSynergies(ctx: GameContext, elements: string[], enemyTrait?: string): Synergy[] {
+  const t = ctx.balance.tower;
+  const counts = new Map<string, number>();
+  for (const e of elements) counts.set(e, (counts.get(e) ?? 0) + 1);
+  const out: Synergy[] = [...counts.entries()].filter(([, n]) => n >= 2).map(([e]) => ({ kind: 'pair' as const, elements: [e], value: t.pairBonus, active: true }));
+  if (counts.size >= 3) {
+    const trait = enemyTrait && ctx.content.bossTraits.has(enemyTrait) ? ctx.content.bossTraits.get(enemyTrait) : null;
+    out.push({ kind: 'diversity', elements: [...counts.keys()], value: t.diversityBonus, active: trait?.kind === 'shift' });
+  }
+  return out;
 }
 
 // ---- Relikte --------------------------------------------------------------
@@ -271,10 +315,23 @@ export interface FightEvent {
   hp: number;
   /** Element multiplier of the hit (>1 super effective, <1 resisted). */
   m: number;
-  /** miss: dodged (dmg 0) · heal: the boss regenerates (a = t) · shift: the boss changes its element (a = t). */
-  kind?: 'miss' | 'heal' | 'shift';
+  /**
+   * (none): normal hit · miss: dodged (dmg 0) · heal: HP healed (dmg = amount) ·
+   * shift: the boss changes its element (a = t) · tech: a technique is used (dmg = its hit) ·
+   * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t.
+   */
+  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect';
   /** New element after a shift. */
   element?: string;
+  /** Technique id (tech events). */
+  tech?: string;
+  /** Status id and until when it lasts (status, dot events). */
+  status?: StatusId;
+  until?: number;
+  /** A critical hit. */
+  crit?: boolean;
+  /** Damage a shield caught. */
+  absorbed?: number;
 }
 
 /** Snapshot of a fighter for replaying a fight in the UI. */
@@ -292,6 +349,8 @@ export interface FighterSnapshot {
 
 export interface FightResult {
   win: boolean;
+  /** All damage the enemy took (hits, techniques, burn, thorns) – the weekly boss counts this. */
+  dealt: number;
   /** Fight time in seconds when it ended. */
   seconds: number;
   log: string[];
@@ -299,8 +358,8 @@ export interface FightResult {
   events: FightEvent[];
 }
 
-const maxEvents = 60;
-const maxLog = 14;
+const maxEvents = 90;
+const maxLog = 16;
 
 /** Seconds between two actions of each fighter: relative to the mean speed of everyone in the fight. */
 export function actionIntervals(ctx: GameContext, fighters: Fighter[]): number[] {
@@ -316,13 +375,19 @@ export function evadeChance(ctx: GameContext, attacker: Fighter, defender: Fight
   return Math.min(t.maxEvade, Math.max(0, lead * t.evadePerSpeedLead));
 }
 
+/** Statuses that hurt; Läuterung removes them. */
+const HARMFUL: StatusId[] = ['burn', 'poison', 'stun', 'slow'];
+
 /**
  * Simulates one floor on a time line (Aktionsleiste): every fighter acts when
- * its bar is full, faster ones more often; faster defenders may dodge. Boss
- * traits tick once per second of fight time. Team HP is full at the start of
- * every floor. Deterministic for a given RNG state.
+ * its bar is full, faster ones more often; faster defenders may dodge. Every
+ * `techniqueEvery`-th action is the fighter's Element-Technik. Statuses and
+ * boss traits tick once per second of fight time. Team synergies apply at the
+ * start. Team HP is full at the start of every floor. Deterministic for a
+ * given RNG state.
  */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng): FightResult {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng, opts: { limitSec?: number } = {}): FightResult {
+  const cfg = ctx.balance.tower;
   const log: string[] = [];
   const events: FightEvent[] = [];
   const order = [...team, enemy];
@@ -331,16 +396,87 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
   const targeting = targetingOf(ctx, enemy);
   const note = (line: string) => log.length < maxLog && log.push(line);
   const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
-  const done = (win: boolean, seconds: number): FightResult => ({ win, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
+  let dealt = 0;
+  const done = (win: boolean, seconds: number): FightResult => ({ win, dealt, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
   const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
   const elements = ctx.content.elements.list.map((e) => e.id);
   const boss = order.length - 1;
-  const limit = ctx.balance.tower.maxFightSec;
-  // Next action time per fighter; everyone starts with an empty bar.
-  const next = intervals.slice();
+  const limit = opts.limitSec ?? cfg.maxFightSec;
+  const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
+
+  // Synergies: pairs of one element hit harder; a colourful team against the Wandler.
+  for (const syn of teamSynergies(ctx, team.map((f) => f.element), enemy.trait)) {
+    if (!syn.active) continue;
+    if (syn.kind === 'pair') for (const f of team) if (f.element === syn.elements[0]) f.atk = Math.round(f.atk * (1 + syn.value));
+    if (syn.kind === 'diversity') for (const f of team) f.power *= 1 + syn.value;
+  }
+
+  // Status per fighter: until when, strength, and the source's attack for damage over time.
+  const statuses = order.map(() => new Map<StatusId, { until: number; value: number; src: number }>());
+  const has = (i: number, id: StatusId, at: number) => {
+    const st = statuses[i]!.get(id);
+    return st && st.until > at ? st : undefined;
+  };
+  const techniques = order.map((f) => (f.technique && (f.team || cfg.enemyTechniques) && ctx.content.techniques.has(f.technique) ? ctx.content.techniques.get(f.technique) : null));
+  const actions = order.map(() => 0);
+  // Next action time per fighter; everyone starts with an empty bar (Erstschlag: acts right away).
+  const next = intervals.map((iv, i) => (order[i]!.firstStrike ? Math.min(iv, 0.05) : iv));
   let tick = 1;
   let taken = 0;
-  const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
+  const allies = (f: Fighter) => (f.team ? team : [enemy]).filter((x) => x.hp > 0);
+  const over = () => enemy.hp <= 0 || team.every((t) => t.hp <= 0);
+
+  /** Damage lands on `ti` (after dodging): shield, reflect/thorns. Returns the HP damage. */
+  const land = (ai: number, ti: number, dmg: number, at: number, extra: Partial<FightEvent>): void => {
+    const target = order[ti]!;
+    const shield = has(ti, 'shield', at);
+    let absorbed = 0;
+    if (shield) {
+      absorbed = Math.min(shield.value, dmg);
+      shield.value -= absorbed;
+      if (shield.value <= 0) statuses[ti]!.delete('shield');
+    }
+    const hpDmg = dmg - absorbed;
+    target.hp -= hpDmg;
+    if (ti === boss) {
+      taken += hpDmg;
+      dealt += hpDmg;
+    }
+    record({ at, a: ai, t: ti, dmg: hpDmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, order[ai]!.element, target.element), ...(absorbed ? { absorbed } : {}), ...extra });
+    // Dornenhaut and Prisma: a share of the damage goes back to the attacker.
+    const back = Math.round(dmg * ((target.thorns ?? 0) + (has(ti, 'reflect', at)?.value ?? 0)));
+    if (back > 0 && order[ai]!.hp > 0 && target !== order[ai]) {
+      order[ai]!.hp -= back;
+      if (ai === boss) {
+        taken += back;
+        dealt += back;
+      }
+      record({ at, a: ti, t: ai, dmg: back, hp: Math.max(0, order[ai]!.hp), m: 1, kind: 'reflect' });
+    }
+  };
+
+  /** Heals `ti` by `amount` (capped at max HP). */
+  const heal = (ai: number, ti: number, amount: number, at: number) => {
+    const f = order[ti]!;
+    const healed = Math.min(f.maxHp - f.hp, Math.round(amount));
+    if (healed <= 0 || f.hp <= 0) return;
+    f.hp += healed;
+    record({ at, a: ai, t: ti, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
+  };
+
+  const addStatus = (ai: number, ti: number, id: StatusId, duration: number, value: number, at: number) => {
+    const f = order[ti]!;
+    let until = at + duration;
+    let v = value;
+    if (id === 'stun') {
+      // Betäubung: the next action slips back by `value` own intervals.
+      next[ti] = next[ti]! + intervals[ti]! * value;
+      until = next[ti]!;
+    }
+    if (id === 'shield') v = Math.round(value * f.maxHp);
+    statuses[ti]!.set(id, { until, value: v, src: order[ai]!.atk * order[ai]!.power });
+    record({ at, a: ai, t: ti, dmg: 0, hp: Math.max(0, f.hp), m: 1, kind: 'status', status: id, until: Math.round(until * 100) / 100 });
+  };
 
   for (;;) {
     // The next actor: earliest full bar, ties to the faster one, then team before enemy.
@@ -350,12 +486,30 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
       if (who < 0 || next[i]! < next[who]! - 1e-9 || (Math.abs(next[i]! - next[who]!) < 1e-9 && order[i]!.spd > order[who]!.spd)) who = i;
     }
     const now = next[who]!;
-    // Boss traits tick every full second of fight time before this action.
+    // Boss traits and statuses tick every full second of fight time before this action.
     while (tick <= now && tick <= limit) {
       if (trait?.kind === 'shift') {
         enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
         record({ at: tick, a: boss, t: boss, dmg: 0, hp: enemy.hp, m: 1, kind: 'shift', element: enemy.element });
         note(`${fmt(tick)} · ${enemy.name} wechselt zu ${ctx.content.elements.get(enemy.element).name}`);
+      }
+      for (let i = 0; i < order.length; i++) {
+        const f = order[i]!;
+        if (f.hp <= 0) continue;
+        for (const [id, st] of statuses[i]!) {
+          if (id === 'burn' || id === 'poison') {
+            // Damage over time, reduced like a hit by the percentage part of the defence.
+            const dmg = Math.max(1, Math.round(st.src * st.value * (cfg.defScale / (cfg.defScale + f.def))));
+            f.hp -= dmg;
+            if (i === boss) {
+              taken += dmg;
+              dealt += dmg;
+            }
+            record({ at: tick, a: i, t: i, dmg, hp: Math.max(0, f.hp), m: 1, kind: 'dot', status: id });
+          }
+          if (id === 'regen') heal(i, i, st.value * f.maxHp, tick);
+          if (st.until <= tick) statuses[i]!.delete(id);
+        }
       }
       // Regeneration heals a share of the damage taken since the last tick. Scaling with
       // the team's damage (not the boss's max HP) keeps it equally hard on every floor.
@@ -368,29 +522,63 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
         }
       }
       taken = 0;
+      if (over()) break;
       tick++;
+    }
+    if (enemy.hp <= 0) {
+      log.push(`${enemy.name} besiegt nach ${fmt(tick)}`);
+      return done(true, tick);
+    }
+    if (team.every((t) => t.hp <= 0)) {
+      log.push(`Team besiegt nach ${fmt(tick)}`);
+      return done(false, tick);
     }
     if (now > limit) {
       log.push('Zeit abgelaufen');
       return done(false, limit);
     }
+    // Burn or poison may have finished the actor off during the ticks.
+    if (order[who]!.hp <= 0) continue;
     const att = order[who]!;
-    next[who] = now + intervals[who]!;
+    // Verlangsamt: this turn takes longer.
+    next[who] = now + intervals[who]! * (1 + (has(who, 'slow', now)?.value ?? 0));
+    actions[who]!++;
+    const tech = techniques[who] && actions[who]! % cfg.techniqueEvery === 0 ? techniques[who]! : null;
+
+    if (tech && tech.target !== 'enemy') {
+      // Support techniques: no dice for dodging.
+      const own = allies(att);
+      const targets = tech.target === 'self' ? [att] : tech.target === 'team' ? own : [own.reduce((a, b) => (b.hp / b.maxHp < a.hp / a.maxHp ? b : a))];
+      record({ at: now, a: who, t: order.indexOf(targets[0]!), dmg: 0, hp: Math.max(0, targets[0]!.hp), m: 1, kind: 'tech', tech: tech.id });
+      note(`${fmt(now)} · ${att.name}: ${tech.icon} ${tech.name}`);
+      for (const tgt of targets) {
+        const ti = order.indexOf(tgt);
+        if (tech.cleanse) for (const id of HARMFUL) statuses[ti]!.delete(id);
+        if (tech.heal) heal(who, ti, tech.heal * tgt.maxHp, now);
+        if (tech.status) addStatus(who, ti, tech.status.id, tech.status.duration, tech.status.value, now);
+      }
+      continue;
+    }
+
     const target = att.team ? enemy : pickTarget(ctx, targeting, team.filter((t) => t.hp > 0), rng);
     const ti = order.indexOf(target);
     const m = elementMultiplier(ctx, att.element, target.element);
-    if (rng.chance(evadeChance(ctx, att, target))) {
-      record({ at: now, a: who, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss' });
-      note(`${fmt(now)} · ${target.name} weicht ${att.name} aus`);
+    const evade = Math.min(0.6, evadeChance(ctx, att, target) + (has(ti, 'evade', now)?.value ?? 0));
+    if (rng.chance(evade)) {
+      record({ at: now, a: who, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss', ...(tech ? { tech: tech.id } : {}) });
+      note(`${fmt(now)} · ${target.name} weicht ${tech ? `${tech.name} von ` : ''}${att.name} aus`);
       continue;
     }
-    let dmg = damage(ctx, att, target, rng);
+    const armor = has(ti, 'armor', now);
+    let dmg = damage(ctx, att, armor ? { ...target, def: target.def * (1 + armor.value) } : target, rng);
+    const crit = (att.crit ?? 0) > 0 && rng.chance(att.crit!);
+    if (crit) dmg = Math.round(dmg * cfg.critMult);
+    if (tech) dmg = Math.max(tech.hit > 0 ? 1 : 0, Math.round(dmg * tech.hit));
     // Element-Schild: only hits with element advantage get through in full.
-    if (att.team && trait?.kind === 'shield' && m <= 1) dmg = Math.max(1, Math.round(dmg * trait.value));
-    target.hp -= dmg;
-    if (att.team) taken += dmg;
-    record({ at: now, a: who, t: ti, dmg, hp: Math.max(0, target.hp), m });
-    note(`${fmt(now)} · ${att.name} trifft ${att.team ? '' : `${target.name} `}für ${dmg}`);
+    if (att.team && trait?.kind === 'shield' && m <= 1 && dmg > 0) dmg = Math.max(1, Math.round(dmg * trait.value));
+    land(who, ti, dmg, now, { ...(tech ? { kind: 'tech' as const, tech: tech.id } : {}), ...(crit ? { crit: true } : {}) });
+    if (tech?.status && target.hp > 0) addStatus(who, ti, tech.status.id, tech.status.duration, tech.status.value, now);
+    note(`${fmt(now)} · ${att.name} ${tech ? `${tech.icon} ${tech.name}` : 'trifft'}${att.team ? '' : ` ${target.name}`} für ${dmg}${crit ? ' (kritisch)' : ''}`);
     if (enemy.hp <= 0) {
       log.push(`${enemy.name} besiegt nach ${fmt(now)}`);
       return done(true, now);

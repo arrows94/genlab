@@ -153,6 +153,24 @@ export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature 
   return { ok: true };
 }
 
+/** Brutstation: breeding started by the player – remembered for „↻ Letztes Paar“ (Zuchtbuch). */
+export function breedByHand(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
+  const result = startBreeding(ctx, aId, bId, ritualId);
+  if (result.ok) ctx.state.lastPair = { a: aId, b: bId, ritual: ritualId ?? null };
+  return result;
+}
+
+/** The remembered pair if the Zuchtbuch is researched and both still live (the ritual only if still available). */
+export function lastPair(ctx: GameContext): { a: Creature; b: Creature; ritual: string | null } | null {
+  const p = ctx.state.lastPair;
+  if (!p || !ctx.state.features['breedRepeat']) return null;
+  const a = findCreature(ctx, p.a);
+  const b = findCreature(ctx, p.b);
+  if (!a || !b) return null;
+  const ritual = p.ritual && availableRituals(ctx).some((r) => r.id === p.ritual) ? p.ritual : null;
+  return { a, b, ritual };
+}
+
 export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
   const a = findCreature(ctx, aId);
   const b = findCreature(ctx, bId);
