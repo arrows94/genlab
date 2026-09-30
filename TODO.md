@@ -62,9 +62,10 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 
 # TODO – Komfort
 
-- [x] Zuchtbuch (Forschung, `breedRepeat`): „↻ Letztes Paar“ in der Brutstation (`breedByHand` merkt sich das Paar in
-      `state.lastPair`, der Zuchtautomat überschreibt es nicht)
-- [x] Zwei Zuchtlisten (Forschung, `breedSplit`): eine Kandidatenliste je Elternteil mit eigenem Art-Filter
+- [x] Zuchtbuch (Forschung ab den Hybriden, `breedRepeat`): Knopf ↻ zwischen den Eltern (`breedByHand` merkt sich das
+      Paar in `state.lastPair`, der Zuchtautomat überschreibt es nicht)
+- [x] Zwei Zuchtlisten (Forschung nach der ersten Vererbung, `breedSplit`): eine Kandidatenliste je Elternteil mit
+      eigenem Art-Filter; unter Optionen → Darstellung wieder auf eine Liste umstellbar (`prefs.breedingSplit`)
 - [x] Warnung beim Verkaufen und Recyceln von Hand, wenn eine Art dadurch aus dem Stall verschwindet
       (`speciesLostWith`). Ein fester Schutz im Recycling-Automaten wurde wieder verworfen – „je Art behalten“ regelt das
       („keine“ darf auch die letzte nehmen)

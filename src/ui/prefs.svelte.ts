@@ -17,6 +17,8 @@ export const prefs = $state({
   mutedSounds: [] as string[],
   /** Very quiet click on buttons and tabs (off by default). */
   uiClicks: false,
+  /** Brutstation: one candidate list per parent once „Zwei Zuchtlisten“ is researched (off = one shared list). */
+  breedingSplit: true,
   /** Background music (off by default). */
   music: false,
   /** Music volume 0…1, separate from the effects. */

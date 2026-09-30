@@ -139,6 +139,12 @@
       <input type="checkbox" checked={prefs.reduceMotion} onchange={(e) => updatePrefs({ reduceMotion: e.currentTarget.checked })} />
       <span>Weniger Animationen</span>
     </label>
+    {#if game.state.features['breedSplit']}
+      <label class="opt check">
+        <input type="checkbox" checked={prefs.breedingSplit} onchange={(e) => updatePrefs({ breedingSplit: e.currentTarget.checked })} />
+        <span>Zwei Zuchtlisten in der Brutstation (aus: eine gemeinsame Liste)</span>
+      </label>
+    {/if}
     <label class="opt check">
       <input type="checkbox" checked={prefs.sound} onchange={(e) => updatePrefs({ sound: e.currentTarget.checked })} />
       <span>Töne</span>

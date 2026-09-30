@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 17,
+    date: '2026-09-30',
+    title: 'Aufgeräumte Brutstation',
+    items: [
+      { text: 'Das Zuchtbuch gibt es jetzt mit den Hybriden, die Zwei Zuchtlisten nach der ersten Vererbung.', feature: 'hybrids' },
+      { text: 'Der Knopf für das letzte Paar sitzt als ↻ in der Mitte zwischen den beiden Eltern.', feature: 'breedRepeat' },
+      { text: 'Gefallen dir die zwei Zuchtlisten nicht, stellst du unter Optionen wieder eine gemeinsame Liste ein.', feature: 'breedSplit' },
+    ],
+  },
+  {
     id: 16,
     date: '2026-09-30',
     title: 'Element-Techniken im Turm, Klänge einzeln abschaltbar',
@@ -34,8 +44,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Seltene Allele und Erbanlagen wirken jetzt auch im Kampf: kritische Treffer, Rückschaden, Erstschlag. Neue Erbanlage: Dornenhaut.', feature: 'deepSequencing' },
       { text: 'Der Wochen-Boss kämpft jetzt mit denselben Regeln wie der Turm – Techniken, Reihen und Tempo zählen auch dort.', feature: 'weeklyBoss' },
       { text: 'Unter Optionen → Töne kannst du einzelne Klänge oder ganze Gruppen abschalten und jeden Klang probehören.' },
-      { text: 'Neue Forschung „Zuchtbuch“: Die Brutstation merkt sich dein letztes Paar, „↻ Letztes Paar“ wählt es mit einem Tipp wieder aus.', feature: 'mine' },
-      { text: 'Neue Forschung „Zwei Zuchtlisten“: Jedes Elternteil bekommt seine eigene Kandidatenliste mit eigenem Art-Filter.', feature: 'biolab' },
+      { text: 'Neue Forschung „Zuchtbuch“: Die Brutstation merkt sich dein letztes Paar und wählt es mit einem Tipp wieder aus.', feature: 'hybrids' },
+      { text: 'Neue Forschung „Zwei Zuchtlisten“: Jedes Elternteil bekommt seine eigene Kandidatenliste mit eigenem Art-Filter.', feature: 'tower' },
       { text: 'Verkaufst oder recycelst du von Hand die letzte Kreatur einer Art, warnt dich das Spiel vorher.', feature: 'breeding' },
     ],
   },

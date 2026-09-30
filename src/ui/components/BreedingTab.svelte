@@ -11,6 +11,7 @@
   import { stableCapacity, stableFree } from '@core/features/stable';
   import type { AutoBreedConfig, Creature, Process } from '@core/state';
   import { game, view, act, openTab } from '../store.svelte';
+  import { prefs } from '../prefs.svelte';
   import { viewState } from '../viewState.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -45,7 +46,7 @@
     const cost = eggCost(game, generation, ritual);
     const q = search.trim().toLowerCase();
     const { rarity } = viewState.breeding;
-    const split = game.state.features['breedSplit'] === true;
+    const split = game.state.features['breedSplit'] === true && prefs.breedingSplit;
     const base = game.state.creatures
       .filter((c) => c.job === null || c.job.kind === 'building')
       .filter((c) => !rarity || c.rarity === rarity)
@@ -393,15 +394,7 @@
 {/snippet}
 
 <article class="panel altar">
-  <div class="altar-head">
-    <h3>Neues Ei</h3>
-    {#if data.last}
-      {@const same = parentA === data.last.a.id && parentB === data.last.b.id}
-      <button class="repeat" disabled={same} title="Zuchtbuch: {data.last.a.name} × {data.last.b.name}{data.last.ritual ? ' (mit Ritual)' : ''}" onclick={repeatLast}>
-        ↻ Letztes Paar <span class="muted">{data.last.a.name} × {data.last.b.name}</span>
-      </button>
-    {/if}
-  </div>
+  <h3>Neues Ei</h3>
   <div class="pair">
     {@render socket(data.a, 'Elternteil 1', () => (parentA = null), 'var(--gold)')}
     <div class="link">
@@ -411,6 +404,16 @@
         <span class="heart">❤</span>
       {/if}
       <DnaHelix progress={data.a && data.b ? 1 : data.a || data.b ? 0.5 : 0} pairs={10} width={90} height={26} />
+      {#if data.last}
+        {@const same = parentA === data.last.a.id && parentB === data.last.b.id}
+        <button
+          class="repeat"
+          disabled={same}
+          title="Letztes Paar wieder auswählen: {data.last.a.name} × {data.last.b.name}{data.last.ritual ? ' (mit Ritual)' : ''}"
+          aria-label="Letztes Paar wieder auswählen"
+          onclick={repeatLast}
+        >↻</button>
+      {/if}
     </div>
     {@render socket(data.b, 'Elternteil 2', () => (parentB = null), '#ff7ad9')}
   </div>
@@ -517,10 +520,12 @@
   .small { font-size: 0.8rem; }
   .to-recycler { align-self: flex-start; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
   .tiny { font-size: 0.68rem; }
-  .altar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; }
-  .altar-head h3 { margin: 0; }
-  .repeat { font-size: 0.8rem; padding: 0.25rem 0.6rem; border-color: color-mix(in srgb, var(--teal) 50%, var(--line)); }
-  .repeat .muted { font-size: 0.72rem; }
+  .repeat {
+    display: grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; border-radius: 50%; font-size: 1.15rem; line-height: 1;
+    border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); background: color-mix(in srgb, var(--teal) 12%, var(--bg-2));
+  }
+  .repeat:hover:not(:disabled) { box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 50%, transparent); }
+  .repeat:disabled { opacity: 0.35; }
   .split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
   .side { display: grid; gap: 0.35rem; align-content: start; padding: 0.4rem; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line); }
   .side.a { border-top: 3px solid var(--gold); }
