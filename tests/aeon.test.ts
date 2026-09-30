@@ -28,7 +28,7 @@ function lateGame() {
   g.state.prestige.inheritance = { count: 3 };
   g.state.tower.best = 60;
   g.state.resources.heritage = D(900);
-  for (const [r, v] of Object.entries({ food: 1e9, gold: 2e9, essence: 3e8, catalyst: 150, fragments: 2000, towerTokens: 400 })) g.state.resources[r] = D(v);
+  for (const [r, v] of Object.entries({ food: 1e9, gold: 2e9, essence: 3e8, catalyst: 150, fragments: 2000, towerTokens: 550 })) g.state.resources[r] = D(v);
   const species = ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox'];
   for (const s of species) createCreature(g, { speciesId: s, rarity: 'epic', source: 'other' });
   g.invalidate();

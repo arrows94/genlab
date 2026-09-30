@@ -1,3 +1,4 @@
+import { buyUpgrade } from '@core/actions';
 import { effectiveStats } from '@core/creatures';
 import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
@@ -49,6 +50,7 @@ function memory(g: Game): BotMemory {
 export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
   const { depositShare = 0.3 } = opts;
   feedMegaProjects(g, depositShare);
+  ensureTowerRoutine(g);
   buyRelics(g);
   // The tower routine keeps the same team forever: rebuild it from the strongest creatures each visit.
   if (g.state.tower.run) stopRun(g);
@@ -77,6 +79,7 @@ export function spendBossAttacks(g: Game): void {
 /** Called every few simulated seconds while a session runs. */
 export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
   const { aeonAt = 3, aeonGrowth = 2, anomalies = true, anomalyTimeoutH = 12 } = opts;
+  ensureTowerRoutine(g);
   climbTower(g);
   spendShards(g);
   if (anomalies) playAnomalies(g, anomalyTimeoutH);
@@ -142,6 +145,14 @@ function climbTower(g: Game): void {
   const owned = g.content.relics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
   for (let i = 0; i < size; i++) equipRelic(g, i, owned[i]?.id ?? null);
   startRun(g);
+}
+
+/**
+ * The Turm-Routine (auto-restart) first – an Äon resets research, and without it the tower only
+ * fights while someone watches. A player buys it back right away.
+ */
+function ensureTowerRoutine(g: Game): void {
+  if (g.state.features.tower && !g.state.features.towerAuto) buyUpgrade(g, 'towerRoutine');
 }
 
 /**
