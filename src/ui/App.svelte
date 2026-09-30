@@ -150,7 +150,7 @@
   /** Header height as a CSS variable, so other sticky bars sit below it. */
   let headerH = $state(0);
   $effect(() => document.documentElement.style.setProperty('--header-h', `${headerH}px`));
-  /** Height of the tab bar; on phones it is docked at the bottom and toasts and page padding stay clear of it. */
+  /** Height of the tab bar; on phones it is docked at the bottom and the page padding stays clear of it. */
   let dockH = $state(0);
   // In the other world there is no tab bar.
   $effect(() => document.documentElement.style.setProperty('--dock-h', `${view.world === 'off' ? dockH : 0}px`));
