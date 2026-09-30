@@ -256,6 +256,31 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 - Gegner je Etage kommen aus `enemiesFor` (`features/tower.ts`), fest pro Etage. Ab `groupFromFloor` können normale Etagen 2–3 Gegner bringen, die sich KP und Angriff teilen (Summe × `groupHp`/`groupAtk` je Gruppengröße). Ab `companionsFromFloor` stehen zwei Begleiter (`companionHp`/`companionAtk` × Werte eines normalen Gegners) vorne, der Boss hinten; ab `phaseFromFloor` bekommt der Boss unter `phaseAt` KP eine zweite Eigenheit. Gegner setzen ihre Element-Technik jede `enemyTechniqueEvery`-te Aktion ein (0 = nie). Das Team greift immer den Gegner der vorderen Reihe mit dem kleinsten KP-Anteil an.
 - Relikte (`relics`): `cost` in Turm-Marken für Stufe 1, jede Stufe × `costGrowth`; `bonus` pro Stufe auf `hp`, `atk`, `def`, `spd` oder `element` (Element-Vorteil). Sie gehören dem Spieler und wirken auf die Kreatur im Turm-Platz, in dem sie stecken – im Turm und gegen den Wochen-Boss.
 
+## GenLab RPG (Vorschau)
+
+`src/content/rpg.ts` – alles für den rundenbasierten Dungeon (Regeln in `core/features/rpg.ts` und `rpgCombat.ts`, Zahlen in `balance.rpg`):
+
+```ts
+// Dritte Fähigkeit: genau eine Quelle – aufgedeckte Erbanlage, Fähigkeit oder Rolle (Fallback)
+{ id: 'hunt', slot: 'third', name: 'Jagdinstinkt', icon: '🐾', target: 'enemy', hit: 2, cooldown: 4, from: { latent: 'hunter' },
+  description: 'Ein gezielter Sprung mit doppeltem Schaden.' },
+
+// Gegnerart: Zugmuster (wird angekündigt), Multiplikatoren auf die Dungeon-Stärke
+{ id: 'brawler', name: 'Wilder', kind: 'normal', pattern: ['attack', 'attack', 'charge', 'heavy'], hp: 1, atk: 1, def: 1, spd: 1 },
+
+// Dungeon: Elemente der Gegner, Stärke auf der Turm-Skala, Räume bis zum Boss, Beute-Faktor, Vorgänger
+{ id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], floor: 20, floorsPerRoom: 3.5, rooms: 9, loot: 1.6, requires: 'rootMaze', description: '…' },
+```
+
+- `rpgSkills`: genau ein `basic` und ein `special`, dazu `third`-Fähigkeiten – für jede Rolle (`tank`, `attacker`, `fast`) mindestens eine. Die Element-Technik kommt aus `techniques.ts` und wird umgerechnet (`secondsPerRound` Turm-Sekunden = 1 Runde, Abklingzeit `techniqueCooldown`). Zustände zählen in Runden; `value` wie an `RpgSkillDef` beschrieben.
+- `rpgEnemies`: `pattern` aus `attack`, `charge` (danach muss `heavy` folgen), `heavy` (× `heavyMult`), `guard` (Schild `guardShare` × KP ab Rundenbeginn), `heal` (`healShare`), `tech` (Element-Technik). Mindestens eine Art je `kind` (`normal`, `elite`, `boss`).
+- `rpgDungeons`: Gegner der Tiefe d haben die Stärke der Turm-Etage `floor + (d − 1) × floorsPerRoom` × `balance.rpg.enemyMult`. Nach `rooms` Räumen kommt der Boss; sein Sieg öffnet den Dungeon mit `requires` auf diesen.
+- `rpgEvents`: genau zwei Wahlmöglichkeiten; `hp` (Anteil der max. KP, nie tödlich), `loot` (× Beute eines Schatzraums), `secure`; mit `chance` < 1 braucht die Wahl ein `fail`.
+- `rpgUpgrades` (Stufenaufstieg, nur für den Lauf): `stats` und/oder `perks` (`specialPower`, `chargePerRound`, `lifesteal`, `crit`, `regen`, `cooldown`), optional `max`. Mindestens drei ohne `max`.
+- `rpgGear` (Ausrüstung, gehört dem Spieler): `slot` `weapon`/`armor`/`charm`, Werte eines gewöhnlichen Teils; Seltenheit multipliziert (`gearRarityMult`). Wirkt nur im Dungeon.
+- `rpgMeta` (Runen-Wissen, dauerhaft): `cost` × `costGrowth`^Stufe bis `maxLevel`; `effect` je Stufe: `stats`, `torches`, `startCharge`, `restHeal`, `roleSkill`.
+- Balancing: `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false` druckt je Dungeon, wie weit ein Mitglied eines Turm-Teams der Etage F kommt, und die Beute pro Fackel.
+
 ## Weitere Inhaltsarten
 
 | Datei | Inhalt |

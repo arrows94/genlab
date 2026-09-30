@@ -605,6 +605,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Vor dem Start klären
 
 - [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
+  - Stand: noch Vorschau ohne Bedingung, unter Optionen einschaltbar (`setRpgPreview`). Nach dem Bot passt
+    „Turm-Etage 20“ (`{ type: 'towerFloor', floor: 20 }`) – dann schafft ein Turm-Monster das Wurzellabyrinth.
+    Achtung: Das Äon setzt Features zurück, die Bedingung muss danach wieder greifen.
 - [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
       wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
       Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
@@ -687,6 +690,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Leitplanken
 
-- [ ] Das Idle-Spiel bleibt Hauptsache: RPG ist freiwillig, seine Belohnungen beschleunigen nur
-- [ ] Deterministisch und im Spielstand; Zahlen in `balance.ts`, Inhalte in `content/`, Regeln in `core`
-- [ ] Alte Spielstände: neue Felder mit Standardwerten, keine Migration nötig
+- [x] Das Idle-Spiel bleibt Hauptsache: RPG ist freiwillig, seine Belohnungen beschleunigen nur
+      (Wochen-Deckel für Zeitkristalle und Äon-Splitter, Ausrüstung wirkt nicht im Turm)
+- [x] Deterministisch und im Spielstand; Zahlen in `balance.ts`, Inhalte in `content/`, Regeln in `core`
+- [x] Alte Spielstände: neue Felder mit Standardwerten, keine Migration nötig
