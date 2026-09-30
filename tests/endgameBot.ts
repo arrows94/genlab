@@ -80,6 +80,7 @@ export function spendBossAttacks(g: Game): void {
 export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
   const { aeonAt = 3, aeonGrowth = 2, anomalies = true, anomalyTimeoutH = 12 } = opts;
   ensureTowerRoutine(g);
+  refreshTowerTeam(g);
   climbTower(g);
   spendShards(g);
   if (anomalies) playAnomalies(g, anomalyTimeoutH);
@@ -119,6 +120,26 @@ function fightValue(g: Game): (c: Creature) => number {
     const m = elementMultiplier(g, g.content.species.get(c.speciesId).element, foe.element);
     return worth * (trait?.kind === 'shield' && m <= 1 ? m * trait.value : m);
   };
+}
+
+/**
+ * Like a player who looks in on the tower now and then: when the strongest free creatures are clearly
+ * stronger than the running team (after a reset the first team is picked from a tiny stable), the run
+ * is stopped so that climbTower sends the better team. Otherwise auto-restart keeps the old team all day.
+ */
+function refreshTowerTeam(g: Game): void {
+  const tw = g.state.tower;
+  if (!tw.run || tw.team.length === 0) return;
+  const size = teamSize(g);
+  const value = fightValue(g);
+  const current = tw.team.map((id) => g.state.creatures.find((c) => c.id === id)).reduce((n, c) => n + (c ? value(c) : 0), 0);
+  const best = g.state.creatures
+    .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
+    .map(value)
+    .sort((a, b) => b - a)
+    .slice(0, size)
+    .reduce((n, v) => n + v, 0);
+  if (best > current * 1.5) stopRun(g);
 }
 
 /** Strongest free creatures against the next boss (or the floor it is stuck on) as tower team; a new run whenever none is going. */
