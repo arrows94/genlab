@@ -638,6 +638,13 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       Klang `portal` hinein und rückwärts heraus, einzeln abschaltbar)
 - [x] Schritt 7: Versionshinweis, Doku, PR
 
+## Debug
+
+- [x] Debug-Werkzeuge in den Optionen (`?debug=1`, `core/debug.ts`): alle Vorgänge fertig, Tagesbelohnung und
+      Gen-Aufträge neu, Wochen-Boss neu; RPG: Lauf beenden, +10 Fackeln, Dungeons öffnen oder löschen, Stufen,
+      Ausrüstung, Runen-Wissen und Wochen-Deckel zurücksetzen
+- [ ] Bei Bedarf weitere: Turm, Äon/Talente, Anomalien, Zucht
+
 ## Schritt 1 – Grundlage und Spam-Schutz
 
 - [x] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
