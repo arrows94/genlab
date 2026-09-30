@@ -166,7 +166,7 @@ export interface TowerState {
     stats?: FightStats;
     events?: {
       at?: number; a: number; t: number; dmg: number; hp: number; m: number;
-      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep'; trait?: string;
+      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep' | 'enrage'; trait?: string;
       element?: string; tech?: string; status?: 'burn' | 'poison' | 'stun' | 'slow' | 'shield' | 'evade' | 'regen' | 'armor' | 'reflect'; until?: number; crit?: boolean; absorbed?: number;
     }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */

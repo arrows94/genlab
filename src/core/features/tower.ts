@@ -410,9 +410,10 @@ export interface FightEvent {
   /**
    * (none): normal hit · miss: dodged (dmg 0) · heal: HP healed (dmg = amount) ·
    * shift: the boss changes its element (a = t) · tech: a technique is used (dmg = its hit) ·
-   * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t.
+   * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t ·
+   * enrage: the enemies' Wut begins (a = t = the first enemy standing).
    */
-  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep';
+  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep' | 'enrage';
   /** New element after a shift. */
   element?: string;
   /** Technique id (tech events). */
@@ -489,7 +490,7 @@ const HARMFUL: StatusId[] = ['burn', 'poison', 'stun', 'slow'];
  * Team synergies apply at the start. Team HP is full at the start of every
  * floor. Deterministic for a given RNG state.
  */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number; replay?: boolean } = {}): FightResult {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number; replay?: boolean; enrage?: boolean } = {}): FightResult {
   const cfg = ctx.balance.tower;
   const foes = Array.isArray(enemies) ? enemies : [enemies];
   const log: string[] = [];
@@ -526,6 +527,10 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const limit = opts.limitSec ?? cfg.maxFightSec;
   const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
   const leader = foes.find((f) => f.boss) ?? foes[foes.length - 1]!;
+  // Wut: enemies hit harder with every second after enrageAfterSec (no hard time limit in the tower).
+  const enrageOn = opts.enrage ?? true;
+  const wut = (at: number) => (enrageOn && at > cfg.enrageAfterSec ? 1 + cfg.enrageGrowth * (at - cfg.enrageAfterSec) : 1);
+  let enraged = false;
 
   // Synergies: pairs of one element hit harder; a colourful team against the Wandler.
   for (const syn of teamSynergies(ctx, team.map((f) => f.element), leader.trait)) {
@@ -658,6 +663,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
       stats.shielded += dmg - kept;
       dmg = kept;
     }
+    if (!att.team && dmg > 0) dmg = Math.round(dmg * wut(at));
     stats.hits[ai]!++;
     if (m > 1) stats.strong[ai]!++;
     if (m < 1) stats.weak[ai]!++;
@@ -687,6 +693,12 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const now = next[who]!;
     // Boss traits and statuses tick every full second of fight time before this action.
     while (tick <= now && tick <= limit) {
+      if (enrageOn && !enraged && tick > cfg.enrageAfterSec) {
+        enraged = true;
+        const i = order.findIndex((f, k) => isFoe(k) && f.hp > 0);
+        if (i >= 0) record({ at: cfg.enrageAfterSec, a: i, t: i, dmg: 0, hp: order[i]!.hp, m: 1, kind: 'enrage' });
+        note(`${fmt(cfg.enrageAfterSec)} · Die Gegner werden wütend`);
+      }
       for (let i = first; i < order.length; i++) {
         const f = order[i]!;
         if (f.hp > 0 && hasTrait(i, 'shift')) {
@@ -701,7 +713,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
         for (const [id, st] of statuses[i]!) {
           if (id === 'burn' || id === 'poison') {
             // Damage over time, reduced like a hit by the percentage part of the defence.
-            let dmg = Math.max(1, Math.round(st.src * st.value * defFactor(ctx, f.def, st.src)));
+            let dmg = Math.max(1, Math.round(st.src * st.value * defFactor(ctx, f.def, st.src) * (order[st.by]!.team ? 1 : wut(tick))));
             // The Element-Schild also dampens burn and poison from a source without element advantage.
             const shield = hasTrait(i, 'shield');
             if (shield && order[st.by]!.team && elementMultiplier(ctx, order[st.by]!.element, f.element) <= 1) {

@@ -25,7 +25,7 @@ export const STATUS_INFO: Record<StatusId, { icon: string; name: string; harmful
 // ---- defeat analysis ------------------------------------------------------
 
 export interface DefeatReason {
-  id: 'timeout' | 'close' | 'outmatched' | 'shield' | 'heal' | 'element' | 'shifter' | 'speed' | 'fragile' | 'weak';
+  id: 'timeout' | 'enrage' | 'close' | 'outmatched' | 'shield' | 'heal' | 'element' | 'shifter' | 'speed' | 'fragile' | 'weak';
   icon: string;
   title: string;
   text: string;
@@ -97,6 +97,17 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
       id: 'outmatched', icon: '💪', title: 'Deutlich zu schwach',
       text: `Dein Team schaffte nur ${pct(1 - foeHpLeft)} der gegnerischen KP, bevor es fiel.`,
       tip: 'Hier hilft vor allem mehr Stärke: Kreaturen mit besseren Werten züchten, Infusion, Relikte aufwerten, Turm-Forschung.',
+    });
+  }
+
+  // Wut: the team held out long, but the enemies grew stronger every second.
+  const t = ctx.balance.tower;
+  if (!stats.timeout && stats.seconds > t.enrageAfterSec + 3) {
+    const factor = 1 + t.enrageGrowth * (stats.seconds - t.enrageAfterSec);
+    add(0.55 + Math.min(0.4, (factor - 1) / 5), {
+      id: 'enrage', icon: '😡', title: 'Die Gegner wurden wütend',
+      text: `Der Kampf dauerte ${sec(stats.seconds)} – ab ${sec(t.enrageAfterSec)} schlagen die Gegner mit jeder Sekunde härter zu, am Ende ×${formatNumber(factor, { decimals: 1 })}.`,
+      tip: 'Dein Team hält gut durch, braucht aber zu lange: mehr Schaden (Angriff, Element-Vorteil, Brand, Gift, Hinterhalt) beendet den Kampf vor der Wut – Heilung allein hält sie nicht auf.',
     });
   }
 
@@ -281,6 +292,9 @@ export function fightProtocol(ctx: GameContext, lr: LastResult): ProtocolEntry[]
       }
       case 'reflect':
         out.push({ at, icon: '↩️', a: e.a, t: e.t, text: `−${n(e.dmg)} Rückschaden`, tone: toneFor(e.t, false), important: false });
+        break;
+      case 'enrage':
+        out.push({ at, icon: '😡', a: e.a, t: -1, text: `Die Gegner werden wütend – jede Sekunde +${formatPercent(ctx.balance.tower.enrageGrowth, 0)} Schaden`, tone: 'bad', important: true });
         break;
       case 'phase': {
         const tr = e.trait && ctx.content.bossTraits.has(e.trait) ? ctx.content.bossTraits.get(e.trait) : null;

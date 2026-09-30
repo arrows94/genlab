@@ -191,6 +191,10 @@ export const balance: Balance = {
     // No time limit in the tower – only who falls first. This is the emergency brake against endless
     // fights (e.g. a healer the team cannot outdamage): after it the fight is a stalemate and lost.
     maxFightSec: 300,
+    // Wut instead of a time limit: from 30 s on the enemies deal 10 % more damage with every second,
+    // so healing alone cannot hold out forever and damage keeps mattering.
+    enrageAfterSec: 30,
+    enrageGrowth: 0.1,
     // Dodge chance per 100 % speed lead over the attacker, capped.
     evadePerSpeedLead: 0.15,
     maxEvade: 0.25,
@@ -207,8 +211,8 @@ export const balance: Balance = {
     groupAtk: [1, 1, 1.05],
     // Boss floors from companionsFromFloor on bring two companions (share of a normal enemy of the floor), standing in front.
     companionsFromFloor: 60,
-    companionHp: 0.25,
-    companionAtk: 0.25,
+    companionHp: 0.2,
+    companionAtk: 0.2,
     // From phaseFromFloor on bosses gain a second trait below phaseAt of their HP.
     phaseFromFloor: 90,
     phaseAt: 0.5,
@@ -224,8 +228,9 @@ export const balance: Balance = {
     enemyGrowth: Math.cbrt(1.11),
     subFloors: 3,
     bossEvery: 30,
-    bossHpMult: 2.2,
-    bossAtkMult: 1.3,
+    // Measured with tests/towerCurve.ts: a boss costs about 3–4 former floors (GENLAB_CURVE=1 for the report).
+    bossHpMult: 1.3,
+    bossAtkMult: 1.05,
     // All foes of the floor about one former floor stronger (×1.23 KP × ANG); the first one is the Wächter.
     guardEvery: 10,
     guardHpMult: 1.12,

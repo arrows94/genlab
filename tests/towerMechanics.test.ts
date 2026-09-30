@@ -345,6 +345,24 @@ describe('Gegner und Turm (Schritt 4)', () => {
     expect(hits).toEqual([1, 2]);
   });
 
+  it('Wut: from enrageAfterSec on the enemies hit harder every second, the weekly boss has none', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const r = simulateFight(g, [unit({ hp: 1e12, maxHp: 1e12, def: 0 })], foe({ atk: 100, spd: 10, technique: undefined, hp: 1e12, maxHp: 1e12 }), Rng.fromSeed(4), { limitSec: t.enrageAfterSec + 20 });
+    const hits = r.events.filter((e) => e.a === 1 && !e.kind);
+    const early = hits.filter((e) => e.at < t.enrageAfterSec).map((e) => e.dmg);
+    const late = hits.filter((e) => e.at > t.enrageAfterSec + 15).map((e) => e.dmg);
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(avg(late) / avg(early)).toBeGreaterThan(1 + t.enrageGrowth * 14);
+    expect(r.events.some((e) => e.kind === 'enrage' && e.at === t.enrageAfterSec)).toBe(true);
+    const calm = simulateFight(g, [unit({ hp: 1e12, maxHp: 1e12, def: 0 })], foe({ atk: 100, spd: 10, technique: undefined, hp: 1e12, maxHp: 1e12 }), Rng.fromSeed(4), { limitSec: t.enrageAfterSec + 20, enrage: false });
+    expect(calm.events.some((e) => e.kind === 'enrage')).toBe(false);
+    // Without a time limit a team that heals everything still falls to the Wut.
+    const healer = simulateFight(g, [unit({ hp: 3000, maxHp: 3000, atk: 1, technique: 'spring', element: 'water' })], foe({ atk: 300, spd: 10, technique: undefined }), Rng.fromSeed(5));
+    expect(healer.win).toBe(false);
+    expect(healer.stats.timeout).toBe(false);
+  });
+
   it('enemies use techniques of their element, bosses rely on their traits', () => {
     const g = towerGame();
     expect(enemyFor(g, 5).technique).toBe(techniqueFor(g, enemyFor(g, 5).element)!.id);

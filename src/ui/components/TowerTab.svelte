@@ -127,6 +127,11 @@
       play('drum');
       return;
     }
+    if (e.kind === 'enrage') {
+      show(e.a, '😡 Wut!', 'tech');
+      play('drum');
+      return;
+    }
     if (e.kind === 'sweep') {
       show(e.a, '🌊 Flächenangriff!', 'tech');
       play('technique');
@@ -510,7 +515,7 @@
         {/if}
       </span>
       {#if arena.mode === 'fight'}
-        <span class="clock num" title="Kampfzeit – kein Zeitlimit; erst nach {game.balance.tower.maxFightSec} s gilt ein Kampf als Patt">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
+        <span class="clock num" title="Kampfzeit – kein Zeitlimit, aber ab {game.balance.tower.enrageAfterSec} s werden die Gegner wütend: jede Sekunde +{formatPercent(game.balance.tower.enrageGrowth, 0)} Schaden">⏱ {formatNumber(arena.clock, { decimals: 1 })} s{#if arena.clock > game.balance.tower.enrageAfterSec}<span class="wut"> 😡 ×{formatNumber(1 + game.balance.tower.enrageGrowth * (arena.clock - game.balance.tower.enrageAfterSec), { decimals: 1 })}</span>{/if}</span>
       {/if}
       <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
         {#each SPEEDS as s (s.v)}
@@ -856,6 +861,7 @@
   .floor.boss { border-color: color-mix(in srgb, var(--danger) 60%, var(--line)); }
   .floor.guard { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .bossin { margin: 0.35rem 0 0; text-align: center; }
+  .wut { color: var(--danger); font-weight: 700; }
   .trait.guard { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .floor.next { border: 2px solid var(--gold); color: var(--text); animation: glow 1.6s ease-in-out infinite; }
   .floor.best::after { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; border-top: 2px dashed var(--gold); }

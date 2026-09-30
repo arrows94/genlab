@@ -152,7 +152,8 @@ export function attackWeeklyBoss(ctx: GameContext): ActionResult {
   // only the damage counts. Its floor's boss trait does not apply.
   const fighters = members.map((c) => fighterFor(ctx, c));
   const boss = { ...bossFighter(ctx), trait: undefined };
-  const fight = simulateFight(ctx, fighters, boss, ctx.rng, { limitSec: ctx.balance.weeklyBoss.fightSec });
+  // Only the damage within fightSec counts – no Wut here.
+  const fight = simulateFight(ctx, fighters, boss, ctx.rng, { limitSec: ctx.balance.weeklyBoss.fightSec, enrage: false });
   const dealt = fight.dealt;
   const rounds = fight.seconds;
   const counted = Math.min(dealt, b.maxHp - b.damage);

@@ -232,6 +232,10 @@ export interface Balance {
     speedExponent: number;
     /** Emergency brake in seconds of fight time: a fight that lasts this long is a stalemate and counts as lost. */
     maxFightSec: number;
+    /** Wut: from this second of fight time on the enemies hit harder … */
+    enrageAfterSec: number;
+    /** … by this share more per further second (additive: 0.1 → ×2 after ten seconds of Wut). */
+    enrageGrowth: number;
     /** Dodge chance per 100 % speed lead of the defender over the attacker … */
     evadePerSpeedLead: number;
     /** … capped at this. */
