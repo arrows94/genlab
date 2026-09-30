@@ -56,13 +56,19 @@ describe('genome tower', () => {
       expect(e.maxHp).toBe(Math.round(base['hp']! * Math.pow(1.11, n - 1)));
       expect(e.atk).toBe(Math.round(base['atk']! * Math.pow(1.11, n - 1)));
     }
-    // Boss every 30 floors (former 10), a Wächter on every other tenth floor: alone and stronger.
+    // Boss every 30 floors (former 10), a Wächter on every other tenth floor: the floor's foes, stronger.
     expect(enemyFor(g, 30).boss).toBe(true);
     const guard = enemiesFor(g, 50);
-    expect(guard).toHaveLength(1);
     expect(guard[0]!.guard).toBe(true);
-    expect(guard[0]!.maxHp).toBeGreaterThan(enemyFor(g, 50, { plain: true }).maxHp);
+    expect(guard[0]!.name.startsWith('Wächter')).toBe(true);
+    expect(guard.reduce((n, x) => n + x.maxHp, 0)).toBeGreaterThan(enemyFor(g, 50, { plain: true }).maxHp);
     expect(enemyFor(g, 60).guard).toBeUndefined();
+    // The three small floors of a former floor share its element and group size, only the strength steps up.
+    for (const n of [23, 35, 52]) {
+      const [a, b, c] = [3 * n - 2, 3 * n - 1, 3 * n].map((f) => enemiesFor(g, f));
+      expect(new Set([a!, b!, c!].map((x) => `${x[0]!.element}:${x.length}`)).size).toBe(1);
+      expect(a![0]!.maxHp).toBeLessThan(c![0]!.maxHp);
+    }
   });
 
   it('Turm-Marken per floor add up to the formula in whole numbers', () => {

@@ -82,12 +82,14 @@ export function teamSize(ctx: GameContext): number {
 }
 
 /**
- * Seed key of a floor: floor 3n keeps the key of the former floor n (same enemy, element, boss trait and
- * group as before the finer floors), the small floors in between get keys of their own.
+ * Dice for a floor. The three small floors of a former floor n share its element and group size (`step`
+ * seeded with n, as before the finer floors), so the tower is not more jagged than it was; floor 3n is
+ * exactly the former floor n. The floors in between pick their species with dice of their own (`own`).
  */
-function floorSeed(ctx: GameContext, floor: number): string {
+function floorDice(ctx: GameContext, prefix: string, floor: number): { step: Rng; own: Rng } {
   const per = ctx.balance.tower.subFloors;
-  return floor % per === 0 ? String(floor / per) : `${floor}/${per}`;
+  const step = Rng.fromSeed(hashSeed(`${prefix}-${Math.ceil(floor / per)}`));
+  return { step, own: floor % per === 0 ? step : Rng.fromSeed(hashSeed(`${prefix}-${floor}/${per}`)) };
 }
 
 /** Boss floor: every `bossEvery`-th. */
@@ -108,7 +110,7 @@ export function isGuardFloor(ctx: GameContext, floor: number): boolean {
  */
 export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolean } = {}): Fighter {
   const t = ctx.balance.tower;
-  const rng = Rng.fromSeed(hashSeed(`tower-${floorSeed(ctx, floor)}`));
+  const { step: rng, own } = floorDice(ctx, 'tower', floor);
   const element = rng.pick(ctx.content.elements.list).id;
   const scale = Math.pow(t.enemyGrowth, floor - t.subFloors);
   const boss = !opts.plain && isBossFloor(ctx, floor);
@@ -117,7 +119,7 @@ export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolea
   const atkMult = boss ? t.bossAtkMult : guard ? t.guardAtkMult : 1;
   const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * hpMult);
   const names = ctx.content.species.list.filter((s) => s.element === element);
-  const species = rng.pick(names.length ? names : ctx.content.species.list);
+  const species = own.pick(names.length ? names : ctx.content.species.list);
   const traits = ctx.content.bossTraits.list;
   const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
   return {
@@ -140,8 +142,8 @@ export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolea
 }
 
 /**
- * Everyone the team meets on a floor – deterministic per floor. A Wächter
- * stands alone. Normal floors
+ * Everyone the team meets on a floor – deterministic per floor. On a Wächter
+ * floor every foe is stronger, the first one is the Wächter. Normal floors
  * from `groupFromFloor` on may bring 2–3 foes that share the floor's strength;
  * boss floors from `companionsFromFloor` on bring two companions in front of
  * the boss, and from `phaseFromFloor` on the boss wakes a second trait below
@@ -150,9 +152,9 @@ export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolea
 export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
   const t = ctx.balance.tower;
   const main = enemyFor(ctx, floor);
-  const rng = Rng.fromSeed(hashSeed(`tower-group-${floorSeed(ctx, floor)}`));
+  const { step: rng, own } = floorDice(ctx, 'tower-group', floor);
   const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
-  const pickSpecies = () => (sameElement.length ? rng.pick(sameElement) : ctx.content.species.get(main.speciesId));
+  const pickSpecies = () => (sameElement.length ? own.pick(sameElement) : ctx.content.species.get(main.speciesId));
   if (main.boss) {
     const traits = ctx.content.bossTraits.list.filter((b) => b.id !== main.trait);
     if (floor >= t.phaseFromFloor && main.trait && traits.length) main.phaseTrait = rng.pick(traits).id;
@@ -167,17 +169,19 @@ export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
     });
     return [...companions, main];
   }
-  if (main.guard || floor < t.groupFromFloor) return [main];
+  // The three small floors of a former floor share its group size (thresholds from its floor 3n).
+  const stepFloor = Math.ceil(floor / t.subFloors) * t.subFloors;
+  if (stepFloor < t.groupFromFloor) return [main];
   // Bigger groups get likelier higher up.
   const r = rng.next();
-  const late = floor >= t.groupFromFloor * 2.5;
+  const late = stepFloor >= t.groupFromFloor * 2.5;
   const size = r < (late ? 0.3 : 0.5) ? 1 : r < (late ? 0.7 : 0.85) ? 2 : 3;
   if (size === 1) return [main];
   const hp = Math.max(1, Math.round((main.maxHp * (t.groupHp[size - 1] ?? 1)) / size));
   const atk = Math.max(1, Math.round((main.atk * (t.groupAtk[size - 1] ?? 1)) / size));
   return Array.from({ length: size }, (_, i): Fighter => {
     const sp = i === 0 ? ctx.content.species.get(main.speciesId) : pickSpecies();
-    return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
+    return { ...main, name: i === 0 ? main.name : sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
   });
 }
 

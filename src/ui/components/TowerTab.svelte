@@ -472,7 +472,7 @@
         <span class="fnum num">{fl.f}</span>
         <span class="icons">
           {#if fl.boss}<span title="Boss{fl.trait ? `: ${fl.trait.name}` : ''}">👑</span>{/if}
-          {#if fl.guard}<span title="Wächter: ein stärkerer Gegner allein">🛡️</span>{/if}
+          {#if fl.guard}<span title="Wächter: stärkere Gegner, etwa wie drei Etagen weiter oben">🛡️</span>{/if}
           {#if fl.trait}<span title="{fl.trait.name}: {fl.trait.description}">{fl.trait.icon}</span>{/if}
           {#if fl.milestone}<span title="Meilenstein">🏅</span>{/if}
           {#if fl.checkpoint}<span title="Checkpoint">🚩</span>{/if}
@@ -599,7 +599,7 @@
         <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
       {/if}
       {#if data.guard}
-        <p class="trait small guard">🛡️ <b>Wächter:</b> ein stärkerer Gegner allein – etwa so stark wie drei Etagen weiter oben. Kein Checkpoint.</p>
+        <p class="trait small guard">🛡️ <b>Wächter-Etage:</b> die Gegner sind stärker – etwa wie drei Etagen weiter oben. Kein Checkpoint.</p>
       {/if}
       {#if data.phase && content.bossTraits.has(data.phase)}
         {@const ph = content.bossTraits.get(data.phase)}

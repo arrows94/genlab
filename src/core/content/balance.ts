@@ -276,7 +276,7 @@ export interface Balance {
     bossEvery: number;
     bossHpMult: number;
     bossAtkMult: number;
-    /** Wächter: every n-th floor (not a boss floor) one stronger enemy alone – no checkpoint, no trait. */
+    /** Wächter: every n-th floor (not a boss floor) the foes are stronger – no checkpoint, no trait. */
     guardEvery: number;
     guardHpMult: number;
     guardAtkMult: number;

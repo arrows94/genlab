@@ -224,7 +224,7 @@ export const balance: Balance = {
     bossEvery: 30,
     bossHpMult: 2.2,
     bossAtkMult: 1.3,
-    // About one former floor stronger (×1.23 KP × ANG).
+    // All foes of the floor about one former floor stronger (×1.23 KP × ANG); the first one is the Wächter.
     guardEvery: 10,
     guardHpMult: 1.12,
     guardAtkMult: 1.1,
