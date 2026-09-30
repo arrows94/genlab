@@ -541,20 +541,27 @@ Der Stall fängt nach jeder Vererbung von vorn an, der Turm-Rekord nicht. Die Ka
 im Turm bringt Erfahrung, sie gehört dem Spieler (wie Relikte) und macht jedes künftige Turm-Team stärker. Wer an einer
 Mauer hängt und mit Auto-Neustart weiterkämpft, kommt dadurch langsam, aber sicher weiter.
 
-- [ ] Erfahrung: 1 je gewonnene Etage, 10 je Boss (Startwerte); auch offline. Sie übersteht Vererbung und Äon
-      (`tower.xp` im Spielstand, neue Felder mit Standardwert – keine Migration)
-- [ ] Ränge: Rang n → n + 1 kostet 100 × 1,15ⁿ Erfahrung (Startwerte). Je Rang +2 % KP und +2 % Schaden im Turm und
-      gegen den Wochen-Boss. Grober Takt im Stillstand (etwa 900 Etagen pro Stunde mit 4 s): Rang ~20 nach einem Tag,
-      ~30 nach drei, ~40 nach zwölf – die Kosten wachsen schneller als die Erfahrung, Zucht bleibt der Hauptweg
-- [ ] Neues Modifier-Ziel `tower.hp` (in `fighterFor` wie `tower.damage`); die Kampferfahrung als eigener
-      `ModifierProvider`
-- [ ] Kalibrieren mit dem Äon-Bot (28 Tage): Stillstände zusammen mit Schritt 2 höchstens etwa 3 Tage; an Tag 28 macht
-      die Kampferfahrung höchstens etwa ein Drittel der Turm-Stärke aus
-- [ ] Anzeige: Rang, Balken bis zum nächsten Rang und aktuelle Wirkung in der Kopfzeile des Turms; in „Warum
-      verloren?“ ein Hinweis, dass Weiterkämpfen Erfahrung bringt
+- [x] Kampferfahrung (`tower.xp`, `veteranRank`, `towerVeteranProvider`): je gewonnene Etage `xpPerFloor` × Etage (höher
+      oben mehr), Boss ×10; übersteht Vererbung und Äon. Rang n → n + 1 kostet 100 × (1 + 7,5 n) – linear, damit auch
+      spät Ränge kommen (mit ×1,12 je Rang wuchs der Rang ab Tag 9 kaum noch). Je Rang +2 % KP und Schaden im Turm und
+      gegen den Wochen-Boss (neues Modifier-Ziel `tower.hp`); Anzeige 🎖 in der Kopfzeile, Meldung bei neuem Rang
+- [x] Entschlossenheit (`tower.resolve`, `recordAt`, `resolveAt`): jede volle Stunde ohne neuen Rekord bringt
+      `resolvePerDay` / 24 (+20 % je Tag, höchstens +150 %) auf KP und Schaden im Turm; ein neuer Rekord hält sie an, erst
+      ein neuer Rekord auf einer Boss-Etage setzt sie zurück (vorher fiel sie bei +1 Etage auf 0 – aufgebaut über Tage
+      trug sie das Team nur eine Etage weiter). Anzeige 💪 in der Kopfzeile
+- [x] Test-Bot: kauft die Turm-Routine nach jedem Äon zuerst (vorher kämpfte er danach nur in den Sitzungen) und
+      erneuert sein Turm-Team, sobald die stärksten freien Kreaturen es um die Hälfte übertreffen (vorher lief den ganzen
+      Tag das erste, schwache Team nach einer Vererbung)
+- [ ] **Ziel nicht erreicht – Befund:** Äon-Bot (Seed 2024, 28 Tage) hängt ab Tag 11 bis Tag 28 an Etage 179 (Boss 180),
+      mit Entschlossenheit +150 % und Rang 28–46; Seed 7 ab Tag 7 an 174, Seed 99 an 158 (Tag 6–12). Diagnose: Fast den
+      ganzen Tag kämpft ein frisch zurückgesetztes Team (Läufe „151→150“, 60–160 KP, bräuchte ×17 für Etage 179). Das
+      starke Team gibt es nur kurz vor der Vererbung (Tag 9: 1.370 KP, fehlt ×1,5), und dieser Höhepunkt wächst über
+      die Tage kaum – jedes Äon setzt tiefer zurück. Über Äonen hinweg wachsen nur Talente, Relikte, Kampferfahrung und
+      Entschlossenheit. Offene Entscheidung (siehe Gespräch): Turm-Team übersteht Vererbung/Äon, Entschlossenheit ohne
+      Deckel oder Stillstand als Teil des Endgames hinnehmen
 - [ ] Optional: Äon-Talent „Veteranen“ (+50 % Erfahrung) oder ein Resonanz-Knoten, damit auch das Äon den Turm
       spürbar beschleunigt
-- [ ] Verworfen (vorerst): Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs – wächst in groben Sprüngen
+- [x] Verworfen: Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs – wächst in groben Sprüngen
       (1–2 Vererbungen am Tag) und belohnt nicht, dass man an einer Mauer weiterkämpft
 
 ## Genom-Keller (Gegenstück zum Turm, ersetzt die Idee „Dunkler Turm“)
