@@ -78,6 +78,11 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 - [x] Fehler behoben: Nach Import oder übernommenem Cloud-Spielstand war der ganze Spielstand ein Svelte-Proxy
       (`$state` im Import-Dialog und in `sync.conflict`) – `structuredClone` der Keimprobe warf, das Brutritual
       startete ohne Meldung nicht. Jetzt `$state.raw`
+- [x] Handy: Unterreiter unten direkt über den Bereichen (`.tabbar` als Dock, Höhe als `--dock-h` für Seitenabstand,
+      Toasts und die Anomalien-Leiste)
+- [x] Fehler behoben: Abgeschlossene Forschungen trugen die Klasse `.maxed` mit `white-space: nowrap` (gemeint war nur
+      „✓ Erforscht“) – die Beschreibung brach nicht um und verbreiterte die Seite. Zusätzlich schneidet `main` zu
+      breite Inhalte ab (`overflow-x: clip`), statt die Seite zu verbreitern
 
 # TODO – Endgame
 

@@ -154,5 +154,5 @@
   .summary { position: sticky; z-index: 5; bottom: 0.5rem; margin-top: 0.75rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; }
   .gain { color: var(--gold); font-weight: 600; }
   /* Phones: stay above the bottom tab bar. */
-  @media (max-width: 640px) { .summary { bottom: calc(4.6rem + env(safe-area-inset-bottom)); z-index: 5; } }
+  @media (max-width: 640px) { .summary { bottom: calc(var(--dock-h, 5rem) + 0.5rem); z-index: 5; } }
 </style>

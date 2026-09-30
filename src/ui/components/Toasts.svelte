@@ -30,7 +30,8 @@
   .rare { border-left-color: var(--gold); }
   .error { border-left-color: var(--danger); }
   @media (max-width: 640px) {
-    .toasts { bottom: calc(5rem + env(safe-area-inset-bottom)); }
+    /* Above the tab bar docked at the bottom (area buttons and sub-tabs). */
+    .toasts { bottom: calc(var(--dock-h, 5rem) + 0.5rem); }
   }
   @keyframes in { from { opacity: 0; transform: translateY(8px); } }
 </style>

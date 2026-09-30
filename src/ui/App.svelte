@@ -142,6 +142,9 @@
   /** Header height as a CSS variable, so other sticky bars sit below it. */
   let headerH = $state(0);
   $effect(() => document.documentElement.style.setProperty('--header-h', `${headerH}px`));
+  /** Height of the tab bar; on phones it is docked at the bottom and toasts and page padding stay clear of it. */
+  let dockH = $state(0);
+  $effect(() => document.documentElement.style.setProperty('--dock-h', `${dockH}px`));
   $effect(() => {
     view.tab;
     navEl?.querySelector('button.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
@@ -171,6 +174,7 @@
 
   <WeeklyBanner />
 
+  <div class="tabbar" bind:offsetHeight={dockH}>
   <nav aria-label="Bereiche">
     {#each groups as g (g.id)}
       {@const count = groupBadge(g)}
@@ -196,6 +200,7 @@
       {/each}
     </div>
   {/if}
+  </div>
 
   <main>
     {#key view.tab}
@@ -267,29 +272,33 @@
   .work.loop span { background: linear-gradient(90deg, transparent, var(--teal), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: work-sweep 1.6s linear infinite; }
   @keyframes work-sweep { from { background-position: -100% 0; } to { background-position: 200% 0; } }
 
+  /* Wider content is cut off here instead of widening the page (phones would then scroll sideways). */
+  main { overflow-x: clip; }
   .page { animation: fade-in 0.2s ease-out; }
 
   /* Portrait phones: bottom tab bar */
   @media (max-width: 640px) {
-    .app { padding: 0.5rem 0.6rem 5.5rem; }
+    .app { padding: 0.5rem 0.6rem calc(var(--dock-h, 5rem) + 0.5rem); }
     header { gap: 0.4rem; margin: -0.5rem -0.6rem 0.5rem; padding: calc(0.4rem + env(safe-area-inset-top)) 0.6rem 0.4rem; }
     .brand { width: 100%; }
     .brand :global(svg) { display: none; }
     .brand :global(.music) { margin-left: auto; }
     h1 { font-size: 1.2rem; }
-    nav {
-      position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; margin: 0;
+    /* Bottom dock: the sub-tabs of the area sit right above the area buttons, in thumb reach. */
+    .tabbar {
+      position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 0.35rem;
       padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom));
       background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
-      border-top: 1px solid var(--line); flex-wrap: nowrap; gap: 0.3rem;
+      border-top: 1px solid var(--line);
     }
+    nav { margin: 0; flex-wrap: nowrap; gap: 0.3rem; }
     /* At most five areas: they always fit, no scrolling. */
     nav button { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 0.1rem; padding: 0.35rem 0.2rem; font-size: 0.7rem; }
     nav .label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     nav .icon { font-size: 1.2rem; }
     nav .badge { right: 2px; }
     /* Up to four sub-tabs share the width; the area's icon is already in the bottom bar. */
-    .subtabs { margin-bottom: 0.6rem; width: auto; }
+    .subtabs { order: -1; margin: 0; width: auto; }
     .subtabs button { flex: 1 1 auto; justify-content: center; font-size: 0.78rem; padding: 0.3rem 0.4rem; }
     .subtabs .icon { display: none; }
   }

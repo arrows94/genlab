@@ -25,12 +25,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: 21,
+    id: 22,
     date: '2026-09-30',
     title: 'Warum verloren? – Auswertung im Turm',
     items: [
       { text: 'Nach einer Niederlage im Turm zeigt die Arena „Warum verloren?“: wie viel KP den Gegnern noch blieb, die wichtigsten Gründe – etwa „Gegner war zu schnell“, „Element-Nachteil“ oder „Element-Schild – Vorteil fehlt“ – und zu jedem Grund einen Tipp. Dazu siehst du, wie viel Schaden jedes Teammitglied ausgeteilt und eingesteckt hat und wann es fiel. Die Auswertung bleibt stehen, bis ein späterer Lauf an dieser Etage vorbeikommt.', feature: 'tower' },
       { text: 'Das Kampfprotokoll ist neu: statt Textzeilen eine Liste mit Symbolen, Namen in Elementfarbe und farbigem Rand für gute und schlechte Momente. „Nur Wichtiges“ zeigt Techniken, kritische Treffer, besiegte Kämpfer und Boss-Momente; ausgeschaltet siehst du jeden Treffer.', feature: 'tower' },
+    ],
+  },
+  {
+    id: 21,
+    date: '2026-09-30',
+    title: 'Unterreiter in Daumenreichweite',
+    items: [
+      { text: 'Auf dem Handy liegen die Unterreiter jetzt unten direkt über den Bereichen – alles in Daumenreichweite.' },
+      { text: 'Behoben: Auf dem Handy ließ sich die Forschung seitlich verschieben, sobald eine Forschung ganz abgeschlossen war.', feature: 'research' },
     ],
   },
   {

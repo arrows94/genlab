@@ -93,7 +93,7 @@
 
 {#snippet action(x: ResearchNode)}
   {#if x.status === 'maxed'}
-    <span class="maxed">✓ {x.def.maxLevel === 1 ? 'Erforscht' : 'Maximal'}</span>
+    <span class="done-tag">✓ {x.def.maxLevel === 1 ? 'Erforscht' : 'Maximal'}</span>
   {:else if x.status === 'locked'}
     <span class="lock">🔒</span>
   {:else if x.cost}
@@ -207,7 +207,7 @@
   .act.row { flex-direction: row; align-items: center; justify-content: space-between; margin-top: auto; }
   .buy { font-size: 0.8rem; padding: 0.35rem 0.6rem; white-space: nowrap; }
   .eta { font-size: 0.7rem; color: var(--muted); }
-  .maxed { color: var(--gold); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+  .done-tag { color: var(--gold); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
   .lock { font-size: 1.1rem; opacity: 0.7; }
 
   .infinite { margin-top: 1.2rem; padding: 0.8rem; border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--violet) 55%, var(--line)); background: radial-gradient(ellipse at top left, color-mix(in srgb, var(--violet) 12%, transparent), transparent 60%); }
