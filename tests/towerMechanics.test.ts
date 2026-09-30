@@ -42,12 +42,12 @@ describe('boss traits', () => {
     return { enemy, result: simulateFight(g, team.map((f) => ({ ...f })), enemy, Rng.fromSeed(7)) };
   };
 
-  it('Element-Schild lets only a quarter through without element advantage', () => {
+  it('Element-Schild lets only its share through without element advantage', () => {
     const g = towerGame();
     const team = [fighterFor(g, champion(g, 5000))];
     const plain = fight(g, undefined, team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
     const shielded = fight(g, 'elementShield', team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
-    expect(shielded).toBe(Math.max(1, Math.round(plain * 0.25)));
+    expect(shielded).toBe(Math.max(1, Math.round(plain * content.bossTraits.get('elementShield').value)));
   });
 
   it('Wandler changes its element every round, Regeneration heals', () => {

@@ -188,6 +188,7 @@ export const balance: Balance = {
     baseTeamSize: 3,
     // Aktionsleiste: a fighter acts every (average speed / own speed)^speedExponent seconds of fight time.
     speedExponent: 0.8,
+    // Stretched by the foes' KP over the floor's normal enemy (bosses get more time, see fightLimitSec).
     maxFightSec: 40,
     // Dodge chance per 100 % speed lead over the attacker, capped.
     evadePerSpeedLead: 0.15,
@@ -205,8 +206,8 @@ export const balance: Balance = {
     groupAtk: [1, 1, 1.05],
     // Boss floors from companionsFromFloor on bring two companions (share of a normal enemy of the floor), standing in front.
     companionsFromFloor: 60,
-    companionHp: 0.35,
-    companionAtk: 0.4,
+    companionHp: 0.25,
+    companionAtk: 0.25,
     // From phaseFromFloor on bosses gain a second trait below phaseAt of their HP.
     phaseFromFloor: 90,
     phaseAt: 0.5,

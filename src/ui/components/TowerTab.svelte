@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, fightLimitSec, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
@@ -102,7 +102,7 @@
     if (lr.stats) return lr.stats.seconds;
     const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
     if (m) return Number(m[1]!.replace(',', '.'));
-    if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
+    if (lr.log.at(-1) === 'Zeit abgelaufen') return fightLimitSec(game, lr.floor, enemiesFor(game, lr.floor));
     return events.at(-1)?.at ?? 1;
   }
 
@@ -334,7 +334,7 @@
         return { ...f, creature: c && c.speciesId === f.speciesId ? c : null };
       });
       const units2 = units.map((u, i) => ({ ...u, element: replay!.elements[i] ?? u.element }));
-      return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end };
+      return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end, limit: fightLimitSec(game, lr.floor, enemiesFor(game, lr.floor)) };
     }
     const units: Unit[] = [
       ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c, row: rowOf(game, c.id) })),
@@ -342,7 +342,7 @@
     ];
     // Preview: the same relative time line the next fight will use.
     const intervals = actionIntervals(game, [...data.team.map((c) => fighterFor(game, c)), ...data.group]);
-    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0 };
+    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0, limit: fightLimitSec(game, data.nextFloor, data.group) };
   });
 
   const order = $derived.by(() => {
@@ -510,7 +510,7 @@
         {/if}
       </span>
       {#if arena.mode === 'fight'}
-        <span class="clock num" title="Kampfzeit (Limit {game.balance.tower.maxFightSec} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
+        <span class="clock num" title="Kampfzeit (Limit {formatNumber(arena.limit, { decimals: 0 })} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
       {/if}
       <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
         {#each SPEEDS as s (s.v)}
@@ -519,7 +519,7 @@
       </span>
     </div>
     {#if arena.mode === 'fight'}
-      <div class="timebar" title="Kampfzeit bis zum Limit von {game.balance.tower.maxFightSec} s"><div style="width: {Math.min(1, arena.clock / game.balance.tower.maxFightSec) * 100}%"></div></div>
+      <div class="timebar" title="Kampfzeit bis zum Limit von {formatNumber(arena.limit, { decimals: 0 })} s"><div style="width: {Math.min(1, arena.clock / arena.limit) * 100}%"></div></div>
     {/if}
     {#if order.length}
       <div class="turns" aria-label="Zugfolge">

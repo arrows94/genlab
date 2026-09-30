@@ -774,6 +774,18 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   }
 }
 
+/**
+ * Time limit of a floor's fight: `maxFightSec`, stretched by the foes' total KP over the floor's normal
+ * enemy – a boss with companions (or a Wächter floor) gets as much more time as it has more KP. High up
+ * fights at the edge of the team's strength run into the time limit; without the stretch a boss with
+ * ×2,2 KP would demand ×2,2 of the team's values instead of its share.
+ */
+export function fightLimitSec(ctx: GameContext, floor: number, foes: Fighter[]): number {
+  const plain = enemyFor(ctx, floor, { plain: true }).maxHp;
+  const total = foes.reduce((n, f) => n + f.maxHp, 0);
+  return ctx.balance.tower.maxFightSec * Math.max(1, total / Math.max(1, plain));
+}
+
 /** Time per floor in ms (Äon talent „Sturmlauf“ shortens it). */
 export function fightIntervalMs(ctx: GameContext): number {
   return Math.max(1000, ctx.mods().apply('tower.interval', ctx.balance.tower.fightIntervalSec) * 1000);
@@ -888,7 +900,8 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   const team = run.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
-  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng, { replay });
+  const foes = enemiesFor(ctx, floor);
+  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), foes, ctx.rng, { replay, limitSec: fightLimitSec(ctx, floor, foes) });
   tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
     tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
