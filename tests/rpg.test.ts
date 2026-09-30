@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { finishRpgRun, leaveRpgRun, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, secureLoot, startRpgRun, torches } from '@core/features/rpg';
+import { finishRpgRun, leaveRpgRun, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { rpgSkillsFor, thirdSkill } from '@core/features/rpgCombat';
+import { foeIntent, heroActsFirst, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
 import { deserialize, serialize } from '@core/save';
@@ -166,5 +167,122 @@ describe('GenLab RPG – Fähigkeiten', () => {
     expect(thirdSkill(g, c).id).toBe('mend'); // hidden Erbanlage does not count
     c.deepSequenced = true;
     expect(thirdSkill(g, c).id).toBe('hunt');
+  });
+});
+
+describe('GenLab RPG – Rundenkampf', () => {
+  function fight(seed = 42) {
+    const g = makeGame(seed);
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    c.abilities = [];
+    c.latent = null;
+    startRpgRun(g, c.id);
+    return { g, c };
+  }
+  const hero = (over: Partial<RpgCombatant> = {}): RpgCombatant => ({ name: 'Held', speciesId: 'emberpup', element: 'fire', hp: 100, maxHp: 100, atk: 20, def: 5, spd: 10, statuses: [], ...over });
+
+  it('foes follow their tower floor and their kind', () => {
+    const g = makeGame();
+    const low = makeFoe(g, 'brawler', 'sproutle', 0);
+    const high = makeFoe(g, 'brawler', 'sproutle', 30);
+    const boss = makeFoe(g, 'warden', 'sproutle', 30);
+    expect(high.maxHp).toBeGreaterThan(low.maxHp);
+    expect(boss.maxHp).toBeGreaterThan(high.maxHp);
+    expect(low.element).toBe('nature');
+    expect(low.name).toContain('Sprössling');
+  });
+
+  it('shows the next move from the pattern, and the pattern advances every round', () => {
+    const g = makeGame();
+    const b = newBattle(hero({ atk: 1 }), makeFoe(g, 'brawler', 'sproutle', 0));
+    const seen: string[] = [];
+    const basic = g.content.rpgSkills.get('strike');
+    for (let i = 0; i < 4; i++) {
+      seen.push(foeIntent(g, b.foe));
+      b.hero.hp = 1e6;
+      playRound(g, b, basic);
+    }
+    expect(seen).toEqual(g.content.rpgEnemies.get('brawler').pattern);
+  });
+
+  it('speed decides who acts first; a slowed side acts last', () => {
+    const g = makeGame();
+    const b = newBattle(hero({ spd: 5 }), makeFoe(g, 'brawler', 'sproutle', 0));
+    b.foe.spd = 10;
+    expect(heroActsFirst(b)).toBe(false);
+    b.foe.statuses.push({ id: 'slow', rounds: 2, value: 0.5 });
+    expect(heroActsFirst(b)).toBe(true);
+  });
+
+  it('a guarding foe shields itself before the hero strikes', () => {
+    const g = makeGame();
+    const b = newBattle(hero({ spd: 100, atk: 10 }), makeFoe(g, 'guardian', 'sproutle', 0));
+    expect(foeIntent(g, b.foe)).toBe('guard');
+    playRound(g, b, g.content.rpgSkills.get('strike'));
+    // A weak hit is swallowed completely by the shield.
+    expect(b.foe.hp).toBe(b.foe.maxHp);
+  });
+
+  it('cooldowns block a skill for its rounds; the special needs a full charge', () => {
+    const { g } = fight();
+    const skills = rpgSkills(g);
+    const tech = skills.find((k) => k.slot === 'technique')!;
+    const special = skills.find((k) => k.slot === 'special')!;
+    startRpgBattle(g, 'warden', 'sproutle', 0);
+    const battle = g.state.rpg.run!.battle!;
+    battle.hero.hp = battle.hero.maxHp = 1e6;
+    expect(useRpgSkill(g, special.id).ok).toBe(false);
+    expect(useRpgSkill(g, tech.id).ok).toBe(true);
+    for (let i = 0; i < tech.cooldown; i++) {
+      expect(useRpgSkill(g, tech.id).ok).toBe(false);
+      expect(useRpgSkill(g, 'strike').ok).toBe(true);
+    }
+    expect(useRpgSkill(g, tech.id).ok).toBe(true);
+    battle.charge = 1;
+    expect(useRpgSkill(g, special.id).ok).toBe(true);
+    expect(battle.charge).toBeLessThan(1);
+  });
+
+  it('burn ticks every round and runs out', () => {
+    const g = makeGame();
+    const b = newBattle(hero({ spd: 100 }), makeFoe(g, 'brawler', 'sproutle', 0));
+    b.foe.hp = b.foe.maxHp = 1e6;
+    b.hero.hp = b.hero.maxHp = 1e6;
+    const blaze = techniqueSkill(g, g.content.techniques.get('blaze'));
+    playRound(g, b, blaze);
+    const burn = statusOf(b.foe, 'burn');
+    expect(burn?.value).toBe(Math.round(b.hero.atk * blaze.status!.value));
+    const skip = { ...g.content.rpgSkills.get('strike'), hit: 0 };
+    for (let i = 0; i < 3; i++) playRound(g, b, skip);
+    expect(statusOf(b.foe, 'burn')).toBeUndefined();
+  });
+
+  it('a won fight keeps the HP for the next room; a lost one ends the run', () => {
+    const { g, c } = fight();
+    startRpgBattle(g, 'brawler', 'sproutle', 0);
+    g.state.rpg.run!.battle!.foe.hp = 1;
+    expect(useRpgSkill(g, 'strike').ok).toBe(true);
+    expect(g.state.rpg.run!.battle).toBeNull();
+    startRpgBattle(g, 'warden', 'sproutle', 60);
+    for (let i = 0; i < 200 && g.state.rpg.run; i++) useRpgSkill(g, 'strike');
+    expect(g.state.rpg.run).toBeNull();
+    expect(g.state.rpg.lastResult?.win).toBe(false);
+    expect(c.job).toBeNull();
+  });
+
+  it('is deterministic with the game RNG', () => {
+    const play = () => {
+      const { g } = fight(7);
+      startRpgBattle(g, 'champion', 'voltmouse', 3);
+      const log: number[] = [];
+      for (let i = 0; i < 30 && g.state.rpg.run?.battle; i++) {
+        useRpgSkill(g, 'strike');
+        log.push(g.state.rpg.run?.hp ?? -1);
+      }
+      return log;
+    };
+    expect(play()).toEqual(play());
   });
 });

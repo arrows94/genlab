@@ -63,6 +63,17 @@ export const balance: Balance = {
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
     secondsPerRound: 2,
     techniqueCooldown: 3,
+    // Foes: the tower enemy of the dungeon's floor, adjusted for a duel of one hero.
+    enemyMult: { hp: 2, atk: 1.5, def: 1, spd: 1 },
+    // Foe moves: heavy blow after charging, shield against this round's hits, healing.
+    heavyMult: 2.2,
+    guardShare: 0.3,
+    healShare: 0.2,
+    // Special attack: charged by rounds, own hits and hits taken (1 = ready).
+    chargePerRound: 0.1,
+    chargePerHit: 0.1,
+    chargeWhenHit: 0.15,
+    logSize: 8,
   },
   timeCrystals: {
     skipHours: 4,

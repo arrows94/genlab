@@ -4,8 +4,10 @@ import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature, RpgRun } from '../state';
+import type { RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
+import { heroCombatant, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -102,7 +104,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number): ActionResult 
   if (r.torchAt === 0) r.torchAt = ctx.state.lastTickAt;
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
-  r.run = { creatureId: c.id, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0, loot: {}, secured: {}, startedAt: ctx.state.lastTickAt };
+  r.run = { creatureId: c.id, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0, loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null };
   r.runs++;
   return { ok: true };
 }
@@ -151,5 +153,39 @@ export function finishRpgRun(ctx: GameContext, win: boolean): void {
 export function leaveRpgRun(ctx: GameContext): ActionResult {
   if (!ctx.state.rpg.run) return { ok: false, reason: 'Es läuft kein Lauf.' };
   finishRpgRun(ctx, true);
+  return { ok: true };
+}
+
+// ---- Kampf ------------------------------------------------------------------
+
+/** Starts a fight of the running run against a foe (the dungeon picks kind, species and floor). */
+export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: string, floor: number): ActionResult {
+  const run = ctx.state.rpg.run;
+  const hero = rpgHero(ctx);
+  if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
+  run.battle = newBattle(heroCombatant(ctx, hero, run.hp), makeFoe(ctx, enemyId, speciesId, floor));
+  return { ok: true };
+}
+
+/** The hero's skills in the running run (button order). */
+export function rpgSkills(ctx: GameContext): RpgSkillDef[] {
+  const hero = rpgHero(ctx);
+  return hero ? rpgSkillsFor(ctx, hero) : [];
+}
+
+/** The player uses a skill: one round of the fight. A won fight hands back to the dungeon, a lost one ends the run. */
+export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
+  const run = ctx.state.rpg.run;
+  const battle = run?.battle;
+  if (!run || !battle) return { ok: false, reason: 'Gerade läuft kein Kampf.' };
+  const skill = rpgSkills(ctx).find((k) => k.id === skillId);
+  if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
+  const blocker = skillBlocker(battle, skill);
+  if (blocker) return { ok: false, reason: blocker };
+  const outcome = playRound(ctx, battle, skill);
+  run.hp = battle.hero.hp;
+  if (outcome === 'lose') finishRpgRun(ctx, false);
+  else if (outcome === 'win') run.battle = null;
   return { ok: true };
 }

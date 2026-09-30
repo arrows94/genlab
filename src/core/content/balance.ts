@@ -74,6 +74,20 @@ export interface Balance {
     secondsPerRound: number;
     /** Rounds before the element technique can be used again. */
     techniqueCooldown: number;
+    /** Foe stats = tower enemy of the floor × these (a duel of one hero, not a team). */
+    enemyMult: { hp: number; atk: number; def: number; spd: number };
+    /** Damage of a charged heavy blow as a multiple of a normal hit. */
+    heavyMult: number;
+    /** A guarding foe absorbs this share of its max HP during the round. */
+    guardShare: number;
+    /** A healing foe heals this share of its max HP. */
+    healShare: number;
+    /** Special attack charge per round, per own hit that lands and per hit taken (1 = ready). */
+    chargePerRound: number;
+    chargePerHit: number;
+    chargeWhenHit: number;
+    /** Lines kept in the fight log. */
+    logSize: number;
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */

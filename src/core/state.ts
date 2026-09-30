@@ -1,6 +1,7 @@
 import { D, type Decimal } from './num';
 import type { RngState } from './rng';
 import type { ModifierDef } from './modifiers';
+import type { StatusId } from './content/types';
 
 export type StatBlock = Record<string, number>;
 
@@ -308,6 +309,47 @@ export interface MegaProjectState {
   paid: Record<string, Decimal>;
 }
 
+/** A status in the dungeon, counted in rounds. burn/poison/regen: HP per round, shield: HP left to absorb, else a share. */
+export interface RpgStatus {
+  id: StatusId;
+  rounds: number;
+  value: number;
+}
+
+/** One side of a dungeon fight. */
+export interface RpgCombatant {
+  name: string;
+  speciesId: string;
+  element: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  spd: number;
+  statuses: RpgStatus[];
+}
+
+export interface RpgFoe extends RpgCombatant {
+  /** `rpgEnemies` id. */
+  enemy: string;
+  kind: 'normal' | 'elite' | 'boss';
+  /** Position in the move pattern: the shown next move. */
+  step: number;
+}
+
+/** A running fight: the hero chooses a skill, then both act in speed order. */
+export interface RpgBattle {
+  hero: RpgCombatant;
+  foe: RpgFoe;
+  round: number;
+  /** Rounds until a skill is ready again (skill id → rounds, missing = ready). */
+  cooldowns: Record<string, number>;
+  /** Special attack charge, 0 … 1. */
+  charge: number;
+  /** Latest lines of the fight, newest last. */
+  log: string[];
+}
+
 /** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */
 export interface RpgRun {
   creatureId: number;
@@ -324,6 +366,7 @@ export interface RpgRun {
   secured: Record<string, number>;
   /** Wall clock of the start. */
   startedAt: number;
+  battle: RpgBattle | null;
 }
 
 /** How the last run ended, for the summary. */
