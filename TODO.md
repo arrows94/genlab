@@ -414,7 +414,7 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Alte Spielstände: Aufstellung (Reihen) hat einen Standard (alle vorne), nichts muss neu eingestellt werden
 - [x] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen (je Schritt)
 
-# TODO – Turm: feinere Etagen und Dunkler Turm
+# TODO – Turm: feinere Etagen und Genom-Keller
 
 ## Etagen ×3 (heute Etage 10 = künftig Etage 30)
 
@@ -435,20 +435,28 @@ wenn alle etagenbezogenen Zahlen mitwandern.
 - [ ] Tests und Test-Bots auf die neue Zählung umstellen; Äon-Bot vorher/nachher vergleichen (neu ÷ 3 = alt)
 - [ ] Eintrag in `changelog.ts`: Der Rekord springt auf das Dreifache – den Spielern erklären, dass nichts verloren geht
 
-## Dunkler Turm (zweite Turm-Variante)
+## Genom-Keller (Gegenstück zum Turm, ersetzt die Idee „Dunkler Turm“)
 
+Statt eines zweiten Turms geht es nach unten: ein Keller unter dem Genom-Turm, der mit jedem Sieg eine Ebene tiefer
+wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himmel.
+
+- [ ] **Begrenzte Versuche** statt Dauerkampf: Muster wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`), Zahlen
+      in `balance.ts`. Ein Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt
+- [ ] **Schalter mit Animation** zum Wechsel zwischen Turm und Keller: im Turm-Tab ein Umschalter (▲ Turm / ▼ Keller);
+      beim Wechsel fährt die Ansicht durch den Boden nach unten bzw. zurück nach oben (Aufzug oder Wendeltreppe),
+      `.reduce-motion` = sofortiger Wechsel. Der zuletzt gewählte Bereich bleibt in `viewState`
 - [ ] Grundidee festlegen – Vorschläge:
-  - Eigener Rekord, eigene Kontrollpunkte, eigenes Team (eine Kreatur steht nie in beiden Türmen)
-  - Härtere Regeln: steilere Gegner-Kurve, Schatten-Aura (Heilung halbiert), jede Etage ein Boss-Merkmal,
+  - Eigener Tiefen-Rekord, eigene Kontrollpunkte, eigenes Team (eine Kreatur steht nie in Turm und Keller zugleich)
+  - Härtere Regeln: steilere Gegner-Kurve, Schatten-Aura (Heilung halbiert), mehr Boss-Merkmale,
     oder eine wöchentlich wechselnde Regel
-  - Freischaltung: Etage 150 im normalen Turm (neue Zählung) oder erster Äon
-  - Belohnung: eigene Währung „Schattenmarken“ für dunkle Relikte – und eine weitere Äon-Splitter-Quelle
+  - Freischaltung: Etage 150 im Turm (neue Zählung) oder erster Äon
+  - Belohnung: eigene Währung (z. B. „Schattenmarken“) für dunkle Relikte – und eine weitere Äon-Splitter-Quelle
     (siehe Endgame → „Weitere Splitter-Quellen“)
-- [ ] Offene Frage: kämpft er von selbst wie der normale Turm, oder mit begrenzten Versuchen pro Tag
-      (wie der Wochen-Boss, `attemptsPerDay`)?
-- [ ] Technik: `features/tower.ts` so verallgemeinern, dass mehrere Türme aus Daten entstehen (Turm-Definitionen in
-      `content/endgame.ts`) statt einer Kopie des Turm-Codes
-- [ ] Arena im dunklen Stil (eigene Farben, Boden, Gegner-Tönung)
+  - Überschneidung mit der „Tiefenexpedition“ (Endgame → Später) und dem Dungeon im GenLab RPG prüfen – nicht drei
+    Systeme bauen, die alle „immer tiefer“ sind
+- [ ] Technik: `features/tower.ts` so verallgemeinern, dass Turm und Keller aus Daten entstehen (Definitionen in
+      `content/endgame.ts`, Richtung auf/ab) statt einer Kopie des Turm-Codes
+- [ ] Arena im Keller-Stil (Gewölbe, Fackellicht, dunkle Farben, Gegner-Tönung); Ebenen zählen nach unten (−1, −2 …)
 
 # TODO – Brut
 
@@ -458,8 +466,7 @@ wenn alle etagenbezogenen Zahlen mitwandern.
   - [ ] Das Ritualnest bleibt belegt, bis das Ei geöffnet ist (kein neues Ritual davor)
   - [ ] Enthüllung beim Öffnen: Ei wackelt, bricht auf, Leuchten in der Farbe der Seltenheit; `.reduce-motion` beachten
   - [ ] Hinweis „Ritual-Ei ist bereit“ (Tab-Punkt, optional Benachrichtigung), auch nach Offline-Zeit
-  - [ ] Offene Frage: darf der Zuchtautomat Ritual-Eier öffnen? (Vorschlag: nein, das ist gerade der Moment des
-        Spielers)
+  - [ ] Der Zuchtautomat öffnet Ritual-Eier nicht – das bleibt der Moment des Spielers
   - [ ] Test-Bots öffnen fertige Ritual-Eier selbst; Changelog-Eintrag
 
 # TODO – GenLab RPG (ein Monster, aktiver Dungeon)
@@ -473,8 +480,12 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Vor dem Start klären
 
 - [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
-- [ ] Stufen: nur innerhalb eines Laufs (jeder Lauf startet bei Stufe 1) – oder dauerhaft je Monster, dann aber
-      nur im Turm und im Dungeon wirksam, nie in Zucht, Anlagen oder Vererbung?
+- [ ] Stufen (noch offen, Varianten zum Abwägen):
+  - A: nur innerhalb eines Laufs – jeder Lauf startet bei Stufe 1 (reines Roguelite, jeder Lauf gleich fair)
+  - B: dauerhaft je Monster, aber nur im Turm und im Dungeon wirksam, nie in Zucht, Anlagen oder Vererbung
+    (bindet an ein Lieblingsmonster; Frage: was passiert beim Verkaufen oder bei der Vererbung?)
+  - C: Mischform – Lauf-Stufe startet bei 1, dazu ein langsamer dauerhafter „Erfahrungsrang“ je Monster mit kleinem
+    Startbonus (z. B. +1 Verbesserung zu Beginn)
 - [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
       Turm-Kurve)
 
