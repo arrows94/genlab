@@ -306,8 +306,10 @@
   .row button { flex: 1; }
 
   /* Opening */
-  .backdrop { position: fixed; inset: 0; background: radial-gradient(circle, #0b1a20e6, #000d); z-index: 30; display: grid; place-items: center; padding: 1rem; }
-  .reveal { width: min(680px, 100%); text-align: center; outline: none; }
+  /* Scrollable backdrop + margin:auto: centred, but a tall result is never cut off above and below. */
+  .backdrop { position: fixed; inset: 0; background: radial-gradient(circle, #0b1a20e6, #000d); z-index: 30; display: flex; flex-direction: column; overflow-y: auto;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+  .reveal { margin: auto; flex: none; width: min(680px, 100%); text-align: center; outline: none; }
   .stage { position: relative; height: 260px; display: grid; place-items: center; }
   .capwrap { position: relative; z-index: 1; }
   .rays { position: absolute; width: 320px; height: 320px; border-radius: 50%; opacity: 0.25;
@@ -319,7 +321,7 @@
     animation: fly 0.55s ease-out forwards; }
   @keyframes fly { from { transform: rotate(var(--a)) translateY(0) scale(1.2); opacity: 1; } to { transform: rotate(var(--a)) translateY(calc(-1 * var(--d) - 50px)) scale(0.2); opacity: 0; } }
   .hint { margin: 0; }
-  .result { max-height: 88vh; overflow-y: auto; animation: rise 0.25s ease-out; box-shadow: 0 0 40px color-mix(in srgb, var(--best) 30%, transparent); border-color: color-mix(in srgb, var(--best) 50%, var(--line)); }
+  .result { max-height: 88vh; max-height: 88dvh; overflow-y: auto; animation: rise 0.25s ease-out; box-shadow: 0 0 40px color-mix(in srgb, var(--best) 30%, transparent); border-color: color-mix(in srgb, var(--best) 50%, var(--line)); }
   @keyframes rise { from { transform: translateY(12px) scale(0.97); opacity: 0; } }
   .banner { font-size: 1.4rem; margin: 0.2rem 0 0.4rem; text-shadow: 0 0 14px currentColor; animation: stamp 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
   @keyframes stamp { from { transform: scale(2); opacity: 0; } }
