@@ -36,7 +36,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Unter Optionen → Töne kannst du einzelne Klänge oder ganze Gruppen abschalten und jeden Klang probehören.' },
       { text: 'Neue Forschung „Zuchtbuch“: Die Brutstation merkt sich dein letztes Paar, „↻ Letztes Paar“ wählt es mit einem Tipp wieder aus.', feature: 'mine' },
       { text: 'Neue Forschung „Zwei Zuchtlisten“: Jedes Elternteil bekommt seine eigene Kandidatenliste mit eigenem Art-Filter.', feature: 'biolab' },
-      { text: 'Der Recycling-Automat nimmt nie mehr die letzte Kreatur einer Art. Von Hand geht es weiterhin – mit einer Warnung.', feature: 'autoRecycle' },
+      { text: 'Verkaufst oder recycelst du von Hand die letzte Kreatur einer Art, warnt dich das Spiel vorher.', feature: 'breeding' },
     ],
   },
   {

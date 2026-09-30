@@ -2,6 +2,7 @@
   import { content } from '@content/index';
   import { activeLatent } from '@core/creatures';
   import { findCreature } from '@core/creatures';
+  import type { Creature } from '@core/state';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { statBreakdown } from '@core/queries';
@@ -49,16 +50,18 @@
   function close() {
     view.detail = null;
   }
+  /** Warning when this is the last creature of its species in the stable. */
+  function lastOfSpecies(c: Creature): string {
+    return speciesLostWith(game, [c.id]).length > 0 ? ` ⚠️ Es ist deine letzte ${content.species.get(c.speciesId).name} – die Art ist danach nicht mehr in deinem Stall.` : '';
+  }
   async function doSell() {
     const cur = c;
-    if (cur && (await ask(`${cur.name} verkaufen?`, { ok: 'Verkaufen', danger: true })) && act(sell(game, [cur.id]))) close();
+    if (cur && (await ask(`${cur.name} verkaufen?${lastOfSpecies(cur)}`, { ok: 'Verkaufen', danger: true })) && act(sell(game, [cur.id]))) close();
   }
   async function doRecycle() {
     const cur = c;
     if (!cur) return;
-    const last = speciesLostWith(game, [cur.id]).length > 0;
-    const warning = last ? ` ⚠️ Es ist deine letzte ${content.species.get(cur.speciesId).name} – die Art ist danach nicht mehr in deinem Stall.` : '';
-    if ((await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.${warning}`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
+    if ((await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.${lastOfSpecies(cur)}`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
   function fmtMod(op: string, v: number) {
     if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;

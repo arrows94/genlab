@@ -199,9 +199,9 @@ function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
  * Every creature of a species counts, also busy ones.
  */
 export function keptPerSpecies(ctx: GameContext): Set<number> {
-  // The last creature of a species is never the automat's: only the player can send it.
-  const n = Math.max(1, ctx.state.automation.autoRecycle.keepPerSpecies);
+  const n = ctx.state.automation.autoRecycle.keepPerSpecies;
   const kept = new Set<number>();
+  if (n <= 0) return kept;
   const bySpecies = new Map<string, Creature[]>();
   for (const c of ctx.state.creatures) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
   const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));

@@ -426,17 +426,11 @@ describe('automation', () => {
       return { g, mk };
     };
 
-    it('never takes the last creature of a species, even with „keep none“ from an old save', () => {
+    it('knows which species a hand-picked batch would take from the stable (warning)', () => {
       const { g, mk } = setup();
       const lone = mk('zephyrix', 1);
       mk('pebblit', 90);
       const weakPebblit = mk('pebblit', 2);
-      setAutoRecycle(g, { enabled: true, maxRarity: 'rare', keepSequenced: false });
-      g.state.automation.autoRecycle.keepPerSpecies = 0;
-      const ids = autoRecycleCandidates(g).map((c) => c.id);
-      expect(ids).not.toContain(lone.id);
-      expect(ids).toContain(weakPebblit.id);
-      // By hand it still works – the UI warns first.
       expect(speciesLostWith(g, [lone.id])).toEqual(['zephyrix']);
       expect(speciesLostWith(g, [weakPebblit.id])).toEqual([]);
       expect(sendToRecycler(g, [lone.id]).ok).toBe(true);
@@ -459,12 +453,10 @@ describe('automation', () => {
       expect(setAutoRecycle(g, { enabled: true, keepPerSpecies: 2 }).ok).toBe(true);
       expect(autoRecycleCandidates(g)).toEqual([weaker, weak]);
       setAutoRecycle(g, { keepSequenced: false, keepPerSpecies: 0 });
-      // „Keep none“ still keeps the last one of each species (the lonely emberpup, the best pebblit).
       const all = autoRecycleCandidates(g);
-      expect(all).toHaveLength(4);
-      expect(all).toEqual(expect.arrayContaining([sequenced, weaker, weak, second]));
-      expect(all).not.toContain(lonely);
-      expect(all.at(-1)).toBe(second);
+      expect(all).toHaveLength(6);
+      expect(all).toEqual(expect.arrayContaining([sequenced, lonely, weaker, weak, second, best]));
+      expect(all.at(-1)).toBe(best);
       g.advance(balance.automation.intervalSec * 1000 + recycleDurationMs(g) * 8);
       expect(g.state.creatures).toEqual(expect.arrayContaining([locked, shiny, rare]));
       expect(g.state.creatures).not.toContain(weak);

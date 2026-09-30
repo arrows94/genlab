@@ -65,8 +65,9 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 - [x] Zuchtbuch (Forschung, `breedRepeat`): „↻ Letztes Paar“ in der Brutstation (`breedByHand` merkt sich das Paar in
       `state.lastPair`, der Zuchtautomat überschreibt es nicht)
 - [x] Zwei Zuchtlisten (Forschung, `breedSplit`): eine Kandidatenliste je Elternteil mit eigenem Art-Filter
-- [x] Recycling-Automat nimmt nie die letzte Kreatur einer Art („je Art behalten“ mindestens 1); von Hand mit Warnung
-      (`speciesLostWith`)
+- [x] Warnung beim Verkaufen und Recyceln von Hand, wenn eine Art dadurch aus dem Stall verschwindet
+      (`speciesLostWith`). Ein fester Schutz im Recycling-Automaten wurde wieder verworfen – „je Art behalten“ regelt das
+      („keine“ darf auch die letzte nehmen)
 
 # TODO – Endgame
 
