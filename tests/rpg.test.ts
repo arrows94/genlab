@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, speciesProfile, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -120,6 +120,23 @@ describe('GenLab RPG – Lauf', () => {
     expect(g.state.rpg.run).toBeNull();
     expect(g.state.rpg.lastResult).toMatchObject({ win: true, loot: { towerTokens: 10 } });
     expect(leaveRpgRun(g).ok).toBe(false);
+  });
+
+  it('giving up: between rooms like leaving, in a fight a defeat', () => {
+    const g = rpgGame();
+    g.state.resources['torches'] = D(5);
+    const c = g.state.creatures[0]!;
+    expect(giveUpRpgRun(g).ok).toBe(false);
+    startRpgRun(g, c.id, 'rootMaze');
+    g.state.rpg.run!.loot = { towerTokens: 10 };
+    expect(giveUpRpgRun(g).ok).toBe(true);
+    expect(g.state.rpg.lastResult).toMatchObject({ win: true, loot: { towerTokens: 10 } });
+    startRpgRun(g, c.id, 'rootMaze');
+    g.state.rpg.run!.loot = { towerTokens: 10 };
+    startRpgBattle(g, 'brawler', 'sproutle', 1);
+    expect(giveUpRpgRun(g).ok).toBe(true);
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: Math.floor(10 * balance.rpg.defeatKeep) } });
+    expect(c.job).toBeNull();
   });
 
   it('a defeat keeps secured loot and only a share of the carried loot', () => {

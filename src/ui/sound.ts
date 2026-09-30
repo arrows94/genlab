@@ -499,9 +499,17 @@ function synth(ctx: AudioContext, out: AudioNode): Synth {
   };
 }
 
-/** Whether a sound may play right now (settings, catch-up, background tab, throttle). */
+/** Sounds allowed right now (null = all): in the other world nothing from the lab is heard. */
+let scope: ReadonlySet<SoundName> | null = null;
+
+export function setSoundScope(names: readonly SoundName[] | null): void {
+  scope = names ? new Set(names) : null;
+}
+
+/** Whether a sound may play right now (settings, scope, catch-up, background tab, throttle). */
 function allowed(name: SoundName, now: number): boolean {
   if (!prefs.sound || prefs.volume <= 0 || muted > 0 || prefs.mutedSounds.includes(name)) return false;
+  if (scope && !scope.has(name)) return false;
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
   if (now - (lastPlayed.get(name) ?? -Infinity) < (LIMITS[name] ?? DEFAULT_GAP_MS)) return false;
   recent = recent.filter((t) => now - t < BURST_MS);

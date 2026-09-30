@@ -623,8 +623,10 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Schritt 1: Stufe-1-Werte aus der Art, dauerhafte Stufe je Monster (`rpgLevel`), Verbesserungen nur im Lauf
 - [x] Schritt 2: eigene Gegner-Skala nach Dungeon-Stufe statt Turm-Etage, Bot auf Stufe-L-Helden, neu abstimmen
       (Arten auf gemeinsamem Maßstab, Hybride +15 %, Mythisch +50 %)
-- [ ] Schritt 3: Während eines Laufs zeigt die App nur die andere Welt (keine Reiter, keine Ressourcenleiste, Meldungen
+- [x] Schritt 3: Während eines Laufs zeigt die App nur die andere Welt (keine Reiter, keine Ressourcenleiste, Meldungen
       still ins Nachrichten-Center), kleines Menü mit Ton und „Aufgeben“
+      (`RpgWorld.svelte`, `view.world` im Store; Klänge aus dem Labor schweigen dort, Erfolgs-Momente und
+      Offline-Bericht warten bis zur Rückkehr; „Aufgeben“ im Kampf zählt als Niederlage)
 - [ ] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
       Bewegung: Überblendung
 - [ ] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt

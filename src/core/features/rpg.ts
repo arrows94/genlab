@@ -265,6 +265,17 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   ctx.bus.emit('rpgRunEnded', { win, cleared });
 }
 
+/**
+ * „Aufgeben“ from the menu of the other world: between rooms it is like leaving (everything carried comes
+ * home), in the middle of a fight it counts as a defeat.
+ */
+export function giveUpRpgRun(ctx: GameContext): ActionResult {
+  const run = ctx.state.rpg.run;
+  if (!run) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  finishRpgRun(ctx, !run.battle);
+  return { ok: true };
+}
+
 /** The player leaves the dungeon with everything carried. */
 export function leaveRpgRun(ctx: GameContext): ActionResult {
   if (!ctx.state.rpg.run) return { ok: false, reason: 'Es läuft kein Lauf.' };
