@@ -1,5 +1,5 @@
 import type { GameContext } from '../context';
-import type { Creature, RpgBattle, RpgCombatant, RpgFoe, RpgItem, RpgStatus } from '../state';
+import type { Creature, RpgBattle, RpgCombatant, RpgEvent, RpgFoe, RpgItem, RpgStatus } from '../state';
 import type { RpgIntent, RpgPerks, RpgSkillDef, StatusId, TechniqueDef } from '../content/types';
 import { effectiveStats } from '../creatures';
 import { damage, elementMultiplier, evadeChance, roleOf, techniqueFor, type Fighter } from './tower';
@@ -276,16 +276,19 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
   const { self, other } = side;
   const cfg = ctx.balance.rpg;
   const log = (line: string) => battle.log.push(line);
+  const event = (e: Omit<RpgEvent, 'by'>) => (battle.last ??= []).push({ by: side.isHero ? 'hero' : 'foe', ...e });
+  const special = skill.slot !== 'basic';
   let landed = 0;
   if (skill.hit > 0) {
     for (let i = 0; i < (skill.hits ?? 1); i++) {
       if (other.hp <= 0) break;
-      const special = side.isHero && skill.slot === 'special' ? 1 + side.perks.specialPower : 1;
-      const att = asFighter(self, side.isHero, skill.hit * mult * special);
+      const power = side.isHero && skill.slot === 'special' ? 1 + side.perks.specialPower : 1;
+      const att = asFighter(self, side.isHero, skill.hit * mult * power);
       const def = asFighter(other, !side.isHero, 1);
       const evade = Math.min(0.9, evadeChance(ctx, att, def) + (statusOf(other, 'evade')?.value ?? 0));
       if (ctx.rng.chance(evade)) {
         log(`${other.name} weicht aus.`);
+        event({ kind: 'miss', special });
         continue;
       }
       let dmg = damage(ctx, att, def, ctx.rng);
@@ -301,6 +304,7 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
       other.hp = Math.max(0, other.hp - dmg);
       landed++;
       const m = elementMultiplier(ctx, self.element, other.element);
+      event({ kind: 'hit', dmg, m, special, ...(crit ? { crit: true } : {}) });
       log(`${self.name}: ${skill.name} trifft${crit ? ' kritisch' : ''} für ${dmg}${m > 1 ? ' – sehr effektiv!' : m < 1 ? ' – wenig effektiv.' : '.'}`);
       if (side.perks.lifesteal > 0 && dmg > 0) self.hp = Math.min(self.maxHp, self.hp + Math.round(dmg * side.perks.lifesteal));
       if (side.isHero) battle.charge = Math.min(1, battle.charge + cfg.chargePerHit);
@@ -317,6 +321,7 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
     const healed = Math.min(self.maxHp - self.hp, Math.round(self.maxHp * skill.heal));
     self.hp += healed;
     log(`${self.name} heilt ${healed} KP.`);
+    event({ kind: 'heal', special });
   }
   if (skill.cleanse) self.statuses = self.statuses.filter((s) => !HARMFUL.includes(s.id));
   if (skill.status && (skill.hit === 0 || landed > 0) && other.hp > 0) {
@@ -328,7 +333,10 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
       : st.value;
     addStatus(target, { id: st.id, rounds: st.rounds, value });
   }
-  if (skill.hit === 0 && !skill.heal) log(`${self.name}: ${skill.name}.`);
+  if (skill.hit === 0 && !skill.heal) {
+    log(`${self.name}: ${skill.name}.`);
+    event({ kind: 'skill', special });
+  }
   return landed;
 }
 
@@ -403,6 +411,7 @@ function endRound(ctx: GameContext, battle: RpgBattle, perks: Required<RpgPerks>
  */
 export function playRound(ctx: GameContext, battle: RpgBattle, skill: RpgSkillDef, perks: RpgPerks = {}): 'win' | 'lose' | null {
   const all: Required<RpgPerks> = { ...NO_PERKS, ...perks };
+  battle.last = [];
   const intent = foeIntent(ctx, battle.foe);
   if (intent === 'guard') {
     addStatus(battle.foe, { id: 'shield', rounds: 1, value: Math.round(battle.foe.maxHp * ctx.balance.rpg.guardShare) });

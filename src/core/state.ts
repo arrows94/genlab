@@ -337,6 +337,18 @@ export interface RpgFoe extends RpgCombatant {
   step: number;
 }
 
+/** What happened in the latest round (for sounds and hit animations). */
+export interface RpgEvent {
+  by: 'hero' | 'foe';
+  kind: 'hit' | 'miss' | 'heal' | 'skill';
+  /** Damage of a hit and its element factor (> 1 strong, < 1 weak). */
+  dmg?: number;
+  m?: number;
+  crit?: boolean;
+  /** An element technique, third skill or special (not the basic attack). */
+  special?: boolean;
+}
+
 /** A running fight: the hero chooses a skill, then both act in speed order. */
 export interface RpgBattle {
   hero: RpgCombatant;
@@ -348,6 +360,8 @@ export interface RpgBattle {
   charge: number;
   /** Latest lines of the fight, newest last. */
   log: string[];
+  /** Events of the latest round (missing in fights started before they existed). */
+  last?: RpgEvent[];
 }
 
 /** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */

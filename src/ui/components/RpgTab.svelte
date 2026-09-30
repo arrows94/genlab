@@ -250,16 +250,28 @@
       {@const b = run.battle}
       {@const intent = INTENT_INFO[foeIntent(game, b.foe)]}
       {@const fl = speciesLook(b.foe)}
+      {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
+      {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
       <article class="panel arena" style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
         <div class="fighter">
-          <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={84} shiny={data.hero.shiny} />
+          {#key b.round}
+            <div class="fx" class:hurt={heroHits.length > 0}>
+              <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={84} shiny={data.hero.shiny} />
+              {#each heroHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">−{formatNumber(h.dmg ?? 0)}</span>{/each}
+            </div>
+          {/key}
           <div class="bar hp small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
           <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
         </div>
         <div class="round small muted">Runde {b.round}</div>
         <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
           <span class="intent" title={intent.hint}>{intent.icon} {intent.name}</span>
-          <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 84 : 100} />
+          {#key b.round}
+            <div class="fx" class:hurt={foeHits.length > 0}>
+              <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 84 : 100} />
+              {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">−{formatNumber(h.dmg ?? 0)}</span>{/each}
+            </div>
+          {/key}
           <span class="small f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}</span>
           <div class="bar hp foe-hp small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
           <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
@@ -376,6 +388,18 @@
   .fighter.elite :global(svg) { filter: drop-shadow(0 0 6px var(--danger)); }
   .fighter.boss :global(svg) { filter: drop-shadow(0 0 10px var(--gold)); }
   .small-bar { width: 100%; max-width: 160px; }
+  .fx { position: relative; display: grid; justify-items: center; }
+  .fx.hurt { animation: hurt 0.35s ease-out; }
+  @keyframes hurt {
+    0%, 100% { transform: translateX(0); filter: none; }
+    20% { transform: translateX(-6px); filter: brightness(1.8) saturate(0.4); }
+    45% { transform: translateX(5px); }
+    70% { transform: translateX(-3px); }
+  }
+  .dmg-float { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-weight: 800; color: #ffb4a8; text-shadow: 0 1px 2px #000; pointer-events: none;
+    animation: float-up 0.9s ease-out forwards; animation-delay: calc(var(--i) * 0.12s); }
+  .dmg-float.crit { color: var(--gold); font-size: 1.15rem; }
+  @keyframes float-up { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -28px; } }
   .f-name { text-align: center; }
   .round { align-self: center; }
   .intent { padding: 0.15rem 0.5rem; border-radius: 99px; border: 1px solid var(--foe); background: var(--bg-2); font-size: 0.8rem; white-space: nowrap; }

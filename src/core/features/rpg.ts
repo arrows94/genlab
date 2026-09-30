@@ -268,6 +268,7 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   r.run = null;
   pruneRanks(ctx);
   ctx.invalidate();
+  ctx.bus.emit('rpgRunEnded', { win, cleared });
 }
 
 /** The player leaves the dungeon with everything carried. */
@@ -308,6 +309,7 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   if (blocker) return { ok: false, reason: blocker };
   const outcome = playRound(ctx, battle, skill, heroPerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
+  ctx.bus.emit('rpgRound', { events: battle.last ?? [], outcome, boss: battle.foe.kind === 'boss' });
   if (outcome === 'lose') finishRpgRun(ctx, false);
   else if (outcome === 'win') winBattle(ctx, run);
   return { ok: true };
@@ -343,6 +345,7 @@ export function gainXp(ctx: GameContext, run: RpgRun, amount: number): void {
   while (run.xp >= xpToNext(ctx, run.level)) {
     run.xp -= xpToNext(ctx, run.level);
     run.level++;
+    ctx.bus.emit('rpgLevelUp', { level: run.level });
     const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
     run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * ctx.balance.rpg.levelHeal));
     if (run.offer.length === 0) offerUpgrades(ctx, run);
