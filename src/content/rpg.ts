@@ -36,22 +36,22 @@ export const rpgEnemies: RpgEnemyDef[] = [
   { id: 'guardian', name: 'Gepanzerter', kind: 'normal', pattern: ['guard', 'attack', 'attack'], hp: 1.2, atk: 0.9, def: 1.4, spd: 0.8 },
   { id: 'adept', name: 'Kundiger', kind: 'normal', pattern: ['tech', 'attack', 'attack'], hp: 0.9, atk: 1, def: 0.9, spd: 1.1 },
   { id: 'champion', name: 'Rasender', kind: 'elite', pattern: ['attack', 'charge', 'heavy', 'tech'], hp: 1.8, atk: 1.25, def: 1.2, spd: 1.1 },
-  { id: 'warden', name: 'Hüter', kind: 'boss', pattern: ['tech', 'attack', 'guard', 'charge', 'heavy', 'heal'], hp: 3, atk: 1.35, def: 1.3, spd: 1 },
+  { id: 'warden', name: 'Hüter', kind: 'boss', pattern: ['tech', 'attack', 'guard', 'charge', 'heavy', 'heal'], hp: 2.2, atk: 1.2, def: 1.2, spd: 1 },
 ];
 
 /** Dungeons in unlock order: each one opens after the previous is cleared. */
 export const rpgDungeons: RpgDungeonDef[] = [
-  { id: 'rootMaze', name: 'Wurzellabyrinth', icon: '🌳', elements: ['nature', 'earth'], floor: 0, floorsPerRoom: 1, rooms: 8, loot: 1,
+  { id: 'rootMaze', name: 'Wurzellabyrinth', icon: '🌳', elements: ['nature', 'earth'], floor: 0, floorsPerRoom: 3, rooms: 8, loot: 1,
     description: 'Verschlungene Gänge unter einem uralten Baum. Hier fängt jeder an.' },
-  { id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], floor: 12, floorsPerRoom: 1.5, rooms: 9, loot: 1.6, requires: 'rootMaze',
+  { id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], floor: 20, floorsPerRoom: 3.5, rooms: 9, loot: 1.6, requires: 'rootMaze',
     description: 'Heiße Höhlen voller Lava – Wassermonster sind hier im Vorteil.' },
-  { id: 'tidalHalls', name: 'Flutgewölbe', icon: '🌊', elements: ['water', 'ice'], floor: 28, floorsPerRoom: 2, rooms: 10, loot: 2.5, requires: 'emberCaves',
+  { id: 'tidalHalls', name: 'Flutgewölbe', icon: '🌊', elements: ['water', 'ice'], floor: 42, floorsPerRoom: 4, rooms: 10, loot: 2.5, requires: 'emberCaves',
     description: 'Überflutete Hallen, in denen das Eis nie schmilzt.' },
-  { id: 'stormSpire', name: 'Sturmspitze', icon: '🌩️', elements: ['air', 'electric'], floor: 50, floorsPerRoom: 2.5, rooms: 11, loot: 4, requires: 'tidalHalls',
+  { id: 'stormSpire', name: 'Sturmspitze', icon: '🌩️', elements: ['air', 'electric'], floor: 70, floorsPerRoom: 4.5, rooms: 11, loot: 4, requires: 'tidalHalls',
     description: 'Ein Turm im Gewitter. Blitze zucken zwischen den Stockwerken.' },
-  { id: 'shadowCrypt', name: 'Schattengruft', icon: '🕯️', elements: ['shadow', 'poison'], floor: 80, floorsPerRoom: 3, rooms: 12, loot: 6, requires: 'stormSpire',
+  { id: 'shadowCrypt', name: 'Schattengruft', icon: '🕯️', elements: ['shadow', 'poison'], floor: 102, floorsPerRoom: 5, rooms: 12, loot: 6, requires: 'stormSpire',
     description: 'Giftige Nebel und Schatten, die sich bewegen, wenn niemand hinsieht.' },
-  { id: 'crystalCore', name: 'Kristallkern', icon: '💠', elements: ['crystal', 'light', 'metal'], floor: 120, floorsPerRoom: 4, rooms: 12, loot: 9, requires: 'shadowCrypt',
+  { id: 'crystalCore', name: 'Kristallkern', icon: '💠', elements: ['crystal', 'light', 'metal'], floor: 140, floorsPerRoom: 6, rooms: 12, loot: 9, requires: 'shadowCrypt',
     description: 'Das funkelnde Herz der Welt. Nur die stärksten Monster kommen bis zum Grund.' },
 ];
 

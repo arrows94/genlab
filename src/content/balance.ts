@@ -64,7 +64,7 @@ export const balance: Balance = {
     secondsPerRound: 2,
     techniqueCooldown: 3,
     // Foes: the tower enemy of the dungeon's floor, adjusted for a duel of one hero.
-    enemyMult: { hp: 2, atk: 1.5, def: 1, spd: 1 },
+    enemyMult: { hp: 0.35, atk: 0.3, def: 0.25, spd: 1 },
     // Foe moves: heavy blow after charging, shield against this round's hits, healing.
     heavyMult: 2.2,
     guardShare: 0.3,
@@ -74,6 +74,9 @@ export const balance: Balance = {
     chargePerHit: 0.1,
     chargeWhenHit: 0.15,
     logSize: 8,
+    // Wut like in the tower: from round enrageAfter on the foe hits enrageGrowth harder every round (no endless fights).
+    enrageAfter: 15,
+    enrageGrowth: 0.2,
     // Dungeon: after each room 2–3 ways, drawn by these weights.
     choices: [2, 3],
     roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },

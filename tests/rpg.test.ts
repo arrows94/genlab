@@ -218,7 +218,7 @@ describe('GenLab RPG – Rundenkampf', () => {
 
   it('a guarding foe shields itself before the hero strikes', () => {
     const g = makeGame();
-    const b = newBattle(hero({ spd: 100, atk: 10 }), makeFoe(g, 'guardian', 'sproutle', 0));
+    const b = newBattle(hero({ spd: 100, atk: 1 }), makeFoe(g, 'guardian', 'sproutle', 0));
     expect(foeIntent(g, b.foe)).toBe('guard');
     playRound(g, b, g.content.rpgSkills.get('strike'));
     // A weak hit is swallowed completely by the shield.
@@ -233,6 +233,7 @@ describe('GenLab RPG – Rundenkampf', () => {
     startRpgBattle(g, 'warden', 'sproutle', 0);
     const battle = g.state.rpg.run!.battle!;
     battle.hero.hp = battle.hero.maxHp = 1e6;
+    battle.foe.hp = battle.foe.maxHp = 1e6;
     expect(useRpgSkill(g, special.id).ok).toBe(false);
     expect(useRpgSkill(g, tech.id).ok).toBe(true);
     for (let i = 0; i < tech.cooldown; i++) {

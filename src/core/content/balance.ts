@@ -88,6 +88,9 @@ export interface Balance {
     chargeWhenHit: number;
     /** Lines kept in the fight log. */
     logSize: number;
+    /** From this round on the foe's damage grows by `enrageGrowth` per round (Wut). */
+    enrageAfter: number;
+    enrageGrowth: number;
     /** How many ways are offered after a room: [min, max]. */
     choices: [number, number];
     /** Weights of the room kinds offered (the boss comes on its own at the end). */

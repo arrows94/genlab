@@ -660,8 +660,14 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,
       mehr Fackeln)
       (Runen 🪬 aus Elite, Boss und zerlegter Ausrüstung; `rpgMeta`: Werte, Vorladen, Rast, Fackelhalter, Vielseitig)
-- [ ] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
+- [x] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
       Einfluss auf Idle-Wirtschaft und Äon-Splitter
+      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`; der Held ist
+      ein Mitglied eines gemischten Turm-Teams, das Etage F gerade hält. Stand: Wurzellabyrinth ab F20–30,
+      Glutgrotten ~F60, Flutgewölbe ~F100–120, Sturmspitze ~F120–150, Schattengruft ~F160–180, Kristallkern ~F200+
+      – ohne Rang, Ausrüstung und Runen-Wissen. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter
+      begrenzt der Wochen-Deckel)
+  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil (etwa ×1,5 Stärke) – mehr Streuung?
 
 ## Schritt 5 – Darstellung
 

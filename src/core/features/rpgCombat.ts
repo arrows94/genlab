@@ -332,18 +332,26 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
   return landed;
 }
 
+/** Wut: the foe's damage factor in this round (1 before `enrageAfter`). */
+export function enrageFactor(ctx: GameContext, round: number): number {
+  const cfg = ctx.balance.rpg;
+  return 1 + Math.max(0, round - cfg.enrageAfter) * cfg.enrageGrowth;
+}
+
 /** The foe's move for this round. */
 function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent): void {
   const foe = battle.foe;
   const side: Side = { self: foe, other: battle.hero, isHero: false, perks: NO_PERKS };
   const cfg = ctx.balance.rpg;
   const basic = ctx.content.rpgSkills.list.find((k) => k.slot === 'basic')!;
+  const rage = enrageFactor(ctx, battle.round);
+  if (battle.round === cfg.enrageAfter + 1) battle.log.push(`${foe.name} gerät in Wut!`);
   switch (intent) {
     case 'attack':
-      useSkill(ctx, battle, side, { ...basic, name: 'Angriff' });
+      useSkill(ctx, battle, side, { ...basic, name: 'Angriff' }, rage);
       break;
     case 'heavy':
-      useSkill(ctx, battle, side, { ...basic, name: 'Schwerer Schlag' }, cfg.heavyMult);
+      useSkill(ctx, battle, side, { ...basic, name: 'Schwerer Schlag' }, cfg.heavyMult * rage);
       break;
     case 'charge':
       battle.log.push(`${foe.name} sammelt Kraft …`);
@@ -359,7 +367,7 @@ function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent): void {
     }
     case 'tech': {
       const tech = techniqueFor(ctx, foe.element);
-      if (tech) useSkill(ctx, battle, side, techniqueSkill(ctx, tech));
+      if (tech) useSkill(ctx, battle, side, techniqueSkill(ctx, tech), rage);
       break;
     }
   }
