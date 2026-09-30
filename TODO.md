@@ -488,7 +488,15 @@ flüssiger an; die Mauern selbst ändert erst Schritt 2.
 - [x] Turm-Spalte: Hinweis „nächster Boss in N Etagen“ (die Spalte zeigt nur ±4 Etagen, bis zum Boss sind es bis zu 30)
 - [x] Texte mit Etagenzahlen (auch `CONTENT.md`, `README.md`): die meisten lesen die Zahlen aus `balance`; fest eingetragen sind Erfolge und
       Freischaltungen. Alte Versionshinweise bleiben als Geschichte stehen
-- [ ] Tests und Test-Bots auf die neue Zählung; Äon-Bot vorher/nachher (neu ÷ 3 ≈ alt, wegen 4 s etwas später erreicht)
+- [x] Tests und Test-Bots auf die neue Zählung; Äon-Bot vorher/nachher (neu ÷ 3 ≈ alt, wegen 4 s etwas später erreicht).
+      Erster 28-Tage-Lauf (Seed 2024): Turm zur Mitte 4–9 alte Etagen zurück, am Ende 46,3 statt 49 – Wand-Messung:
+      Jede Zwischenetage würfelte eigenes Element und eigene Gruppengröße (dreimal so viele ungünstige Etagen), und ein
+      Wächter allein war weit oben eine Spitze (Etage 140: Faktor 5,76 statt ~2,8; Einzelgegner schlagen bis zuletzt voll
+      zu). Jetzt teilen die drei kleinen Etagen einer früheren Etage deren Element und Gruppengröße, Wächter behalten die
+      Aufstellung ihrer Etage. Zweiter Lauf (Seed 2024, 28 Tage), neu ÷ 3 gegen alt: Tag 4 17 / 36, Tag 9 48 / 48,
+      Tag 10–28 49,7 / 48–49; Äonen 6 / 5, Talente 13 / 14, Observatorium 3/4 / 4/4. Die langsamen ersten vier Tage sind
+      Streuung: 10 Tage mit Seed 7 (Tag 2 26 / 19, Tag 10 39,7 / 39) und Seed 99 (Tag 4 36,3 / 39, Tag 10 39,7 / 39).
+      Der Stillstand bleibt wie vorher (Seed 7 und 99: 119 bzw. 39 ab Tag 4) – dafür sind Schritt 2 und 3 da
 - [x] Versionshinweis: Der Rekord springt auf das Dreifache – nichts geht verloren, jede alte Etage ist jetzt drei
       kleinere
 
