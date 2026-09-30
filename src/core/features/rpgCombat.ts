@@ -163,13 +163,27 @@ export function xpForLevel(ctx: GameContext, level: number): number {
 }
 
 /**
- * The hero's stats in the other world: its species' base stats, grown by its level there, × (the run's
- * upgrades + equipment + Runen progress). Rarity, genome, infusion and potions do not count – it starts over.
+ * The stats of a species in the other world at level 1: its profile (quick, tough …) scaled to the mean base
+ * species, × its tier's bonus (`tierMult`). Heroes and foes share this yardstick.
+ */
+export function speciesProfile(ctx: GameContext, speciesId: string): Record<(typeof STAT_KEYS)[number], number> {
+  const sp = ctx.content.species.get(speciesId);
+  const mean = meanBaseStats(ctx);
+  // Speed only decides who acts first and adds a little dodging: it weighs half when a profile is scaled.
+  const weight = { hp: 1, atk: 1, def: 1, spd: 0.5 };
+  const total = STAT_KEYS.reduce((sum, k) => sum + weight[k], 0);
+  const ratio = STAT_KEYS.reduce((sum, k) => sum + (weight[k] * (sp.baseStats[k] ?? 0)) / Math.max(1, mean[k]), 0) / total;
+  const tier = ctx.balance.rpg.tierMult[sp.tier] ?? 1;
+  return Object.fromEntries(STAT_KEYS.map((k) => [k, ((sp.baseStats[k] ?? 0) / Math.max(0.01, ratio)) * tier])) as Record<(typeof STAT_KEYS)[number], number>;
+}
+
+/**
+ * The hero's stats in the other world: its species' profile (`speciesProfile`), grown by its level there,
+ * × (the run's upgrades + equipment + Runen progress). Rarity, genome, infusion and potions do not count.
  */
 export function heroStats(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): { hp: number; atk: number; def: number; spd: number } {
-  const base = ctx.content.species.get(c.speciesId).baseStats;
   const grown = 1 + (rpgLevel(ctx, c.id).level - 1) * ctx.balance.rpg.statsPerLevel;
-  const s: Record<string, number> = Object.fromEntries(Object.entries(base).map(([k, v]) => [k, v * grown]));
+  const s: Record<string, number> = Object.fromEntries(Object.entries(speciesProfile(ctx, c.speciesId)).map(([k, v]) => [k, v * grown]));
   const up = upgradeStats(ctx, upgrades);
   for (const item of equippedItems(ctx)) {
     for (const [k, v] of Object.entries(itemValues(ctx, item).stats)) up[k as keyof typeof up] += v ?? 0;
@@ -195,29 +209,51 @@ export function heroCombatant(ctx: GameContext, c: Creature, hp: number, upgrade
   };
 }
 
-/** A foe of the given kind on a floor (tower strength scale), with the species' element. */
-export function makeFoe(ctx: GameContext, enemyId: string, speciesId: string, floor: number): RpgFoe {
+const STAT_KEYS = ['hp', 'atk', 'def', 'spd'] as const;
+
+/** Mean base stats of the base species – the yardstick for foes. */
+function meanBaseStats(ctx: GameContext): Record<(typeof STAT_KEYS)[number], number> {
+  const base = ctx.content.species.list.filter((sp) => sp.tier === 'base');
+  const pool = base.length > 0 ? base : ctx.content.species.list;
+  return Object.fromEntries(STAT_KEYS.map((k) => [k, pool.reduce((sum, sp) => sum + (sp.baseStats[k] ?? 0), 0) / pool.length])) as Record<(typeof STAT_KEYS)[number], number>;
+}
+
+/**
+ * A foe of the given kind and level. Its species only shapes it (a Kieselkauz is tough and slow, a Zephyrix
+ * quick): the profile is scaled to the mean base species without tier bonus, so a mythic boss is not stronger than
+ * a plain foe of its level. It grows by its level like the hero, × the kind's multipliers × `enemyMult`.
+ */
+export function makeFoe(ctx: GameContext, enemyId: string, speciesId: string, level: number): RpgFoe {
   const def = ctx.content.rpgEnemies.get(enemyId);
   const sp = ctx.content.species.get(speciesId);
-  const t = ctx.balance.tower;
-  const m = ctx.balance.rpg.enemyMult;
-  const scale = Math.pow(t.enemyGrowth, Math.max(0, floor));
-  const stat = (k: 'hp' | 'atk' | 'def' | 'spd', grow: number) => Math.max(1, Math.round((t.enemyBase[k] ?? 1) * grow * m[k] * def[k]));
-  const hp = stat('hp', scale);
+  const cfg = ctx.balance.rpg;
+  const lvl = Math.max(1, Math.round(level));
+  const grown = 1 + (lvl - 1) * cfg.statsPerLevel;
+  const profile = speciesProfile(ctx, speciesId);
+  const tier = cfg.tierMult[sp.tier] ?? 1;
+  const stat = (k: (typeof STAT_KEYS)[number]) => Math.max(1, Math.round((profile[k] / tier) * grown * cfg.enemyMult[k] * def[k]));
+  const hp = stat('hp');
   return {
     name: `${def.name} ${sp.name}`,
     speciesId: sp.id,
     element: sp.element,
     hp,
     maxHp: hp,
-    atk: stat('atk', scale),
-    def: stat('def', scale),
-    spd: stat('spd', Math.sqrt(scale)),
+    atk: stat('atk'),
+    def: stat('def'),
+    spd: stat('spd'),
     statuses: [],
     enemy: def.id,
     kind: def.kind,
     step: 0,
+    level: lvl,
   };
+}
+
+/** XP for beating a foe: its kind's XP, growing with its level. */
+export function foeXp(ctx: GameContext, kind: 'fight' | 'elite' | 'boss', level: number): number {
+  const cfg = ctx.balance.rpg;
+  return Math.round(cfg.xp[kind] * Math.pow(cfg.xpFoeGrowth, Math.max(0, level - 1)));
 }
 
 export function newBattle(hero: RpgCombatant, foe: RpgFoe): RpgBattle {

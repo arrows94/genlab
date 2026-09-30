@@ -66,8 +66,8 @@ export const balance: Balance = {
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
     secondsPerRound: 2,
     techniqueCooldown: 3,
-    // Foes: the tower enemy of the dungeon's floor, adjusted for a duel of one hero.
-    enemyMult: { hp: 0.35, atk: 0.3, def: 0.25, spd: 1 },
+    // Foes: base stats of their species, grown by their level like the hero, × these (a duel of one hero).
+    enemyMult: { hp: 0.75, atk: 0.6, def: 0.9, spd: 1 },
     // Foe moves: heavy blow after charging, shield against this round's hits, healing.
     heavyMult: 2.2,
     guardShare: 0.3,
@@ -88,10 +88,14 @@ export const balance: Balance = {
     // each level adds statsPerLevel of the base stats and heals a little. Every level-up (and every won elite fight)
     // offers upgradeChoices upgrades that only last for the run.
     xp: { fight: 10, elite: 25, boss: 40 },
+    // XP of a foe grows with its level (× xpFoeGrowth per level), so deeper dungeons keep the levels coming.
+    xpFoeGrowth: 1.17,
     xpBase: 20,
     xpGrowth: 1.25,
     maxLevel: 60,
     statsPerLevel: 0.12,
+    // The species shapes a monster there (quick, tough …) on a common yardstick; hybrids and mythic forms are stronger.
+    tierMult: { base: 1, hybrid: 1.15, rareHybrid: 1.3, mythic: 1.5 },
     levelHeal: 0.15,
     upgradeChoices: 3,
     eliteUpgrade: true,

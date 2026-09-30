@@ -23,7 +23,7 @@ GENLAB_TIMELINE=1 npx vitest run tests/progression.test.ts --silent=false   # fi
 GENLAB_TIMELINE=1 npx vitest run tests/longrun.test.ts --silent=false       # multi-day idle player
 GENLAB_LONGRUN=1  npx vitest run tests/longrun.test.ts --silent=false       # two weeks, several minutes
 GENLAB_AEON=1     npx vitest run tests/aeon.test.ts --silent=false           # endgame over 4 weeks (tower, relics, anomalies, Äon, talents, Großprojekt), ~20 min; days via GENLAB_AEON_DAYS
-GENLAB_RPG=1      npx vitest run tests/rpgBot.test.ts --silent=false         # GenLab RPG: clear rate per dungeon on the tower scale, loot per Fackel
+GENLAB_RPG=1      npx vitest run tests/rpgBot.test.ts --silent=false         # GenLab RPG: clear rate per dungeon and hero level, loot per Fackel, runs a fresh monster needs
 ```
 
 ## Architecture

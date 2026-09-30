@@ -621,7 +621,8 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Isekai-Umbau (die andere Welt)
 
 - [x] Schritt 1: Stufe-1-Werte aus der Art, dauerhafte Stufe je Monster (`rpgLevel`), Verbesserungen nur im Lauf
-- [ ] Schritt 2: eigene Gegner-Skala nach Dungeon-Stufe statt Turm-Etage, Bot auf Stufe-L-Helden, neu abstimmen
+- [x] Schritt 2: eigene Gegner-Skala nach Dungeon-Stufe statt Turm-Etage, Bot auf Stufe-L-Helden, neu abstimmen
+      (Arten auf gemeinsamem Maßstab, Hybride +15 %, Mythisch +50 %)
 - [ ] Schritt 3: Während eines Laufs zeigt die App nur die andere Welt (keine Reiter, keine Ressourcenleiste, Meldungen
       still ins Nachrichten-Center), kleines Menü mit Ton und „Aufgeben“
 - [ ] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
@@ -667,7 +668,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       passiver Effekt) – so wird jeder Lauf anders
       (`rpgUpgrades`: Werte, Fokus/Kraftspeicher für den Spezialangriff, Lebensraub, Kritisch, Zweite Luft, Drill)
 - [x] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
-      (`rpgDungeons`: Stärke auf der Turm-Skala je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
+      (`rpgDungeons`: Gegnerstufe je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
 - [x] Niederlage beendet den Lauf, gesicherte Beute bleibt
 
 ## Schritt 4 – Belohnungen und Ausrüstung
@@ -681,12 +682,15 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       (Runen 🪬 aus Elite, Boss und zerlegter Ausrüstung; `rpgMeta`: Werte, Vorladen, Rast, Fackelhalter, Vielseitig)
 - [x] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
       Einfluss auf Idle-Wirtschaft und Äon-Splitter
-      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`; der Held ist
-      ein Mitglied eines gemischten Turm-Teams, das Etage F gerade hält. Stand: Wurzellabyrinth ab F20–30,
-      Glutgrotten ~F60, Flutgewölbe ~F100–120, Sturmspitze ~F120–150, Schattengruft ~F160–180, Kristallkern ~F200+
-      – ohne Rang, Ausrüstung und Runen-Wissen. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter
-      begrenzt der Wochen-Deckel)
-  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil (etwa ×1,5 Stärke) – mehr Streuung?
+      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`)
+  - [x] Nach dem Isekai-Umbau: Held = Monster einer Art und Stufe, dazu eine Fortschritts-Simulation (neues Monster
+        ab Stufe 1, neuester Dungeon, nach zwei frühen Niederlagen zurück in den vorigen). Stand (ohne Ausrüstung und
+        Runen): Glutwelpe schafft alle Dungeons in 45–70 Läufen (Stufe ~50), Zephyrix in 120–165, Magmaulwurf
+        (Hybrid) in 20–47; die Stufe beim Sieg liegt nahe der Boss-Stufe (Glutgrotten 17, Flutgewölbe 24, Sturmspitze
+        32, Schattengruft ~42). Der Kieselkauz hängt im Flutgewölbe am Element-Nachteil – dort nimmt man ein anderes
+        Monster. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter begrenzt der Wochen-Deckel
+  - [ ] Im Kristallkern steigt ein Monster sehr schnell (Gegner Stufe 56+ geben viel Erfahrung) – beobachten
+  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil – mehr Streuung?
 
 ## Schritt 5 – Darstellung
 

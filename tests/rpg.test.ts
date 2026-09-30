@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, speciesProfile, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
@@ -191,7 +191,7 @@ describe('GenLab RPG – Rundenkampf', () => {
   }
   const hero = (over: Partial<RpgCombatant> = {}): RpgCombatant => ({ name: 'Held', speciesId: 'emberpup', element: 'fire', hp: 100, maxHp: 100, atk: 20, def: 5, spd: 10, statuses: [], ...over });
 
-  it('foes follow their tower floor and their kind', () => {
+  it('foes follow their level and their kind', () => {
     const g = makeGame();
     const low = makeFoe(g, 'brawler', 'sproutle', 0);
     const high = makeFoe(g, 'brawler', 'sproutle', 30);
@@ -346,7 +346,7 @@ describe('GenLab RPG – Dungeon', () => {
     expect(r.loot).toMatchObject(roomLoot(g, r, 'fight'));
     expect(r.choices.length).toBeGreaterThan(0);
     r.depth = 5;
-    expect(roomFloor(g, r)).toBeGreaterThan(roomFloor(g, { ...r, depth: 1 }));
+    expect(roomLevel(g, r)).toBeGreaterThan(roomLevel(g, { ...r, depth: 1 }));
   });
 
   it('a rest heals and secures the loot; a treasure adds loot', () => {
@@ -442,7 +442,21 @@ describe('GenLab RPG – Stufe in der anderen Welt', () => {
     c.boosts = { atk: 5 };
     c.infusion = { level: 10, ep: 0 };
     expect(rpgLevel(g, c.id)).toMatchObject({ level: 1, into: 0 });
-    expect(heroStats(g, c)).toEqual(g.content.species.get('magmole').baseStats);
+    const plain = createCreature(g, { speciesId: 'magmole', rarity: 'common', source: 'other' });
+    expect(heroStats(g, c)).toEqual(heroStats(g, plain));
+    const profile = speciesProfile(g, 'magmole');
+    expect(heroStats(g, c)).toEqual({ hp: Math.round(profile.hp), atk: Math.round(profile.atk), def: Math.round(profile.def), spd: Math.round(profile.spd) });
+  });
+
+  it('species shape a monster on a common yardstick; hybrids are a bit stronger', () => {
+    const g = makeGame();
+    const power = (id: string) => { const p = speciesProfile(g, id); return p.hp / 20 + p.atk / 6 + p.def / 5; };
+    // A tough species keeps more KP and VER, a quick one more TMP …
+    expect(speciesProfile(g, 'pebblit').def).toBeGreaterThan(speciesProfile(g, 'zephyrix').def);
+    expect(speciesProfile(g, 'zephyrix').spd).toBeGreaterThan(speciesProfile(g, 'pebblit').spd);
+    // … but base species are about equally strong, a hybrid by its tier bonus more.
+    expect(power('magmole') / power('emberpup')).toBeGreaterThan(1.05);
+    expect(power('magmole') / power('emberpup')).toBeLessThan(1.35);
   });
 
   it('grows with every level and keeps its level between runs', () => {
@@ -503,8 +517,9 @@ describe('GenLab RPG – Stufe in der anderen Welt', () => {
     r.hp = before;
     r.offer = ['vigor'];
     chooseUpgrade(g, 0);
-    expect(heroStats(g, c, r.upgrades).hp).toBe(Math.round(before * 1.15));
-    expect(r.hp).toBe(Math.round(before * 1.15));
+    const after = heroStats(g, c, r.upgrades).hp;
+    expect(Math.abs(after - before * 1.15)).toBeLessThanOrEqual(1);
+    expect(r.hp).toBe(after);
     r.upgrades.push('drill');
     for (let i = 0; i < 30; i++) {
       gainXp(g, r, xpToNext(g, rpgLevel(g, c.id).level));
@@ -765,7 +780,7 @@ describe('GenLab RPG – Runen und Zerlegen', () => {
     const first = metaCost(g, 'fighting')!;
     expect(buyMeta(g, 'fighting').ok).toBe(true);
     expect(metaCost(g, 'fighting')!).toBeGreaterThan(first);
-    expect(heroStats(g, c).atk).toBe(Math.round(atk * 1.04));
+    expect(Math.abs(heroStats(g, c).atk - atk * 1.04)).toBeLessThanOrEqual(1);
     for (let i = 0; i < 10; i++) buyMeta(g, 'fighting');
     expect(g.state.rpg.meta['fighting']).toBe(g.content.rpgMeta.get('fighting').maxLevel);
     expect(metaCost(g, 'fighting')).toBeNull();

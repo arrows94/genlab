@@ -427,8 +427,8 @@ export function validateContent(data: ContentData): string[] {
       ref(`${w}.elements`, 'elements', e);
       if (!data.species.some((sp) => sp.element === e)) issues.push(`${w}.elements: keine Art mit Element "${e}"`);
     }
-    num(`${w}.floor`, d.floor, 0);
-    num(`${w}.floorsPerRoom`, d.floorsPerRoom, 0);
+    num(`${w}.level`, d.level, 1, 200);
+    num(`${w}.levelsPerRoom`, d.levelsPerRoom, 0, 20);
     num(`${w}.rooms`, d.rooms, 1, 50);
     num(`${w}.loot`, d.loot, 0);
     ref(`${w}.requires`, 'rpgDungeons', d.requires);

@@ -77,7 +77,7 @@ export interface Balance {
     secondsPerRound: number;
     /** Rounds before the element technique can be used again. */
     techniqueCooldown: number;
-    /** Foe stats = tower enemy of the floor × these (a duel of one hero, not a team). */
+    /** Foe stats = its species' base stats × level growth × these (a duel of one hero, not a team). */
     enemyMult: { hp: number; atk: number; def: number; spd: number };
     /** Damage of a charged heavy blow as a multiple of a normal hit. */
     heavyMult: number;
@@ -100,12 +100,16 @@ export interface Balance {
     roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
     /** XP per won fight; it stays with the monster (its level in the other world). */
     xp: { fight: number; elite: number; boss: number };
+    /** A foe's XP × this per level above 1. */
+    xpFoeGrowth: number;
     /** XP from level n to n+1: xpBase × xpGrowth^(n − 1). */
     xpBase: number;
     xpGrowth: number;
     maxLevel: number;
     /** Each level above 1 adds this share of the species' base stats. */
     statsPerLevel: number;
+    /** Strength of a species tier in the other world (base stats are scaled to a common yardstick first). */
+    tierMult: Record<string, number>;
     /** Share of max HP healed on a level-up. */
     levelHeal: number;
     /** Upgrades offered per level-up (they only last for the run). */

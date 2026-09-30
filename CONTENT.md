@@ -268,19 +268,19 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 // Gegnerart: Zugmuster (wird angekündigt), Multiplikatoren auf die Dungeon-Stärke
 { id: 'brawler', name: 'Wilder', kind: 'normal', pattern: ['attack', 'attack', 'charge', 'heavy'], hp: 1, atk: 1, def: 1, spd: 1 },
 
-// Dungeon: Elemente der Gegner, Stärke auf der Turm-Skala, Räume bis zum Boss, Beute-Faktor, Vorgänger
-{ id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], floor: 20, floorsPerRoom: 3.5, rooms: 9, loot: 1.6, requires: 'rootMaze', description: '…' },
+// Dungeon: Elemente der Gegner, Gegnerstufe im ersten Raum und Anstieg je Raum, Räume bis zum Boss, Beute-Faktor, Vorgänger
+{ id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], level: 8, levelsPerRoom: 0.9, rooms: 9, loot: 1.6, requires: 'rootMaze', description: '…' },
 ```
 
 - `rpgSkills`: genau ein `basic` und ein `special`, dazu `third`-Fähigkeiten – für jede Rolle (`tank`, `attacker`, `fast`) mindestens eine. Die Element-Technik kommt aus `techniques.ts` und wird umgerechnet (`secondsPerRound` Turm-Sekunden = 1 Runde, Abklingzeit `techniqueCooldown`). Zustände zählen in Runden; `value` wie an `RpgSkillDef` beschrieben.
 - `rpgEnemies`: `pattern` aus `attack`, `charge` (danach muss `heavy` folgen), `heavy` (× `heavyMult`), `guard` (Schild `guardShare` × KP ab Rundenbeginn), `heal` (`healShare`), `tech` (Element-Technik). Mindestens eine Art je `kind` (`normal`, `elite`, `boss`).
-- Isekai: In der anderen Welt zählt nur die Art (`baseStats`) und die Stufe dort (`balance.rpg.statsPerLevel`, Erfahrung `xp`/`xpBase`/`xpGrowth`, `maxLevel`); Zuchtwerte zählen nicht.
-- `rpgDungeons`: Gegner der Tiefe d haben die Stärke der Turm-Etage `floor + (d − 1) × floorsPerRoom` × `balance.rpg.enemyMult`. Nach `rooms` Räumen kommt der Boss; sein Sieg öffnet den Dungeon mit `requires` auf diesen.
+- Isekai: In der anderen Welt zählt nur die Art und die Stufe dort; Zuchtwerte zählen nicht. Die Grundwerte der Art werden auf den Maßstab der Grundarten skaliert (Tempo zählt dabei halb) und mit `balance.rpg.tierMult` (Hybrid, Mythisch …) verstärkt, je Stufe kommen `statsPerLevel` dazu (Erfahrung `xp`/`xpBase`/`xpGrowth`, `maxLevel`).
+- `rpgDungeons`: Gegner der Tiefe d haben die Stufe `level + (d − 1) × levelsPerRoom`. Ihre Art formt sie nur (Profil auf den Maßstab der Grundarten skaliert, ohne Stufen-Bonus), die Stärke kommt aus Stufe × Gegnerart × `balance.rpg.enemyMult`. Erfahrung je Gegner: `xp[Art]` × `xpFoeGrowth`^(Stufe − 1). Nach `rooms` Räumen kommt der Boss; sein Sieg öffnet den Dungeon mit `requires` auf diesen.
 - `rpgEvents`: genau zwei Wahlmöglichkeiten; `hp` (Anteil der max. KP, nie tödlich), `loot` (× Beute eines Schatzraums), `secure`; mit `chance` < 1 braucht die Wahl ein `fail`.
 - `rpgUpgrades` (Stufenaufstieg, nur für den Lauf): `stats` und/oder `perks` (`specialPower`, `chargePerRound`, `lifesteal`, `crit`, `regen`, `cooldown`), optional `max`. Mindestens drei ohne `max`.
 - `rpgGear` (Ausrüstung, gehört dem Spieler): `slot` `weapon`/`armor`/`charm`, Werte eines gewöhnlichen Teils; Seltenheit multipliziert (`gearRarityMult`). Wirkt nur im Dungeon.
 - `rpgMeta` (Runen-Wissen, dauerhaft): `cost` × `costGrowth`^Stufe bis `maxLevel`; `effect` je Stufe: `stats`, `torches`, `startCharge`, `restHeal`, `roleSkill`.
-- Balancing: `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false` druckt je Dungeon, wie weit ein Mitglied eines Turm-Teams der Etage F kommt, und die Beute pro Fackel.
+- Balancing: `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false` druckt je Dungeon, wie weit ein Monster der Stufe L kommt, die Beute pro Fackel, und wie viele Läufe ein neues Monster ab Stufe 1 bis zu jedem Dungeon-Sieg braucht.
 
 ## Weitere Inhaltsarten
 

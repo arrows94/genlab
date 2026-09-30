@@ -335,6 +335,8 @@ export interface RpgFoe extends RpgCombatant {
   kind: 'normal' | 'elite' | 'boss';
   /** Position in the move pattern: the shown next move. */
   step: number;
+  /** Level in the other world (missing in fights started before it existed). */
+  level?: number;
 }
 
 /** What happened in the latest round (for sounds and hit animations). */

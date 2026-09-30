@@ -9,7 +9,7 @@ import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
+import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
 export { xpToNext } from './rpgCombat';
 
 /**
@@ -275,13 +275,13 @@ export function leaveRpgRun(ctx: GameContext): ActionResult {
 
 // ---- Kampf ------------------------------------------------------------------
 
-/** Starts a fight of the running run against a foe (the dungeon picks kind, species and floor). */
-export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: string, floor: number): ActionResult {
+/** Starts a fight of the running run against a foe (the dungeon picks kind, species and level). */
+export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: string, level: number): ActionResult {
   const run = ctx.state.rpg.run;
   const hero = rpgHero(ctx);
   if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
   if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
-  run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, floor));
+  run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, level));
   run.battle.charge = Math.min(1, metaEffects(ctx).startCharge);
   return { ok: true };
 }
@@ -311,14 +311,15 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
 
 function winBattle(ctx: GameContext, run: RpgRun): void {
   const kind = run.room === 'boss' ? 'boss' : run.room === 'elite' ? 'elite' : 'fight';
+  const xp = foeXp(ctx, kind, run.battle?.foe.level ?? roomLevel(ctx, run));
   run.battle = null;
   rollLoot(ctx, run, kind);
   if (kind === 'boss') {
-    addRankXp(ctx, run.creatureId, ctx.balance.rpg.xp.boss);
+    addRankXp(ctx, run.creatureId, xp);
     finishRpgRun(ctx, true, true);
     return;
   }
-  gainXp(ctx, run, ctx.balance.rpg.xp[kind]);
+  gainXp(ctx, run, xp);
   if (kind === 'elite' && ctx.balance.rpg.eliteUpgrade) queueOffer(ctx, run);
   roomDone(ctx, run);
 }
@@ -387,10 +388,16 @@ export function chooseUpgrade(ctx: GameContext, index: number): ActionResult {
 
 // ---- Dungeon ------------------------------------------------------------------
 
-/** Strength of the current room on the tower scale. */
-export function roomFloor(ctx: GameContext, run: RpgRun): number {
+/** Level of the foes in a dungeon: in the first room and of its boss (after the last room). */
+export function dungeonLevels(ctx: GameContext, dungeonId: string): { from: number; boss: number } {
+  const d = ctx.content.rpgDungeons.get(dungeonId);
+  return { from: Math.round(d.level), boss: Math.round(d.level + d.rooms * d.levelsPerRoom) };
+}
+
+/** Level of the foes in the current room: the dungeon's level, rising room by room. */
+export function roomLevel(ctx: GameContext, run: RpgRun): number {
   const d = ctx.content.rpgDungeons.get(run.dungeon);
-  return Math.round(d.floor + Math.max(0, run.depth - 1) * d.floorsPerRoom);
+  return Math.round(d.level + Math.max(0, run.depth - 1) * d.levelsPerRoom);
 }
 
 /** Fixed loot of a room kind in this dungeon (before chances and the weekly cap). */
@@ -510,7 +517,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
     case 'boss': {
       const enemyKind = kind === 'fight' ? 'normal' : kind;
       const enemy = ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind));
-      return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomFloor(ctx, run));
+      return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomLevel(ctx, run));
     }
     case 'treasure':
       rollLoot(ctx, run, 'treasure');

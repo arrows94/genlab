@@ -3,7 +3,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
+    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, buyMeta, dungeonLevels, maxTorches, metaCost, salvageItem, salvageValue, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
     rpgCandidates, rpgHero, rpgSkills, startRpgRun, torches, useRpgSkill,
   } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, itemValues, rpgLevel, skillBlocker, thirdSkill, effectiveCooldown } from '@core/features/rpgCombat';
@@ -47,7 +47,7 @@
     const r = game.state.rpg;
     const run = r.run;
     const hero = rpgHero(game);
-    const dungeons = content.rpgDungeons.list.map((d) => ({ d, open: dungeonUnlocked(game, d.id), cleared: r.cleared[d.id] ?? 0, best: r.best[d.id] ?? 0 }));
+    const dungeons = content.rpgDungeons.list.map((d) => ({ d, levels: dungeonLevels(game, d.id), open: dungeonUnlocked(game, d.id), cleared: r.cleared[d.id] ?? 0, best: r.best[d.id] ?? 0 }));
     const next = nextTorchAt(game);
     // Game state is mutated in place: hand the view copies, so every change reaches the template.
     return {
@@ -136,6 +136,7 @@
         <button class="dungeon" class:active={dungeonId === x.d.id} disabled={!x.open} onclick={() => (pickedDungeon = x.d.id)}>
           <span class="d-icon">{x.open ? x.d.icon : '🔒'}</span>
           <span class="d-name">{x.d.name}</span>
+          <span class="small d-level" title="Stufe der Gegner vom ersten Raum bis zum Boss">Stufe {x.levels.from}–{x.levels.boss}</span>
           <span class="small muted">{x.open ? (x.cleared > 0 ? `👑 ×${x.cleared}` : x.best > 0 ? `bis Raum ${x.best}` : `${x.d.rooms} Räume + Boss`) : 'Vorigen Dungeon besiegen'}</span>
         </button>
       {/each}
@@ -273,7 +274,7 @@
               {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">−{formatNumber(h.dmg ?? 0)}</span>{/each}
             </div>
           {/key}
-          <span class="small f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}</span>
+          <span class="small f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{#if b.foe.level} · Stufe {b.foe.level}{/if}</span>
           <div class="bar hp foe-hp small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
           <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
         </div>
@@ -352,6 +353,7 @@
   .dungeon.active, .pick.active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel-2)); }
   .d-icon { font-size: 1.6rem; }
   .d-name { font-weight: 600; }
+  .d-level { color: var(--gold); }
   .picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.4rem; max-height: 50vh; overflow-y: auto; }
   .pick { display: flex; gap: 0.5rem; align-items: center; text-align: left; padding: 0.35rem 0.5rem; }
   .p-body { display: grid; min-width: 0; }
