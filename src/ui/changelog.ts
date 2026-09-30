@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 20,
+    date: '2026-09-30',
+    title: 'Aufgeräumte Reiter und Ritual-Eier zum Selbstöffnen',
+    items: [
+      { text: 'Die Reiter sind jetzt in Bereiche sortiert: Labor, Zucht, Abenteuer, Fortschritt und Optionen. Darunter wählst du den Unterreiter, z. B. Brutstation oder Genlabor. Auf dem Handy passen die Bereiche ohne Scrollen in die untere Leiste.' },
+      { text: 'Reiter, in denen gerade etwas läuft, zeigen eine sich füllende Leiste – etwa Eier in der Brutstation, Erkundungen oder Sequenzierungen. Die Leiste zeigt, was als Nächstes fertig wird – am Computer verrät der Mauszeiger, wie lange es noch dauert. Ein laufender Turm-Lauf schimmert.' },
+      { text: 'Behoben: Nach dem Import eines Spielstands oder dem Übernehmen des Cloud-Spielstands ließ sich kein Brutritual starten – der Knopf reagierte nicht.', feature: 'specialBreeding' },
+      { text: 'Jeder Bereich merkt sich, wo du zuletzt warst. Zähler an den Bereichen zeigen, wo etwas auf dich wartet – auch bei frisch freigeschalteten Reitern.' },
+      { text: 'Ritual-Eier schlüpfen nicht mehr von allein: Ist das Ritual fertig, leuchtet das Ei im Ritualnest und wartet, bis du es mit „✨ Ei öffnen“ aufbrichst – samt großer Enthüllung in der Farbe der Seltenheit. Bis dahin bleibt das Ritualnest belegt; der Zuchtautomat öffnet keine Ritual-Eier.', feature: 'specialBreeding' },
+      { text: 'Die Brutstation zeigt fertige Ritual-Eier als Zähler am Reiter an, und die Benachrichtigung meldet „Ritual-Ei bereit“.', feature: 'specialBreeding' },
+      { text: 'Tempo-Regler in der Turm-Arena: Kämpfe normal (1×), doppelt so schnell (2×) ansehen oder die Wiedergabe überspringen (⏭). Die Wahl bleibt gespeichert.', feature: 'tower' },
+    ],
+  },
+  {
     id: 19,
     date: '2026-09-30',
     title: 'Kein seitliches Wackeln mehr auf dem Handy',

@@ -5,8 +5,8 @@
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, type EggData } from '@core/features/breeding';
-  import { processRemainingMs } from '@core/systems/processes';
+  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, openRitualEgg, type EggData } from '@core/features/breeding';
+  import { isWaiting, processRemainingMs } from '@core/systems/processes';
   import { planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
   import type { AutoBreedConfig, Creature, Process } from '@core/state';
@@ -35,6 +35,10 @@
   let ritualId = $state<string | null>(null);
   let parentB = $state<number | null>(null);
   let search = $state('');
+  /** Ritual egg breaking open right now (short animation before the hatch). */
+  let opening = $state<number | null>(null);
+  /** Hatchling of the last opened ritual egg, shown big with its rarity glow. */
+  let reveal = $state<{ id: number; ritual: string } | null>(null);
 
   const data = $derived.by(() => {
     view.frame;
@@ -126,6 +130,7 @@
     return {
       id: p.id,
       progress: Math.min(1, p.elapsedMs / p.durationMs),
+      ready: isWaiting(game, p),
       remaining: processRemainingMs(game, p),
       parents,
       hues: parents.map((c) => (c ? expressedAppearance(game, c).hue : 180)) as [number, number],
@@ -203,6 +208,22 @@
     parentB = l.b.id;
     ritualId = l.ritual;
   }
+  /** Ritual eggs are opened by hand: crack, then the hatchling is revealed. */
+  function openEgg(id: number, ritual: string) {
+    if (opening !== null) return;
+    opening = id;
+    setTimeout(() => {
+      opening = null;
+      const result = openRitualEgg(game, id);
+      if (act(result) && result.hatched?.[0]) reveal = { id: result.hatched[0].id, ritual };
+    }, prefs.reduceMotion ? 0 : 700);
+  }
+  const revealed = $derived.by(() => {
+    view.frame;
+    const c = reveal ? findCreature(game, reveal.id) : undefined;
+    return c ? { c, sp: content.species.get(c.speciesId), rar: content.rarities.get(c.rarity) } : null;
+  });
+
   function breed() {
     if (parentA === null || parentB === null) return;
     if (act(breedByHand(game, parentA, parentB, data.ritual?.id))) {
@@ -311,7 +332,7 @@
 <div class="nests">
   {#each nestList as n (n.key)}
     {@const egg = n.egg}
-    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ritualnest={n.ritual}>
+    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ready={!!egg?.ready} class:cracking={!!egg && opening === egg.id} class:ritualnest={n.ritual}>
       {#if n.ritual}<span class="rn-label tiny">✨ Ritualnest</span>{/if}
       <div class="egg-wrap">
         {#if egg}
@@ -339,15 +360,38 @@
           {/each}
         </div>
         <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
-        <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
-        <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span>{' '}{/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
-        <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
+        {#if egg.ready}
+          <button class="open-egg" disabled={opening !== null} onclick={() => openEgg(egg.id, egg.ritual?.name ?? 'Brutritual')}>
+            ✨ Ei öffnen
+          </button>
+          <span class="small muted">{#if egg.ritual}{egg.ritual.icon} {egg.ritual.name} · {/if}<span class="gen">Gen {egg.generation}</span></span>
+        {:else}
+          <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
+          <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span>{' '}{/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
+          <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
+        {/if}
       {:else}
         <span class="small muted">{n.ritual ? 'Frei für ein Brutritual' : 'Freies Nest'}</span>
       {/if}
     </article>
   {/each}
 </div>
+
+{#if revealed}
+  <div class="reveal-backdrop" role="presentation" onclick={() => (reveal = null)}>
+    <div class="reveal" class:hybrid={revealed.sp.tier !== 'base'} style="--rc: {revealed.rar.color}" role="dialog" aria-label="Ritual-Ei geöffnet" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (reveal = null)} in:scale={{ duration: 450, start: 0.4 }}>
+      <span class="rays" aria-hidden="true"></span>
+      <span class="small muted">{reveal?.ritual}</span>
+      <span class="reveal-art"><CreatureSvg appearance={look(revealed.c)} shape={revealed.sp.shape} tier={revealed.sp.tier} size={110} shiny={revealed.c.shiny} /></span>
+      <strong class="reveal-name">{revealed.c.name}</strong>
+      <span class="small"><span class="rar">{revealed.rar.name}</span> · {revealed.sp.name}{revealed.sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
+      <div class="reveal-actions">
+        <button onclick={() => { view.detail = revealed.c.id; reveal = null; }}>Details</button>
+        <button class="primary" onclick={() => (reveal = null)}>Weiter</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if data.hatchlings.length}
   <div class="hatched">
@@ -565,6 +609,32 @@
   .soon .egg { animation: wobble 0.45s ease-in-out infinite; }
   @keyframes rock { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; } }
   @keyframes wobble { 0%, 100% { rotate: -9deg; } 50% { rotate: 9deg; } }
+  /* Ritual egg done: it waits, glowing, until the player opens it. */
+  .nest.ready { border-style: solid; border-color: var(--gold); box-shadow: 0 0 16px #f2c14e55; }
+  .ready .egg { animation: wobble 0.9s ease-in-out infinite; }
+  .ready .glow { opacity: 1 !important; animation: pulse 1.4s ease-in-out infinite; }
+  .cracking .egg { animation: crack 0.7s ease-in forwards; }
+  @keyframes pulse { 0%, 100% { scale: 0.9; } 50% { scale: 1.15; } }
+  @keyframes crack { 0% { rotate: 0deg; scale: 1; } 20% { rotate: -14deg; } 40% { rotate: 14deg; } 60% { rotate: -10deg; scale: 1.08; } 100% { rotate: 0deg; scale: 1.35; opacity: 0; filter: brightness(2.5); } }
+  .open-egg { margin: 0.2rem 0; border-color: var(--gold); color: var(--gold); font-weight: 700; }
+  .reveal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: #0009; }
+  .reveal {
+    position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    width: min(20rem, 100%); padding: 1.2rem 1rem 1rem; border-radius: 16px; text-align: center;
+    border: 2px solid var(--rc); background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--rc) 30%, transparent), var(--panel) 70%);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 55%, transparent);
+  }
+  .reveal.hybrid { box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 55%, transparent), 0 0 18px #9b6bffaa; }
+  .rays {
+    position: absolute; left: 50%; top: 38%; width: 30rem; height: 30rem; translate: -50% -50%; z-index: 0; pointer-events: none;
+    background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 22%, transparent) 0 10deg, transparent 10deg 20deg);
+    mask: radial-gradient(circle, #000 20%, transparent 60%); animation: spin 12s linear infinite;
+  }
+  @keyframes spin { to { rotate: 360deg; } }
+  .reveal > :not(.rays) { position: relative; z-index: 1; }
+  .reveal-name { font-size: 1.2rem; }
+  .rar { color: var(--rc); font-weight: 700; }
+  .reveal-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
   .parents { display: flex; align-items: center; gap: 0.2rem; }
   .times { color: var(--muted); font-size: 0.8rem; }
   .gen { color: var(--violet); }

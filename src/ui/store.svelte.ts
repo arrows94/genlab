@@ -126,6 +126,11 @@ function wireEvents(g: Game): void {
   const markUnseen = (tab: string) => {
     if (view.tab !== tab) view.unseen = { ...view.unseen, [tab]: (view.unseen[tab] ?? 0) + 1 };
   };
+  // A brand-new tab gets a badge, so it is found even inside its area of the tab bar.
+  g.bus.on('featureUnlocked', (e) => {
+    const tab = content.features.get(e.feature).tab;
+    if (!e.silent && tab && content.features.list.filter((f) => f.tab === tab && g.state.features[f.id]).length === 1) markUnseen(tab);
+  });
   g.bus.on('eggHatched', (e) => {
     const c = g.state.creatures.find((x) => x.id === e.creatureId);
     if (c) {

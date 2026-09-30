@@ -21,7 +21,8 @@
   let nameStyle = $state(game.state.nameStyle);
   let fileInput: HTMLInputElement | undefined = $state();
   /** A read export waiting for the player to compare and confirm it. */
-  let pending: { state: GameState; savedAt: number } | null = $state(null);
+  /** Raw: a deeply reactive save would be adopted as Svelte proxies (see `sync.conflict`). */
+  let pending: { state: GameState; savedAt: number } | null = $state.raw(null);
   const canShare = shareSupported();
 
   const info = $derived.by(() => {

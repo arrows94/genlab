@@ -5,6 +5,8 @@ import type { System } from './types';
 export interface ProcessHandler {
   /** Called once when the process finishes. */
   complete(ctx: GameContext, process: Process): void;
+  /** True if a finished process waits for the player (e.g. a ritual egg to open) instead of completing on its own. */
+  waitsForPlayer?(ctx: GameContext, process: Process): boolean;
 }
 
 const handlers = new Map<string, ProcessHandler>();
@@ -29,6 +31,11 @@ export function registerResetSurvivor(test: (ctx: GameContext, p: Process) => bo
 
 export function survivesReset(ctx: GameContext, p: Process): boolean {
   return resetSurvivors.some((test) => test(ctx, p));
+}
+
+/** Finished, but held back until the player completes it (`completeProcesses`). */
+export function isWaiting(ctx: GameContext, p: Process): boolean {
+  return p.elapsedMs >= p.durationMs && !!handlers.get(p.kind)?.waitsForPlayer?.(ctx, p);
 }
 
 export function startProcess(ctx: GameContext, kind: string, durationMs: number, data: Record<string, unknown> = {}): Process {
@@ -56,7 +63,9 @@ export const processSystem: System = {
     const finished: Process[] = [];
     for (const p of ctx.state.processes) {
       p.elapsedMs += dtMs * Math.max(0, mods.factor(`process.${p.kind}.speed`));
-      if (p.elapsedMs >= p.durationMs) finished.push(p);
+      if (p.elapsedMs < p.durationMs) continue;
+      p.elapsedMs = p.durationMs;
+      if (!isWaiting(ctx, p)) finished.push(p);
     }
     completeProcesses(ctx, finished);
   },

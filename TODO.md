@@ -69,6 +69,15 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 - [x] Warnung beim Verkaufen und Recyceln von Hand, wenn eine Art dadurch aus dem Stall verschwindet
       (`speciesLostWith`). Ein fester Schutz im Recycling-Automaten wurde wieder verworfen – „je Art behalten“ regelt das
       („keine“ darf auch die letzte nehmen)
+- [x] Reiter in Bereiche gruppiert (Labor, Zucht, Abenteuer, Fortschritt, Optionen; `GROUPS` in `App.svelte`):
+      Unterreiter als zweite Zeile, auf dem Handy fünf feste Knöpfe unten ohne Scrollen. Ein Bereich mit nur einem
+      Reiter zeigt diesen direkt (frühes Spiel wie vorher), jeder Bereich merkt sich den letzten Reiter
+      (`viewState.nav`), Zähler werden am Bereich summiert, neu freigeschaltete Reiter bekommen einen Zähler
+- [x] Reiter zeigen laufende Arbeit als sich füllende Leiste (`core/tabActivity.ts`): der Vorgang, der als Nächstes
+      fertig wird; ein Turm-Lauf schimmert endlos. Fertige Ritual-Eier zählen als Neuigkeit (Zähler), nicht als Arbeit
+- [x] Fehler behoben: Nach Import oder übernommenem Cloud-Spielstand war der ganze Spielstand ein Svelte-Proxy
+      (`$state` im Import-Dialog und in `sync.conflict`) – `structuredClone` der Keimprobe warf, das Brutritual
+      startete ohne Meldung nicht. Jetzt `$state.raw`
 
 # TODO – Endgame
 
@@ -171,6 +180,7 @@ nicht ausgearbeitet – vor dem Umsetzen Umfang, Freischaltung und Splitter-Ertr
 - [ ] **Basebuilding / Worldbuilding / Universebuilding**
 - [ ] **Isekai mit einem ausgewählten Monster**: RPG-Gefühl – stärkere Monster kosten neue Ressourcen oder
       starten wieder auf Stufe 1
+      → ausgearbeitet unter „TODO – GenLab RPG“
 
 # TODO – Langzeitmotivation (Idle über Tage und Wochen)
 
@@ -404,7 +414,8 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Technik-Namen einblenden, Zustands-Symbole, kritische Treffer, Brand/Gift-Schaden, Rückschaden, Schild
 - [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
       nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
-- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
+- [x] Tempo-Regler für die Wiedergabe (1×/2×/überspringen) in der Kopfzeile der Arena, gemerkt in `viewState.tower`
+- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen)
 - [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
 
 ## Leitplanken
@@ -412,3 +423,139 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Kämpfe bleiben deterministisch (Spiel-RNG im Spielstand) und offline schnell berechenbar – Simulation ohne Grafik
 - [x] Alte Spielstände: Aufstellung (Reihen) hat einen Standard (alle vorne), nichts muss neu eingestellt werden
 - [x] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen (je Schritt)
+
+# TODO – Turm: feinere Etagen und Genom-Keller
+
+## Etagen ×3 (heute Etage 10 = künftig Etage 30)
+
+Aus jeder Etage werden drei kleinere. Der Aufstieg fühlt sich flüssiger an, und die Stärke-Kurve bleibt gleich,
+wenn alle etagenbezogenen Zahlen mitwandern.
+
+- [ ] Gegner-Wachstum je Etage 1,11^(1/3) ≈ 1,0354 statt 1,11 (`tower.enemyGrowth`)
+- [ ] Alle Etagen-Schwellen ×3: `bossEvery` 30, `checkpointEvery` 30, `bossTraitFromFloor` 60, `milestoneEvery` 150,
+      `groupFromFloor` 36, `companionsFromFloor` 60, `phaseFromFloor` 90, `catalystEvery` 30, `alleleEvery` 75,
+      `weeklyBoss.minFloor` 30, `timeCrystals.towerEvery` 75, Erfolge `towerMilestones` ×3
+- [ ] Ertrag je Etage anpassen (`tokensPerFloor`, `tokenGrowthPerFloor`), damit Turm-Marken pro Stunde gleich bleiben
+      – oder bewusst etwas mehr
+- [ ] Tempo entscheiden: Kampfpause `fightIntervalSec` (8 s) auf etwa ein Drittel senken, sonst dauert derselbe
+      Fortschritt dreimal so lang. Offline-Berechnung mit dreimal so vielen Kämpfen messen
+- [ ] Spielstand-Migration (`MIGRATIONS`): Rekord, aktuelle Etage, Kontrollpunkte, erreichte Meilensteine und
+      Wochen-Boss-Etage ×3
+- [ ] Texte mit Etagenzahlen durchsuchen (Forschung, Talente, Hinweise wie „alle 10 Etagen“, Boss-Vorschau)
+- [ ] Tests und Test-Bots auf die neue Zählung umstellen; Äon-Bot vorher/nachher vergleichen (neu ÷ 3 = alt)
+- [ ] Eintrag in `changelog.ts`: Der Rekord springt auf das Dreifache – den Spielern erklären, dass nichts verloren geht
+
+## Genom-Keller (Gegenstück zum Turm, ersetzt die Idee „Dunkler Turm“)
+
+Statt eines zweiten Turms geht es nach unten: ein Keller unter dem Genom-Turm, der mit jedem Sieg eine Ebene tiefer
+wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himmel.
+
+- [ ] **Begrenzte Versuche** statt Dauerkampf: Muster wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`), Zahlen
+      in `balance.ts`. Ein Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt
+- [ ] **Schalter mit Animation** zum Wechsel zwischen Turm und Keller: im Turm-Tab ein Umschalter (▲ Turm / ▼ Keller);
+      beim Wechsel fährt die Ansicht durch den Boden nach unten bzw. zurück nach oben (Aufzug oder Wendeltreppe),
+      `.reduce-motion` = sofortiger Wechsel. Der zuletzt gewählte Bereich bleibt in `viewState`
+- [ ] Grundidee festlegen – Vorschläge:
+  - Eigener Tiefen-Rekord, eigene Kontrollpunkte, eigenes Team (eine Kreatur steht nie in Turm und Keller zugleich)
+  - Härtere Regeln: steilere Gegner-Kurve, Schatten-Aura (Heilung halbiert), mehr Boss-Merkmale,
+    oder eine wöchentlich wechselnde Regel
+  - Freischaltung: Etage 150 im Turm (neue Zählung) oder erster Äon
+  - Belohnung: eigene Währung (z. B. „Schattenmarken“) für dunkle Relikte – und eine weitere Äon-Splitter-Quelle
+    (siehe Endgame → „Weitere Splitter-Quellen“)
+  - Überschneidung mit der „Tiefenexpedition“ (Endgame → Später) und dem Dungeon im GenLab RPG prüfen – nicht drei
+    Systeme bauen, die alle „immer tiefer“ sind
+- [ ] Technik: `features/tower.ts` so verallgemeinern, dass Turm und Keller aus Daten entstehen (Definitionen in
+      `content/endgame.ts`, Richtung auf/ab) statt einer Kopie des Turm-Codes
+- [ ] Arena im Keller-Stil (Gewölbe, Fackellicht, dunkle Farben, Gegner-Tönung); Ebenen zählen nach unten (−1, −2 …)
+
+# TODO – Brut
+
+- [x] **Brutritual muss selbst geöffnet werden**: Ritual-Eier schlüpfen nicht mehr von allein, sondern bleiben
+      fertig im Ritualnest liegen, bis der Spieler sie antippt
+  - [x] Core: `ProcessHandler.waitsForPlayer` – ein fertiger Vorgang bleibt stehen (`isWaiting`), auch in der
+        Offline-Zeit über dem Deckel; Aktion `openRitualEgg` schließt ihn ab und gibt die Schlüpflinge zurück
+  - [x] Das Ritualnest bleibt belegt, bis das Ei geöffnet ist (kein neues Ritual davor)
+  - [x] Enthüllung beim Öffnen: Ei wackelt, bricht auf, Karte mit Strahlen in der Farbe der Seltenheit;
+        mit reduzierter Bewegung sofort
+  - [x] Hinweis: Zähler am Reiter Brutstation (`readyRitualEggs`), Benachrichtigung „Ritual-Ei bereit ✨“ statt
+        „Ei geschlüpft“
+  - [x] Der Zuchtautomat öffnet Ritual-Eier nicht – das bleibt der Moment des Spielers
+  - [x] Test-Bot (`tests/longrun.ts`) öffnet fertige Ritual-Eier selbst; Changelog-Eintrag
+
+# TODO – GenLab RPG (ein Monster, aktiver Dungeon)
+
+Ein einzelnes Monster zieht allein in einen Dungeon oder auf Erkundung. Anders als der Rest des Spiels wird hier
+aktiv und rundenbasiert gespielt: drei Fähigkeiten und eine stärkere Fähigkeit. Optisch wie Genlab (dieselben
+Kreaturen, Farben und Zustands-Symbole), aber als eigener, klar abgetrennter Bereich „GenLab RPG“. Roguelite: Stufen
+gelten nur im Lauf, die Belohnungen (Zeitkristalle, wertvolle Gegenstände, Ausrüstung) bleiben.
+Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → Ideen) ab.
+
+## Vor dem Start klären
+
+- [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
+- [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
+      wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
+      Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
+  - [ ] Offen: Wie schnell wächst der Rang, was bringt er je Stufe, und was passiert mit ihm beim Verkaufen,
+        Recyceln oder bei der Vererbung (Vorschlag: Rang hängt an der Kreatur und geht mit ihr verloren)?
+- [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
+      Turm-Kurve)
+
+## Schritt 1 – Grundlage und Spam-Schutz
+
+- [ ] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
+      mit dem Spiel-RNG, übersteht Neuladen, pausiert offline
+- [ ] Monster auswählen: Es ist während des Laufs beschäftigt (eigener Job), `canConsume` schützt es
+- [ ] **Eintritts-Ressource gegen Spammen**, Vorschlag „Fackeln“ 🔥: 1 neue alle 6 h, höchstens 3 gespeichert
+      (Muster wie `weeklyBoss.attemptsPerDay` / `maxAttempts`); weitere aus Gen-Aufträgen, Wochen-Boss und
+      Turm-Meilensteinen; Zahlen in `balance.ts`
+- [ ] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
+- [ ] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
+
+## Schritt 2 – Rundenkampf
+
+- [ ] Ablauf: Spieler wählt eine Fähigkeit, dann handelt der Gegner; Tempo (TMP) bestimmt, wer zuerst zieht
+- [ ] Drei Fähigkeiten aus dem Monster abgeleitet: Grundangriff, Element-Technik (wie im Turm, `content/techniques.ts`),
+      eine dritte aus Fähigkeiten oder Erbanlagen (Schutz, Heilung, Gift …); mit Abklingzeit in Runden
+- [ ] Eine stärkere Fähigkeit (Spezialangriff), lädt sich über Treffer und Runden auf
+- [ ] Werte aus den Zuchtwerten (KP, ANG, VER, TMP), Element-Vorteil wie im Turm – gute Zucht zahlt sich aus
+- [ ] Gegner zeigen ihren nächsten Zug an (Angriff, Aufladen, Schild), damit jede Wahl zählt
+- [ ] Kampf-Logik ohne DOM, testbar in Node; Inhalte (Gegner, Fähigkeiten) als Daten mit Prüfung in `validate.ts`
+
+## Schritt 3 – Dungeon und Roguelite
+
+- [ ] Dungeon aus Räumen: Kampf, Elite, Schatz, Rast (heilen, Beute sichern), Ereignis, Boss am Ende;
+      nach jedem Raum Wahl aus 2–3 Wegen
+- [ ] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
+      passiver Effekt) – so wird jeder Lauf anders
+- [ ] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
+- [ ] Niederlage beendet den Lauf, gesicherte Beute bleibt
+
+## Schritt 4 – Belohnungen und Ausrüstung
+
+- [ ] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
+- [ ] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
+      und Äon, kann jedem Monster angelegt werden
+- [ ] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,
+      mehr Fackeln)
+- [ ] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
+      Einfluss auf Idle-Wirtschaft und Äon-Splitter
+
+## Schritt 5 – Darstellung
+
+- [ ] Eigener Bildschirm „GenLab RPG“ (auf dem Handy Vollbild), Raumkarte, Fähigkeitsknöpfe unten in Daumenreichweite
+- [ ] Kämpfer, Zustände und Zahlen wie in der Turm-Arena wiederverwenden; `.reduce-motion` beachten
+- [ ] Sound-Hooks gleich mit anlegen (siehe „TODO – Sound“)
+
+## Weitere Ideen
+
+- [ ] Tages-Dungeon: feste Karte für alle Läufe des Tages, eigene Bestenliste im Spielstand
+- [ ] Dungeon-Fundstück: Ei einer Art, die es nur dort gibt (neuer Dex-Eintrag)
+- [ ] Gefährten-Ereignis: ein zweites Monster hilft für ein paar Runden
+- [ ] „Tiefenexpedition“ (Endgame → Später) mit diesem Dungeon zusammenlegen statt getrennt bauen
+
+## Leitplanken
+
+- [ ] Das Idle-Spiel bleibt Hauptsache: RPG ist freiwillig, seine Belohnungen beschleunigen nur
+- [ ] Deterministisch und im Spielstand; Zahlen in `balance.ts`, Inhalte in `content/`, Regeln in `core`
+- [ ] Alte Spielstände: neue Felder mit Standardwerten, keine Migration nötig

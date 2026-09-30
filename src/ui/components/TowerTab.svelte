@@ -11,6 +11,7 @@
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
+  import { viewState, type ReplaySpeed } from '../viewState.svelte';
   import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
@@ -177,7 +178,7 @@
     popups = [];
     marks = {};
     if (lr.floor % game.balance.tower.bossEvery === 0) play('drum');
-    if (prefs.reduceMotion) return finish(lr, key, seconds);
+    if (prefs.reduceMotion || viewState.tower.replaySpeed === 0) return finish(lr, key, seconds);
     // One fixed time scale for every fight (short fights stay short, long ones long);
     // only fights that would outlast the pause until the next floor are sped up.
     const budgetMs = Math.max(900, Math.min(fightIntervalMs(game) * 0.85 - 400, seconds * REPLAY_MS_PER_SEC));
@@ -185,7 +186,10 @@
     let last = performance.now();
     const step = (now: number) => {
       if (!replay || replay.key !== key) return;
-      const clock = Math.min(seconds, replay.clock + (now - last) * rate);
+      // Tempo-Regler: 2× runs the clock twice as fast, „überspringen“ jumps to the result.
+      const speed = viewState.tower.replaySpeed;
+      if (speed === 0) return finish(lr, key, seconds);
+      const clock = Math.min(seconds, replay.clock + (now - last) * rate * speed);
       last = now;
       let { idx, attacker, target } = replay;
       const hp = [...replay.hp];
@@ -230,6 +234,12 @@
   });
 
   onDestroy(stopReplay);
+
+  const SPEEDS: { v: ReplaySpeed; label: string; title: string }[] = [
+    { v: 1, label: '1×', title: 'Normale Wiedergabe' },
+    { v: 2, label: '2×', title: 'Doppelt so schnell' },
+    { v: 0, label: '⏭', title: 'Wiedergabe überspringen – gleich das Ergebnis zeigen' },
+  ];
 
   /** Fill (0…1) of a fighter's action gauge at fight time `clock`. */
   const gauge = (clock: number, interval: number) => (interval > 0 ? (clock % interval) / interval : 0);
@@ -486,6 +496,11 @@
       {#if arena.mode === 'fight'}
         <span class="clock num" title="Kampfzeit (Limit {game.balance.tower.maxFightSec} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
       {/if}
+      <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
+        {#each SPEEDS as s (s.v)}
+          <button role="radio" aria-checked={viewState.tower.replaySpeed === s.v} class:on={viewState.tower.replaySpeed === s.v} title={s.title} onclick={() => (viewState.tower.replaySpeed = s.v)}>{s.label}</button>
+        {/each}
+      </span>
     </div>
     {#if arena.mode === 'fight'}
       <div class="timebar" title="Kampfzeit bis zum Limit von {game.balance.tower.maxFightSec} s"><div style="width: {Math.min(1, arena.clock / game.balance.tower.maxFightSec) * 100}%"></div></div>
@@ -790,6 +805,10 @@
   }
   .arena-head { display: flex; align-items: center; gap: 0.6rem; }
   .clock { margin-left: auto; font-weight: 700; font-size: 0.85rem; padding: 0.1rem 0.5rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); }
+  .speed { display: inline-flex; margin-left: auto; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+  .clock ~ .speed { margin-left: 0; }
+  .speed button { border: 0; border-radius: 0; padding: 0.1rem 0.45rem; font-size: 0.75rem; background: var(--bg-2); }
+  .speed button.on { background: var(--petrol); color: #fff; }
   .timebar { height: 3px; margin-top: 0.35rem; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
   .timebar div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold), var(--danger)); background-size: 100vw 100%; }
   .turns { display: flex; align-items: center; gap: 0.25rem; margin-top: 0.45rem; padding: 0.2rem 0.4rem; border-radius: 99px; background: #0006; border: 1px solid var(--line); overflow: hidden; }

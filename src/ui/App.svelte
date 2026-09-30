@@ -1,10 +1,14 @@
 <script lang="ts">
-  import type { Component } from 'svelte';
+  import { untrack, type Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
+  import { readyRitualEggs } from '@core/features/breeding';
+  import { tabActivity, type TabActivity } from '@core/tabActivity';
+  import { formatDuration } from '@core/format';
   import { fulfillableCount } from '@core/features/contracts';
   import { dailyAvailable } from '@core/features/daily';
   import { game, view, init, openTab } from './store.svelte';
   import { loadPrefs, prefs } from './prefs.svelte';
+  import { viewState } from './viewState.svelte';
   import { moodFor, setMusic } from './music';
   import { play } from './sound';
   import ResourceBar from './components/ResourceBar.svelte';
@@ -58,16 +62,62 @@
     settings: { label: 'Optionen', icon: '⚙️', component: SettingsTab },
   };
 
+  /**
+   * Areas of the tab bar: each groups related tabs, shown as one button (sub-tabs in a second row).
+   * New tabs join an area here; a tab missing from every area gets an area of its own.
+   */
+  const GROUPS: { id: string; label: string; icon: string; tabs: string[] }[] = [
+    { id: 'base', label: 'Labor', icon: '🧬', tabs: ['lab', 'facilities', 'research', 'market'] },
+    { id: 'breed', label: 'Zucht', icon: '🥚', tabs: ['breeding', 'genetics', 'recycler', 'contracts'] },
+    { id: 'adventure', label: 'Abenteuer', icon: '🧭', tabs: ['expedition', 'tower', 'anomalies'] },
+    { id: 'progress', label: 'Fortschritt', icon: '♾️', tabs: ['prestige', 'aeon', 'dex', 'stats'] },
+    { id: 'settings', label: 'Optionen', icon: '⚙️', tabs: ['settings'] },
+  ];
+
   const tabs = $derived.by(() => {
     view.frame;
     return [...unlockedTabs(game).filter((t) => TABS[t]), 'settings'];
+  });
+  /** Areas with at least one unlocked tab; an area with a single tab shows as that tab (as in the early game). */
+  const groups = $derived.by(() => {
+    const grouped = new Set(GROUPS.flatMap((g) => g.tabs));
+    const all = [...GROUPS.slice(0, -1), ...tabs.filter((t) => !grouped.has(t)).map((t) => ({ id: t, label: TABS[t]!.label, icon: TABS[t]!.icon, tabs: [t] })), GROUPS.at(-1)!];
+    return all
+      .map((g) => ({ ...g, tabs: g.tabs.filter((t) => tabs.includes(t)) }))
+      .filter((g) => g.tabs.length > 0)
+      .map((g) => (g.tabs.length === 1 ? { ...g, label: TABS[g.tabs[0]!]!.label, icon: TABS[g.tabs[0]!]!.icon } : g));
+  });
+  const activeGroup = $derived(groups.find((g) => g.tabs.includes(view.tab)) ?? groups[0]!);
+  /** An area opens where the player left it. */
+  function openGroup(g: (typeof groups)[number]) {
+    const last = viewState.nav.last[g.id];
+    openTab(last && g.tabs.includes(last) ? last : g.tabs[0]!);
+  }
+  $effect(() => {
+    const tab = view.tab;
+    const g = untrack(() => groups.find((x) => x.tabs.includes(tab)));
+    if (g && untrack(() => viewState.nav.last[g.id]) !== tab) viewState.nav.last[g.id] = tab;
   });
   const badges = $derived.by((): Record<string, number> => {
     view.frame;
     // A voyage waiting for its decision counts as news in the expedition tab.
     const voyage = game.state.voyage.pending ? 1 : 0;
-    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0), tower: (view.unseen.tower ?? 0) + (game.state.features['weeklyBoss'] && game.state.tower.team.length > 0 && game.state.weeklyBoss.damage < game.state.weeklyBoss.maxHp ? game.state.weeklyBoss.attempts : 0) };
+    return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0), breeding: (view.unseen.breeding ?? 0) + readyRitualEggs(game).length, tower: (view.unseen.tower ?? 0) + (game.state.features['weeklyBoss'] && game.state.tower.team.length > 0 && game.state.weeklyBoss.damage < game.state.weeklyBoss.maxHp ? game.state.weeklyBoss.attempts : 0) };
   });
+  /** Work running in each tab (filling bar under the tab). */
+  const activity = $derived.by(() => {
+    view.frame;
+    return tabActivity(game);
+  });
+  /** An area shows the task of its tabs that finishes next; endless work (tower) only if nothing else runs. */
+  function groupActivity(g: { tabs: string[] }): TabActivity | undefined {
+    const list = g.tabs.map((t) => activity[t]).filter((a): a is TabActivity => !!a);
+    const finite = list.filter((a) => !a.loop);
+    return (finite.length ? finite : list).sort((a, b) => a.remainingMs - b.remainingMs)[0];
+  }
+  const activityTitle = (a: TabActivity | undefined) =>
+    !a ? undefined : a.loop ? 'Läuft gerade' : `${a.count === 1 ? 'Läuft gerade' : `${a.count} Vorgänge laufen`} – fertig in ${formatDuration(a.remainingMs)}`;
+  const groupBadge = (g: { tabs: string[] }) => g.tabs.reduce((sum, t) => sum + (badges[t] ?? 0), 0);
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 
   loadPrefs();
@@ -98,6 +148,10 @@
   });
 </script>
 
+{#snippet workBar(a: TabActivity)}
+  <span class="work" class:loop={a.loop} aria-hidden="true"><span style="width: {a.loop ? 100 : Math.max(4, a.progress * 100)}%"></span></span>
+{/snippet}
+
 {#if !view.ready}
   <div class="splash">
     <DnaHelix pairs={14} width={200} height={44} />
@@ -117,15 +171,31 @@
 
   <WeeklyBanner />
 
-  <nav bind:this={navEl}>
-    {#each tabs as t (t)}
-      <button class:active={view.tab === t} onclick={() => openTab(t)}>
-        <span class="icon">{TABS[t]!.icon}</span>
-        <span class="label">{TABS[t]!.label}</span>
-        {#if badges[t]}<span class="badge num">{badges[t]}</span>{/if}
+  <nav aria-label="Bereiche">
+    {#each groups as g (g.id)}
+      {@const count = groupBadge(g)}
+      {@const work = groupActivity(g)}
+      <button class:active={activeGroup.id === g.id} aria-current={activeGroup.id === g.id ? 'page' : undefined} title={activityTitle(work)} onclick={() => openGroup(g)}>
+        <span class="icon">{g.icon}</span>
+        <span class="label">{g.label}</span>
+        {#if count}<span class="badge num">{count}</span>{/if}
+        {#if work}{@render workBar(work)}{/if}
       </button>
     {/each}
   </nav>
+  {#if activeGroup.tabs.length > 1}
+    <div class="subtabs" role="tablist" aria-label={activeGroup.label} bind:this={navEl}>
+      {#each activeGroup.tabs as t (t)}
+        {@const work = activity[t]}
+        <button role="tab" aria-selected={view.tab === t} class:active={view.tab === t} title={activityTitle(work)} onclick={() => openTab(t)}>
+          <span class="icon">{TABS[t]!.icon}</span>
+          <span>{TABS[t]!.label}</span>
+          {#if badges[t]}<span class="dot num">{badges[t]}</span>{/if}
+          {#if work}{@render workBar(work)}{/if}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   <main>
     {#key view.tab}
@@ -167,13 +237,35 @@
     margin: 0; font-size: 1.5rem; letter-spacing: 0.08em;
     background: linear-gradient(90deg, var(--teal), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  nav { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  nav { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
   nav button { position: relative; display: flex; gap: 0.35rem; align-items: center; }
   nav button.active { border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }
   .badge {
     position: absolute; top: -6px; right: -6px; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem;
     border-radius: 999px; background: var(--violet); font-size: 0.7rem; display: grid; place-items: center;
   }
+
+  /* Tabs of the chosen area */
+  .subtabs {
+    display: flex; gap: 0.25rem; margin-bottom: 1rem; padding: 0.25rem; overflow-x: auto; scrollbar-width: none;
+    border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); width: fit-content; max-width: 100%;
+  }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtabs button {
+    display: flex; align-items: center; gap: 0.3rem; flex: 0 0 auto; padding: 0.25rem 0.75rem; font-size: 0.85rem;
+    border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--muted);
+  }
+  .subtabs button:hover { color: var(--text); }
+  .subtabs button.active { color: var(--text); border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }
+  .dot { min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; border-radius: 999px; background: var(--violet); color: #fff; font-size: 0.65rem; display: grid; place-items: center; }
+
+  /* Running work: a thin bar along the bottom edge of the tab, filling up until the next task is done. */
+  .subtabs button { position: relative; }
+  .work { position: absolute; left: 12%; right: 12%; bottom: 3px; height: 3px; border-radius: 99px; background: #ffffff14; overflow: hidden; pointer-events: none; }
+  .subtabs .work { bottom: 1px; height: 2px; }
+  .work span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width 0.2s linear; }
+  .work.loop span { background: linear-gradient(90deg, transparent, var(--teal), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: work-sweep 1.6s linear infinite; }
+  @keyframes work-sweep { from { background-position: -100% 0; } to { background-position: 200% 0; } }
 
   .page { animation: fade-in 0.2s ease-out; }
 
@@ -189,11 +281,16 @@
       position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; margin: 0;
       padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom));
       background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
-      border-top: 1px solid var(--line); flex-wrap: nowrap; overflow-x: auto;
+      border-top: 1px solid var(--line); flex-wrap: nowrap; gap: 0.3rem;
     }
-    nav button { flex: 1 0 auto; flex-direction: column; gap: 0.1rem; padding: 0.35rem 0.5rem; font-size: 0.7rem; min-width: 4.2rem; }
-    nav { scrollbar-width: none; }
-    nav::-webkit-scrollbar { display: none; }
+    /* At most five areas: they always fit, no scrolling. */
+    nav button { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 0.1rem; padding: 0.35rem 0.2rem; font-size: 0.7rem; }
+    nav .label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     nav .icon { font-size: 1.2rem; }
+    nav .badge { right: 2px; }
+    /* Up to four sub-tabs share the width; the area's icon is already in the bottom bar. */
+    .subtabs { margin-bottom: 0.6rem; width: auto; }
+    .subtabs button { flex: 1 1 auto; justify-content: center; font-size: 0.78rem; padding: 0.3rem 0.4rem; }
+    .subtabs .icon { display: none; }
   }
 </style>

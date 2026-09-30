@@ -10,7 +10,7 @@ import { stableFree } from './stable';
 import { lineageDepth, recordLineage } from './dynasty';
 import { foundFamily, offspringName } from '../names';
 import { trySpend } from '../resources';
-import { registerProcessHandler, startProcess } from '../systems/processes';
+import { completeProcesses, isWaiting, registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -49,6 +49,21 @@ export function nestEggs(ctx: GameContext) {
 /** Eggs in the Ritualnest. */
 export function ritualEggs(ctx: GameContext) {
   return eggs(ctx).filter((p) => !!(p.data as EggData).ritual);
+}
+
+/** Ritual eggs that are done and wait for the player to open them (they keep their place in the Ritualnest). */
+export function readyRitualEggs(ctx: GameContext) {
+  return ritualEggs(ctx).filter((p) => isWaiting(ctx, p));
+}
+
+/** Opens a finished ritual egg – only the player does this, never the Zuchtautomat. Returns the hatchlings. */
+export function openRitualEgg(ctx: GameContext, processId: number): ActionResult & { hatched?: Creature[] } {
+  const egg = ritualEggs(ctx).find((p) => p.id === processId);
+  if (!egg) return { ok: false, reason: 'Dieses Ritual-Ei gibt es nicht mehr.' };
+  if (!isWaiting(ctx, egg)) return { ok: false, reason: 'Das Ritual-Ei ist noch nicht fertig.' };
+  const before = new Set(ctx.state.creatures.map((c) => c.id));
+  completeProcesses(ctx, [egg]);
+  return { ok: true, hatched: ctx.state.creatures.filter((c) => !before.has(c.id)) };
 }
 
 export function offspringGeneration(a: Creature | undefined, b: Creature | undefined): number {
@@ -257,6 +272,8 @@ function snapshot(c: Creature): AncestorInfo {
 }
 
 registerProcessHandler(EGG, {
+  // Ritual eggs wait in the Ritualnest until the player opens them.
+  waitsForPlayer: (_ctx, proc) => !!(proc.data as EggData).ritual,
   complete(ctx, proc) {
     const data = proc.data as EggData;
     const live = data.parents.map((id) => findCreature(ctx, id));
