@@ -254,11 +254,11 @@ export const balance: Balance = {
     xpPerFloor: 1 / 30,
     xpBossMult: 10,
     xpRankBase: 100,
-    xpRankStep: 6.5,
+    xpRankStep: 9,
     xpRankBonus: 0.02,
-    // Entschlossenheit against long stalls: +10 % per day without a new record, at most +50 %.
-    resolvePerDay: 0.1,
-    resolveCap: 0.5,
+    // Entschlossenheit against long stalls: +15 % per day without a new record, at most +60 %.
+    resolvePerDay: 0.15,
+    resolveCap: 0.6,
     milestoneModifiers: [
       { target: 'tower.damage', op: 'pct', value: 0.15 },
       { target: 'production.food', op: 'pct', value: 0.1 },
