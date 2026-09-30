@@ -43,8 +43,9 @@
 {/if}
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: #000a; display: grid; place-items: center; z-index: 30; padding: 1rem; }
-  .modal { width: min(420px, 100%); }
+  /* Scrollable backdrop + margin:auto: centred, but a long summary can still be scrolled to its button. */
+  .backdrop { position: fixed; inset: 0; background: #000a; display: flex; flex-direction: column; overflow-y: auto; z-index: 30; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+  .modal { margin: auto; width: min(420px, 100%); flex: none; }
   ul { list-style: none; padding: 0; }
   .small { font-size: 0.85rem; }
 </style>

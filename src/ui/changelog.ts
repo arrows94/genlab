@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 19,
+    date: '2026-09-30',
+    title: 'Kein seitliches Wackeln mehr auf dem Handy',
+    items: [
+      { text: 'Auf dem iPhone (als Web-App vom Home-Bildschirm) ließ sich die Seite seitlich verschieben, sobald die Ressourcenleiste breiter als der Bildschirm war. Das ist behoben.' },
+      { text: '„Was ist neu?“ und andere Fenster lassen sich auch auf kleinen Bildschirmen immer schließen – lange Texte scrollen, der Knopf bleibt sichtbar.' },
+      { text: 'Bestenliste und „Letzte Läufe“ im Turm passen jetzt auch auf schmale Bildschirme.', feature: 'tower' },
+    ],
+  },
+  {
     id: 18,
     date: '2026-09-30',
     title: 'Gegnergruppen und Boss-Phasen im Turm',

@@ -34,8 +34,9 @@
 {/if}
 
 <style>
-  .backdrop { position: fixed; inset: 0; z-index: 50; background: #000a; display: grid; place-items: center; padding: 1rem; }
-  .dialog { max-width: 26rem; width: 100%; padding: 1.1rem 1.2rem 1rem; box-shadow: 0 12px 40px #000a; }
+  /* Scrollable backdrop + margin:auto: centred, but a long text can still be scrolled to its buttons. */
+  .backdrop { position: fixed; inset: 0; z-index: 50; background: #000a; display: flex; flex-direction: column; overflow-y: auto; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+  .dialog { margin: auto; flex: none; max-width: 26rem; width: 100%; padding: 1.1rem 1.2rem 1rem; box-shadow: 0 12px 40px #000a; }
   p { margin: 0 0 1rem; line-height: 1.45; white-space: pre-line; }
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
 </style>

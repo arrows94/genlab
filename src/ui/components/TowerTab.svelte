@@ -954,7 +954,7 @@
   /* Leaderboard */
   .board { margin-top: 0.75rem; }
   .board ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem; }
-  .board li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
+  .board li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; padding: 0.25rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
   .board li.podium { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .medal { width: 1.8rem; text-align: center; font-size: 1.1rem; }
   .bfloor { font-weight: 700; min-width: 5.5rem; }

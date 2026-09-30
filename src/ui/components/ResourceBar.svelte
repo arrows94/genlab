@@ -41,7 +41,9 @@
   @media (max-width: 640px) {
     .bar { flex-wrap: nowrap; width: 100%; gap: 0.35rem; padding-bottom: 2px; }
     .res { flex: 0 0 auto; flex-direction: column; align-items: flex-start; gap: 0; padding: 0.2rem 0.5rem; }
-    .res .icon { position: absolute; opacity: 0; width: 0; }
+    /* The icon moves into .amount::before. Not position:absolute – its containing block would be the
+       sticky header, outside this scroller, so off-screen chips widened the page (sideways scrolling on iOS). */
+    .res .icon { display: none; }
     .amount { min-width: 10ch; text-align: left; }
     .amount::before { content: attr(data-icon) ' '; }
     .rate { font-size: 0.65rem; min-width: 0; }
