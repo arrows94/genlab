@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, fightLimitSec, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
@@ -102,7 +102,7 @@
     if (lr.stats) return lr.stats.seconds;
     const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
     if (m) return Number(m[1]!.replace(',', '.'));
-    if (lr.log.at(-1) === 'Zeit abgelaufen') return fightLimitSec(game, lr.floor, enemiesFor(game, lr.floor));
+    if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
     return events.at(-1)?.at ?? 1;
   }
 
@@ -334,7 +334,7 @@
         return { ...f, creature: c && c.speciesId === f.speciesId ? c : null };
       });
       const units2 = units.map((u, i) => ({ ...u, element: replay!.elements[i] ?? u.element }));
-      return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end, limit: fightLimitSec(game, lr.floor, enemiesFor(game, lr.floor)) };
+      return { mode: 'fight' as const, floor: lr.floor, units: units2, hp: replay.hp, intervals: intervalsOf(lr), clock: replay.clock, end: replay.end };
     }
     const units: Unit[] = [
       ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c, row: rowOf(game, c.id) })),
@@ -342,7 +342,7 @@
     ];
     // Preview: the same relative time line the next fight will use.
     const intervals = actionIntervals(game, [...data.team.map((c) => fighterFor(game, c)), ...data.group]);
-    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0, limit: fightLimitSec(game, data.nextFloor, data.group) };
+    return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0 };
   });
 
   const order = $derived.by(() => {
@@ -510,7 +510,7 @@
         {/if}
       </span>
       {#if arena.mode === 'fight'}
-        <span class="clock num" title="Kampfzeit (Limit {formatNumber(arena.limit, { decimals: 0 })} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
+        <span class="clock num" title="Kampfzeit – kein Zeitlimit; erst nach {game.balance.tower.maxFightSec} s gilt ein Kampf als Patt">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
       {/if}
       <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
         {#each SPEEDS as s (s.v)}
@@ -518,9 +518,6 @@
         {/each}
       </span>
     </div>
-    {#if arena.mode === 'fight'}
-      <div class="timebar" title="Kampfzeit bis zum Limit von {formatNumber(arena.limit, { decimals: 0 })} s"><div style="width: {Math.min(1, arena.clock / arena.limit) * 100}%"></div></div>
-    {/if}
     {#if order.length}
       <div class="turns" aria-label="Zugfolge">
         <span class="small muted">Zugfolge</span>
@@ -649,7 +646,7 @@
       <details class="defeat" bind:open={viewState.tower.defeatOpen}>
         <summary>
           <b>Warum verloren?</b>
-          <span class="small muted">Etage {defeat.floor} · {defeat.timeout ? 'Zeit abgelaufen' : `Team besiegt nach ${formatNumber(defeat.seconds, { decimals: 1 })} s`}</span>
+          <span class="small muted">Etage {defeat.floor} · {defeat.timeout ? 'Patt – abgebrochen' : `Team besiegt nach ${formatNumber(defeat.seconds, { decimals: 1 })} s`}</span>
         </summary>
         <div class="foehp" title="KP der Gegner am Ende des Kampfes">
           <span class="small muted">Gegner-KP übrig</span>
@@ -885,8 +882,6 @@
   .clock ~ .speed { margin-left: 0; }
   .speed button { border: 0; border-radius: 0; padding: 0.1rem 0.45rem; font-size: 0.75rem; background: var(--bg-2); }
   .speed button.on { background: var(--petrol); color: #fff; }
-  .timebar { height: 3px; margin-top: 0.35rem; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .timebar div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold), var(--danger)); background-size: 100vw 100%; }
   .turns { display: flex; align-items: center; gap: 0.25rem; margin-top: 0.45rem; padding: 0.2rem 0.4rem; border-radius: 99px; background: #0006; border: 1px solid var(--line); overflow: hidden; }
   .turns > .small { margin-right: 0.25rem; white-space: nowrap; }
   .turn { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--el) 70%, transparent); background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); transition: transform 0.2s; }

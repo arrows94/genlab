@@ -151,9 +151,12 @@ describe('rows, roles and defence', () => {
     const hit = (def: number) => damage(g, unit({ atk: 100 }), unit({ def }), Rng.fromSeed(1));
     // The same seed rolls the same ±10 % spread.
     const rawNoDef = 100 * Rng.fromSeed(1).range(0.9, 1.1);
-    const expected = (def: number) => Math.max(1, Math.round(rawNoDef * (t.defScale / (t.defScale + def)) * (1 - t.defRatio * (def / (def + 100)))));
+    const expected = (def: number) => Math.max(1, Math.round((rawNoDef / (1 + (t.defWeight * def) / 100)) * (1 - t.defRatio * (def / (def + 100)))));
     expect(hit(50)).toBe(expected(50));
-    expect(hit(50)).toBeLessThan(Math.round(rawNoDef * (t.defScale / (t.defScale + 50))));
+    expect(hit(50)).toBeLessThan(Math.round(rawNoDef / (1 + (t.defWeight * 50) / 100)));
+    // Only the ratio counts: ten times ANG and VER, ten times the damage.
+    const big = damage(g, unit({ atk: 1000 }), unit({ def: 500 }), Rng.fromSeed(1));
+    expect(big / hit(50)).toBeCloseTo(10, 0);
     // Twice the defence of the attack blocks 2/3 of defRatio in the second step.
     expect(hit(200)).toBe(expected(200));
     expect(hit(1e9)).toBe(1);

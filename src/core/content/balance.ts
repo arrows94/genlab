@@ -230,7 +230,7 @@ export interface Balance {
      * speed)^speedExponent seconds of fight time – relative, so it works on every floor.
      */
     speedExponent: number;
-    /** Fight time limit in seconds (a draw counts as a defeat). */
+    /** Emergency brake in seconds of fight time: a fight that lasts this long is a stalemate and counts as lost. */
     maxFightSec: number;
     /** Dodge chance per 100 % speed lead of the defender over the attacker … */
     evadePerSpeedLead: number;
@@ -282,8 +282,8 @@ export interface Balance {
     guardAtkMult: number;
     strongMult: number;
     weakMult: number;
-    /** Damage = atk × mult × defScale / (defScale + def). */
-    defScale: number;
+    /** Damage = atk × mult / (1 + defWeight × def / atk) (scale-free: fights last as long on every floor). */
+    defWeight: number;
     /** Turm-Marken of floor f: tokensPerFloor × (1 + tokenGrowthPerFloor × (f − 1)), paid as whole numbers (running sum). */
     tokensPerFloor: number;
     tokenGrowthPerFloor: number;

@@ -1,5 +1,5 @@
 import { Rng } from '@core/rng';
-import { elementMultiplier, enemiesFor, enemyFor, fightLimitSec, simulateFight, techniqueFor, type Fighter } from '@core/features/tower';
+import { elementMultiplier, enemiesFor, enemyFor, simulateFight, techniqueFor, type Fighter } from '@core/features/tower';
 import type { Game } from '@core/game';
 
 /**
@@ -29,8 +29,7 @@ function team(g: Game, elements: string[], k: number): Fighter[] {
 export function winRate(g: Game, floor: number, elements: string[], k: number, fights = 16): number {
   let w = 0;
   const foes = enemiesFor(g, floor);
-  const limitSec = fightLimitSec(g, floor, foes);
-  for (let s = 1; s <= fights; s++) if (simulateFight(g, team(g, elements, k), foes.map((f) => ({ ...f })), Rng.fromSeed(s), { limitSec }).win) w++;
+  for (let s = 1; s <= fights; s++) if (simulateFight(g, team(g, elements, k), foes.map((f) => ({ ...f })), Rng.fromSeed(s)).win) w++;
   return w / fights;
 }
 

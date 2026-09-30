@@ -82,9 +82,9 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
 
   if (stats.timeout) {
     add(1, {
-      id: 'timeout', icon: '⏱', title: 'Zeit abgelaufen',
-      text: `Nach ${sec(stats.seconds)} standen die Gegner noch mit ${pct(foeHpLeft)} ihrer KP.`,
-      tip: 'Dein Team hält durch, macht aber zu wenig Schaden: mehr Angriff (ANG), Kreaturen mit Element-Vorteil oder Techniken wie Brand und Hinterhalt.',
+      id: 'timeout', icon: '⏱', title: 'Patt – kein Durchkommen',
+      text: `Nach ${sec(stats.seconds)} wurde der Kampf abgebrochen: Die Gegner standen noch mit ${pct(foeHpLeft)} ihrer KP.`,
+      tip: 'Dein Team hält durch, macht aber zu wenig Schaden gegen ihre Heilung: mehr Angriff (ANG), Kreaturen mit Element-Vorteil oder Techniken wie Brand und Hinterhalt.',
     });
   } else if (foeHpLeft <= 0.15) {
     add(0.9, {
@@ -309,7 +309,7 @@ export function fightProtocol(ctx: GameContext, lr: LastResult): ProtocolEntry[]
   const timeout = lr.stats?.timeout ?? lr.log.at(-1) === 'Zeit abgelaufen';
   out.push(
     lr.win ? { at: seconds, icon: '🏆', a: -1, t: -1, text: `Sieg nach ${sec(seconds)}`, tone: 'good', important: true }
-    : timeout ? { at: seconds, icon: '⏱', a: -1, t: -1, text: 'Zeit abgelaufen', tone: 'bad', important: true }
+    : timeout ? { at: seconds, icon: '⏱', a: -1, t: -1, text: 'Patt – Kampf abgebrochen', tone: 'bad', important: true }
     : { at: seconds, icon: '💀', a: -1, t: -1, text: `Team besiegt nach ${sec(seconds)}`, tone: 'bad', important: true },
   );
   return out;

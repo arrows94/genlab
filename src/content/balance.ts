@@ -188,8 +188,9 @@ export const balance: Balance = {
     baseTeamSize: 3,
     // Aktionsleiste: a fighter acts every (average speed / own speed)^speedExponent seconds of fight time.
     speedExponent: 0.8,
-    // Stretched by the foes' KP over the floor's normal enemy (bosses get more time, see fightLimitSec).
-    maxFightSec: 40,
+    // No time limit in the tower – only who falls first. This is the emergency brake against endless
+    // fights (e.g. a healer the team cannot outdamage): after it the fight is a stalemate and lost.
+    maxFightSec: 300,
     // Dodge chance per 100 % speed lead over the attacker, capped.
     evadePerSpeedLead: 0.15,
     maxEvade: 0.25,
@@ -231,7 +232,8 @@ export const balance: Balance = {
     guardAtkMult: 1.1,
     strongMult: 1.5,
     weakMult: 0.7,
-    defScale: 50,
+    // Defence counts relative to the attacker's ANG: a hit is divided by 1 + defWeight × VER / ANG.
+    defWeight: 0.5,
     // Half of a former floor per small floor: with 4 s instead of 8 s the same Turm-Marken per hour.
     tokensPerFloor: 1,
     tokenGrowthPerFloor: 0.1 / 3,

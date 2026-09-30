@@ -333,18 +333,28 @@ export function elementMultiplier(ctx: GameContext, attacker: string, defender: 
 }
 
 /**
- * Damage of one hit: attack × multipliers, reduced by defence in two steps –
- * a percentage (defScale / (defScale + VER)) and then a share that depends on
- * VER against the attacker's ANG (up to `defRatio` when VER ≫ ANG), so it
- * works the same on every floor. A hit always does at least 1.
+ * First step of the defence: the share of a hit that gets through, 1 / (1 + defWeight × VER / ANG).
+ * Only the ratio counts, so a fight lasts about as long on every floor – with a fixed scale fights
+ * high up grew longer and longer (VER grows with the floor, the damage per hit did not).
  */
+export function defFactor(ctx: GameContext, def: number, atk: number): number {
+  return 1 / (1 + (ctx.balance.tower.defWeight * def) / Math.max(1, atk));
+}
+
+/**
+ * Damage of one hit: attack × multipliers, reduced by defence in two steps –
+ * `defFactor` and then a share that depends on VER against the attacker's ANG
+ * (up to `defRatio` when VER ≫ ANG). Both only look at ratios, so they work
+ * the same on every floor. A hit always does at least 1.
+ */
+
 export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): number {
   const t = ctx.balance.tower;
   const mult = elementMultiplier(ctx, att.element, def.element);
   const elem = mult > 1 ? mult * att.elementPower : mult;
   const raw = att.atk * att.power * elem * rng.range(0.9, 1.1);
   const guard = 1 - t.defRatio * (def.def / Math.max(1, def.def + att.atk));
-  const reduced = raw * (t.defScale / (t.defScale + def.def)) * guard;
+  const reduced = raw * defFactor(ctx, def.def, att.atk * att.power) * guard;
   return Math.max(1, Math.round(reduced));
 }
 
@@ -691,7 +701,14 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
         for (const [id, st] of statuses[i]!) {
           if (id === 'burn' || id === 'poison') {
             // Damage over time, reduced like a hit by the percentage part of the defence.
-            const dmg = Math.max(1, Math.round(st.src * st.value * (cfg.defScale / (cfg.defScale + f.def))));
+            let dmg = Math.max(1, Math.round(st.src * st.value * defFactor(ctx, f.def, st.src)));
+            // The Element-Schild also dampens burn and poison from a source without element advantage.
+            const shield = hasTrait(i, 'shield');
+            if (shield && order[st.by]!.team && elementMultiplier(ctx, order[st.by]!.element, f.element) <= 1) {
+              const kept = Math.max(1, Math.round(dmg * shield.value));
+              stats.shielded += dmg - kept;
+              dmg = kept;
+            }
             hurt(i, dmg, st.by, tick);
             record({ at: tick, a: i, t: i, dmg, hp: Math.max(0, f.hp), m: 1, kind: 'dot', status: id });
             checkPhase(i, tick);
@@ -772,18 +789,6 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const res = finish(now);
     if (res) return res;
   }
-}
-
-/**
- * Time limit of a floor's fight: `maxFightSec`, stretched by the foes' total KP over the floor's normal
- * enemy – a boss with companions (or a Wächter floor) gets as much more time as it has more KP. High up
- * fights at the edge of the team's strength run into the time limit; without the stretch a boss with
- * ×2,2 KP would demand ×2,2 of the team's values instead of its share.
- */
-export function fightLimitSec(ctx: GameContext, floor: number, foes: Fighter[]): number {
-  const plain = enemyFor(ctx, floor, { plain: true }).maxHp;
-  const total = foes.reduce((n, f) => n + f.maxHp, 0);
-  return ctx.balance.tower.maxFightSec * Math.max(1, total / Math.max(1, plain));
 }
 
 /** Time per floor in ms (Äon talent „Sturmlauf“ shortens it). */
@@ -900,8 +905,7 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   const team = run.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
-  const foes = enemiesFor(ctx, floor);
-  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), foes, ctx.rng, { replay, limitSec: fightLimitSec(ctx, floor, foes) });
+  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng, { replay });
   tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
     tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
