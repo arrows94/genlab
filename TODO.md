@@ -506,14 +506,32 @@ Ziel: Ein Boss kostet so viel wie etwa **3–4 normale Etagen** (in alter Zählu
 Etage davor) statt 9–15. Der Element-Schild bleibt ein Rätsel („Vorteil nötig“): mit Vorteil wie ein normaler Boss,
 ohne Vorteil deutlich schwerer (Ziel ≈ 8 Etagen statt 15+).
 
-- [ ] Mauer-Messung als dauerhafter Test (`tests/towerCurve.test.ts`): benötigter Faktor je Etage für feste Teams
-      (gemischt, einfarbig mit und ohne Vorteil) rund um die ersten Bosse; der Test sichert die Zielwerte ab
-- [ ] Stellschrauben in dieser Reihenfolge prüfen: `bossHpMult` (2,2) und `bossAtkMult` (1,3), Begleiter
-      (`companionHp` 0,35 / `companionAtk` 0,4 – zwei zusätzliche Gegner), Eigenheiten (Regeneration heilt 40 % –
-      wirkt wie ×1,7 KP; Element-Schild ¼ Schaden – wie ×4 KP), Phasen ab dem dritten Boss
-- [ ] Boss-Eigenheiten behalten ihren Charakter – nur ihre Stärke wird angepasst
-- [ ] Äon-Bot 28 Tage: Stillstand an einem Boss höchstens etwa 3 Tage; Turm-Marken, Wochen-Boss und Meilenstein-Splitter
-      im Blick behalten (höhere Rekorde bringen mehr davon)
+- [x] Mauer-Messung als dauerhafter Test (`tests/towerCurve.test.ts`, Helfer `tests/towerCurve.ts`): benötigter Faktor
+      auf KP/ANG/VER fester Teams (gemischt, einfarbig mit und ohne Vorteil) je Boss-Etage gegenüber den Etagen davor;
+      `GENLAB_CURVE=1` gibt den Bericht aus. Vorher: gemischt Ø 9,9 frühere Etagen (5,7–13,4), Schild ohne Vorteil 19–20
+- [x] Befund 1 – Zeitlimit: weit oben endeten Kämpfe an der Grenze der Team-Stärke am 40-s-Limit, ein Boss mit ×2,2 KP
+      verlangte das 2,2-Fache der Werte (~7,5 Etagen) schon ohne Eigenheit, der ganze Turm wurde ab ~Etage 100 doppelt
+      so steil (×1,23 je frühere Etage statt ×1,11). Ein mitwachsendes Limit (`fightLimitSec`) half in der Messung, im
+      Äon-Bot kaum – verworfen
+- [x] Befund 2 – Verteidigung: mit dem festen `defScale` (50) wurden Kämpfe weit oben immer länger (Etage 123: 116 s,
+      ab 150: 300 s). Jetzt skalenfrei: ein Treffer wird durch 1 + `defWeight` (0,5) × VER/ANG geteilt – Kämpfe dauern
+      auf jeder Höhe 20–40 s, die Kurve bleibt ×1,11 je frühere Etage, der frühe Turm fast gleich (Etage 33: 0,0255
+      statt 0,0237). Das widerruft die Entscheidung „`defScale` bleibt fest“ (Kampfsystem Schritt 2)
+- [x] Befund 3 – ohne Zeitlimit gewinnen Heiler-Teams jeden Boss (Schild und Regeneration verlängern nur). Deshalb
+      **Wut statt Zeitlimit**: ab 30 s Kampfzeit jede Sekunde +10 % Gegner-Schaden (`enrageAfterSec`, `enrageGrowth`),
+      300 s nur als Notbremse (Patt). Der Wochen-Boss hat keine Wut
+- [x] Boss-Werte: KP ×1,3 (vorher 2,2), ANG ×1,05 (1,3), Begleiter 0,2/0,2 (0,35/0,4), Regeneration 25 % (40),
+      Flächenangriff 40 % (60), Element-Schild ¼ – jetzt auch gegen Brand und Gift ohne Vorteil. Ergebnis gemischt
+      Ø 3,7 frühere Etagen (höchstens 4,3); Schild mit Vorteil 2,4–3,8, ohne 5,4–7,0
+- [x] Boss-Eigenheiten behalten ihren Charakter – nur ihre Stärke wurde angepasst
+- [x] Äon-Bot: Turm deutlich höher – Seed 2024 (28 Tage) 198 statt 149, Seed 7 und 99 (10 Tage) 149–155 statt 119.
+      Diagnose mit dem echten Bot-Team (Seed 7, Tag 4): Etage 149 braucht Faktor 0,87, Boss 150 1,22 → ×1,4 ≈ 3,2 frühere
+      Etagen, im Ziel. Der Stillstand bleibt trotzdem (Seed 7: 149 ab Tag 4; Seed 2024: 174 an Tag 10–18, 198 ab Tag
+      19): Fortschritt gibt es nur am Höhepunkt eines Durchlaufs, nach jeder Vererbung fängt der Stall von vorn an
+      (Tag 5–8 braucht das Team Faktor 3,5–4,5). Genau dafür ist Schritt 3 da
+- [ ] Wochen-Boss nachstellen: Der Titan folgt dem jetzt höheren Rekord – ab Woche 2 schafft der Bot nur noch 0–11 %
+      (einmal 47 %), vorher meist 100 %. `weeklyBoss.hpMult` (25) oder die Etage des Titans (z. B. Rekord minus einige
+      Etagen) mit dem Äon-Bot neu einstellen
 - [x] Wächter alle 10 Etagen (vorgezogen in Schritt 1): ein Gegner allein mit ×1,12 KP und ×1,1 ANG – etwa eine
       frühere Etage stärker –, kein Checkpoint, keine Eigenheit; 🛡️ in der Turm-Spalte, Hinweis in der Vorschau
 
