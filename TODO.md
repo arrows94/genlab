@@ -62,9 +62,10 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 
 # TODO – Komfort
 
-- [x] Zuchtbuch (Forschung, `breedRepeat`): „↻ Letztes Paar“ in der Brutstation (`breedByHand` merkt sich das Paar in
-      `state.lastPair`, der Zuchtautomat überschreibt es nicht)
-- [x] Zwei Zuchtlisten (Forschung, `breedSplit`): eine Kandidatenliste je Elternteil mit eigenem Art-Filter
+- [x] Zuchtbuch (Forschung ab den Hybriden, `breedRepeat`): Knopf ↻ zwischen den Eltern (`breedByHand` merkt sich das
+      Paar in `state.lastPair`, der Zuchtautomat überschreibt es nicht)
+- [x] Zwei Zuchtlisten (Forschung nach der ersten Vererbung, `breedSplit`): eine Kandidatenliste je Elternteil mit
+      eigenem Art-Filter; unter Optionen → Darstellung wieder auf eine Liste umstellbar (`prefs.breedingSplit`)
 - [x] Warnung beim Verkaufen und Recyceln von Hand, wenn eine Art dadurch aus dem Stall verschwindet
       (`speciesLostWith`). Ein fester Schutz im Recycling-Automaten wurde wieder verworfen – „je Art behalten“ regelt das
       („keine“ darf auch die letzte nehmen)
@@ -323,8 +324,8 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Tempo zusätzlich: Ausweich-Chance 15 % je 100 % Tempo-Vorsprung, höchstens 25 %
 - [x] Mess-Test (Etage 25, gemischtes Team, 200 Kämpfe, Basis 63 %): +10 % KP 94 %, ANG 88 %, VER 84 %, TMP 71 %;
       ab +25 % bringen alle vier Werte 94–100 %. Test: „speed wins fights“ in `tests/towerMechanics.test.ts`
-- [ ] Äon-Bot (12 Tage) vorher/nachher: Turm-Rekord Tag 8 42 → 36, ab Tag 9 43 → 39 (Boss auf Etage 40 hält).
-      Der Bot wählt sein Team nur nach Gesamtstärke, nicht nach Tempo – Bot-Teamwahl mit Tempo, dann neu messen
+- [x] Äon-Bot (12 Tage) vorher/nachher: Turm-Rekord Tag 8 42 → 36, ab Tag 9 43 → 39 (Boss auf Etage 40 hält).
+      Der Bot wählt sein Team jetzt mit Tempo (Kampfwert, siehe Schritt 4) – neu gemessen in Schritt 4
 - [x] Wochen-Boss (`weeklyBoss.ts`) läuft auf der Aktionsleiste (mit Schritt 3)
 
 ## Schritt 2 – Verteidigung und Rollen
@@ -335,17 +336,20 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
       Schadensquote wurden verworfen: Sie wachsen nicht mit den Etagen mit (im Äon-Bot Turm 58 statt 28 an Tag 5).
       Äon-Bot 12 Tage mit der jetzigen Formel: Turm 15/17 an Tag 1–5 (vorher 18/28), 37 an Tag 8 (vorher 36),
       ab Tag 9 wie vorher 39; Wochen-Boss, Äonen und Splitter ähnlich
-- [ ] `defScale` ist fest (50), die Werte wachsen exponentiell – ab Etage ~40 kommen nur noch ~5 % durch, und
-      Verteidigung bleibt schwächer als die anderen Werte. Anteil skalenfrei machen (VER gegen ANG des Angreifers)
-      und die Turm-Kurve danach neu einstellen
+- [x] `defScale` bleibt fest (50): Weit oben ist `defScale / (defScale + VER)` ≈ 50 / VER, VER wirkt dort also wie
+      zusätzliche KP (doppelte VER = halber Schaden) und der skalenfreie `defRatio`-Teil kommt obendrauf. Ein
+      skalenfreier Umbau würde die ganze Turm-Kurve verschieben, ohne dass Verteidigung dadurch wichtiger würde
+      (mit Schritt 4 geprüft)
 - [x] Reihen: Vorne und Hinten (`tower.back`), Gegner treffen zu 75 % die vordere Reihe, wenn beide besetzt sind;
       Umschalten am Team-Platz, in der Arena steht die hintere Reihe weiter weg
 - [x] Rollen aus den Werten abgeleitet (`roleOf`, verglichen mit dem Profil der Turm-Gegner): Tank 🛡️, Angreifer ⚔️,
       Flink 💨 – als Hinweis an Team-Plätzen und Kandidaten
 - [x] Zielwahl je Boss-Eigenheit (`targeting` in `bossTraits`): Wandler jagt den Schwächsten, Regeneration greift
       bevorzugt die hintere Reihe an; die Vorschau nennt die Zielwahl des Gegners
-- [ ] Test-Bot stellt Reihen und Rollen auf (heute alle vorne, also gleichmäßig verteilte Treffer)
-- [ ] „Trifft alle Hinteren“ (Flächenangriff) kommt mit den Gegner-Techniken in Schritt 4
+- [x] Test-Bot stellt Reihen und Rollen auf: echte Tanks vorne, der Rest hinten; ohne Tank bleiben alle vorne. Die
+      stabilere Hälfte ohne Tank nach vorne zu stellen, kostete Etagen (Äon-Bot, Schritt 4 aus: Turm 19 19 19 29
+      statt 20 25 29 36) – ohne echten Tank verteilen sich Treffer vorne gleichmäßiger
+- [x] „Trifft alle Hinteren“: Boss-Eigenheit Flächenangriff (`sweep`, jede 3. Aktion 60 % auf die hintere Reihe)
 
 ## Schritt 3 – Elemente und Fähigkeiten im Kampf
 
@@ -372,10 +376,24 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 4 – Gegner und Turm
 
-- [ ] Mehrere Gegner pro Etage (1–3), Boss-Etagen mit Begleitern und Phasen (unter 50 % KP neue Eigenheit)
-- [ ] Gegner-Techniken je Element, damit Element-Wahl auch bei normalen Etagen zählt
-- [ ] Turm-Kurve neu einstellen (heute ×1,11 je Etage): Wachstum der Team-Stärke über Vererbung/Äon messen und die
-      Stillstands-Phasen des Test-Bots beseitigen; Test-Bot stellt Reihen und Rollen sinnvoll auf
+- [x] Mehrere Gegner pro Etage (`enemiesFor`): ab Etage 12 oft 2–3 Gegner, die sich KP und Angriff der Etage teilen
+      (Summe ×1,1/×1,2 KP bei 2/3 Gegnern); das Team greift den Gegner vorne mit dem kleinsten KP-Anteil an
+- [x] Boss-Etagen ab 20 mit zwei Begleitern vorne (35 % KP, 40 % ANG eines normalen Gegners), ab 30 Phasen: unter
+      50 % KP erwacht eine zweite Eigenheit (Vorschau zeigt sie)
+- [x] Gegner-Techniken je Element (`enemyTechniqueEvery`: jede 7. Aktion), damit Element-Wahl auch bei normalen
+      Etagen zählt. Bosse (auch der Wochen-Boss) setzen keine Technik ein: Mit Technik brauchte Boss-Etage 40
+      rund 25 % mehr Team-Stärke als vorher, ohne ist sie für gemischte Teams wie vorher
+- [x] Wiedergabe: bis 400 Ereignisse je Kampf (vorher 90 – lange Gruppenkämpfe froren in der Wiedergabe ein)
+- [x] Turm-Kurve geprüft (Läufe ab Etage 1, feste Teams, 40 Läufe je Stärke, Median): Normale Etagen wie `main`,
+      Teams aus einem Element auf Etage 26–32 bis zu 2–3 Etagen tiefer (etwa 10 % Stärke). Die Kurve ×1,11 je Etage
+      bleibt. Der Äon-Bot streut je Seed stark, weil jede Änderung am Kampf die Würfe des ganzen Spiels verschiebt.
+      Turm-Rekord Tag 1–5: Seed 7 19 26 35 39 39 (`main` 18 19 29 39 39), Seed 99 17 25 29 36 37 (`main` 18 26 32 42
+      42). Äon-Bot 12 Tage (Seed 2024): 19 29 35 35 39, dann 39 bis Tag 12 (`main` 19 25 32 35 36, ab Tag 9 44)
+- [ ] Äon-Bot 12 Tage: Wochen-Boss ab Woche 2 nur 15–76 % (`main` jede Woche 100 %), Turm bleibt bei 39 (`main` 44).
+      Prüfen, ob es an der neuen Teamwahl liegt (Kampfwert statt Summe der Werte; der Bot nimmt das Turm-Team auch für
+      den Wochen-Boss) oder an der Streuung – eigenes Team für den Wochen-Boss (Schaden in 20 s zählt) ausprobieren
+- [x] Test-Bot wählt sein Team nach Kampfwert (KP × (1 + VER/ANG des Gegners) × ANG × (TMP-Verhältnis)^0,8 × Element)
+      gegen den nächsten Boss – oder gegen die Etage, an der die letzten Läufe endeten
 - [x] Wochen-Boss nutzt dieselbe Kampf-Logik (`simulateFight` mit eigenem Zeitlimit `weeklyBoss.fightSec`, zählt
       `dealt`; die Boss-Eigenheit seiner Etage gilt dort nicht)
 

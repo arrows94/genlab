@@ -482,10 +482,11 @@ export interface BossTraitDef {
   description: string;
   /**
    * shield: damage without element advantage × value; shift: changes element
-   * every round (value unused); regen: heals value × the damage
-   * it took in that round, after every round.
+   * every second (value unused); regen: heals value × the damage it took in
+   * the last second; sweep: every `sweepEvery`-th action hits the whole back
+   * row (everyone if nobody stands back) with value × a normal hit.
    */
-  kind: 'shield' | 'shift' | 'regen';
+  kind: 'shield' | 'shift' | 'regen' | 'sweep';
   value: number;
   /**
    * Whom the boss attacks: rows (default) prefers the front row,

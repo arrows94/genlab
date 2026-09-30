@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, enemiesFor, techniqueFor, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Fighter } from '@core/features/tower';
@@ -282,6 +282,76 @@ describe('Element-Techniken, Zustände, Synergien', () => {
 
   it('every element has exactly one technique', () => {
     for (const e of content.elements.list) expect(content.techniques.list.filter((t) => t.element === e.id)).toHaveLength(1);
+  });
+});
+
+describe('Gegner und Turm (Schritt 4)', () => {
+  const unit = (over: Partial<Fighter> = {}): Fighter => ({
+    name: 'x', speciesId: 'emberpup', element: 'fire', hp: 1e6, maxHp: 1e6, atk: 100, def: 0, spd: 10, power: 1, elementPower: 1, team: true, ...over,
+  });
+  const foe = (over: Partial<Fighter> = {}) => unit({ name: 'foe', team: false, element: 'metal', hp: 1e5, maxHp: 1e5, atk: 1, ...over });
+  const t = balance.tower;
+
+  it('groups share the floor’s strength, deterministically', () => {
+    const g = towerGame();
+    expect(enemiesFor(g, t.groupFromFloor - 1)).toHaveLength(1);
+    const sizes = new Set<number>();
+    for (let f = t.groupFromFloor; f < t.groupFromFloor + 40; f++) {
+      if (f % t.bossEvery === 0) continue;
+      const group = enemiesFor(g, f);
+      sizes.add(group.length);
+      const single = enemyFor(g, f);
+      const n = group.length;
+      expect(group.reduce((sum, x) => sum + x.maxHp, 0)).toBeCloseTo(single.maxHp * (t.groupHp[n - 1] ?? 1), -2);
+      expect(enemiesFor(g, f).map((x) => x.name)).toEqual(group.map((x) => x.name));
+    }
+    expect([...sizes].sort()).toEqual([1, 2, 3]);
+  });
+
+  it('bosses bring companions in front and wake a second trait', () => {
+    const g = towerGame();
+    const floor = Math.max(t.companionsFromFloor, t.phaseFromFloor);
+    const group = enemiesFor(g, floor);
+    const boss = group.find((x) => x.boss)!;
+    expect(group).toHaveLength(3);
+    expect(boss.row).toBe('back');
+    expect(group.filter((x) => !x.boss).every((x) => x.row === 'front' && !x.trait)).toBe(true);
+    expect(boss.phaseTrait).toBeDefined();
+    expect(boss.phaseTrait).not.toBe(boss.trait);
+    expect(enemiesFor(g, t.companionsFromFloor - t.bossEvery)).toHaveLength(1);
+  });
+
+  it('the team focuses the front row, the boss wakes below half HP', () => {
+    const g = towerGame();
+    const companion = foe({ name: 'c', row: 'front', hp: 300, maxHp: 300 });
+    const boss = foe({ name: 'b', row: 'back', boss: true, trait: 'shifter', phaseTrait: 'regenerator', hp: 2000, maxHp: 2000 });
+    const r = simulateFight(g, [unit({ atk: 100 })], [companion, boss], Rng.fromSeed(1));
+    const firstHits = r.events.filter((e) => e.a === 0 && !e.kind).map((e) => e.t);
+    expect(firstHits[0]).toBe(1);
+    expect(r.events.findIndex((e) => e.a === 0 && !e.kind && e.t === 2)).toBeGreaterThan(r.events.findIndex((e) => e.t === 1 && e.hp === 0));
+    expect(r.events.some((e) => e.kind === 'phase' && e.trait === 'regenerator' && e.t === 2)).toBe(true);
+    expect(r.win).toBe(true);
+  });
+
+  it('the Flächenangriff hits the whole back row', () => {
+    const g = towerGame();
+    const team = [unit({ name: 'a', row: 'front' }), unit({ name: 'b', row: 'back' }), unit({ name: 'c', row: 'back' })];
+    const r = simulateFight(g, team, foe({ trait: 'sweeper', atk: 100, spd: 30, hp: 1e9, maxHp: 1e9 }), Rng.fromSeed(2), { limitSec: 10 });
+    const sweep = r.events.find((e) => e.kind === 'sweep')!;
+    const hits = r.events.filter((e) => e.at === sweep.at && e.a === 3 && (!e.kind || e.kind === 'miss')).map((e) => e.t).sort();
+    expect(hits).toEqual([1, 2]);
+  });
+
+  it('enemies use techniques of their element, bosses rely on their traits', () => {
+    const g = towerGame();
+    expect(enemyFor(g, 5).technique).toBe(techniqueFor(g, enemyFor(g, 5).element)!.id);
+    const r = simulateFight(g, [unit({ hp: 1e9, maxHp: 1e9 })], foe({ technique: 'blaze', atk: 50, spd: 20 }), Rng.fromSeed(3), { limitSec: 10 });
+    const techs = r.events.filter((e) => e.a === 1 && e.kind === 'tech' && e.tech === 'blaze');
+    expect(techs.length).toBeGreaterThan(0);
+    // Rarer than the team's own techniques.
+    expect(r.events.filter((e) => e.a === 1).length / techs.length).toBeGreaterThanOrEqual(balance.tower.enemyTechniqueEvery - 1);
+    const b = simulateFight(g, [unit({ hp: 1e9, maxHp: 1e9 })], foe({ technique: 'blaze', atk: 50, spd: 20, boss: true }), Rng.fromSeed(3), { limitSec: 10 });
+    expect(b.events.some((e) => e.a === 1 && e.kind === 'tech')).toBe(false);
   });
 });
 

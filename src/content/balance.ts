@@ -195,9 +195,22 @@ export const balance: Balance = {
     defRatio: 0.4,
     // Enemies hit the front row with this chance (as long as someone stands there and someone behind).
     frontShare: 0.75,
-    // Element-Techniken: every n-th action of a fighter; enemies join in with Schritt 4.
+    // Element-Techniken: every n-th action of a team member; enemies and companions (not bosses) every enemyTechniqueEvery-th.
     techniqueEvery: 5,
-    enemyTechniques: false,
+    enemyTechniqueEvery: 7,
+    // Enemy groups: from groupFromFloor on up to three foes share the floor's strength (hp/atk × groupHp/groupAtk[n − 1]).
+    groupFromFloor: 12,
+    groupHp: [1, 1.1, 1.2],
+    groupAtk: [1, 1, 1.05],
+    // Boss floors from companionsFromFloor on bring two companions (share of a normal enemy of the floor), standing in front.
+    companionsFromFloor: 20,
+    companionHp: 0.35,
+    companionAtk: 0.4,
+    // From phaseFromFloor on bosses gain a second trait below phaseAt of their HP.
+    phaseFromFloor: 30,
+    phaseAt: 0.5,
+    // Flächenangriff: every n-th action of such a boss.
+    sweepEvery: 3,
     // Critical hits (tower.crit chance) deal this multiple.
     critMult: 1.5,
     // Synergies: two or more of one element +ANG; three different elements +damage against the Wandler.

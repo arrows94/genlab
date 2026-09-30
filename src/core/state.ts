@@ -161,10 +161,10 @@ export interface TowerState {
     log: string[];
     /** Replay data for the arena (missing in older saves). */
     /** `interval` (seconds between actions) and the event times `at` are missing in saves before the Aktionsleiste. */
-    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number; row?: 'front' | 'back' }[];
+    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number; row?: 'front' | 'back'; boss?: boolean }[];
     events?: {
       at?: number; a: number; t: number; dmg: number; hp: number; m: number;
-      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect';
+      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep'; trait?: string;
       element?: string; tech?: string; status?: 'burn' | 'poison' | 'stun' | 'slow' | 'shield' | 'evade' | 'regen' | 'armor' | 'reflect'; until?: number; crit?: boolean; absorbed?: number;
     }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */

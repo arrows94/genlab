@@ -242,8 +242,23 @@ export interface Balance {
     frontShare: number;
     /** Every n-th action of a fighter is its Element-Technik. */
     techniqueEvery: number;
-    /** Tower enemies use techniques too (Kampfsystem Schritt 4). */
-    enemyTechniques: boolean;
+    /** Tower enemies use their technique every n-th action (0 = never). */
+    enemyTechniqueEvery: number;
+    /** Normal floors from here on can bring 2–3 foes. */
+    groupFromFloor: number;
+    /** HP / ANG of the whole group (× the single enemy), index = group size − 1; split among its members. */
+    groupHp: number[];
+    groupAtk: number[];
+    /** Boss floors from here on bring two companions. */
+    companionsFromFloor: number;
+    /** Companion HP / ANG as a share of a normal enemy of that floor. */
+    companionHp: number;
+    companionAtk: number;
+    /** Bosses from here on wake a second trait below `phaseAt` of their HP. */
+    phaseFromFloor: number;
+    phaseAt: number;
+    /** Flächenangriff: every n-th action of the boss. */
+    sweepEvery: number;
     /** Damage multiple of a critical hit. */
     critMult: number;
     /** Two or more team members of one element: +share ANG for them. */

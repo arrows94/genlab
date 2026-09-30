@@ -83,15 +83,15 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
-    id: 'breedBook', theme: 'breeding', name: 'Zuchtbuch', category: 'research', requires: mine,
-    description: 'Die Brutstation merkt sich dein letztes Paar: „↻ Letztes Paar“ wählt es mit einem Tipp wieder aus.',
-    cost: { food: 800, gold: 150 }, costGrowth: 1, maxLevel: 1,
+    id: 'breedBook', theme: 'breeding', name: 'Zuchtbuch', category: 'research', requires: { type: 'feature', feature: 'hybrids' },
+    description: 'Die Brutstation merkt sich dein letztes Paar und wählt es mit einem Tipp wieder aus.',
+    cost: { gold: 1500, essence: 60 }, costGrowth: 1, maxLevel: 1,
     modifiers: [], unlocksFeatures: ['breedRepeat'],
   },
   {
-    id: 'splitBreeding', theme: 'breeding', name: 'Zwei Zuchtlisten', category: 'research', requires: biolab,
-    description: 'Die Kandidaten der Brutstation teilen sich in eine Liste für jedes Elternteil – jede mit eigenem Art-Filter.',
-    cost: { gold: 600, essence: 10 }, costGrowth: 1, maxLevel: 1,
+    id: 'splitBreeding', theme: 'breeding', name: 'Zwei Zuchtlisten', category: 'research', requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+    description: 'Jedes Elternteil bekommt in der Brutstation eine eigene Kandidatenliste mit eigenem Art-Filter.',
+    cost: { gold: 8000, essence: 150 }, costGrowth: 1, maxLevel: 1,
     modifiers: [], unlocksFeatures: ['breedSplit'],
   },
   {

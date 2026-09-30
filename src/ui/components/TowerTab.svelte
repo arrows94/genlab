@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
@@ -36,6 +36,7 @@
     team: boolean;
     creature: Creature | null;
     row?: Row;
+    boss?: boolean;
   }
 
   // ---- fight replay -------------------------------------------------------
@@ -116,6 +117,17 @@
       show(e.a, `${tech.icon} ${tech.name}!`, 'tech');
       play('technique');
       if (e.dmg <= 0) return;
+    }
+    if (e.kind === 'phase' && e.trait && content.bossTraits.has(e.trait)) {
+      const tr = content.bossTraits.get(e.trait);
+      show(e.t, `${tr.icon} ${tr.name}!`, 'tech');
+      play('drum');
+      return;
+    }
+    if (e.kind === 'sweep') {
+      show(e.a, '🌊 Flächenangriff!', 'tech');
+      play('technique');
+      return;
     }
     if (e.kind === 'status') {
       if (e.status && STATUS[e.status]?.harmful) show(e.t, STATUS[e.status]!.icon, 'status');
@@ -244,6 +256,7 @@
     const current = tw.run?.floor ?? cp;
     const nextFloor = current + 1;
     const enemy = enemyFor(game, nextFloor);
+    const group = enemiesFor(game, nextFloor);
     const interval = fightIntervalMs(game);
     const top = nextFloor + 3;
     const floors = [];
@@ -272,6 +285,8 @@
       boss: nextFloor % game.balance.tower.bossEvery === 0,
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
       targeting: targetingOf(game, enemy),
+      group,
+      phase: enemy.boss ? (group.find((x) => x.boss)?.phaseTrait ?? null) : null,
       // Rows as data, so the Vorne/Hinten switches re-render with every change.
       rows: Object.fromEntries(team.map((c) => [c.id, rowOf(game, c.id)])) as Record<number, Row>,
       synergies: teamSynergies(game, team.map((c) => content.species.get(c.speciesId).element), enemy.trait),
@@ -308,10 +323,10 @@
     }
     const units: Unit[] = [
       ...data.team.map((c) => ({ name: c.name, speciesId: c.speciesId, element: content.species.get(c.speciesId).element, maxHp: 1, team: true, creature: c, row: rowOf(game, c.id) })),
-      { name: data.enemy.name, speciesId: data.enemy.speciesId, element: data.enemy.element, maxHp: data.enemy.maxHp, team: false, creature: null },
+      ...data.group.map((e) => ({ name: e.name, speciesId: e.speciesId, element: e.element, maxHp: e.maxHp, team: false, creature: null, row: e.row, boss: e.boss })),
     ];
     // Preview: the same relative time line the next fight will use.
-    const intervals = actionIntervals(game, [...data.team.map((c) => fighterFor(game, c)), data.enemy]);
+    const intervals = actionIntervals(game, [...data.team.map((c) => fighterFor(game, c)), ...data.group]);
     return { mode: 'preview' as const, floor: data.nextFloor, units, hp: units.map((u) => u.maxHp), intervals, clock: 0, end: 0 };
   });
 
@@ -323,7 +338,10 @@
   /** Team in two lines: the back row stands further from the enemy. */
   const backUnits = $derived(teamUnits.filter((x) => x.u.row === 'back'));
   const frontUnits = $derived(teamUnits.filter((x) => x.u.row !== 'back'));
-  const foe = $derived(arena.units.map((u, i) => ({ u, i })).find((x) => !x.u.team));
+  /** Foes: companions in front (towards the team), the boss behind them. */
+  const foeUnits = $derived(arena.units.map((u, i) => ({ u, i })).filter((x) => !x.u.team));
+  const foeFront = $derived(foeUnits.filter((x) => x.u.row !== 'back'));
+  const foeBack = $derived(foeUnits.filter((x) => x.u.row === 'back'));
 
   function look(u: Unit) {
     return u.creature ? expressedAppearance(game, u.creature) : { ...neutral, hue: content.species.get(u.speciesId).hue };
@@ -377,7 +395,7 @@
     style="--el: {el(u.element).color}"
   >
     <div class="art">
-      {#if !u.team && arena.floor % game.balance.tower.bossEvery === 0}<span class="crown">👑</span>{/if}
+      {#if !u.team && (u.boss ?? (foeUnits.length === 1 && arena.floor % game.balance.tower.bossEvery === 0))}<span class="crown">👑</span>{/if}
       <span class="platform" aria-hidden="true"></span>
       <CreatureSvg appearance={look(u)} shape={species.shape} tier={species.tier} size={big ? 104 : 60} shiny={u.creature?.shiny ?? false} />
       {#each sparks.filter((p) => p.t === i) as p (p.id)}<span class="spark" style="--sc: {p.color}" aria-hidden="true"></span>{/each}
@@ -401,7 +419,8 @@
       <span class="eta num">{fighting ? (hp > 0 ? formatNumber(iv - (arena.clock % iv), { decimals: 1 }) : '–') : `${formatNumber(iv, { decimals: 1 })} s`}</span>
     </div>
     {#if !u.team}
-      <span class="small muted num">{arena.mode === 'fight' ? `${formatNumber(Math.max(0, hp))} / ` : ''}{formatNumber(u.maxHp)} KP</span>
+      <!-- Small group foes only show what is left, so the line fits. -->
+      <span class="small muted num kp">{arena.mode === 'fight' ? `${formatNumber(Math.max(0, hp))}${big ? ` / ${formatNumber(u.maxHp)}` : ''}` : formatNumber(u.maxHp)} KP</span>
     {/if}
   </div>
 {/snippet}
@@ -516,8 +535,17 @@
         {/if}
       </div>
 
-      <div class="side">
-        {#if foe}{@render unit(foe.u, foe.i, true)}{/if}
+      <div class="side foes" class:rows={foeFront.length > 0 && foeBack.length > 0}>
+        {#if foeFront.length}
+          <div class="line">
+            {#each foeFront as { u, i } (i)}{@render unit(u, i, foeUnits.length === 1)}{/each}
+          </div>
+        {/if}
+        {#if foeBack.length}
+          <div class="line">
+            {#each foeBack as { u, i } (i)}{@render unit(u, i, true)}{/each}
+          </div>
+        {/if}
       </div>
 
       {#if banner}
@@ -538,6 +566,13 @@
       </div>
       {#if data.trait}
         <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
+      {/if}
+      {#if data.phase && content.bossTraits.has(data.phase)}
+        {@const ph = content.bossTraits.get(data.phase)}
+        <p class="trait small phase"><b>Phase 2 unter {formatPercent(game.balance.tower.phaseAt, 0)} KP – {ph.icon} {ph.name}:</b> {ph.description}</p>
+      {/if}
+      {#if data.group.length > 1}
+        <p class="small group">👥 {data.group.length} Gegner{data.group.some((x) => x.boss) ? ' – die Begleiter stehen vor dem Boss, dein Team greift zuerst sie an' : ' teilen sich die Stärke der Etage – dein Team nimmt sich den schwächsten zuerst vor'}.</p>
       {/if}
       <p class="aim small">🎯 {TARGETING[data.targeting]}</p>
       {#if data.matchups.length}
@@ -781,6 +816,11 @@
   @keyframes quake { 25% { transform: translate(-3px, 1px); } 50% { transform: translate(3px, -1px); } 75% { transform: translate(-2px, 0); } }
   .side { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
   .side.team { justify-content: flex-end; }
+  .side.foes { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 0.6rem; }
+  .side.foes .line { flex-direction: column; }
+  .side.foes:not(.rows) .line { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .group { margin: 0.3rem 0 0; color: var(--muted); }
+  .trait.phase { border-style: dashed; }
   .side.team.rows { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: center; gap: 0.6rem; }
   .line { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
   .line.back { flex-direction: column; opacity: 0.92; }
@@ -818,6 +858,7 @@
   .atb .loop { width: 100%; transform-origin: 0 50%; animation: fill linear infinite; }
   .atb.idle:not(:has(.loop)) { opacity: 0.4; }
   @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .kp { white-space: nowrap; }
   .pop { position: absolute; top: 8%; z-index: 2; font-weight: 800; color: #fff; white-space: nowrap; text-shadow: 0 2px 4px #000; animation: rise 1s ease-out forwards; pointer-events: none; }
   .pop.crit { color: var(--gold); font-size: 1.05rem; }
   .pop.weak { color: var(--muted); font-size: 0.8rem; }

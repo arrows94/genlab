@@ -137,6 +137,8 @@ export const bossTraits: BossTraitDef[] = [
     description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
   { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0, targeting: 'weakest',
     description: 'Wechselt jede Sekunde Kampfzeit sein Element und jagt das Teammitglied mit den wenigsten KP. Ein bunt gemischtes Team hilft.' },
+  { id: 'sweeper', name: 'Flächenangriff', icon: '🌊', kind: 'sweep', value: 0.6,
+    description: 'Jede dritte Aktion trifft die ganze hintere Reihe mit 60 % Schaden – steht niemand hinten, alle.' },
   { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4, targeting: 'back',
     description: 'Heilt jede Sekunde Kampfzeit 40 % des Schadens, den er in dieser Sekunde genommen hat, und greift bevorzugt die hintere Reihe an. Je schneller er fällt, desto weniger kann er heilen.' },
 ];

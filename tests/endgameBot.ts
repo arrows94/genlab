@@ -1,8 +1,8 @@
-import { creaturePower } from '@core/creatures';
+import { effectiveStats } from '@core/creatures';
 import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
-import { buyRelic, elementMultiplier, enemyFor, equipRelic, relicCost, relicLevel, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { buyRelic, elementMultiplier, enemyFor, equipRelic, relicCost, relicLevel, roleOf, setRow, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
 import { attackWeeklyBoss } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import type { Game } from '@core/game';
@@ -81,26 +81,34 @@ export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
 /**
  * How much a creature is worth against the next boss above the record (the
  * run starts at the checkpoint below it), like a player sorting by „Vorteil vs.“:
- * the element matchup, and an Element-Schild lets only advantaged hits through.
+ * staying power (KP, VER against the foe's ATK) times damage (ANG, TMP against
+ * the foe's TMP – actions come with (TMP ratio)^0.8), times the element matchup;
+ * an Element-Schild lets only advantaged hits through. When the last runs ended
+ * on the same floor, the bot builds its team for that floor instead – like a
+ * player who looks at what stops them.
  */
-function bossMatchup(g: Game): (c: Creature) => number {
+function fightValue(g: Game): (c: Creature) => number {
   const every = g.balance.tower.bossEvery;
-  const boss = enemyFor(g, (Math.floor(g.state.tower.best / every) + 1) * every);
-  const trait = boss.trait && g.content.bossTraits.has(boss.trait) ? g.content.bossTraits.get(boss.trait) : null;
-  if (trait?.kind === 'shift') return () => 1;
+  const h = g.state.tower.history;
+  const stuck = h.length >= 2 && h[0]!.floor === h[1]!.floor ? h[0]!.floor + 1 : null;
+  const foe = enemyFor(g, stuck ?? (Math.floor(g.state.tower.best / every) + 1) * every);
+  const trait = foe.trait && g.content.bossTraits.has(foe.trait) ? g.content.bossTraits.get(foe.trait) : null;
   return (c) => {
-    const m = elementMultiplier(g, g.content.species.get(c.speciesId).element, boss.element);
-    return trait?.kind === 'shield' && m <= 1 ? m * trait.value : m;
+    const s = effectiveStats(g, c);
+    const worth = (s.hp ?? 0) * (1 + (s.def ?? 0) / Math.max(1, foe.atk)) * (s.atk ?? 0) * Math.pow(Math.max(1, s.spd ?? 0) / Math.max(1, foe.spd), 0.8);
+    if (trait?.kind === 'shift') return worth;
+    const m = elementMultiplier(g, g.content.species.get(c.speciesId).element, foe.element);
+    return worth * (trait?.kind === 'shield' && m <= 1 ? m * trait.value : m);
   };
 }
 
-/** Strongest free creatures against the next boss as tower team; a new run whenever none is going. */
+/** Strongest free creatures against the next boss (or the floor it is stuck on) as tower team; a new run whenever none is going. */
 function climbTower(g: Game): void {
   if (!g.state.features.tower || g.state.tower.run) return;
   if (g.state.features.towerAuto && !g.state.tower.autoRestart) setTowerAutoRestart(g, true);
   const size = teamSize(g);
-  const matchup = bossMatchup(g);
-  const score = new Map(g.state.creatures.map((c) => [c.id, creaturePower(g, c) * matchup(c)]));
+  const value = fightValue(g);
+  const score = new Map(g.state.creatures.map((c) => [c.id, value(c)]));
   const free = g.state.creatures
     .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
     .sort((a, b) => score.get(b.id)! - score.get(a.id)!)
@@ -109,7 +117,12 @@ function climbTower(g: Game): void {
   // Keep production going while the stable is small.
   if (g.state.creatures.length < size + 4) return;
   setTeam(g, free.map((c) => c.id));
-  // Best relics to the strongest creatures (the team is sorted by power).
+  // Rows like a player would: real tanks in front, the rest behind. Without tanks everyone stays in front –
+  // that spreads the hits most evenly.
+  const tanks = new Set(free.filter((c) => roleOf(g, effectiveStats(g, c)) === 'tank').map((c) => c.id));
+  const useRows = tanks.size > 0 && tanks.size < free.length;
+  for (const c of free) setRow(g, c.id, useRows && !tanks.has(c.id) ? 'back' : 'front');
+  // Best relics to the strongest creatures (the team is sorted by fight value).
   const owned = g.content.relics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
   for (let i = 0; i < size; i++) equipRelic(g, i, owned[i]?.id ?? null);
   startRun(g);
