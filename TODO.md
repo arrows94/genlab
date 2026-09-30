@@ -69,6 +69,10 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 - [x] Warnung beim Verkaufen und Recyceln von Hand, wenn eine Art dadurch aus dem Stall verschwindet
       (`speciesLostWith`). Ein fester Schutz im Recycling-Automaten wurde wieder verworfen – „je Art behalten“ regelt das
       („keine“ darf auch die letzte nehmen)
+- [x] Reiter in Bereiche gruppiert (Labor, Zucht, Abenteuer, Fortschritt, Optionen; `GROUPS` in `App.svelte`):
+      Unterreiter als zweite Zeile, auf dem Handy fünf feste Knöpfe unten ohne Scrollen. Ein Bereich mit nur einem
+      Reiter zeigt diesen direkt (frühes Spiel wie vorher), jeder Bereich merkt sich den letzten Reiter
+      (`viewState.nav`), Zähler werden am Bereich summiert, neu freigeschaltete Reiter bekommen einen Zähler
 
 # TODO – Endgame
 

@@ -27,8 +27,10 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 20,
     date: '2026-09-30',
-    title: 'Ritual-Eier selbst öffnen',
+    title: 'Aufgeräumte Reiter und Ritual-Eier zum Selbstöffnen',
     items: [
+      { text: 'Die Reiter sind jetzt in Bereiche sortiert: Labor, Zucht, Abenteuer, Fortschritt und Optionen. Darunter wählst du den Unterreiter, z. B. Brutstation oder Genlabor. Auf dem Handy passen die Bereiche ohne Scrollen in die untere Leiste.' },
+      { text: 'Jeder Bereich merkt sich, wo du zuletzt warst. Zähler an den Bereichen zeigen, wo etwas auf dich wartet – auch bei frisch freigeschalteten Reitern.' },
       { text: 'Ritual-Eier schlüpfen nicht mehr von allein: Ist das Ritual fertig, leuchtet das Ei im Ritualnest und wartet, bis du es mit „✨ Ei öffnen“ aufbrichst – samt großer Enthüllung in der Farbe der Seltenheit. Bis dahin bleibt das Ritualnest belegt; der Zuchtautomat öffnet keine Ritual-Eier.', feature: 'specialBreeding' },
       { text: 'Die Brutstation zeigt fertige Ritual-Eier als Zähler am Reiter an, und die Benachrichtigung meldet „Ritual-Ei bereit“.', feature: 'specialBreeding' },
       { text: 'Tempo-Regler in der Turm-Arena: Kämpfe normal (1×), doppelt so schnell (2×) ansehen oder die Wiedergabe überspringen (⏭). Die Wahl bleibt gespeichert.', feature: 'tower' },
