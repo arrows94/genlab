@@ -452,6 +452,23 @@ export function validateContent(data: ContentData): string[] {
       if (o.fail) outcome(`${w}.options[${i}].fail`, o.fail);
     });
   }
+  for (const u of data.rpgUpgrades) {
+    const w = at('rpgUpgrades', u.id);
+    text(`${w}.name`, u.name);
+    text(`${w}.description`, u.description);
+    num(`${w}.weight`, u.weight, 0);
+    if (u.max !== undefined) num(`${w}.max`, u.max, 1);
+    for (const [k, v] of Object.entries(u.stats ?? {})) {
+      if (!['hp', 'atk', 'def', 'spd'].includes(k)) issues.push(`${w}.stats: unbekannter Wert "${k}"`);
+      num(`${w}.stats.${k}`, v, 0, 5);
+    }
+    for (const [k, v] of Object.entries(u.perks ?? {})) {
+      if (!['specialPower', 'chargePerRound', 'lifesteal', 'crit', 'regen', 'cooldown'].includes(k)) issues.push(`${w}.perks: unbekannter Effekt "${k}"`);
+      num(`${w}.perks.${k}`, v, 0, 5);
+    }
+    if (Object.keys(u.stats ?? {}).length + Object.keys(u.perks ?? {}).length === 0) issues.push(`${w}: mindestens ein Wert oder Effekt`);
+  }
+  if (data.rpgUpgrades.filter((u) => u.max === undefined).length < 3) issues.push('rpgUpgrades: mindestens drei ohne Obergrenze (immer genug Auswahl)');
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);

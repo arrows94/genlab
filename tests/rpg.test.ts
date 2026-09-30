@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { chooseEventOption, dungeonUnlocked, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { chooseEventOption, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { foeIntent, heroActsFirst, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
@@ -399,6 +399,7 @@ describe('GenLab RPG – Dungeon', () => {
       enterRoom(g, 0);
       winFight(g);
       if (r.event) chooseEventOption(g, 1);
+      while (r.offer.length > 0) chooseUpgrade(g, 0);
     }
     expect(g.state.rpg.run!.choices).toEqual(['boss']);
     enterRoom(g, 0);
@@ -410,5 +411,79 @@ describe('GenLab RPG – Dungeon', () => {
     expect(g.state.rpg.lastResult).toMatchObject({ win: true, cleared: true, dungeon: 'rootMaze' });
     expect(c.job).toBeNull();
     expect(dungeonUnlocked(g, 'emberCaves')).toBe(true);
+  });
+});
+
+describe('GenLab RPG – Stufen und Verbesserungen', () => {
+  function run() {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1000, atk: 100, def: 50, spd: 20 };
+    startRpgRun(g, c.id, 'rootMaze');
+    return { g, c, r: g.state.rpg.run! };
+  }
+
+  it('XP need grows per level', () => {
+    const g = makeGame();
+    expect(xpToNext(g, 1)).toBe(balance.rpg.xpBase);
+    expect(xpToNext(g, 3)).toBeGreaterThan(xpToNext(g, 2));
+  });
+
+  it('a level-up offers three different upgrades and blocks the way until one is chosen', () => {
+    const { g, r } = run();
+    gainXp(g, r, xpToNext(g, 1));
+    expect(r.level).toBe(2);
+    expect(r.offer).toHaveLength(balance.rpg.upgradeChoices);
+    expect(new Set(r.offer).size).toBe(r.offer.length);
+    expect(enterRoom(g, 0).ok).toBe(false);
+    expect(chooseUpgrade(g, 5).ok).toBe(false);
+    const pick = r.offer[0]!;
+    expect(chooseUpgrade(g, 0).ok).toBe(true);
+    expect(r.upgrades).toEqual([pick]);
+    expect(r.offer).toEqual([]);
+    expect(enterRoom(g, 0).ok).toBe(true);
+  });
+
+  it('several level-ups at once queue their offers', () => {
+    const { g, r } = run();
+    gainXp(g, r, xpToNext(g, 1) + xpToNext(g, 2) + xpToNext(g, 3));
+    expect(r.level).toBe(4);
+    expect(r.pendingLevels).toBe(2);
+    chooseUpgrade(g, 0);
+    chooseUpgrade(g, 0);
+    expect(r.offer).toHaveLength(balance.rpg.upgradeChoices);
+    chooseUpgrade(g, 0);
+    expect(r.upgrades).toHaveLength(3);
+    expect(r.offer).toEqual([]);
+  });
+
+  it('upgrades raise stats (more KP also now), respect their limit and add perks', () => {
+    const { g, c, r } = run();
+    const before = heroStats(g, c).hp;
+    r.hp = before;
+    r.offer = ['vigor'];
+    chooseUpgrade(g, 0);
+    expect(heroStats(g, c, r.upgrades).hp).toBe(Math.round(before * 1.15));
+    expect(r.hp).toBe(Math.round(before * 1.15));
+    r.upgrades.push('drill');
+    for (let i = 0; i < 30; i++) {
+      gainXp(g, r, xpToNext(g, r.level));
+      expect(r.offer).not.toContain('drill');
+      chooseUpgrade(g, 0);
+    }
+    const perks = upgradePerks(g, ['keen', 'keen', 'drill']);
+    expect(perks.crit).toBeCloseTo(0.2);
+    expect(effectiveCooldown(g.content.rpgSkills.get('heavyBlow'), perks)).toBe(2);
+    expect(effectiveCooldown(g.content.rpgSkills.get('strike'), perks)).toBe(0);
+  });
+
+  it('won fights give XP', () => {
+    const { g, r } = run();
+    r.choices = ['fight'];
+    enterRoom(g, 0);
+    for (let i = 0; i < 100 && r.battle; i++) useRpgSkill(g, 'strike');
+    expect(r.xp + (r.level > 1 ? xpToNext(g, 1) : 0)).toBe(balance.rpg.xp.fight);
   });
 });

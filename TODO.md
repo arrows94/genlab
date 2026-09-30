@@ -644,8 +644,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       nach jedem Raum Wahl aus 2–3 Wegen
   - [x] Kampf, Elite, Schatz, Rast, Boss; Wegwahl nach `balance.rpg.roomWeights`
   - [x] Ereignisse (`rpgEvents`: kurze Szene, zwei Entscheidungen, riskante mit Fehlschlag)
-- [ ] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
+- [x] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
       passiver Effekt) – so wird jeder Lauf anders
+      (`rpgUpgrades`: Werte, Fokus/Kraftspeicher für den Spezialangriff, Lebensraub, Kritisch, Zweite Luft, Drill)
 - [x] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
       (`rpgDungeons`: Stärke auf der Turm-Skala je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
 - [x] Niederlage beendet den Lauf, gesicherte Beute bleibt

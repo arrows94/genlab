@@ -92,6 +92,15 @@ export interface Balance {
     choices: [number, number];
     /** Weights of the room kinds offered (the boss comes on its own at the end). */
     roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
+    /** XP per won fight (the boss ends the run). */
+    xp: { fight: number; elite: number };
+    /** XP from level n to n+1: xpBase × xpGrowth^(n − 1). */
+    xpBase: number;
+    xpGrowth: number;
+    /** Share of max HP healed on a level-up. */
+    levelHeal: number;
+    /** Upgrades offered per level-up. */
+    upgradeChoices: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /** Loot per room kind, multiplied by the dungeon's `loot`. */

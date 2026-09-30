@@ -745,6 +745,36 @@ export interface RpgEventDef {
   options: [RpgEventOption, RpgEventOption];
 }
 
+/** Passive effects of run upgrades (they add up). */
+export interface RpgPerks {
+  /** Extra damage share of the special attack. */
+  specialPower?: number;
+  /** Extra special charge per round. */
+  chargePerRound?: number;
+  /** Heals this share of the damage the hero deals. */
+  lifesteal?: number;
+  /** Chance of a critical hit (× `tower.critMult`). */
+  crit?: number;
+  /** Heals this share of max HP at the end of every round. */
+  regen?: number;
+  /** Rounds less cooldown for the element technique and the third skill (at least 1). */
+  cooldown?: number;
+}
+
+/** A choice on a level-up in the dungeon (only for this run). */
+export interface RpgUpgradeDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  weight: number;
+  /** How often it can be taken in one run (default unlimited). */
+  max?: number;
+  /** Stat bonuses as shares (0.15 = +15 %). */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  perks?: RpgPerks;
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -785,6 +815,7 @@ export interface ContentData {
   rpgEnemies: RpgEnemyDef[];
   rpgDungeons: RpgDungeonDef[];
   rpgEvents: RpgEventDef[];
+  rpgUpgrades: RpgUpgradeDef[];
 }
 
 export interface Registry<T extends { id: string }> {

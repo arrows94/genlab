@@ -368,6 +368,12 @@ export interface RpgRun {
   /** Run level (starts at 1 every run) and experience towards the next one. */
   level: number;
   xp: number;
+  /** Upgrades chosen on level-ups (ids, may repeat). */
+  upgrades: string[];
+  /** Upgrades offered for a level-up that is not chosen yet (empty = none waiting). */
+  offer: string[];
+  /** Further level-ups waiting after the current offer. */
+  pendingLevels: number;
   /** Rooms cleared so far. */
   depth: number;
   /** Loot carried but not yet safe: lost in part on a defeat. */

@@ -77,6 +77,12 @@ export const balance: Balance = {
     // Dungeon: after each room 2–3 ways, drawn by these weights.
     choices: [2, 3],
     roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
+    // Run levels: XP per won fight, XP for level n → n+1 = xpBase × xpGrowth^(n − 1); a level-up heals a little.
+    xp: { fight: 10, elite: 25 },
+    xpBase: 20,
+    xpGrowth: 1.4,
+    levelHeal: 0.15,
+    upgradeChoices: 3,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room (× the dungeon's loot factor).

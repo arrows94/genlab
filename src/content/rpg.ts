@@ -1,4 +1,4 @@
-import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgSkillDef } from '@core/content/types';
+import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgSkillDef, RpgUpgradeDef } from '@core/content/types';
 
 /**
  * GenLab RPG: the hero's skills and the dungeon foes. A hero has four skills:
@@ -82,4 +82,18 @@ export const rpgEvents: RpgEventDef[] = [
       { label: 'Freigraben', hp: -0.1, loot: 1, result: 'Mühsam, aber es hat sich gelohnt.' },
       { label: 'Weitergehen', result: 'Das Glitzern bleibt, wo es ist.' },
     ] },
+];
+
+/** Level-up choices: three are offered per level, they only last for the run. */
+export const rpgUpgrades: RpgUpgradeDef[] = [
+  { id: 'vigor', name: 'Lebenskraft', icon: '❤️', weight: 10, stats: { hp: 0.15 }, description: '+15 % KP.' },
+  { id: 'might', name: 'Kraft', icon: '💪', weight: 10, stats: { atk: 0.12 }, description: '+12 % Angriff.' },
+  { id: 'hide', name: 'Dickhaut', icon: '🐢', weight: 8, stats: { def: 0.2 }, description: '+20 % Verteidigung.' },
+  { id: 'haste', name: 'Schnelligkeit', icon: '👟', weight: 8, stats: { spd: 0.15 }, description: '+15 % Tempo.' },
+  { id: 'focus', name: 'Fokus', icon: '🎯', weight: 5, perks: { specialPower: 0.5 }, description: 'Der Spezialangriff macht 50 % mehr Schaden.' },
+  { id: 'battery', name: 'Kraftspeicher', icon: '🔋', weight: 5, max: 3, perks: { chargePerRound: 0.05 }, description: 'Der Spezialangriff lädt sich jede Runde 5 % schneller auf.' },
+  { id: 'leech', name: 'Lebensraub', icon: '🩸', weight: 4, max: 3, perks: { lifesteal: 0.1 }, description: 'Heilt 10 % des ausgeteilten Schadens.' },
+  { id: 'keen', name: 'Scharfer Blick', icon: '👁️', weight: 5, max: 3, perks: { crit: 0.1 }, description: '10 % Chance auf kritische Treffer.' },
+  { id: 'secondWind', name: 'Zweite Luft', icon: '🌬️', weight: 4, max: 2, perks: { regen: 0.03 }, description: 'Heilt am Ende jeder Runde 3 % der KP.' },
+  { id: 'drill', name: 'Drill', icon: '⏱️', weight: 3, max: 1, perks: { cooldown: 1 }, description: 'Element-Technik und dritte Fähigkeit sind eine Runde früher wieder bereit.' },
 ];

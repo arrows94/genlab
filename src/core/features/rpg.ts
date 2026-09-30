@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { effectiveStats, findCreature } from '../creatures';
+import { findCreature } from '../creatures';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -7,7 +7,7 @@ import type { Creature, RpgRun } from '../state';
 import type { RpgEventOutcome, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
-import { heroCombatant, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker } from './rpgCombat';
+import { heroCombatant, heroStats, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker, upgradePerks } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -78,9 +78,9 @@ export function rpgHero(ctx: GameContext): Creature | null {
   return run ? findCreature(ctx, run.creatureId) ?? null : null;
 }
 
-/** Max HP of a monster in the dungeon (from its bred stats). */
-export function rpgMaxHp(ctx: GameContext, c: Creature): number {
-  return Math.max(1, effectiveStats(ctx, c)['hp'] ?? 1);
+/** Max HP of a monster in the dungeon (from its bred stats and the run's upgrades). */
+export function rpgMaxHp(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): number {
+  return heroStats(ctx, c, upgrades).hp;
 }
 
 /** Why a monster cannot enter the dungeon (null = it can). */
@@ -114,7 +114,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
   r.run = {
-    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0,
+    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, upgrades: [], offer: [], pendingLevels: 0, depth: 0,
     loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
@@ -180,7 +180,7 @@ export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: str
   const hero = rpgHero(ctx);
   if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
   if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
-  run.battle = newBattle(heroCombatant(ctx, hero, run.hp), makeFoe(ctx, enemyId, speciesId, floor));
+  run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, floor));
   return { ok: true };
 }
 
@@ -199,7 +199,7 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
   const blocker = skillBlocker(battle, skill);
   if (blocker) return { ok: false, reason: blocker };
-  const outcome = playRound(ctx, battle, skill);
+  const outcome = playRound(ctx, battle, skill, upgradePerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
   if (outcome === 'lose') finishRpgRun(ctx, false);
   else if (outcome === 'win') winBattle(ctx, run);
@@ -214,7 +214,65 @@ function winBattle(ctx: GameContext, run: RpgRun): void {
     finishRpgRun(ctx, true, true);
     return;
   }
+  gainXp(ctx, run, ctx.balance.rpg.xp[kind]);
   roomDone(ctx, run);
+}
+
+// ---- Stufen -------------------------------------------------------------------
+
+/** XP from `level` to the next. */
+export function xpToNext(ctx: GameContext, level: number): number {
+  const cfg = ctx.balance.rpg;
+  return Math.round(cfg.xpBase * Math.pow(cfg.xpGrowth, level - 1));
+}
+
+/** Adds XP; every level-up heals a little and offers upgrades (one offer at a time, the rest wait). */
+export function gainXp(ctx: GameContext, run: RpgRun, amount: number): void {
+  const hero = findCreature(ctx, run.creatureId);
+  if (!hero) return;
+  run.xp += amount;
+  while (run.xp >= xpToNext(ctx, run.level)) {
+    run.xp -= xpToNext(ctx, run.level);
+    run.level++;
+    const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+    run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * ctx.balance.rpg.levelHeal));
+    if (run.offer.length === 0) offerUpgrades(ctx, run);
+    else run.pendingLevels++;
+  }
+}
+
+/** Draws the upgrades for a level-up: different ones, none that is already at its limit. */
+function offerUpgrades(ctx: GameContext, run: RpgRun): void {
+  const weights: Record<string, number> = {};
+  for (const u of ctx.content.rpgUpgrades.list) {
+    const taken = run.upgrades.filter((id) => id === u.id).length;
+    if (u.max === undefined || taken < u.max) weights[u.id] = u.weight;
+  }
+  const out: string[] = [];
+  while (out.length < ctx.balance.rpg.upgradeChoices && Object.values(weights).some((w) => w > 0)) {
+    const id = ctx.rng.weighted(weights);
+    out.push(id);
+    weights[id] = 0;
+  }
+  run.offer = out;
+}
+
+/** Takes one of the offered upgrades. More KP also raise the current KP. */
+export function chooseUpgrade(ctx: GameContext, index: number): ActionResult {
+  const run = ctx.state.rpg.run;
+  if (!run || run.offer.length === 0) return { ok: false, reason: 'Gerade gibt es nichts zu wählen.' };
+  const id = run.offer[index];
+  if (!id) return { ok: false, reason: 'Diese Wahl gibt es nicht.' };
+  const hero = rpgHero(ctx)!;
+  const before = rpgMaxHp(ctx, hero, run.upgrades);
+  run.upgrades.push(id);
+  run.hp += Math.max(0, rpgMaxHp(ctx, hero, run.upgrades) - before);
+  run.offer = [];
+  if (run.pendingLevels > 0) {
+    run.pendingLevels--;
+    offerUpgrades(ctx, run);
+  }
+  return { ok: true };
 }
 
 // ---- Dungeon ------------------------------------------------------------------
@@ -278,6 +336,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
   const run = ctx.state.rpg.run;
   if (!run) return { ok: false, reason: 'Es läuft kein Lauf.' };
   if (run.battle || run.event) return { ok: false, reason: 'Erst diesen Raum abschließen.' };
+  if (run.offer.length > 0) return { ok: false, reason: 'Wähle zuerst eine Verbesserung.' };
   const kind = run.choices[index];
   if (!kind) return { ok: false, reason: 'Diesen Weg gibt es nicht.' };
   run.choices = [];
@@ -302,7 +361,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       return { ok: true };
     }
     case 'rest':
-      run.hp = Math.min(rpgMaxHp(ctx, hero), run.hp + Math.round(rpgMaxHp(ctx, hero) * ctx.balance.rpg.restHeal));
+      run.hp = Math.min(rpgMaxHp(ctx, hero, run.upgrades), run.hp + Math.round(rpgMaxHp(ctx, hero, run.upgrades) * ctx.balance.rpg.restHeal));
       secureLoot(ctx);
       break;
   }
@@ -318,7 +377,7 @@ export function chooseEventOption(ctx: GameContext, index: number): ActionResult
   if (!option) return { ok: false, reason: 'Diese Wahl gibt es nicht.' };
   const works = option.chance === undefined || ctx.rng.chance(option.chance);
   const outcome: RpgEventOutcome = works ? option : option.fail!;
-  const maxHp = rpgMaxHp(ctx, rpgHero(ctx)!);
+  const maxHp = rpgMaxHp(ctx, rpgHero(ctx)!, run.upgrades);
   if (outcome.hp) run.hp = Math.min(maxHp, Math.max(1, run.hp + Math.round(maxHp * outcome.hp)));
   if (outcome.loot) addLoot(run.loot, roomLoot(ctx, run, 'treasure'), outcome.loot);
   if (outcome.secure) secureLoot(ctx);
