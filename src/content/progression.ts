@@ -88,6 +88,10 @@ export const features: FeatureDef[] = [
     id: 'megaProjects', name: 'Großprojekte', hint: 'Großprojekt: Im Äon-Tab wartet das Äon-Observatorium. Zahle über mehrere Tage ein – es öffnet neue Stufen im Talentbaum. Einzahlungen gehen bei keinem Neustart verloren.',
     condition: { type: 'feature', feature: 'aeon' },
   },
+  // GenLab RPG: still a preview apart from the normal game – no condition, it is switched on by hand (options).
+  {
+    id: 'rpg', name: 'GenLab RPG', hint: 'GenLab RPG: Schicke ein einzelnes Monster in den Dungeon – rundenbasiert, mit Fackeln als Eintritt.',
+  },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];
 

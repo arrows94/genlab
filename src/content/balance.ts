@@ -54,6 +54,11 @@ export const balance: Balance = {
       { at: 1, rewards: { towerTokens: 400, timeCrystals: 2, aeonShards: 1 } },
     ],
   },
+  rpg: {
+    // Fackeln: one per run; they come back by the real clock, a small stock saves up for a day off.
+    torchHours: 6,
+    maxTorches: 3,
+  },
   timeCrystals: {
     skipHours: 4,
     longProjectHours: 1,

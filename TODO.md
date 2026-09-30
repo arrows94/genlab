@@ -621,6 +621,8 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [ ] **Eintritts-Ressource gegen Spammen**, Vorschlag „Fackeln“ 🔥: 1 neue alle 6 h, höchstens 3 gespeichert
       (Muster wie `weeklyBoss.attemptsPerDay` / `maxAttempts`); weitere aus Gen-Aufträgen, Wochen-Boss und
       Turm-Meilensteinen; Zahlen in `balance.ts`
+  - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
+  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst wenn das RPG ins normale Spiel kommt
 - [ ] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
 - [ ] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
 

@@ -308,6 +308,12 @@ export interface MegaProjectState {
   paid: Record<string, Decimal>;
 }
 
+/** GenLab RPG: a single monster in an active, turn-based dungeon (see `features/rpg.ts`). */
+export interface RpgState {
+  /** Wall clock the refill of the next Fackel started (0 = stock full, -1 = never unlocked: fill up once). */
+  torchAt: number;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -380,6 +386,7 @@ export interface GameState {
   /** Recent prestige runs, oldest first (capped by `balance.prestigeLogSize`). */
   prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
+  rpg: RpgState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -429,6 +436,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
+    rpg: { torchAt: -1 },
   };
 }
 

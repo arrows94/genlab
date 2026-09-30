@@ -9,5 +9,6 @@ export const resources: ResourceDef[] = [
   { id: 'towerTokens', name: 'Turm-Marken', icon: '🗼', color: '#ffb74d', feature: 'tower', description: 'Aus dem Genom-Turm. Für Turm-Forschung.' },
   { id: 'timeCrystals', name: 'Zeitkristall', icon: '⌛', color: '#8ecbff', feature: 'contracts', description: 'Verkürzt ein langes Projekt (ab 1 h) um 4 Stunden. Aus Gen-Aufträgen, der Tagesbelohnung und Turm-Meilensteinen.' },
   { id: 'aeonShards', name: 'Äon-Splitter', icon: '⏳', color: '#e1bee7', feature: 'aeon', description: 'Aus dem Äon-Reset. Für den Talentbaum.' },
+  { id: 'torches', name: 'Fackeln', icon: '🔥', color: '#ff8a50', feature: 'rpg', description: 'Eintritt ins GenLab RPG: Jeder Lauf kostet eine Fackel. Alle 6 Stunden kommt eine neue dazu.' },
   { id: 'heritage', name: 'Erbgut', icon: '🧬', color: '#4fd6c8', feature: 'inheritance', description: 'Dauerhafter Produktionsbonus aus der Vererbung.' },
 ];

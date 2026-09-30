@@ -63,6 +63,12 @@ export interface Balance {
     /** Rewards when the total damage reaches `at` × boss HP (in order). */
     tiers: { at: number; rewards: ResourceAmounts }[];
   };
+  rpg: {
+    /** Hours until the next Fackel while below the stock limit (real clock, also offline). */
+    torchHours: number;
+    /** Fackeln stored at most by refilling (rewards may go beyond). */
+    maxTorches: number;
+  };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
     baseSlots: number;
