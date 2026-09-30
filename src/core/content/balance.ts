@@ -98,25 +98,20 @@ export interface Balance {
     choices: [number, number];
     /** Weights of the room kinds offered (the boss comes on its own at the end). */
     roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
-    /** XP per won fight (the boss ends the run). */
-    xp: { fight: number; elite: number };
+    /** XP per won fight; it stays with the monster (its level in the other world). */
+    xp: { fight: number; elite: number; boss: number };
     /** XP from level n to n+1: xpBase × xpGrowth^(n − 1). */
     xpBase: number;
     xpGrowth: number;
+    maxLevel: number;
+    /** Each level above 1 adds this share of the species' base stats. */
+    statsPerLevel: number;
     /** Share of max HP healed on a level-up. */
     levelHeal: number;
-    /** Upgrades offered per level-up. */
+    /** Upgrades offered per level-up (they only last for the run). */
     upgradeChoices: number;
-    /** Erfahrungsrang XP for beating a boss (on top of the fights' XP). */
-    rankXpBoss: number;
-    /** XP from rank n to n+1: rankXpBase × rankXpGrowth^n. */
-    rankXpBase: number;
-    rankXpGrowth: number;
-    maxRank: number;
-    /** Dungeon stat bonus per rank (0.02 = +2 %). */
-    rankStats: number;
-    /** Every n-th rank gives one upgrade to choose at the start of a run. */
-    rankUpgradeEvery: number;
+    /** A won elite fight offers upgrades too. */
+    eliteUpgrade: boolean;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /**

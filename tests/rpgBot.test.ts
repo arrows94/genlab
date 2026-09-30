@@ -2,27 +2,28 @@ import { describe, expect, it } from 'vitest';
 import { refreshTorches } from '@core/features/rpg';
 import { unlockFeature } from '@core/systems/unlocks';
 import { makeGame } from './helpers';
-import { makeHero, playRun, towerMember } from './rpgBot';
+import { makeHero, playRun } from './rpgBot';
 
 /**
- * GenLab RPG balance on the tower scale: how far does one member of a team that holds tower floor F get?
+ * GenLab RPG balance: how far does a monster of level L (in the other world) get in each dungeon?
  * GENLAB_RPG=1 prints the table (slow).
  */
 const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
 const table = env.GENLAB_RPG === '1';
 
-function measure(floor: number, dungeon: string, runs: number) {
+function measure(level: number, dungeon: string, runs: number) {
   const g = makeGame(11);
   unlockFeature(g, 'rpg');
   refreshTorches(g);
   for (const d of g.content.rpgDungeons.list) g.state.rpg.cleared[d.id] = 1;
-  const hero = makeHero(g, towerMember(g, floor));
+  const hero = makeHero(g, level);
+  const xp = g.state.rpg.ranks[String(hero.id)]!;
   let cleared = 0;
   let depth = 0;
   let rounds = 0;
   const loot: Record<string, number> = {};
   for (let i = 0; i < runs; i++) {
-    g.state.rpg.ranks = {};
+    g.state.rpg.ranks = { [String(hero.id)]: xp };
     const r = playRun(g, hero, dungeon);
     if (r.cleared) cleared++;
     depth += r.depth;
@@ -45,9 +46,9 @@ describe('GenLab RPG – Bot', () => {
     const lines: string[] = [];
     for (const d of g.content.rpgDungeons.list) {
       const row: string[] = [];
-      for (const f of [3, 9, 15, 30, 45, 60, 90, 120, 150, 180, 240]) {
+      for (const f of [1, 5, 10, 15, 20, 30, 40, 50, 60]) {
         const m = measure(f, d.id, 12);
-        row.push(`F${f}: ${Math.round(m.clearRate * 100)}% d${m.depth.toFixed(1)} r${Math.round(m.rounds)} 🗼${Math.round(m.loot['towerTokens'] ?? 0)} 🪬${Math.round(m.loot['runes'] ?? 0)}`);
+        row.push(`L${f}: ${Math.round(m.clearRate * 100)}% d${m.depth.toFixed(1)} r${Math.round(m.rounds)} 🗼${Math.round(m.loot['towerTokens'] ?? 0)} 🪬${Math.round(m.loot['runes'] ?? 0)}`);
       }
       lines.push(`${d.name.padEnd(16)} ${row.join(' | ')}`);
     }

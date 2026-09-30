@@ -1,7 +1,6 @@
 import type { GameContext } from '../context';
 import type { Creature, RpgBattle, RpgCombatant, RpgEvent, RpgFoe, RpgItem, RpgStatus } from '../state';
 import type { RpgIntent, RpgPerks, RpgSkillDef, StatusId, TechniqueDef } from '../content/types';
-import { effectiveStats } from '../creatures';
 import { damage, elementMultiplier, evadeChance, roleOf, techniqueFor, type Fighter } from './tower';
 
 /**
@@ -36,9 +35,9 @@ export function techniqueSkill(ctx: GameContext, tech: TechniqueDef): RpgSkillDe
   };
 }
 
-/** The skill of a monster's role (the third skill of monsters without a matching Erbanlage or ability). */
+/** The skill of a monster's role (from its species' base stats – breeding does not count in the other world). */
 export function roleSkill(ctx: GameContext, c: Creature): RpgSkillDef {
-  const role = roleOf(ctx, effectiveStats(ctx, c));
+  const role = roleOf(ctx, ctx.content.species.get(c.speciesId).baseStats);
   return ctx.content.rpgSkills.list.find((k) => k.slot === 'third' && k.from?.role === role)!;
 }
 
@@ -136,34 +135,51 @@ export function heroPerks(ctx: GameContext, upgrades: readonly string[]): Requir
   return out;
 }
 
-/** Erfahrungsrang of a creature from its collected dungeon XP: rank, XP into it and needed for the next. */
-export function rpgRank(ctx: GameContext, creatureId: number): { rank: number; into: number; need: number } {
+/** XP from `level` to the next. */
+export function xpToNext(ctx: GameContext, level: number): number {
   const cfg = ctx.balance.rpg;
-  let xp = ctx.state.rpg.ranks[String(creatureId)] ?? 0;
-  let rank = 0;
-  while (rank < cfg.maxRank) {
-    const need = Math.round(cfg.rankXpBase * Math.pow(cfg.rankXpGrowth, rank));
-    if (xp < need) return { rank, into: xp, need };
-    xp -= need;
-    rank++;
-  }
-  return { rank, into: 0, need: 0 };
+  return Math.round(cfg.xpBase * Math.pow(cfg.xpGrowth, level - 1));
 }
 
-/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × (the run's upgrades + equipment + Runen progress). */
+/** Level of a monster in the other world from its collected XP: level, XP into it and needed for the next (0 at the top). */
+export function rpgLevel(ctx: GameContext, creatureId: number): { level: number; into: number; need: number } {
+  const cfg = ctx.balance.rpg;
+  let xp = ctx.state.rpg.ranks[String(creatureId)] ?? 0;
+  let level = 1;
+  while (level < cfg.maxLevel) {
+    const need = xpToNext(ctx, level);
+    if (xp < need) return { level, into: xp, need };
+    xp -= need;
+    level++;
+  }
+  return { level, into: 0, need: 0 };
+}
+
+/** Total XP a monster needs to reach `level` (for tests and previews). */
+export function xpForLevel(ctx: GameContext, level: number): number {
+  let total = 0;
+  for (let l = 1; l < level; l++) total += xpToNext(ctx, l);
+  return total;
+}
+
+/**
+ * The hero's stats in the other world: its species' base stats, grown by its level there, × (the run's
+ * upgrades + equipment + Runen progress). Rarity, genome, infusion and potions do not count – it starts over.
+ */
 export function heroStats(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): { hp: number; atk: number; def: number; spd: number } {
-  const s = effectiveStats(ctx, c);
+  const base = ctx.content.species.get(c.speciesId).baseStats;
+  const grown = 1 + (rpgLevel(ctx, c.id).level - 1) * ctx.balance.rpg.statsPerLevel;
+  const s: Record<string, number> = Object.fromEntries(Object.entries(base).map(([k, v]) => [k, v * grown]));
   const up = upgradeStats(ctx, upgrades);
   for (const item of equippedItems(ctx)) {
     for (const [k, v] of Object.entries(itemValues(ctx, item).stats)) up[k as keyof typeof up] += v ?? 0;
   }
   for (const [k, v] of Object.entries(metaEffects(ctx).stats)) up[k as keyof typeof up] += v;
-  const rank = 1 + rpgRank(ctx, c.id).rank * ctx.balance.rpg.rankStats;
-  const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * rank * (1 + up[k])));
+  const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * (1 + up[k])));
   return { hp: stat('hp', 1), atk: stat('atk', 1), def: stat('def', 0), spd: stat('spd', 1) };
 }
 
-/** The hero as a combatant, from its bred stats and the run's upgrades. */
+/** The hero as a combatant (stats from `heroStats`). */
 export function heroCombatant(ctx: GameContext, c: Creature, hp: number, upgrades: readonly string[] = []): RpgCombatant {
   const s = heroStats(ctx, c, upgrades);
   return {

@@ -4,9 +4,9 @@
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
     ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
-    rpgCandidates, rpgHero, rpgSkills, startRpgRun, torches, useRpgSkill, xpToNext,
+    rpgCandidates, rpgHero, rpgSkills, startRpgRun, torches, useRpgSkill,
   } from '@core/features/rpg';
-  import { foeIntent, heroPerks, heroStats, itemValues, rpgRank, skillBlocker, thirdSkill, effectiveCooldown } from '@core/features/rpgCombat';
+  import { foeIntent, heroPerks, heroStats, itemValues, rpgLevel, skillBlocker, thirdSkill, effectiveCooldown } from '@core/features/rpgCombat';
   import type { RpgGearSlot } from '@core/content/types';
   import type { RpgCombatant, RpgItem, RpgStatus } from '@core/state';
   import { game, view, act, ask, toast } from '../store.svelte';
@@ -64,6 +64,7 @@
       skills: run ? rpgSkills(game) : [],
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
+      heroLevel: hero ? rpgLevel(game, hero.id) : null,
       items: [...r.items],
       equipped: { ...r.equipped },
     };
@@ -118,7 +119,7 @@
     <article class="panel result" class:won={res.cleared} class:lost={!res.win}>
       <h3>{res.cleared ? '👑 Dungeon geschafft!' : res.win ? '🚪 Lauf beendet' : '💀 Niederlage'}</h3>
       <p class="small">
-        {content.rpgDungeons.get(res.dungeon).name} · Raum {res.depth} · Stufe {res.level}
+        {content.rpgDungeons.get(res.dungeon).name} · Raum {res.depth} · Stufe {res.startLevel !== undefined && res.startLevel < res.level ? `${res.startLevel} → ${res.level}` : res.level}
         {#if !res.win}· Nur gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.{/if}
       </p>
       <div class="loot">
@@ -152,11 +153,11 @@
         {#each data.candidates as c (c.id)}
           {@const sp = content.species.get(c.speciesId)}
           {@const s = heroStats(game, c)}
-          {@const rank = rpgRank(game, c.id)}
+          {@const lv = rpgLevel(game, c.id).level}
           <button class="pick" class:active={picked?.id === c.id} onclick={() => (pickedId = c.id)}>
             <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={44} shiny={c.shiny} />
             <span class="p-body">
-              <span class="p-name">{c.name}{#if rank.rank > 0} <span class="rank" title="Erfahrungsrang">★{rank.rank}</span>{/if}</span>
+              <span class="p-name">{c.name} <span class="rank" title="Stufe in der anderen Welt – dort zählt nur, was dein Monster im Dungeon erlebt hat">Stufe {lv}</span></span>
               <span class="small muted num">KP {formatNumber(s.hp)} · ANG {formatNumber(s.atk)} · VER {formatNumber(s.def)} · TMP {formatNumber(s.spd)}</span>
               <span class="small">{content.elements.get(sp.element).name} · {thirdSkill(game, c).icon} {thirdSkill(game, c).name}</span>
             </span>
@@ -231,9 +232,9 @@
     <article class="panel hero-bar">
       <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={56} shiny={data.hero.shiny} />
       <div class="hb-body">
-        <div class="hb-title"><b>{data.hero.name}</b> <span class="small muted">Stufe {run.level} · {d.icon} {d.name} · Raum {run.depth}/{d.rooms + 1}</span></div>
+        <div class="hb-title"><b>{data.hero.name}</b> <span class="small muted">Stufe {data.heroLevel?.level ?? 1} · {d.icon} {d.name} · Raum {run.depth}/{d.rooms + 1}</span></div>
         <div class="bar hp" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
-        <div class="bar xp" title="Erfahrung bis zur nächsten Stufe"><div style="width: {pct(run.xp, xpToNext(game, run.level))}"></div></div>
+        <div class="bar xp" title="Erfahrung bis zur nächsten Stufe"><div style="width: {data.heroLevel && data.heroLevel.need > 0 ? pct(data.heroLevel.into, data.heroLevel.need) : '100%'}"></div></div>
         {#if run.upgrades.length > 0}
           <div class="ups">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
         {/if}
@@ -295,7 +296,7 @@
       </div>
     {:else if run.offer.length > 0}
       <article class="panel">
-        <h3>⬆️ Stufe {run.level}! Wähle eine Verbesserung{run.pendingLevels > 0 ? ` (noch ${run.pendingLevels} weitere)` : ''}</h3>
+        <h3>⬆️ Wähle eine Verbesserung für diesen Lauf{run.pendingLevels > 0 ? ` (noch ${run.pendingLevels} weitere)` : ''}</h3>
         <div class="choices">
           {#each run.offer as id, i (id)}
             {@const u = content.rpgUpgrades.get(id)}

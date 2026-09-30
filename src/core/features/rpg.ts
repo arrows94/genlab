@@ -9,7 +9,8 @@ import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker } from './rpgCombat';
+import { heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
+export { xpToNext } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -86,7 +87,7 @@ export function rpgHero(ctx: GameContext): Creature | null {
   return run ? findCreature(ctx, run.creatureId) ?? null : null;
 }
 
-/** Max HP of a monster in the dungeon (from its bred stats and the run's upgrades). */
+/** Max HP of a monster in the dungeon (its level there and the run's upgrades). */
 export function rpgMaxHp(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): number {
   return heroStats(ctx, c, upgrades).hp;
 }
@@ -98,7 +99,7 @@ export function rpgStartBlocker(ctx: GameContext, c: Creature): string | null {
   return null;
 }
 
-/** The Erfahrungsrang goes with its creature: ranks of creatures that are gone are dropped. */
+/** The level in the other world goes with its creature: XP of creatures that are gone is dropped. */
 function pruneRanks(ctx: GameContext): void {
   const ids = new Set(ctx.state.creatures.map((c) => String(c.id)));
   for (const id of Object.keys(ctx.state.rpg.ranks)) if (!ids.has(id)) delete ctx.state.rpg.ranks[id];
@@ -133,18 +134,12 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
   r.run = {
-    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, upgrades: [], offer: [], pendingLevels: 0, depth: 0,
+    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), startLevel: rpgLevel(ctx, c.id).level, upgrades: [], offer: [], pendingLevels: 0, depth: 0,
     loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
   pruneRanks(ctx);
   offerRooms(ctx, r.run);
-  // Erfahrungsrang: every rankUpgradeEvery-th rank one upgrade to choose right away.
-  const starts = Math.floor(rpgRank(ctx, c.id).rank / ctx.balance.rpg.rankUpgradeEvery);
-  if (starts > 0) {
-    r.run.pendingLevels = starts - 1;
-    offerUpgrades(ctx, r.run);
-  }
   return { ok: true };
 }
 
@@ -263,7 +258,7 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   if (c?.job?.kind === 'rpg') c.job = null;
   r.best[run.dungeon] = Math.max(r.best[run.dungeon] ?? 0, run.depth);
   if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
-  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, level: run.level, loot: total, gear, at: ctx.state.lastTickAt };
+  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, startLevel: run.startLevel, level: rpgLevel(ctx, run.creatureId).level, loot: total, gear, at: ctx.state.lastTickAt };
   r.run = null;
   pruneRanks(ctx);
   ctx.invalidate();
@@ -319,37 +314,41 @@ function winBattle(ctx: GameContext, run: RpgRun): void {
   run.battle = null;
   rollLoot(ctx, run, kind);
   if (kind === 'boss') {
-    addRankXp(ctx, run.creatureId, ctx.balance.rpg.rankXpBoss);
+    addRankXp(ctx, run.creatureId, ctx.balance.rpg.xp.boss);
     finishRpgRun(ctx, true, true);
     return;
   }
   gainXp(ctx, run, ctx.balance.rpg.xp[kind]);
+  if (kind === 'elite' && ctx.balance.rpg.eliteUpgrade) queueOffer(ctx, run);
   roomDone(ctx, run);
 }
 
 // ---- Stufen -------------------------------------------------------------------
 
-/** XP from `level` to the next. */
-export function xpToNext(ctx: GameContext, level: number): number {
-  const cfg = ctx.balance.rpg;
-  return Math.round(cfg.xpBase * Math.pow(cfg.xpGrowth, level - 1));
-}
-
-/** Adds XP; every level-up heals a little and offers upgrades (one offer at a time, the rest wait). */
+/**
+ * Adds XP to the monster – its level in the other world stays. Every level-up raises its stats (the current HP
+ * grow along), heals a little and offers upgrades for this run (one offer at a time, the rest wait).
+ */
 export function gainXp(ctx: GameContext, run: RpgRun, amount: number): void {
   const hero = findCreature(ctx, run.creatureId);
   if (!hero) return;
-  run.xp += amount;
+  const before = rpgLevel(ctx, hero.id).level;
+  const hpBefore = rpgMaxHp(ctx, hero, run.upgrades);
   addRankXp(ctx, run.creatureId, amount);
-  while (run.xp >= xpToNext(ctx, run.level)) {
-    run.xp -= xpToNext(ctx, run.level);
-    run.level++;
-    ctx.bus.emit('rpgLevelUp', { level: run.level });
-    const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
-    run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * ctx.balance.rpg.levelHeal));
-    if (run.offer.length === 0) offerUpgrades(ctx, run);
-    else run.pendingLevels++;
+  const after = rpgLevel(ctx, hero.id).level;
+  if (after === before) return;
+  const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+  run.hp = Math.min(maxHp, run.hp + (maxHp - hpBefore) + Math.round(maxHp * ctx.balance.rpg.levelHeal * (after - before)));
+  for (let level = before + 1; level <= after; level++) {
+    ctx.bus.emit('rpgLevelUp', { level });
+    queueOffer(ctx, run);
   }
+}
+
+/** One more choice of upgrades: shown now, or after the one that is waiting. */
+function queueOffer(ctx: GameContext, run: RpgRun): void {
+  if (run.offer.length === 0) offerUpgrades(ctx, run);
+  else run.pendingLevels++;
 }
 
 /** Draws the upgrades for a level-up: different ones, none that is already at its limit. */

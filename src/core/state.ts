@@ -379,14 +379,13 @@ export interface RpgRun {
   eventResult: string | null;
   /** Current HP (they carry over from room to room). */
   hp: number;
-  /** Run level (starts at 1 every run) and experience towards the next one. */
-  level: number;
-  xp: number;
-  /** Upgrades chosen on level-ups (ids, may repeat). */
+  /** The monster's level when the run began (its level itself lives in `RpgState.ranks`). */
+  startLevel: number;
+  /** Upgrades chosen this run (ids, may repeat) – they only last for the run. */
   upgrades: string[];
-  /** Upgrades offered for a level-up that is not chosen yet (empty = none waiting). */
+  /** Upgrades offered and not chosen yet (empty = none waiting). */
   offer: string[];
-  /** Further level-ups waiting after the current offer. */
+  /** Further offers waiting after the current one. */
   pendingLevels: number;
   /** Rooms cleared so far. */
   depth: number;
@@ -417,6 +416,8 @@ export interface RpgResult {
   /** The boss fell. */
   cleared: boolean;
   depth: number;
+  /** The monster's level at the start (missing in older results) and at the end. */
+  startLevel?: number;
   level: number;
   /** Everything the run paid out (secured, kept after a defeat or brought home). */
   loot: Record<string, number>;
@@ -437,7 +438,7 @@ export interface RpgState {
   cleared: Record<string, number>;
   /** Deepest room reached per dungeon. */
   best: Record<string, number>;
-  /** Erfahrungsrang: dungeon XP collected per creature id – it goes with the creature. */
+  /** XP in the other world per creature id (their level there, see `rpgLevel`) – it goes with the creature. */
   ranks: Record<string, number>;
   /** Capped loot paid out this week (`balance.rpg.weeklyCap`). */
   weekly: { week: number; got: Record<string, number> };

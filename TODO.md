@@ -597,9 +597,9 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 # TODO – GenLab RPG (ein Monster, aktiver Dungeon)
 
 Ein einzelnes Monster zieht allein in einen Dungeon oder auf Erkundung. Anders als der Rest des Spiels wird hier
-aktiv und rundenbasiert gespielt: drei Fähigkeiten und eine stärkere Fähigkeit. Optisch wie Genlab (dieselben
-Kreaturen, Farben und Zustands-Symbole), aber als eigener, klar abgetrennter Bereich „GenLab RPG“. Roguelite: Stufen
-gelten nur im Lauf, die Belohnungen (Zeitkristalle, wertvolle Gegenstände, Ausrüstung) bleiben.
+aktiv und rundenbasiert gespielt: drei Fähigkeiten und eine stärkere Fähigkeit. Isekai: Das Monster wird in eine
+andere Welt gezogen, fängt dort bei Stufe 1 an und wird nur dort stärker; während des Laufs ist vom Labor nichts zu
+sehen. Die Belohnungen (Zeitkristalle, wertvolle Gegenstände, Ausrüstung) kommen mit zurück.
 Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → Ideen) ab.
 
 ## Vor dem Start klären
@@ -607,13 +607,29 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Freischaltung: ab Turm-Etage 20 (nach dem Bot schafft ein Turm-Monster dann das Wurzellabyrinth; liegt
       zwischen Turm und Wochen-Boss). `towerFloor` zählt auch den Rekord aller Zeiten – nach einem Äon ist das RPG
       sofort wieder da
-- [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
-      wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
-      Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
-  - [x] Festgelegt: Alle Dungeon-Erfahrung zählt (Boss extra), Rang n braucht `rankXpBase × rankXpGrowth^n`,
-        höchstens Rang 10; je Rang +2 % auf alle Dungeon-Werte, jeder 3. Rang eine Verbesserung zum Start.
-        Der Rang hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
+- [x] Stufen: ~~Mischform (Variante C)~~ → **Isekai** (umgebaut nach Rückmeldung): In der anderen Welt beginnt jedes
+      Monster bei Stufe 1 mit den Grundwerten seiner Art – Seltenheit, Genom, Infusion und Tränke zählen dort nicht.
+      Die Stufe bleibt dem Monster (die Erfahrung liegt in `rpg.ranks`), je Stufe +12 % der Grundwerte. Die Wahl aus
+      3 Verbesserungen (bei jedem Aufstieg und nach Elite-Kämpfen) gilt nur für den Lauf. Die Art bestimmt Werte,
+      Element und Technik; eine aufgedeckte Erbanlage oder Fähigkeit weiter die dritte Fähigkeit.
+  - [x] Die Stufe hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
+  - [ ] Idee zum Überlegen: Die Stufe hängt an der **Art** statt an der einzelnen Kreatur – dann übersteht sie jeden
+        Neustart, und ein neuer Glutwelpe knüpft an den alten an. Frage: Lohnt sich dann noch ein zweites Monster
+        derselben Art, und wird der Dex zum „Helden-Buch“?
 - [x] Gilt die Ausrüstung auch im Turm? Festgelegt: nein – sie wirkt nur im Dungeon, die Turm-Kurve bleibt unberührt
+
+## Isekai-Umbau (die andere Welt)
+
+- [x] Schritt 1: Stufe-1-Werte aus der Art, dauerhafte Stufe je Monster (`rpgLevel`), Verbesserungen nur im Lauf
+- [ ] Schritt 2: eigene Gegner-Skala nach Dungeon-Stufe statt Turm-Etage, Bot auf Stufe-L-Helden, neu abstimmen
+- [ ] Schritt 3: Während eines Laufs zeigt die App nur die andere Welt (keine Reiter, keine Ressourcenleiste, Meldungen
+      still ins Nachrichten-Center), kleines Menü mit Ton und „Aufgeben“
+- [ ] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
+      Bewegung: Überblendung
+- [ ] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt
+      Knopfliste, neue Kampfszene
+- [ ] Schritt 6: eigene Musikstimmung und Portal-Klang
+- [ ] Schritt 7: Versionshinweis, Doku, PR
 
 ## Schritt 1 – Grundlage und Spam-Schutz
 

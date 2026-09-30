@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
@@ -12,6 +12,14 @@ import { D } from '@core/num';
 import { NOW, balance, makeGame } from './helpers';
 
 const HOUR = 3_600_000;
+
+/** Tests of the room flow need a hero far above every dungeon: huge growth per level, at the top level. */
+function strongGame(seed = 42) {
+  return makeGame(seed, { rpg: { ...balance.rpg, statsPerLevel: 100 } });
+}
+function toLevel(g: ReturnType<typeof makeGame>, id: number, level: number) {
+  g.state.rpg.ranks[String(id)] = xpForLevel(g, level);
+}
 
 function rpgGame() {
   const g = makeGame();
@@ -86,7 +94,7 @@ describe('GenLab RPG – Lauf', () => {
     createCreature(g, { speciesId: 'sproutle', rarity: 'common', source: 'other' });
     expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
     const run = g.state.rpg.run!;
-    expect(run.level).toBe(1);
+    expect(run.startLevel).toBe(1);
     expect(run.depth).toBe(0);
     expect(run.hp).toBe(rpgMaxHp(g, c));
     expect(rpgHero(g)).toBe(c);
@@ -290,12 +298,12 @@ describe('GenLab RPG – Rundenkampf', () => {
 
 describe('GenLab RPG – Dungeon', () => {
   function run(seed = 42) {
-    const g = makeGame(seed);
+    const g = strongGame(seed);
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
     const c = g.state.creatures[0]!;
     // A hero far above the first dungeon: the room flow is tested here, not the balance.
-    c.stats = { hp: 5000, atk: 500, def: 200, spd: 50 };
+    toLevel(g, c.id, balance.rpg.maxLevel);
     expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
     return { g, c };
   }
@@ -416,27 +424,52 @@ describe('GenLab RPG – Dungeon', () => {
   });
 });
 
-describe('GenLab RPG – Stufen und Verbesserungen', () => {
+describe('GenLab RPG – Stufe in der anderen Welt', () => {
   function run() {
     const g = makeGame();
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
+    g.state.resources['torches'] = D(50);
     const c = g.state.creatures[0]!;
-    c.stats = { hp: 1000, atk: 100, def: 50, spd: 20 };
     startRpgRun(g, c.id, 'rootMaze');
     return { g, c, r: g.state.rpg.run! };
   }
 
-  it('XP need grows per level', () => {
+  it('starts over at level 1 with the base stats of its species – breeding does not count there', () => {
+    const g = makeGame();
+    const c = createCreature(g, { speciesId: 'magmole', rarity: 'mythic', source: 'other' });
+    c.stats = { hp: 9999, atk: 9999, def: 9999, spd: 9999 };
+    c.boosts = { atk: 5 };
+    c.infusion = { level: 10, ep: 0 };
+    expect(rpgLevel(g, c.id)).toMatchObject({ level: 1, into: 0 });
+    expect(heroStats(g, c)).toEqual(g.content.species.get('magmole').baseStats);
+  });
+
+  it('grows with every level and keeps its level between runs', () => {
+    const { g, c, r } = run();
+    const base = g.content.species.get(c.speciesId).baseStats;
+    gainXp(g, r, xpToNext(g, 1));
+    expect(rpgLevel(g, c.id).level).toBe(2);
+    expect(heroStats(g, c).atk).toBe(Math.round(base['atk']! * (1 + balance.rpg.statsPerLevel)));
+    leaveRpgRun(g);
+    expect(g.state.rpg.lastResult).toMatchObject({ startLevel: 1, level: 2 });
+    startRpgRun(g, c.id, 'rootMaze');
+    expect(g.state.rpg.run!.startLevel).toBe(2);
+    expect(g.state.rpg.run!.hp).toBe(heroStats(g, c).hp);
+  });
+
+  it('XP need grows per level up to the top level', () => {
     const g = makeGame();
     expect(xpToNext(g, 1)).toBe(balance.rpg.xpBase);
     expect(xpToNext(g, 3)).toBeGreaterThan(xpToNext(g, 2));
+    const c = g.state.creatures[0]!;
+    g.state.rpg.ranks[String(c.id)] = 1e15;
+    expect(rpgLevel(g, c.id)).toEqual({ level: balance.rpg.maxLevel, into: 0, need: 0 });
   });
 
-  it('a level-up offers three different upgrades and blocks the way until one is chosen', () => {
+  it('a level-up offers three different upgrades for this run and blocks the way until one is chosen', () => {
     const { g, r } = run();
     gainXp(g, r, xpToNext(g, 1));
-    expect(r.level).toBe(2);
     expect(r.offer).toHaveLength(balance.rpg.upgradeChoices);
     expect(new Set(r.offer).size).toBe(r.offer.length);
     expect(enterRoom(g, 0).ok).toBe(false);
@@ -448,10 +481,10 @@ describe('GenLab RPG – Stufen und Verbesserungen', () => {
     expect(enterRoom(g, 0).ok).toBe(true);
   });
 
-  it('several level-ups at once queue their offers', () => {
-    const { g, r } = run();
+  it('several level-ups at once queue their offers; upgrades do not outlast the run', () => {
+    const { g, c, r } = run();
     gainXp(g, r, xpToNext(g, 1) + xpToNext(g, 2) + xpToNext(g, 3));
-    expect(r.level).toBe(4);
+    expect(rpgLevel(g, c.id).level).toBe(4);
     expect(r.pendingLevels).toBe(2);
     chooseUpgrade(g, 0);
     chooseUpgrade(g, 0);
@@ -459,6 +492,9 @@ describe('GenLab RPG – Stufen und Verbesserungen', () => {
     chooseUpgrade(g, 0);
     expect(r.upgrades).toHaveLength(3);
     expect(r.offer).toEqual([]);
+    leaveRpgRun(g);
+    startRpgRun(g, c.id, 'rootMaze');
+    expect(g.state.rpg.run!.upgrades).toEqual([]);
   });
 
   it('upgrades raise stats (more KP also now), respect their limit and add perks', () => {
@@ -471,9 +507,9 @@ describe('GenLab RPG – Stufen und Verbesserungen', () => {
     expect(r.hp).toBe(Math.round(before * 1.15));
     r.upgrades.push('drill');
     for (let i = 0; i < 30; i++) {
-      gainXp(g, r, xpToNext(g, r.level));
+      gainXp(g, r, xpToNext(g, rpgLevel(g, c.id).level));
       expect(r.offer).not.toContain('drill');
-      chooseUpgrade(g, 0);
+      while (r.offer.length > 0) chooseUpgrade(g, 0);
     }
     const perks = upgradePerks(g, ['keen', 'keen', 'drill']);
     expect(perks.crit).toBeCloseTo(0.2);
@@ -481,70 +517,43 @@ describe('GenLab RPG – Stufen und Verbesserungen', () => {
     expect(effectiveCooldown(g.content.rpgSkills.get('strike'), perks)).toBe(0);
   });
 
-  it('won fights give XP', () => {
-    const { g, r } = run();
+  it('won fights give XP to the monster; a won elite fight offers upgrades too', () => {
+    const g = strongGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    toLevel(g, c.id, balance.rpg.maxLevel - 1);
+    startRpgRun(g, c.id, 'rootMaze');
+    const r = g.state.rpg.run!;
+    const xp = g.state.rpg.ranks[String(c.id)]!;
     r.choices = ['fight'];
     enterRoom(g, 0);
     for (let i = 0; i < 100 && r.battle; i++) useRpgSkill(g, 'strike');
-    expect(r.xp + (r.level > 1 ? xpToNext(g, 1) : 0)).toBe(balance.rpg.xp.fight);
-  });
-});
-
-describe('GenLab RPG – Erfahrungsrang', () => {
-  function game() {
-    const g = makeGame();
-    unlockFeature(g, 'rpg');
-    refreshTorches(g, NOW);
-    g.state.resources['torches'] = D(50);
-    return g;
-  }
-
-  it('grows with all dungeon XP and gives a small stat bonus', () => {
-    const g = game();
-    const c = g.state.creatures[0]!;
-    c.stats = { ...c.stats, atk: 1000 };
-    expect(rpgRank(g, c.id).rank).toBe(0);
-    const base = heroStats(g, c).atk;
-    startRpgRun(g, c.id, 'rootMaze');
-    gainXp(g, g.state.rpg.run!, balance.rpg.rankXpBase);
-    expect(rpgRank(g, c.id).rank).toBe(1);
-    expect(heroStats(g, c).atk).toBe(Math.round(base * (1 + balance.rpg.rankStats)));
-  });
-
-  it('every few ranks give an upgrade to choose at the start', () => {
-    const g = game();
-    const c = g.state.creatures[0]!;
-    let xp = 0;
-    for (let r = 0; r < balance.rpg.rankUpgradeEvery; r++) xp += Math.round(balance.rpg.rankXpBase * Math.pow(balance.rpg.rankXpGrowth, r));
-    g.state.rpg.ranks[String(c.id)] = xp;
-    expect(rpgRank(g, c.id).rank).toBe(balance.rpg.rankUpgradeEvery);
-    startRpgRun(g, c.id, 'rootMaze');
-    const r = g.state.rpg.run!;
+    expect(g.state.rpg.ranks[String(c.id)]).toBe(xp + balance.rpg.xp.fight);
+    expect(r.offer).toEqual([]);
+    r.choices = ['elite'];
+    enterRoom(g, 0);
+    for (let i = 0; i < 100 && r.battle; i++) useRpgSkill(g, 'strike');
     expect(r.offer).toHaveLength(balance.rpg.upgradeChoices);
-    expect(r.pendingLevels).toBe(0);
-    expect(r.level).toBe(1);
   });
 
-  it('stops at the highest rank and goes with the creature', () => {
-    const g = game();
-    const c = g.state.creatures[0]!;
-    g.state.rpg.ranks[String(c.id)] = 1e12;
-    expect(rpgRank(g, c.id)).toEqual({ rank: balance.rpg.maxRank, into: 0, need: 0 });
+  it('the level goes with the creature', () => {
+    const { g, c } = run();
     g.state.rpg.ranks['999999'] = 500;
-    startRpgRun(g, c.id, 'rootMaze');
+    leaveRpgRun(g);
     expect(g.state.rpg.ranks['999999']).toBeUndefined();
-    expect(g.state.rpg.ranks[String(c.id)]).toBe(1e12);
+    expect(g.state.rpg.ranks[String(c.id)]).toBeUndefined(); // nothing earned yet
   });
 });
 
 describe('GenLab RPG – Beute', () => {
   function run(dungeon = 'rootMaze') {
-    const g = makeGame();
+    const g = strongGame();
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
     for (const d of g.content.rpgDungeons.list) g.state.rpg.cleared[d.id] = 1;
     const c = g.state.creatures[0]!;
-    c.stats = { hp: 1e6, atk: 1e5, def: 1e4, spd: 100 };
+    toLevel(g, c.id, balance.rpg.maxLevel);
     startRpgRun(g, c.id, dungeon);
     return { g, r: g.state.rpg.run! };
   }
@@ -637,7 +646,7 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
 
 describe('GenLab RPG – Ausrüstung', () => {
   function game() {
-    const g = makeGame();
+    const g = strongGame();
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
     g.state.resources['torches'] = D(50);
@@ -660,7 +669,7 @@ describe('GenLab RPG – Ausrüstung', () => {
   it('worn equipment helps every monster in the dungeon, only one piece per slot', () => {
     const g = game();
     const c = g.state.creatures[0]!;
-    c.stats = { hp: 1000, atk: 1000, def: 100, spd: 10 };
+    toLevel(g, c.id, balance.rpg.maxLevel);
     const base = heroStats(g, c).atk;
     g.state.rpg.items.push({ id: 7, gear: 'fang', rarity: 'common' }, { id: 8, gear: 'claw', rarity: 'rare' }, { id: 9, gear: 'totem', rarity: 'common' });
     expect(equipItem(g, 'armor', 7).ok).toBe(false);
@@ -696,7 +705,7 @@ describe('GenLab RPG – Ausrüstung', () => {
   it('bosses always drop a piece; equipment survives a prestige', () => {
     const g = game();
     const c = g.state.creatures[0]!;
-    c.stats = { hp: 1e6, atk: 1e5, def: 1e4, spd: 100 };
+    toLevel(g, c.id, balance.rpg.maxLevel);
     startRpgRun(g, c.id, 'rootMaze');
     const r = g.state.rpg.run!;
     r.depth = g.content.rpgDungeons.get('rootMaze').rooms;
@@ -719,7 +728,7 @@ function equippedIds(g: ReturnType<typeof makeGame>): number[] {
 
 describe('GenLab RPG – Runen und Zerlegen', () => {
   function game() {
-    const g = makeGame();
+    const g = strongGame();
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
     return g;
@@ -749,7 +758,7 @@ describe('GenLab RPG – Runen und Zerlegen', () => {
   it('Runen buy lasting progress with rising cost up to a limit', () => {
     const g = game();
     const c = g.state.creatures[0]!;
-    c.stats = { hp: 1000, atk: 1000, def: 100, spd: 10 };
+    toLevel(g, c.id, balance.rpg.maxLevel);
     const atk = heroStats(g, c).atk;
     expect(buyMeta(g, 'fighting').ok).toBe(false);
     g.state.resources['runes'] = D(10_000);

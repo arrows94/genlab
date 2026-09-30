@@ -83,21 +83,18 @@ export const balance: Balance = {
     // Dungeon: after each room 2–3 ways, drawn by these weights.
     choices: [2, 3],
     roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
-    // Run levels: XP per won fight, XP for level n → n+1 = xpBase × xpGrowth^(n − 1); a level-up heals a little.
-    xp: { fight: 10, elite: 25 },
+    // Isekai: in the other world every monster starts at level 1 with its species' base stats – breeding does not
+    // count there. The level stays with the monster: XP per won fight, level n → n+1 needs xpBase × xpGrowth^(n − 1);
+    // each level adds statsPerLevel of the base stats and heals a little. Every level-up (and every won elite fight)
+    // offers upgradeChoices upgrades that only last for the run.
+    xp: { fight: 10, elite: 25, boss: 40 },
     xpBase: 20,
-    xpGrowth: 1.4,
+    xpGrowth: 1.25,
+    maxLevel: 60,
+    statsPerLevel: 0.12,
     levelHeal: 0.15,
     upgradeChoices: 3,
-    // Erfahrungsrang (lasting, per monster): all dungeon XP counts, the boss adds rankXpBoss. Rank n needs
-    // rankXpBase × rankXpGrowth^(n − 1) more; each rank +rankStats on all dungeon stats, every rankUpgradeEvery-th
-    // rank one upgrade to choose at the start of a run.
-    rankXpBoss: 40,
-    rankXpBase: 60,
-    rankXpGrowth: 1.6,
-    maxRank: 10,
-    rankStats: 0.02,
-    rankUpgradeEvery: 3,
+    eliteUpgrade: true,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.

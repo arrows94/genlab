@@ -1,35 +1,24 @@
 import { createCreature } from '@core/creatures';
 import { chooseEventOption, chooseUpgrade, enterRoom, leaveRpgRun, rpgSkills, startRpgRun, useRpgSkill } from '@core/features/rpg';
-import { foeIntent, heroStats, skillBlocker } from '@core/features/rpgCombat';
-import { needed } from './towerCurve';
+import { foeIntent, heroStats, skillBlocker, xpForLevel } from '@core/features/rpgCombat';
 import type { Game } from '@core/game';
 import type { RpgRoomKind } from '@core/content/types';
 import type { Creature } from '@core/state';
 import { D } from '@core/num';
 
 /**
- * GenLab RPG balancing bot. The hero is one member of a mixed tower team
- * that just holds a floor (see towerCurve.ts), so the dungeon is measured on
- * the tower scale. Strategy: special when ready, heal when low, protect
- * against a shown heavy blow, otherwise the strongest ready move.
+ * GenLab RPG balancing bot. In the other world breeding does not count: the
+ * hero is a monster of a species at a given level there. Strategy: special
+ * when ready, heal when low, protect against a shown heavy blow, otherwise the
+ * strongest ready move.
  */
 
-const MIXED = ['fire', 'water', 'earth', 'air'];
-
-/** Stats of one member of a mixed team that wins `floor` in half of the fights. */
-export function towerMember(g: Game, floor: number): Record<string, number> {
-  const k = needed(g, Math.max(1, floor), MIXED);
-  return { hp: 3000 * k, atk: 300 * k, def: 150 * k, spd: 60 * Math.sqrt(k) };
-}
-
-/** A hero with exactly these dungeon stats (rarity and genome bonuses taken out). */
-export function makeHero(g: Game, stats: Record<string, number>, speciesId = 'emberpup'): Creature {
+/** A hero of this species at `level` in the other world (no run upgrades, equipment or Runen). */
+export function makeHero(g: Game, level: number, speciesId = 'emberpup'): Creature {
   const c = createCreature(g, { speciesId, rarity: 'common', source: 'other' });
   c.abilities = [];
   c.latent = null;
-  c.stats = { hp: 1000, atk: 1000, def: 1000, spd: 1000 };
-  const probe = heroStats(g, c);
-  c.stats = Object.fromEntries(Object.entries(stats).map(([k, v]) => [k, (v * 1000) / Math.max(1, probe[k as 'hp'] ?? 1000)]));
+  g.state.rpg.ranks[String(c.id)] = xpForLevel(g, level);
   return c;
 }
 

@@ -274,6 +274,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 
 - `rpgSkills`: genau ein `basic` und ein `special`, dazu `third`-Fähigkeiten – für jede Rolle (`tank`, `attacker`, `fast`) mindestens eine. Die Element-Technik kommt aus `techniques.ts` und wird umgerechnet (`secondsPerRound` Turm-Sekunden = 1 Runde, Abklingzeit `techniqueCooldown`). Zustände zählen in Runden; `value` wie an `RpgSkillDef` beschrieben.
 - `rpgEnemies`: `pattern` aus `attack`, `charge` (danach muss `heavy` folgen), `heavy` (× `heavyMult`), `guard` (Schild `guardShare` × KP ab Rundenbeginn), `heal` (`healShare`), `tech` (Element-Technik). Mindestens eine Art je `kind` (`normal`, `elite`, `boss`).
+- Isekai: In der anderen Welt zählt nur die Art (`baseStats`) und die Stufe dort (`balance.rpg.statsPerLevel`, Erfahrung `xp`/`xpBase`/`xpGrowth`, `maxLevel`); Zuchtwerte zählen nicht.
 - `rpgDungeons`: Gegner der Tiefe d haben die Stärke der Turm-Etage `floor + (d − 1) × floorsPerRoom` × `balance.rpg.enemyMult`. Nach `rooms` Räumen kommt der Boss; sein Sieg öffnet den Dungeon mit `requires` auf diesen.
 - `rpgEvents`: genau zwei Wahlmöglichkeiten; `hp` (Anteil der max. KP, nie tödlich), `loot` (× Beute eines Schatzraums), `secure`; mit `chance` < 1 braucht die Wahl ein `fail`.
 - `rpgUpgrades` (Stufenaufstieg, nur für den Lauf): `stats` und/oder `perks` (`specialPower`, `chargePerRound`, `lifesteal`, `crit`, `regen`, `cooldown`), optional `max`. Mindestens drei ohne `max`.
