@@ -254,11 +254,12 @@ export const balance: Balance = {
     xpPerFloor: 1 / 30,
     xpBossMult: 10,
     xpRankBase: 100,
-    xpRankStep: 9,
+    xpRankStep: 7.5,
     xpRankBonus: 0.02,
-    // Entschlossenheit against long stalls: +15 % per day without a new record, at most +60 %.
-    resolvePerDay: 0.15,
-    resolveCap: 0.6,
+    // Entschlossenheit against long stalls: +20 % per day without a new record, at most +150 %. A high cap is
+    // safe – the first new record resets it, so a long stall carries the team past one wall, not further.
+    resolvePerDay: 0.2,
+    resolveCap: 1.5,
     milestoneModifiers: [
       { target: 'tower.damage', op: 'pct', value: 0.15 },
       { target: 'production.food', op: 'pct', value: 0.1 },
