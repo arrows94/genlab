@@ -79,6 +79,11 @@
         {/if}
       </div>
       {#if data.team === 0}<p class="small muted">Stelle unten ein Turm-Team zusammen.</p>{/if}
+      {#if !data.defeated}
+        <p class="small muted hint">
+          💡 Angriffe sammeln sich bis {data.maxAttempts}. Der Titan bleibt die ganze Woche gleich stark – dein Team ist kurz vor einer Vererbung am stärksten, dann bringt ein Angriff am meisten.
+        </p>
+      {/if}
     </div>
   </article>
 {/if}
@@ -99,6 +104,7 @@
   .reward.reached { border-color: var(--gold); opacity: 1; }
   .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
   .attempts { font-size: 0.85rem; }
+  .hint { margin: 0; }
   .won { color: var(--gold); font-weight: 700; }
   @media (max-width: 520px) { .weekly-boss { flex-direction: column; align-items: center; } }
 </style>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attackWeeklyBoss, bossDefeated, lowerRecordAndBoss, refreshWeeklyBoss } from '@core/features/weeklyBoss';
+import { attackWeeklyBoss, bossDefeated, bossFighter, lowerRecordAndBoss, refreshWeeklyBoss, unusedAttacksText } from '@core/features/weeklyBoss';
 import { voyageDestination } from '@core/features/voyage';
 import { checkpoint, enemyFor, fightNextFloor, setTeam, towerMilestones } from '@core/features/tower';
 import { deserialize, serialize } from '@core/save';
@@ -7,6 +7,12 @@ import { unlockFeature } from '@core/systems/unlocks';
 import { NOW, balance, content, makeGame } from './helpers';
 
 const DAY = 86_400_000;
+
+/** KP of a floor's normal enemy (a boss floor without its boss multiplier) – what the titan is built from. */
+function normalHp(g: ReturnType<typeof makeGame>, floor: number): number {
+  const e = enemyFor(g, floor);
+  return e.boss ? Math.round(e.maxHp / balance.tower.bossHpMult) : e.maxHp;
+}
 
 function bossGame() {
   const g = makeGame();
@@ -31,8 +37,40 @@ describe('Wochen-Boss', () => {
     expect(b.element).toBe(voyageDestination(g, NOW).element);
     expect(content.species.get(b.species).element).toBe(b.element);
     expect(b.floor).toBe(20);
-    expect(b.maxHp).toBe(Math.round(enemyFor(g, 20).maxHp * balance.weeklyBoss.hpMult));
+    expect(b.maxHp).toBe(Math.round(normalHp(g, 20) * balance.weeklyBoss.hpMult));
     expect(b.attempts).toBe(balance.weeklyBoss.attemptsPerDay);
+  });
+
+  it('grows smoothly with the record (no jump on boss floors) and uses no technique', () => {
+    const g = bossGame();
+    const hpAt = (best: number) => {
+      g.state.tower.best = best;
+      g.state.weeklyBoss.week = -1;
+      refreshWeeklyBoss(g, NOW);
+      return g.state.weeklyBoss.maxHp;
+    };
+    const [a, b, c] = [hpAt(39), hpAt(40), hpAt(41)];
+    expect(b).toBeGreaterThan(a);
+    expect(c).toBeGreaterThan(b);
+    expect(b / a).toBeCloseTo(balance.tower.enemyGrowth, 1);
+    g.state.tower.best = 40;
+    g.state.weeklyBoss.week = -1;
+    refreshWeeklyBoss(g, NOW);
+    const titan = bossFighter(g);
+    expect(titan.technique).toBeUndefined();
+    expect(titan.atk).toBe(Math.round(Math.round(enemyFor(g, 40).atk / balance.tower.bossAtkMult) * balance.weeklyBoss.atkMult));
+  });
+
+  it('reminds of unused attacks before a reset', () => {
+    const g = bossGame();
+    expect(unusedAttacksText(g)).toContain(`${balance.weeklyBoss.attemptsPerDay} Angriffe`);
+    g.state.weeklyBoss.attempts = 1;
+    expect(unusedAttacksText(g)).toContain('einen Angriff');
+    g.state.weeklyBoss.attempts = 0;
+    expect(unusedAttacksText(g)).toBe('');
+    g.state.weeklyBoss.attempts = 2;
+    g.state.tower.team = [];
+    expect(unusedAttacksText(g)).toBe('');
   });
 
   it('adds up damage over attempts and pays tiers once', () => {
@@ -103,7 +141,7 @@ describe('Turm-Rekord senken (Hilfe für festgefahrene Spielstände)', () => {
     expect(g.state.tower.bestEver).toBe(120);
     expect(b.floor).toBe(Math.max(balance.weeklyBoss.minFloor, 30));
     expect(b.maxHp).toBeLessThan(oldMax);
-    expect(b.maxHp).toBe(Math.round(enemyFor(g, b.floor).maxHp * balance.weeklyBoss.hpMult));
+    expect(b.maxHp).toBe(Math.round(normalHp(g, b.floor) * balance.weeklyBoss.hpMult));
     expect(b.damage / b.maxHp).toBeCloseTo(0.3, 2);
     expect(b.tiers).toBe(1);
     // Milestones and floor conditions follow the highest record ever.

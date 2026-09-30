@@ -9,7 +9,7 @@ import type { Game } from '@core/game';
 import { performPrestige, prestigeGain, resetImpact } from '@core/prestige';
 import { canConsume, sell, stableFree } from '@core/features/stable';
 import { useLongTermSystems } from './longrun';
-import { endgameCheckIn, useEndgameSystems, type EndgameOptions } from './endgameBot';
+import { endgameCheckIn, spendBossAttacks, useEndgameSystems, type EndgameOptions } from './endgameBot';
 
 export interface TimelineEntry {
   min: number;
@@ -108,7 +108,10 @@ export function playBot(g: Game, minutes: number, opts: BotOptions | number = {}
     if (prestigeAt > 0 && g.state.features.inheritance && resetImpact(g).travelling < campSlots(g)) {
       const gain = prestigeGain(g, 'inheritance');
       const owned = g.state.resources.heritage?.toNumber() ?? 0;
-      if (gain.gte(prestigeAt) && gain.gte(owned * prestigeGrowth)) performPrestige(g, 'inheritance');
+      if (gain.gte(prestigeAt) && gain.gte(owned * prestigeGrowth)) {
+        if (endgameOpts) spendBossAttacks(g);
+        performPrestige(g, 'inheritance');
+      }
     }
 
     if (wallClock) g.state.lastTickAt += 1000;
