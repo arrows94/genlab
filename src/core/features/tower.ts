@@ -200,7 +200,7 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
   const global = ctx.mods();
   const relic = relicFor(ctx, c);
   const boost = (key: keyof RelicDef['bonus']) => 1 + (relic ? (relic.def.bonus[key] ?? 0) * relic.level : 0);
-  const hp = Math.round((s.hp ?? 1) * boost('hp'));
+  const hp = Math.round((s.hp ?? 1) * boost('hp') * global.factor('tower.hp') * own.factor('tower.hp'));
   return {
     name: c.name,
     speciesId: c.speciesId,
@@ -325,6 +325,42 @@ export const towerMilestoneProvider: ModifierProvider = (ctx, into) => {
   const n = towerMilestones(ctx);
   if (n > 0) into.addAll('tower:milestone', ctx.balance.tower.milestoneModifiers, n);
 };
+
+/**
+ * Kampferfahrung: rank from the XP (rank n → n + 1 costs base × growth^n), the XP into the current
+ * rank and what the next one needs, and the bonus per KP and damage.
+ */
+export function veteranRank(ctx: GameContext, xp = ctx.state.tower.xp ?? 0): { rank: number; into: number; need: number; bonus: number } {
+  const t = ctx.balance.tower;
+  const total = (n: number) => (t.xpRankBase * (Math.pow(t.xpRankGrowth, n) - 1)) / (t.xpRankGrowth - 1);
+  let rank = Math.max(0, Math.floor(Math.log(1 + (xp * (t.xpRankGrowth - 1)) / t.xpRankBase) / Math.log(t.xpRankGrowth)));
+  // Guard against rounding at the edge of a rank.
+  while (total(rank + 1) <= xp) rank++;
+  while (rank > 0 && total(rank) > xp) rank--;
+  return { rank, into: xp - total(rank), need: t.xpRankBase * Math.pow(t.xpRankGrowth, rank), bonus: rank * t.xpRankBonus };
+}
+
+/** Kampferfahrung as a bonus on KP and damage of every tower fighter. */
+export const towerVeteranProvider: ModifierProvider = (ctx, into) => {
+  const { bonus } = veteranRank(ctx);
+  if (bonus <= 0) return;
+  into.addAll('tower:veteran', [
+    { target: 'tower.hp', op: 'pct', value: bonus },
+    { target: 'tower.damage', op: 'pct', value: bonus },
+  ]);
+};
+
+/** Adds Kampferfahrung for a won floor; a new rank refreshes the bonuses. */
+function gainXp(ctx: GameContext, floor: number): void {
+  const t = ctx.balance.tower;
+  const before = veteranRank(ctx).rank;
+  ctx.state.tower.xp = (ctx.state.tower.xp ?? 0) + (isBossFloor(ctx, floor) ? t.xpPerBoss : t.xpPerFloor);
+  const after = veteranRank(ctx).rank;
+  if (after > before) {
+    ctx.invalidate();
+    ctx.bus.emit('towerRank', { rank: after });
+  }
+}
 
 export function elementMultiplier(ctx: GameContext, attacker: string, defender: string): number {
   if (ctx.content.elements.get(attacker).strongAgainst.includes(defender)) return ctx.balance.tower.strongMult;
@@ -926,6 +962,7 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
     return;
   }
   run.floor = floor;
+  gainXp(ctx, floor);
   // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
   const record = floor > towerBestEver(ctx);
   tw.best = Math.max(tw.best, floor);

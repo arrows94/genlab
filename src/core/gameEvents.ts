@@ -33,6 +33,8 @@ export interface GameEvents {
   recipeHinted: { recipe: string };
   towerFloor: { floor: number; win: boolean; rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null };
   towerRunEnded: { floor: number };
+  /** A new rank of Kampferfahrung. */
+  towerRank: { rank: number };
   talentBought: { talent: string };
   anomalyStarted: { anomaly: string };
   anomalyCompleted: { anomaly: string; level: number };

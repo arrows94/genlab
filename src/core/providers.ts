@@ -6,7 +6,7 @@ import { resonanceProvider, talentProvider } from './features/talents';
 import { anomalyProvider } from './features/anomalies';
 import { weeklyProvider } from './features/weekly';
 import { grandResearchProvider } from './features/grandResearch';
-import { towerMilestoneProvider } from './features/tower';
+import { towerMilestoneProvider, towerVeteranProvider } from './features/tower';
 import { dynastyProvider } from './features/dynasty';
 
 /**
@@ -79,5 +79,6 @@ export const DEFAULT_PROVIDERS: ModifierProvider[] = [
   grandResearchProvider,
   resonanceProvider,
   towerMilestoneProvider,
+  towerVeteranProvider,
   dynastyProvider,
 ];

@@ -204,6 +204,7 @@ export function describeModifier(ctx: GameContext, m: { target: string; op: stri
       'breeding.mutation': 'Mutationschance',
       'tower.elementDamage': 'Element-Schaden (Turm)',
       'tower.damage': 'Turm-Schaden',
+      'tower.hp': 'KP im Turm',
       'tower.crit': 'kritische Treffer (Turm)',
       'tower.thorns': 'Rückschaden (Turm)',
     };
