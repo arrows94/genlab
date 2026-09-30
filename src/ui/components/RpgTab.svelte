@@ -8,7 +8,7 @@
   } from '@core/features/rpg';
   import { heroStats, rpgLevel, thirdSkill } from '@core/features/rpgCombat';
   import type { RpgGearSlot } from '@core/content/types';
-  import { game, view, act } from '../store.svelte';
+  import { game, view, act, portalDone, startPortal } from '../store.svelte';
   import { gearOf, itemText, lootList, rarityOf } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
 
@@ -49,7 +49,10 @@
 
   function start() {
     if (!picked) return;
-    act(startRpgRun(game, picked.id, dungeonId));
+    // The portal must be open before the run starts, or the other world would show at once.
+    const id = picked.id;
+    startPortal('in', id);
+    if (!act(startRpgRun(game, id, dungeonId))) portalDone();
   }
 </script>
 

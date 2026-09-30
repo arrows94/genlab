@@ -63,7 +63,31 @@ export const view = $state({
    * Meanwhile the app shows only the other world, and news from the lab go quietly into the notification center.
    */
   world: 'off' as 'off' | 'run' | 'result',
+  /** Portal animation between the lab and the other world (`mid`: the screen is covered, the switch may happen). */
+  portal: null as { dir: 'in' | 'out'; creatureId: number; key: number; mid: boolean } | null,
 });
+
+let portalKey = 0;
+
+/**
+ * Plays the portal: 'in' pulls the monster from the lab into the other world, 'out' brings it back. The switch
+ * of the screen waits for the moment the portal covers everything (`portalCovered`).
+ */
+export function startPortal(dir: 'in' | 'out', creatureId: number): void {
+  view.portal = { dir, creatureId, key: ++portalKey, mid: false };
+}
+
+/** The portal covers the screen: now the app switches between the lab and the other world. */
+export function portalCovered(): void {
+  if (!view.portal) return;
+  view.portal = { ...view.portal, mid: true };
+  if (view.portal.dir === 'out') leaveWorld();
+  else refresh();
+}
+
+export function portalDone(): void {
+  view.portal = null;
+}
 
 /** Sounds of the other world (fights, level-ups, UI) – everything else waits in the lab. */
 const WORLD_SOUNDS = ['hit', 'hitCrit', 'hitWeak', 'whoosh', 'technique', 'ko', 'floorClear', 'milestone', 'runEnded', 'talent', 'click', 'bonk'] as const;
@@ -71,6 +95,8 @@ const WORLD_SOUNDS = ['hit', 'hitCrit', 'hitWeak', 'whoosh', 'technique', 'ko', 
 /** Follows the game: a running RPG run pulls the app into the other world; its end leaves the result screen. */
 function syncWorld(): void {
   const running = game.state.rpg.run !== null;
+  // A portal on its way in keeps the lab on screen until it covers everything.
+  if (running && view.world === 'off' && view.portal?.dir === 'in' && !view.portal.mid) return;
   const next = running ? 'run' : view.world === 'run' ? 'result' : view.world;
   if (next === view.world) return;
   view.world = next;

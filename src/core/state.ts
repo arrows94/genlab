@@ -414,6 +414,8 @@ export interface RpgItem {
 /** How the last run ended, for the summary. */
 export interface RpgResult {
   win: boolean;
+  /** The monster of the run (missing in older results). */
+  creatureId?: number;
   dungeon: string;
   /** The boss fell. */
   cleared: boolean;

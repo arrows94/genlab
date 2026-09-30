@@ -627,8 +627,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       still ins Nachrichten-Center), kleines Menü mit Ton und „Aufgeben“
       (`RpgWorld.svelte`, `view.world` im Store; Klänge aus dem Labor schweigen dort, Erfolgs-Momente und
       Offline-Bericht warten bis zur Rückkehr; „Aufgeben“ im Kampf zählt als Niederlage)
-- [ ] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
+- [x] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
       Bewegung: Überblendung
+      (`Portal.svelte`; der Bildschirm wechselt erst, wenn der Strudel alles bedeckt – `view.portal`, `portalCovered`)
 - [ ] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt
       Knopfliste, neue Kampfszene
 - [ ] Schritt 6: eigene Musikstimmung und Portal-Klang

@@ -258,7 +258,7 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   if (c?.job?.kind === 'rpg') c.job = null;
   r.best[run.dungeon] = Math.max(r.best[run.dungeon] ?? 0, run.depth);
   if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
-  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, startLevel: run.startLevel, level: rpgLevel(ctx, run.creatureId).level, loot: total, gear, at: ctx.state.lastTickAt };
+  r.lastResult = { win, creatureId: run.creatureId, dungeon: run.dungeon, cleared, depth: run.depth, startLevel: run.startLevel, level: rpgLevel(ctx, run.creatureId).level, loot: total, gear, at: ctx.state.lastTickAt };
   r.run = null;
   pruneRanks(ctx);
   ctx.invalidate();

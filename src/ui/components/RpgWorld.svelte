@@ -4,7 +4,7 @@
   import { formatNumber } from '@core/format';
   import { INTENT_INFO, ROOM_INFO, chooseEventOption, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
-  import { game, view, act, ask, leaveWorld } from '../store.svelte';
+  import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { STATUS_ICON, STATUS_NAME, gearOf, itemText, lootList, pct, rarityOf, speciesLook } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -48,6 +48,11 @@
       ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.`
       : 'Aufgeben und zurückkehren? Du nimmst alle Beute mit, der Lauf ist dann vorbei.';
     if (await ask(text, { ok: 'Aufgeben', danger: fighting })) act(giveUpRpgRun(game));
+  }
+  /** Back through the portal – the monster is thrown out into the lab (straight back if it is gone). */
+  function goBack(creatureId: number | undefined) {
+    if (creatureId !== undefined && game.state.creatures.some((c) => c.id === creatureId)) startPortal('out', creatureId);
+    else leaveWorld();
   }
   function useSkill(id: string) {
     act(useRpgSkill(game, id));
@@ -191,7 +196,7 @@
       {#each lootList(res.loot) as l (l.name)}<span class="chip">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="muted small">Keine Beute.</span>{/each}
       {#each res.gear as item (item.id)}<span class="chip" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
     </div>
-    <button class="primary back" onclick={leaveWorld}>🧬 Zurück ins Labor</button>
+    <button class="primary back" disabled={!!view.portal} onclick={() => goBack(res.creatureId)}>🧬 Zurück ins Labor</button>
   </article>
 {:else}
   <article class="panel result">

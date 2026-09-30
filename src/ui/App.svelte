@@ -38,6 +38,7 @@
   import TowerTab from './components/TowerTab.svelte';
   import RpgTab from './components/RpgTab.svelte';
   import RpgWorld from './components/RpgWorld.svelte';
+  import Portal from './components/Portal.svelte';
   import AeonTab from './components/AeonTab.svelte';
   import AnomaliesTab from './components/AnomaliesTab.svelte';
   import WeeklyBanner from './components/WeeklyBanner.svelte';
@@ -226,6 +227,7 @@
 <NotificationCenter />
 <SyncDialog />
 <ConfirmDialog />
+<Portal />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
 <style>
