@@ -50,6 +50,7 @@
     if (job.kind === 'nest') return '🥚 Brütet';
     if (job.kind === 'mission') return '🧭 Auf Erkundung';
     if (job.kind === 'tower') return '🗼 Im Genom-Turm';
+    if (job.kind === 'rpg') return '🔥 Im Dungeon';
     return 'Beschäftigt';
   });
 

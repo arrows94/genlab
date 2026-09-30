@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { nextTorchAt, refreshTorches, torches } from '@core/features/rpg';
+import { finishRpgRun, leaveRpgRun, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, secureLoot, startRpgRun, torches } from '@core/features/rpg';
+import { canConsume, sell } from '@core/features/stable';
+import { createCreature } from '@core/creatures';
+import { performPrestige } from '@core/prestige';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import { D } from '@core/num';
@@ -58,5 +61,81 @@ describe('GenLab RPG – Fackeln', () => {
     delete raw.state.rpg;
     const { state } = deserialize(JSON.stringify(raw));
     expect(state.rpg.torchAt).toBe(-1);
+  });
+});
+
+describe('GenLab RPG – Lauf', () => {
+  it('needs the feature and a Fackel', () => {
+    const g = makeGame();
+    const id = g.state.creatures[0]!.id;
+    expect(startRpgRun(g, id).ok).toBe(false);
+    unlockFeature(g, 'rpg');
+    expect(startRpgRun(g, id).ok).toBe(false); // stock not filled yet
+    refreshTorches(g, NOW);
+    expect(startRpgRun(g, id).ok).toBe(true);
+    expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
+    expect(g.state.rpg.runs).toBe(1);
+    expect(startRpgRun(g, id).ok).toBe(false); // one run at a time
+  });
+
+  it('starts at level 1 with full HP; the monster is busy and protected', () => {
+    const g = rpgGame();
+    const c = g.state.creatures[0]!;
+    createCreature(g, { speciesId: 'sproutle', rarity: 'common', source: 'other' });
+    expect(startRpgRun(g, c.id).ok).toBe(true);
+    const run = g.state.rpg.run!;
+    expect(run.level).toBe(1);
+    expect(run.depth).toBe(0);
+    expect(run.hp).toBe(rpgMaxHp(g, c));
+    expect(rpgHero(g)).toBe(c);
+    expect(c.job).toEqual({ kind: 'rpg', target: 'run' });
+    expect(canConsume(g, c)).toBe(false);
+    expect(sell(g, [c.id]).ok).toBe(false);
+  });
+
+  it('refilling starts as soon as a Fackel is spent', () => {
+    const g = rpgGame();
+    expect(startRpgRun(g, g.state.creatures[0]!.id).ok).toBe(true);
+    expect(nextTorchAt(g)).toBe(g.state.lastTickAt + balance.rpg.torchHours * HOUR);
+  });
+
+  it('leaving brings the carried loot home and frees the monster', () => {
+    const g = rpgGame();
+    const c = g.state.creatures[0]!;
+    startRpgRun(g, c.id);
+    g.state.rpg.run!.loot = { towerTokens: 10 };
+    expect(leaveRpgRun(g).ok).toBe(true);
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(10);
+    expect(c.job).toBeNull();
+    expect(g.state.rpg.run).toBeNull();
+    expect(g.state.rpg.lastResult).toMatchObject({ win: true, loot: { towerTokens: 10 } });
+    expect(leaveRpgRun(g).ok).toBe(false);
+  });
+
+  it('a defeat keeps secured loot and only a share of the carried loot', () => {
+    const g = rpgGame();
+    startRpgRun(g, g.state.creatures[0]!.id);
+    const run = g.state.rpg.run!;
+    run.loot = { towerTokens: 10 };
+    secureLoot(g);
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(10);
+    run.loot = { towerTokens: 10 };
+    finishRpgRun(g, false);
+    const kept = Math.floor(10 * balance.rpg.defeatKeep);
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(10 + kept);
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: 10 + kept } });
+  });
+
+  it('survives save and load; a prestige ends the run', () => {
+    const g = rpgGame();
+    startRpgRun(g, g.state.creatures[0]!.id);
+    g.state.rpg.run!.loot = { towerTokens: 5 };
+    const { state } = deserialize(serialize(g.state, NOW));
+    expect(state.rpg.run).toEqual(g.state.rpg.run);
+    unlockFeature(g, 'inheritance');
+    g.state.earned['gold'] = D(1e9);
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(g.state.rpg.run).toBeNull();
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(5);
   });
 });

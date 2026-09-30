@@ -58,6 +58,8 @@ export const balance: Balance = {
     // Fackeln: one per run; they come back by the real clock, a small stock saves up for a day off.
     torchHours: 6,
     maxTorches: 3,
+    // A defeat keeps this share of the carried loot (secured loot is always safe).
+    defeatKeep: 0.5,
   },
   timeCrystals: {
     skipHours: 4,

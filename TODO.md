@@ -615,15 +615,16 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Schritt 1 – Grundlage und Spam-Schutz
 
-- [ ] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
+- [x] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
       mit dem Spiel-RNG, übersteht Neuladen, pausiert offline
-- [ ] Monster auswählen: Es ist während des Laufs beschäftigt (eigener Job), `canConsume` schützt es
+- [x] Monster auswählen: Es ist während des Laufs beschäftigt (eigener Job), `canConsume` schützt es
 - [ ] **Eintritts-Ressource gegen Spammen**, Vorschlag „Fackeln“ 🔥: 1 neue alle 6 h, höchstens 3 gespeichert
       (Muster wie `weeklyBoss.attemptsPerDay` / `maxAttempts`); weitere aus Gen-Aufträgen, Wochen-Boss und
       Turm-Meilensteinen; Zahlen in `balance.ts`
   - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
   - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst wenn das RPG ins normale Spiel kommt
-- [ ] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
+- [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
+      (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
 - [ ] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
 
 ## Schritt 2 – Rundenkampf

@@ -68,6 +68,8 @@ export interface Balance {
     torchHours: number;
     /** Fackeln stored at most by refilling (rewards may go beyond). */
     maxTorches: number;
+    /** Share of the carried (not yet secured) loot kept after a defeat. */
+    defeatKeep: number;
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */

@@ -4,6 +4,7 @@ import { formatNumber } from './format';
 import { grant } from './resources';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
 import { survivesReset } from './systems/processes';
+import { finishRpgRun } from './features/rpg';
 import type { PrestigeLayerDef } from './content/types';
 import type { GameContext } from './context';
 import type { ActionResult } from './actions';
@@ -42,6 +43,8 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
     s.tower.run = null;
     s.tower.team = [];
     s.tower.lastDefeat = null;
+    // The monster leaves the dungeon with what it carries before the stable starts over.
+    finishRpgRun(ctx, true);
   }
   if (r.processes) s.processes = kept;
   if (r.buffs) s.buffs = [];

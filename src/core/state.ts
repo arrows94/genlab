@@ -15,7 +15,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower';
+  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower' | 'rpg';
   target: string;
 }
 
@@ -308,10 +308,42 @@ export interface MegaProjectState {
   paid: Record<string, Decimal>;
 }
 
+/** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */
+export interface RpgRun {
+  creatureId: number;
+  /** Current HP (they carry over from room to room). */
+  hp: number;
+  /** Run level (starts at 1 every run) and experience towards the next one. */
+  level: number;
+  xp: number;
+  /** Rooms cleared so far. */
+  depth: number;
+  /** Loot carried but not yet safe: lost in part on a defeat. */
+  loot: Record<string, number>;
+  /** Loot already made safe this run (paid out at the moment it was secured). */
+  secured: Record<string, number>;
+  /** Wall clock of the start. */
+  startedAt: number;
+}
+
+/** How the last run ended, for the summary. */
+export interface RpgResult {
+  win: boolean;
+  depth: number;
+  level: number;
+  /** Everything the run paid out (secured, kept after a defeat or brought home). */
+  loot: Record<string, number>;
+  at: number;
+}
+
 /** GenLab RPG: a single monster in an active, turn-based dungeon (see `features/rpg.ts`). */
 export interface RpgState {
   /** Wall clock the refill of the next Fackel started (0 = stock full, -1 = never unlocked: fill up once). */
   torchAt: number;
+  run: RpgRun | null;
+  lastResult: RpgResult | null;
+  /** Runs started ever. */
+  runs: number;
 }
 
 export interface GameState {
@@ -436,7 +468,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1 },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0 },
   };
 }
 
