@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
@@ -312,6 +312,7 @@
       synergies: teamSynergies(game, team.map((c) => content.species.get(c.speciesId).element), enemy.trait),
       roles: Object.fromEntries(team.map((c) => [c.id, roleOf(game, effectiveStats(game, c))])) as Record<number, ReturnType<typeof roleOf>>,
       milestones: towerMilestones(game),
+      veteran: veteranRank(game),
       nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
       reward: floorRewardInfo(game, nextFloor),
       floors,
@@ -461,6 +462,10 @@
     <span class="kpi"><b class="num">🚩 {data.cp}</b><small>Checkpoint</small></span>
     <span class="kpi" class:live={!!data.tw.run}><b class="num">{data.tw.run ? data.tw.run.floor : '–'}</b><small>{data.tw.run ? 'Aktueller Lauf' : 'Kein Lauf'}</small></span>
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
+    <span class="kpi veteran" title="Kampferfahrung: Jede gewonnene Etage bringt {game.balance.tower.xpPerFloor}, ein Boss {game.balance.tower.xpPerBoss} Erfahrung. Sie bleibt bei jeder Vererbung und jedem Äon. Je Rang +{formatPercent(game.balance.tower.xpRankBonus, 0)} KP und Schaden im Turm und gegen den Wochen-Boss – jetzt +{formatPercent(data.veteran.bonus, 0)}. Noch {formatNumber(Math.ceil(data.veteran.need - data.veteran.into))} bis Rang {data.veteran.rank + 1}.">
+      <b class="num">🎖 {data.veteran.rank}</b><small>Rang · +{formatPercent(data.veteran.bonus, 0)}</small>
+      <span class="xpbar"><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
+    </span>
     <span class="kpi" title="Alle {game.balance.tower.milestoneEvery} Etagen: einmalig {game.balance.tower.milestoneShards} Äon-Splitter und dauerhaft +15 % Turm-Schaden, +10 % Produktion"><b class="num">🏅 {data.milestones}</b><small>Meilensteine · nächster {data.nextMilestone}</small></span>
   </div>
 </header>
@@ -862,6 +867,9 @@
   .floor.guard { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .bossin { margin: 0.35rem 0 0; text-align: center; }
   .wut { color: var(--danger); font-weight: 700; }
+  .veteran { gap: 0.1rem; }
+  .xpbar { width: 100%; height: 3px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .xpbar span { display: block; height: 100%; background: var(--gold); }
   .trait.guard { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .floor.next { border: 2px solid var(--gold); color: var(--text); animation: glow 1.6s ease-in-out infinite; }
   .floor.best::after { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; border-top: 2px dashed var(--gold); }

@@ -96,7 +96,7 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
     add(0.5 + foeHpLeft * 0.3, {
       id: 'outmatched', icon: '💪', title: 'Deutlich zu schwach',
       text: `Dein Team schaffte nur ${pct(1 - foeHpLeft)} der gegnerischen KP, bevor es fiel.`,
-      tip: 'Hier hilft vor allem mehr Stärke: Kreaturen mit besseren Werten züchten, Infusion, Relikte aufwerten, Turm-Forschung.',
+      tip: 'Hier hilft vor allem mehr Stärke: Kreaturen mit besseren Werten züchten, Infusion, Relikte aufwerten, Turm-Forschung. Und jeder Sieg bringt Kampferfahrung – auch Weiterkämpfen macht dein Team Rang für Rang stärker.',
     });
   }
 
@@ -210,7 +210,7 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
     add(0, {
       id: 'weak', icon: '💪', title: 'Etwas zu schwach',
       text: `Die Gegner hatten am Ende noch ${pct(foeHpLeft)} ihrer KP.`,
-      tip: 'Mehr Stärke hilft immer: bessere Werte züchten, Relikte aufwerten, Turm-Forschung – oder das Team nach Vorteil gegen den Gegner wählen.',
+      tip: 'Mehr Stärke hilft immer: bessere Werte züchten, Relikte aufwerten, Turm-Forschung, Kampferfahrung durch Weiterkämpfen – oder das Team nach Vorteil gegen den Gegner wählen.',
     });
   }
 

@@ -3,9 +3,10 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, enemiesFor, techniqueFor, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, enemiesFor, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
+import { resetLayer } from '@core/prestige';
 import type { Fighter } from '@core/features/tower';
 import { balance, content, makeGame } from './helpers';
 
@@ -373,6 +374,53 @@ describe('Gegner und Turm (Schritt 4)', () => {
     expect(r.events.filter((e) => e.a === 1).length / techs.length).toBeGreaterThanOrEqual(balance.tower.enemyTechniqueEvery - 1);
     const b = simulateFight(g, [unit({ hp: 1e9, maxHp: 1e9 })], foe({ technique: 'blaze', atk: 50, spd: 20, boss: true }), Rng.fromSeed(3), { limitSec: 10 });
     expect(b.events.some((e) => e.a === 1 && e.kind === 'tech')).toBe(false);
+  });
+});
+
+describe('Kampferfahrung', () => {
+  it('ranks cost base × growthⁿ each', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    expect(veteranRank(g, 0)).toMatchObject({ rank: 0, into: 0, need: t.xpRankBase, bonus: 0 });
+    expect(veteranRank(g, t.xpRankBase - 1).rank).toBe(0);
+    expect(veteranRank(g, t.xpRankBase).rank).toBe(1);
+    const two = t.xpRankBase * (1 + t.xpRankGrowth);
+    expect(veteranRank(g, two - 1).rank).toBe(1);
+    expect(veteranRank(g, two)).toMatchObject({ rank: 2, bonus: 2 * t.xpRankBonus });
+    expect(veteranRank(g, two + 5).into).toBeCloseTo(5);
+  });
+
+  it('won floors bring XP (bosses more), a new rank raises KP and damage in the tower', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    const plain = fighterFor(g, c);
+    const ranks: number[] = [];
+    g.bus.on('towerRank', (e) => ranks.push(e.rank));
+    expect(startRun(g, false).ok).toBe(true);
+    for (let i = 0; i < t.bossEvery; i++) fightNextFloor(g);
+    expect(g.state.tower.xp).toBe((t.bossEvery - 1) * t.xpPerFloor + t.xpPerBoss);
+    expect(ranks).toEqual([]);
+    g.state.tower.xp = t.xpRankBase - t.xpPerFloor;
+    fightNextFloor(g);
+    expect(ranks).toEqual([1]);
+    g.state.tower.xp = t.xpRankBase * 10;
+    g.invalidate();
+    const rank = veteranRank(g);
+    expect(rank.rank).toBeGreaterThan(0);
+    const vet = fighterFor(g, c);
+    expect(vet.hp).toBe(Math.round(plain.hp * (1 + rank.bonus)));
+    expect(vet.power / plain.power).toBeCloseTo(1 + rank.bonus, 5);
+  });
+
+  it('survives inheritance and Äon', () => {
+    const g = towerGame();
+    g.state.tower.xp = 12345;
+    resetLayer(g, content.prestigeLayers.get('inheritance'));
+    expect(g.state.tower.xp).toBe(12345);
+    resetLayer(g, content.prestigeLayers.get('aeon'));
+    expect(g.state.tower.xp).toBe(12345);
   });
 });
 
