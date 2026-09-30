@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { finishRpgRun, leaveRpgRun, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { dungeonUnlocked, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { foeIntent, heroActsFirst, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -70,21 +70,21 @@ describe('GenLab RPG – Lauf', () => {
   it('needs the feature and a Fackel', () => {
     const g = makeGame();
     const id = g.state.creatures[0]!.id;
-    expect(startRpgRun(g, id).ok).toBe(false);
+    expect(startRpgRun(g, id, 'rootMaze').ok).toBe(false);
     unlockFeature(g, 'rpg');
-    expect(startRpgRun(g, id).ok).toBe(false); // stock not filled yet
+    expect(startRpgRun(g, id, 'rootMaze').ok).toBe(false); // stock not filled yet
     refreshTorches(g, NOW);
-    expect(startRpgRun(g, id).ok).toBe(true);
+    expect(startRpgRun(g, id, 'rootMaze').ok).toBe(true);
     expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
     expect(g.state.rpg.runs).toBe(1);
-    expect(startRpgRun(g, id).ok).toBe(false); // one run at a time
+    expect(startRpgRun(g, id, 'rootMaze').ok).toBe(false); // one run at a time
   });
 
   it('starts at level 1 with full HP; the monster is busy and protected', () => {
     const g = rpgGame();
     const c = g.state.creatures[0]!;
     createCreature(g, { speciesId: 'sproutle', rarity: 'common', source: 'other' });
-    expect(startRpgRun(g, c.id).ok).toBe(true);
+    expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
     const run = g.state.rpg.run!;
     expect(run.level).toBe(1);
     expect(run.depth).toBe(0);
@@ -97,14 +97,14 @@ describe('GenLab RPG – Lauf', () => {
 
   it('refilling starts as soon as a Fackel is spent', () => {
     const g = rpgGame();
-    expect(startRpgRun(g, g.state.creatures[0]!.id).ok).toBe(true);
+    expect(startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze').ok).toBe(true);
     expect(nextTorchAt(g)).toBe(g.state.lastTickAt + balance.rpg.torchHours * HOUR);
   });
 
   it('leaving brings the carried loot home and frees the monster', () => {
     const g = rpgGame();
     const c = g.state.creatures[0]!;
-    startRpgRun(g, c.id);
+    startRpgRun(g, c.id, 'rootMaze');
     g.state.rpg.run!.loot = { towerTokens: 10 };
     expect(leaveRpgRun(g).ok).toBe(true);
     expect(g.state.resources['towerTokens']!.toNumber()).toBe(10);
@@ -116,7 +116,7 @@ describe('GenLab RPG – Lauf', () => {
 
   it('a defeat keeps secured loot and only a share of the carried loot', () => {
     const g = rpgGame();
-    startRpgRun(g, g.state.creatures[0]!.id);
+    startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     const run = g.state.rpg.run!;
     run.loot = { towerTokens: 10 };
     secureLoot(g);
@@ -130,7 +130,7 @@ describe('GenLab RPG – Lauf', () => {
 
   it('survives save and load; a prestige ends the run', () => {
     const g = rpgGame();
-    startRpgRun(g, g.state.creatures[0]!.id);
+    startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     g.state.rpg.run!.loot = { towerTokens: 5 };
     const { state } = deserialize(serialize(g.state, NOW));
     expect(state.rpg.run).toEqual(g.state.rpg.run);
@@ -178,7 +178,7 @@ describe('GenLab RPG – Rundenkampf', () => {
     const c = g.state.creatures[0]!;
     c.abilities = [];
     c.latent = null;
-    startRpgRun(g, c.id);
+    startRpgRun(g, c.id, 'rootMaze');
     return { g, c };
   }
   const hero = (over: Partial<RpgCombatant> = {}): RpgCombatant => ({ name: 'Held', speciesId: 'emberpup', element: 'fire', hp: 100, maxHp: 100, atk: 20, def: 5, spd: 10, statuses: [], ...over });
@@ -284,5 +284,95 @@ describe('GenLab RPG – Rundenkampf', () => {
       return log;
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('GenLab RPG – Dungeon', () => {
+  function run(seed = 42) {
+    const g = makeGame(seed);
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    // A hero far above the first dungeon: the room flow is tested here, not the balance.
+    c.stats = { hp: 5000, atk: 500, def: 200, spd: 50 };
+    expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
+    return { g, c };
+  }
+  /** Wins the running fight with basic attacks. */
+  function winFight(g: ReturnType<typeof makeGame>) {
+    for (let i = 0; i < 100 && g.state.rpg.run?.battle; i++) expect(useRpgSkill(g, 'strike').ok).toBe(true);
+  }
+
+  it('only the first dungeon is open; a clear opens the next', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    expect(dungeonUnlocked(g, 'rootMaze')).toBe(true);
+    expect(dungeonUnlocked(g, 'emberCaves')).toBe(false);
+    expect(startRpgRun(g, g.state.creatures[0]!.id, 'emberCaves').ok).toBe(false);
+    g.state.rpg.cleared['rootMaze'] = 1;
+    expect(dungeonUnlocked(g, 'emberCaves')).toBe(true);
+  });
+
+  it('offers 2–3 different ways after each room', () => {
+    const { g } = run();
+    const choices = g.state.rpg.run!.choices;
+    expect(choices.length).toBeGreaterThanOrEqual(balance.rpg.choices[0]);
+    expect(choices.length).toBeLessThanOrEqual(balance.rpg.choices[1]);
+    expect(new Set(choices).size).toBe(choices.length);
+    expect(choices).not.toContain('boss');
+  });
+
+  it('a fight room starts a fight whose strength grows with the depth', () => {
+    const { g } = run();
+    const r = g.state.rpg.run!;
+    r.choices = ['fight'];
+    expect(enterRoom(g, 0).ok).toBe(true);
+    expect(r.battle).not.toBeNull();
+    expect(r.depth).toBe(1);
+    expect(enterRoom(g, 0).ok).toBe(false); // finish the room first
+    expect(leaveRpgRun(g).ok).toBe(false); // no fleeing mid-fight
+    expect(g.content.rpgDungeons.get('rootMaze').elements).toContain(r.battle!.foe.element);
+    winFight(g);
+    expect(r.loot).toEqual(roomLoot(g, r, 'fight'));
+    expect(r.choices.length).toBeGreaterThan(0);
+    r.depth = 5;
+    expect(roomFloor(g, r)).toBeGreaterThan(roomFloor(g, { ...r, depth: 1 }));
+  });
+
+  it('a rest heals and secures the loot; a treasure adds loot', () => {
+    const { g, c } = run();
+    const r = g.state.rpg.run!;
+    r.choices = ['treasure'];
+    enterRoom(g, 0);
+    expect(r.loot).toEqual(roomLoot(g, r, 'treasure'));
+    r.hp = 1;
+    r.choices = ['rest'];
+    enterRoom(g, 0);
+    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * balance.rpg.restHeal));
+    expect(r.loot).toEqual({});
+    expect(r.secured).toEqual(roomLoot(g, r, 'treasure'));
+    expect(g.state.resources['towerTokens']!.toNumber()).toBe(roomLoot(g, r, 'treasure')['towerTokens']);
+  });
+
+  it('after the last room only the boss waits; beating it clears the dungeon', () => {
+    const { g, c } = run();
+    const rooms = g.content.rpgDungeons.get('rootMaze').rooms;
+    for (let i = 0; i < rooms; i++) {
+      const r = g.state.rpg.run!;
+      expect(r.choices).not.toContain('boss');
+      enterRoom(g, 0);
+      winFight(g);
+    }
+    expect(g.state.rpg.run!.choices).toEqual(['boss']);
+    enterRoom(g, 0);
+    expect(g.state.rpg.run!.battle!.foe.kind).toBe('boss');
+    winFight(g);
+    expect(g.state.rpg.run).toBeNull();
+    expect(g.state.rpg.cleared['rootMaze']).toBe(1);
+    expect(g.state.rpg.best['rootMaze']).toBe(rooms + 1);
+    expect(g.state.rpg.lastResult).toMatchObject({ win: true, cleared: true, dungeon: 'rootMaze' });
+    expect(c.job).toBeNull();
+    expect(dungeonUnlocked(g, 'emberCaves')).toBe(true);
   });
 });

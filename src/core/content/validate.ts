@@ -418,6 +418,21 @@ export function validateContent(data: ContentData): string[] {
   for (const kind of ['normal', 'elite', 'boss']) {
     if (!data.rpgEnemies.some((e) => e.kind === kind)) issues.push(`rpgEnemies: mindestens ein Gegner der Art "${kind}"`);
   }
+  for (const d of data.rpgDungeons) {
+    const w = at('rpgDungeons', d.id);
+    text(`${w}.name`, d.name);
+    text(`${w}.description`, d.description);
+    if (!Array.isArray(d.elements) || d.elements.length === 0) issues.push(`${w}.elements: mindestens ein Element`);
+    for (const e of d.elements ?? []) {
+      ref(`${w}.elements`, 'elements', e);
+      if (!data.species.some((sp) => sp.element === e)) issues.push(`${w}.elements: keine Art mit Element "${e}"`);
+    }
+    num(`${w}.floor`, d.floor, 0);
+    num(`${w}.floorsPerRoom`, d.floorsPerRoom, 0);
+    num(`${w}.rooms`, d.rooms, 1, 50);
+    num(`${w}.loot`, d.loot, 0);
+    ref(`${w}.requires`, 'rpgDungeons', d.requires);
+  }
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);

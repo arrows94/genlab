@@ -88,6 +88,14 @@ export interface Balance {
     chargeWhenHit: number;
     /** Lines kept in the fight log. */
     logSize: number;
+    /** How many ways are offered after a room: [min, max]. */
+    choices: [number, number];
+    /** Weights of the room kinds offered (the boss comes on its own at the end). */
+    roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
+    /** Share of max HP a rest heals. */
+    restHeal: number;
+    /** Loot per room kind, multiplied by the dungeon's `loot`. */
+    loot: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', ResourceAmounts>>;
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */

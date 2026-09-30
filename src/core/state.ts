@@ -1,7 +1,7 @@
 import { D, type Decimal } from './num';
 import type { RngState } from './rng';
 import type { ModifierDef } from './modifiers';
-import type { StatusId } from './content/types';
+import type { RpgRoomKind, StatusId } from './content/types';
 
 export type StatBlock = Record<string, number>;
 
@@ -353,6 +353,12 @@ export interface RpgBattle {
 /** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */
 export interface RpgRun {
   creatureId: number;
+  /** `rpgDungeons` id. */
+  dungeon: string;
+  /** Rooms offered next (pick one); empty while inside a room. */
+  choices: RpgRoomKind[];
+  /** The room the hero is in (a fight not yet won), null between rooms. */
+  room: RpgRoomKind | null;
   /** Current HP (they carry over from room to room). */
   hp: number;
   /** Run level (starts at 1 every run) and experience towards the next one. */
@@ -372,6 +378,9 @@ export interface RpgRun {
 /** How the last run ended, for the summary. */
 export interface RpgResult {
   win: boolean;
+  dungeon: string;
+  /** The boss fell. */
+  cleared: boolean;
   depth: number;
   level: number;
   /** Everything the run paid out (secured, kept after a defeat or brought home). */
@@ -387,6 +396,10 @@ export interface RpgState {
   lastResult: RpgResult | null;
   /** Runs started ever. */
   runs: number;
+  /** Boss victories per dungeon (a clear opens the next dungeon). */
+  cleared: Record<string, number>;
+  /** Deepest room reached per dungeon. */
+  best: Record<string, number>;
 }
 
 export interface GameState {
@@ -511,7 +524,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0 },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {} },
   };
 }
 

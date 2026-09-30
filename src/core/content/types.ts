@@ -693,6 +693,29 @@ export interface RpgEnemyDef {
   spd: number;
 }
 
+/** Room kinds of a dungeon; after each room the player picks the next from 2–3. */
+export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'boss';
+
+/** A dungeon of the GenLab RPG: element theme, strength and length. */
+export interface RpgDungeonDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Foes come from species of these elements. */
+  elements: string[];
+  /** Strength of the first room on the tower scale (enemy of this floor). */
+  floor: number;
+  /** Strength added per room. */
+  floorsPerRoom: number;
+  /** Rooms before the boss. */
+  rooms: number;
+  /** Loot multiplier (deeper dungeons pay more). */
+  loot: number;
+  /** Dungeon that must be cleared first. */
+  requires?: string;
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -731,6 +754,7 @@ export interface ContentData {
   nameLists: NameListDef[];
   rpgSkills: RpgSkillDef[];
   rpgEnemies: RpgEnemyDef[];
+  rpgDungeons: RpgDungeonDef[];
 }
 
 export interface Registry<T extends { id: string }> {

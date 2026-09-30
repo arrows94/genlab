@@ -4,7 +4,7 @@ import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature, RpgRun } from '../state';
-import type { RpgSkillDef } from '../content/types';
+import type { RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { heroCombatant, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker } from './rpgCombat';
@@ -90,11 +90,20 @@ export function rpgStartBlocker(ctx: GameContext, c: Creature): string | null {
   return null;
 }
 
+/** A dungeon is open once the one before it was cleared. */
+export function dungeonUnlocked(ctx: GameContext, dungeonId: string): boolean {
+  if (!ctx.content.rpgDungeons.has(dungeonId)) return false;
+  const req = ctx.content.rpgDungeons.get(dungeonId).requires;
+  return !req || (ctx.state.rpg.cleared[req] ?? 0) > 0;
+}
+
 /** Starts a run with one monster for one Fackel. A monster at work leaves its building. */
-export function startRpgRun(ctx: GameContext, creatureId: number): ActionResult {
+export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: string): ActionResult {
   if (!ctx.state.features['rpg']) return { ok: false, reason: 'Das GenLab RPG ist noch nicht freigeschaltet.' };
   const r = ctx.state.rpg;
   if (r.run) return { ok: false, reason: 'Es läuft bereits ein Lauf.' };
+  if (!ctx.content.rpgDungeons.has(dungeonId)) return { ok: false, reason: 'Diesen Dungeon gibt es nicht.' };
+  if (!dungeonUnlocked(ctx, dungeonId)) return { ok: false, reason: 'Dieser Dungeon ist noch verschlossen – besiege zuerst den vorigen.' };
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
   const blocker = rpgStartBlocker(ctx, c);
@@ -104,8 +113,12 @@ export function startRpgRun(ctx: GameContext, creatureId: number): ActionResult 
   if (r.torchAt === 0) r.torchAt = ctx.state.lastTickAt;
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
-  r.run = { creatureId: c.id, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0, loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null };
+  r.run = {
+    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0,
+    loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null,
+  };
   r.runs++;
+  offerRooms(ctx, r.run);
   return { ok: true };
 }
 
@@ -133,7 +146,7 @@ export function secureLoot(ctx: GameContext): void {
  * Ends the run. Leaving (win) brings all carried loot home, a defeat keeps
  * `defeatKeep` of it. Secured loot was paid out already.
  */
-export function finishRpgRun(ctx: GameContext, win: boolean): void {
+export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): void {
   const r = ctx.state.rpg;
   const run = r.run;
   if (!run) return;
@@ -144,7 +157,9 @@ export function finishRpgRun(ctx: GameContext, win: boolean): void {
   addLoot(total, kept);
   const c = findCreature(ctx, run.creatureId);
   if (c?.job?.kind === 'rpg') c.job = null;
-  r.lastResult = { win, depth: run.depth, level: run.level, loot: total, at: ctx.state.lastTickAt };
+  r.best[run.dungeon] = Math.max(r.best[run.dungeon] ?? 0, run.depth);
+  if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
+  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, level: run.level, loot: total, at: ctx.state.lastTickAt };
   r.run = null;
   ctx.invalidate();
 }
@@ -152,6 +167,7 @@ export function finishRpgRun(ctx: GameContext, win: boolean): void {
 /** The player leaves the dungeon with everything carried. */
 export function leaveRpgRun(ctx: GameContext): ActionResult {
   if (!ctx.state.rpg.run) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  if (ctx.state.rpg.run.battle) return { ok: false, reason: 'Mitten im Kampf kannst du nicht fliehen.' };
   finishRpgRun(ctx, true);
   return { ok: true };
 }
@@ -186,6 +202,105 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   const outcome = playRound(ctx, battle, skill);
   run.hp = battle.hero.hp;
   if (outcome === 'lose') finishRpgRun(ctx, false);
-  else if (outcome === 'win') run.battle = null;
+  else if (outcome === 'win') winBattle(ctx, run);
+  return { ok: true };
+}
+
+function winBattle(ctx: GameContext, run: RpgRun): void {
+  const kind = run.room === 'boss' ? 'boss' : run.room === 'elite' ? 'elite' : 'fight';
+  run.battle = null;
+  addLoot(run.loot, roomLoot(ctx, run, kind));
+  if (kind === 'boss') {
+    finishRpgRun(ctx, true, true);
+    return;
+  }
+  roomDone(ctx, run);
+}
+
+// ---- Dungeon ------------------------------------------------------------------
+
+/** Strength of the current room on the tower scale. */
+export function roomFloor(ctx: GameContext, run: RpgRun): number {
+  const d = ctx.content.rpgDungeons.get(run.dungeon);
+  return Math.round(d.floor + Math.max(0, run.depth - 1) * d.floorsPerRoom);
+}
+
+/** Loot of a room kind in this dungeon. */
+export function roomLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss'): Record<string, number> {
+  const mult = ctx.content.rpgDungeons.get(run.dungeon).loot;
+  const out: Record<string, number> = {};
+  for (const [res, amount] of Object.entries(ctx.balance.rpg.loot[kind] ?? {})) {
+    const v = Math.round(amount * mult);
+    if (v > 0) out[res] = v;
+  }
+  return out;
+}
+
+/** Offers the next ways: 2–3 different rooms, or the boss after the last room. */
+function offerRooms(ctx: GameContext, run: RpgRun): void {
+  const d = ctx.content.rpgDungeons.get(run.dungeon);
+  if (run.depth >= d.rooms) {
+    run.choices = ['boss'];
+    return;
+  }
+  const [min, max] = ctx.balance.rpg.choices;
+  const weights: Record<string, number> = { ...ctx.balance.rpg.roomWeights };
+  const out: RpgRoomKind[] = [];
+  const count = ctx.rng.int(min, max);
+  while (out.length < count && Object.values(weights).some((w) => w > 0)) {
+    const kind = ctx.rng.weighted(weights) as RpgRoomKind;
+    out.push(kind);
+    weights[kind] = 0;
+  }
+  run.choices = out;
+}
+
+function roomDone(ctx: GameContext, run: RpgRun): void {
+  run.room = null;
+  offerRooms(ctx, run);
+}
+
+/** Species a foe of this dungeon can be: bosses take the strongest form of the dungeon's elements. */
+function foeSpecies(ctx: GameContext, run: RpgRun, boss: boolean): string {
+  const d = ctx.content.rpgDungeons.get(run.dungeon);
+  const pool = ctx.content.species.list.filter((sp) => d.elements.includes(sp.element));
+  if (!boss) {
+    const plain = pool.filter((sp) => sp.tier === 'base' || sp.tier === 'hybrid');
+    return ctx.rng.pick(plain.length ? plain : pool).id;
+  }
+  const order: Record<string, number> = { base: 0, hybrid: 1, rareHybrid: 2, mythic: 3 };
+  const top = Math.max(...pool.map((sp) => order[sp.tier] ?? 0));
+  return ctx.rng.pick(pool.filter((sp) => (order[sp.tier] ?? 0) === top)).id;
+}
+
+/** Goes into one of the offered rooms. Fights start at once; treasure and rest take effect right away. */
+export function enterRoom(ctx: GameContext, index: number): ActionResult {
+  const run = ctx.state.rpg.run;
+  if (!run) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  if (run.battle || run.room) return { ok: false, reason: 'Erst diesen Raum abschließen.' };
+  const kind = run.choices[index];
+  if (!kind) return { ok: false, reason: 'Diesen Weg gibt es nicht.' };
+  run.choices = [];
+  run.depth++;
+  run.room = kind;
+  const hero = rpgHero(ctx)!;
+  switch (kind) {
+    case 'fight':
+    case 'elite':
+    case 'boss': {
+      const enemyKind = kind === 'fight' ? 'normal' : kind;
+      const enemy = ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind));
+      return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomFloor(ctx, run));
+    }
+    case 'treasure':
+      addLoot(run.loot, roomLoot(ctx, run, 'treasure'));
+      break;
+    case 'rest':
+    case 'event':
+      run.hp = Math.min(rpgMaxHp(ctx, hero), run.hp + Math.round(rpgMaxHp(ctx, hero) * ctx.balance.rpg.restHeal));
+      secureLoot(ctx);
+      break;
+  }
+  roomDone(ctx, run);
   return { ok: true };
 }
