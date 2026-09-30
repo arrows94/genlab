@@ -136,8 +136,12 @@
     return () => document.removeEventListener('click', onClick, true);
   });
 
-  // Background music follows the settings and changes its mood with the area.
-  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, view.world !== 'off' ? 'isekai' : moodFor(view.tab)));
+  // Background music follows the settings and changes its mood with the area; fights in the other world get their own.
+  const inBattle = $derived.by(() => {
+    view.frame;
+    return view.world === 'run' && !!game.state.rpg.run?.battle;
+  });
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab)));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
