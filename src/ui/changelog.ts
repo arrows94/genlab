@@ -29,8 +29,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-09-30',
     title: 'Element-Techniken im Turm, Klänge einzeln abschaltbar',
     items: [
-      { text: 'Jede Kreatur setzt im Turm bei jeder vierten Aktion die Technik ihres Elements ein – Brand, Heilung, Schild, Betäubung, Frost, Gift und mehr. Zustände siehst du als Symbole über den Kämpfern, die Technik steht am Team-Platz.', feature: 'tower' },
-      { text: 'Teams mit zwei Kreaturen desselben Elements bekommen +10 % Angriff, drei verschiedene Elemente +25 % Schaden gegen den Wandler.', feature: 'tower' },
+      { text: 'Jede Kreatur setzt im Turm bei jeder fünften Aktion die Technik ihres Elements ein – Brand, Heilung, Schild, Betäubung, Frost, Gift und mehr. Zustände siehst du als Symbole über den Kämpfern, die Technik steht am Team-Platz.', feature: 'tower' },
+      { text: 'Teams mit zwei Kreaturen desselben Elements bekommen +8 % Angriff, drei verschiedene Elemente +25 % Schaden gegen den Wandler.', feature: 'tower' },
       { text: 'Seltene Allele und Erbanlagen wirken jetzt auch im Kampf: kritische Treffer, Rückschaden, Erstschlag. Neue Erbanlage: Dornenhaut.', feature: 'deepSequencing' },
       { text: 'Der Wochen-Boss kämpft jetzt mit denselben Regeln wie der Turm – Techniken, Reihen und Tempo zählen auch dort.', feature: 'weeklyBoss' },
       { text: 'Unter Optionen → Töne kannst du einzelne Klänge oder ganze Gruppen abschalten und jeden Klang probehören.' },

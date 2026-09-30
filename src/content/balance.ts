@@ -196,12 +196,12 @@ export const balance: Balance = {
     // Enemies hit the front row with this chance (as long as someone stands there and someone behind).
     frontShare: 0.75,
     // Element-Techniken: every n-th action of a fighter; enemies join in with Schritt 4.
-    techniqueEvery: 4,
+    techniqueEvery: 5,
     enemyTechniques: false,
     // Critical hits (tower.crit chance) deal this multiple.
     critMult: 1.5,
     // Synergies: two or more of one element +ANG; three different elements +damage against the Wandler.
-    pairBonus: 0.1,
+    pairBonus: 0.08,
     diversityBonus: 0.25,
     enemyBase: { hp: 60, atk: 9, def: 5, spd: 6 },
     enemyGrowth: 1.11,

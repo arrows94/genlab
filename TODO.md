@@ -340,7 +340,7 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Schritt 3 – Elemente und Fähigkeiten im Kampf
 
-- [x] Element-Techniken (`content/techniques.ts`, jede 4. Aktion): Brand, Quellwasser (Heilung), Steinwall (Schild),
+- [x] Element-Techniken (`content/techniques.ts`, jede 5. Aktion): Brand, Quellwasser (Heilung), Steinwall (Schild),
       Windhauch (Ausweichen), Schock (Betäubung), Blütenregen (Team-Regeneration), Frost (Verlangsamen),
       Hinterhalt (220 %), Läuterung (Reinigen + Heilung), Panzerung, Giftbiss, Prisma (Rückstrahlung).
       Ursprüngliche Idee: Jede Kreatur hat nach n Aktionen eine Spezialaktion ihres Elements, z. B.
@@ -352,7 +352,12 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Kampf-Eigenschaften als Modifikatoren (`tower.crit`, `tower.thorns`, `tower.firstStrike`): „Flink“ handelt
       sofort. Eine neue Fähigkeit „Stachelig“ wurde verworfen – jede neue Fähigkeit verschiebt die Würfe beim Brüten und
       damit den Test-Bot (erste Vererbung 108 statt ≤ 100 min)
-- [x] Team-Synergien: zwei gleiche Elemente +10 % Angriff, drei verschiedene Elemente +25 % Schaden gegen den Wandler
+- [x] Team-Synergien: zwei gleiche Elemente +8 % Angriff, drei verschiedene Elemente +25 % Schaden gegen den Wandler
+- [x] Balancing mit dem Äon-Bot (6 Tage, Turm-Rekord je Tag): erste Fassung (jede 4. Aktion, Paar +10 %) 19 26 27 39
+      39 49 – zu stark, vor allem Techniken und Synergien zusammen (einzeln abgeschaltet: 29 bzw. 29 an Tag 6).
+      Abgeschwächt (jede 5. Aktion, Paar +8 %, Brand 25 %, Gift 18 %, Hinterhalt 180 %): 18 18 18 26 26 26; alles aus
+      16 16 16 17 28 28, `main` 15 15 15 17 17 28. Einzelkampf-Messung: Techniken sparen auf Etage 25 3–9 % Stärke,
+      reine Unterstützungs-Teams auf Etage 45 kosten bis zu 19 % – Unterstützung lohnt sich noch zu wenig
 - [x] Genetik: Titanenkraft (Kᵗ) +10 % kritische Treffer, Blitzschnell (Tᵇ) Erstschlag, Diamanthaut (Pᵈ) 10 %
       Rückschaden; Erbanlagen Jägerinstinkt (+15 % kritisch) und neu Dornenhaut (30 % Rückschaden)
 
