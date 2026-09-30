@@ -34,6 +34,9 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Seltene Allele und Erbanlagen wirken jetzt auch im Kampf: kritische Treffer, Rückschaden, Erstschlag. Neue Erbanlage: Dornenhaut.', feature: 'deepSequencing' },
       { text: 'Der Wochen-Boss kämpft jetzt mit denselben Regeln wie der Turm – Techniken, Reihen und Tempo zählen auch dort.', feature: 'weeklyBoss' },
       { text: 'Unter Optionen → Töne kannst du einzelne Klänge oder ganze Gruppen abschalten und jeden Klang probehören.' },
+      { text: 'Neue Forschung „Zuchtbuch“: Die Brutstation merkt sich dein letztes Paar, „↻ Letztes Paar“ wählt es mit einem Tipp wieder aus.', feature: 'mine' },
+      { text: 'Neue Forschung „Zwei Zuchtlisten“: Jedes Elternteil bekommt seine eigene Kandidatenliste mit eigenem Art-Filter.', feature: 'biolab' },
+      { text: 'Der Recycling-Automat nimmt nie mehr die letzte Kreatur einer Art. Von Hand geht es weiterhin – mit einer Warnung.', feature: 'autoRecycle' },
     ],
   },
   {

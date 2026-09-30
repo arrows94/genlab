@@ -7,7 +7,7 @@
   import { activeListFilters, resetListFilters, viewState } from '../viewState.svelte';
   import { batchSellValue, canConsume, sell, stableCapacity } from '@core/features/stable';
   import { batchFragments } from '@core/features/recycler';
-  import { inRecycler, sendToRecycler } from '@core/features/automation';
+  import { inRecycler, sendToRecycler, speciesLostWith } from '@core/features/automation';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CreatureCard from './CreatureCard.svelte';
   import DnaHelix from './DnaHelix.svelte';
@@ -79,7 +79,9 @@
   async function doRecycle() {
     const ids = data.chosen.filter((c) => !inRecycler(game, c.id)).map((c) => c.id);
     if (!ids.length) return;
-    const text = `${ids.length} Kreatur(en) zum Gen-Recycler schicken? Sie werden in der Zerlege-Kammer nacheinander recycelt – bis dahin kannst du sie dort zurückholen.`;
+    const lost = speciesLostWith(game, ids).map((id) => content.species.get(id).name);
+    const warning = lost.length ? ` ⚠️ Damit gibst du deine letzte${lost.length > 1 ? 'n' : ''} ${lost.join(', ')} ab – die Art ist dann nicht mehr in deinem Stall.` : '';
+    const text = `${ids.length} Kreatur(en) zum Gen-Recycler schicken? Sie werden in der Zerlege-Kammer nacheinander recycelt – bis dahin kannst du sie dort zurückholen.${warning}`;
     if ((await ask(text, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, ids))) {
       selected = new Set();
       toast(`♻️ ${ids.length} ${ids.length === 1 ? 'Kreatur wartet' : 'Kreaturen warten'} auf die Zerlege-Kammer.`);

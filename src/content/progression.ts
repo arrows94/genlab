@@ -40,6 +40,8 @@ export const features: FeatureDef[] = [
   { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
   { id: 'autoSequence', name: 'Sequenzier-Roboter', hint: 'Der Sequenzier-Roboter ist bereit: Im Genlabor einschalten, dann entschlüsselt er neue Genome von selbst.' },
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter.' },
+  { id: 'breedRepeat', name: 'Zuchtbuch', hint: 'Zuchtbuch: In der Brutstation wählt „↻ Letztes Paar“ deine letzten Eltern wieder aus.' },
+  { id: 'breedSplit', name: 'Zwei Zuchtlisten', hint: 'Zwei Zuchtlisten: In der Brutstation hat jetzt jedes Elternteil seine eigene Kandidatenliste.' },
   { id: 'autoRecycle', name: 'Recycling-Automat', hint: 'Der Recycling-Automat zerlegt überzählige Kreaturen nach deinen Regeln (Gen-Recycler).' },
   {
     id: 'hybrids', name: 'Hybride', hint: 'Hybride entdeckt! Bestimmte Artkombinationen können neue Arten hervorbringen. Hinweise gibt es durch Forschung und Erkundung.',

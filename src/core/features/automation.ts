@@ -199,9 +199,9 @@ function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
  * Every creature of a species counts, also busy ones.
  */
 export function keptPerSpecies(ctx: GameContext): Set<number> {
-  const n = ctx.state.automation.autoRecycle.keepPerSpecies;
+  // The last creature of a species is never the automat's: only the player can send it.
+  const n = Math.max(1, ctx.state.automation.autoRecycle.keepPerSpecies);
   const kept = new Set<number>();
-  if (n <= 0) return kept;
   const bySpecies = new Map<string, Creature[]>();
   for (const c of ctx.state.creatures) bySpecies.set(c.speciesId, [...(bySpecies.get(c.speciesId) ?? []), c]);
   const power = new Map(ctx.state.creatures.map((c) => [c.id, creaturePower(ctx, c)]));
@@ -257,6 +257,16 @@ export function sendToRecycler(ctx: GameContext, ids: number[]): ActionResult {
   for (const c of creatures) if (!inRecycler(ctx, c!.id)) a.recycleQueue.push(c!.id);
   fillRecycler(ctx, false);
   return { ok: true };
+}
+
+/**
+ * Species that would be gone from the stable if these creatures were
+ * recycled or sold (for the warning before sending them).
+ */
+export function speciesLostWith(ctx: GameContext, ids: number[]): string[] {
+  const leaving = new Set(ids);
+  const species = new Set(ctx.state.creatures.filter((c) => leaving.has(c.id)).map((c) => c.speciesId));
+  return [...species].filter((sp) => ctx.state.creatures.every((c) => c.speciesId !== sp || leaving.has(c.id)));
 }
 
 /** Takes a creature the player sent back out of the chamber or the queue. */

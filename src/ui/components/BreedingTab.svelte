@@ -5,7 +5,7 @@
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, startBreeding, type EggData } from '@core/features/breeding';
+  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, type EggData } from '@core/features/breeding';
   import { processRemainingMs } from '@core/systems/processes';
   import { planAutoBreed, setAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
@@ -44,18 +44,25 @@
     const ritual = rituals.find((r) => r.id === ritualId);
     const cost = eggCost(game, generation, ritual);
     const q = search.trim().toLowerCase();
-    const { species: filter, rarity, sort } = viewState.breeding;
-    const pool = game.state.creatures
+    const { rarity } = viewState.breeding;
+    const split = game.state.features['breedSplit'] === true;
+    const base = game.state.creatures
       .filter((c) => c.job === null || c.job.kind === 'building')
-      .filter((c) => !filter || c.speciesId === filter)
       .filter((c) => !rarity || c.rarity === rarity)
       .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
       .map((c) => ({ c, power: creaturePower(game, c), key: sortKey(c) }));
-    // Chosen parents stay on top so they never scroll out of reach.
-    const chosenFirst = (x: { c: Creature }) => (x.c.id === parentA || x.c.id === parentB ? 0 : 1);
-    const candidates = pool
-      .sort((x, y) => chosenFirst(x) - chosenFirst(y) || (viewState.breeding.invert ? -1 : 1) * compareCandidates(x, y))
-      .slice(0, 60);
+    /** One candidate list: its species filter, the chosen parent(s) on top so they never scroll out of reach. */
+    const listFor = (species: string, chosen: (number | null)[]) => {
+      const pool = base.filter((x) => !species || x.c.speciesId === species);
+      const first = (x: { c: Creature }) => (chosen.includes(x.c.id) ? 0 : 1);
+      const shown = pool.sort((x, y) => first(x) - first(y) || (viewState.breeding.invert ? -1 : 1) * compareCandidates(x, y)).slice(0, 60);
+      return { shown, hidden: pool.length - shown.length };
+    };
+    // Zwei Zuchtlisten: one list per parent, each with its own species filter.
+    const listA = listFor(viewState.breeding.species, split ? [parentA] : [parentA, parentB]);
+    const listB = split ? listFor(viewState.breeding.speciesB, [parentB]) : null;
+    const candidates = listA.shown;
+    const pool = { length: listA.shown.length + listA.hidden };
     const stableCap = stableCapacity(game);
     const free = stableFree(game);
     return {
@@ -79,6 +86,10 @@
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
+      split,
+      candidatesB: listB?.shown ?? [],
+      hiddenB: listB?.hidden ?? 0,
+      last: lastPair(game),
       cost,
       affordable: canAfford(game.state, cost),
       generation,
@@ -173,9 +184,27 @@
     else if (parentB === null) parentB = id;
     else parentB = id;
   }
+  /** Zwei Zuchtlisten: each list fills its own parent (tap again to clear). */
+  function pickSide(id: number, side: 'a' | 'b') {
+    if (side === 'a') {
+      parentA = parentA === id ? null : id;
+      if (parentB === id) parentB = null;
+    } else {
+      parentB = parentB === id ? null : id;
+      if (parentA === id) parentA = null;
+    }
+  }
+  /** Zuchtbuch: the last pair (and its ritual) back into the sockets. */
+  function repeatLast() {
+    const l = data.last;
+    if (!l) return;
+    parentA = l.a.id;
+    parentB = l.b.id;
+    ritualId = l.ritual;
+  }
   function breed() {
     if (parentA === null || parentB === null) return;
-    if (act(startBreeding(game, parentA, parentB, data.ritual?.id))) {
+    if (act(breedByHand(game, parentA, parentB, data.ritual?.id))) {
       parentA = null;
       parentB = null;
     }
@@ -335,8 +364,44 @@
 {/if}
 
 <!-- Pairing altar -->
+{#snippet tileList(list: typeof data.candidates, hidden: number, side: 'a' | 'b' | null)}
+  <div class="tiles" class:half={!!side}>
+    {#each list as t (t.c.id)}
+      {@const sp = content.species.get(t.c.speciesId)}
+      {@const rar = content.rarities.get(t.c.rarity)}
+      <button
+        class="tile"
+        class:a={parentA === t.c.id}
+        class:b={parentB === t.c.id}
+        style="--el: {content.elements.get(sp.element).color}; --rc: {rar.color}"
+        title="{t.c.name} · {sp.name} · {rar.name}"
+        onclick={() => (side ? pickSide(t.c.id, side) : pick(t.c.id))}
+      >
+        <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
+        <span class="tname">{t.c.name}</span>
+        {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
+        <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
+        {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
+        {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
+        {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
+      </button>
+    {:else}
+      <p class="muted small">Keine freien Kreaturen.</p>
+    {/each}
+  </div>
+  {#if hidden > 0}<p class="tiny muted more">… und {hidden} weitere – Suche oder Filter grenzen die Liste ein.</p>{/if}
+{/snippet}
+
 <article class="panel altar">
-  <h3>Neues Ei</h3>
+  <div class="altar-head">
+    <h3>Neues Ei</h3>
+    {#if data.last}
+      {@const same = parentA === data.last.a.id && parentB === data.last.b.id}
+      <button class="repeat" disabled={same} title="Zuchtbuch: {data.last.a.name} × {data.last.b.name}{data.last.ritual ? ' (mit Ritual)' : ''}" onclick={repeatLast}>
+        ↻ Letztes Paar <span class="muted">{data.last.a.name} × {data.last.b.name}</span>
+      </button>
+    {/if}
+  </div>
   <div class="pair">
     {@render socket(data.a, 'Elternteil 1', () => (parentA = null), 'var(--gold)')}
     <div class="link">
@@ -388,10 +453,12 @@
     <h4>Kandidaten</h4>
     <div class="filters">
       <input type="search" placeholder="Name oder Art …" bind:value={search} />
-      <select bind:value={viewState.breeding.species}>
-        <option value="">Alle Arten</option>
-        {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-      </select>
+      {#if !data.split}
+        <select bind:value={viewState.breeding.species}>
+          <option value="">Alle Arten</option>
+          {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+        </select>
+      {/if}
       <select bind:value={viewState.breeding.rarity}>
         <option value="">Alle Seltenheiten</option>
         {#each content.rarities.list as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
@@ -410,31 +477,33 @@
       </span>
     </div>
   </div>
-  <div class="tiles">
-    {#each data.candidates as t (t.c.id)}
-      {@const sp = content.species.get(t.c.speciesId)}
-      {@const rar = content.rarities.get(t.c.rarity)}
-      <button
-        class="tile"
-        class:a={parentA === t.c.id}
-        class:b={parentB === t.c.id}
-        style="--el: {content.elements.get(sp.element).color}; --rc: {rar.color}"
-        title="{t.c.name} · {sp.name} · {rar.name}"
-        onclick={() => pick(t.c.id)}
-      >
-        <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-        <span class="tname">{t.c.name}</span>
-        {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
-        <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
-        {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
-        {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
-        {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
-      </button>
-    {:else}
-      <p class="muted small">Keine freien Kreaturen.</p>
-    {/each}
-  </div>
-  {#if data.hidden > 0}<p class="tiny muted more">… und {data.hidden} weitere – Suche oder Filter grenzen die Liste ein.</p>{/if}
+  {#if data.split}
+    <div class="split">
+      <section class="side a">
+        <div class="side-head">
+          <b style="color: var(--gold)">Elternteil 1</b>
+          <select bind:value={viewState.breeding.species} title="Art für Elternteil 1">
+            <option value="">Alle Arten</option>
+            {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+          </select>
+        </div>
+        {@render tileList(data.candidates, data.hidden, 'a')}
+      </section>
+      <section class="side b">
+        <div class="side-head">
+          <b style="color: #ff7ad9">Elternteil 2</b>
+          <select bind:value={viewState.breeding.speciesB} title="Art für Elternteil 2">
+            <option value="">Alle Arten</option>
+            {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+          </select>
+          {#if data.a}<button class="tiny same" title="Nur die Art von Elternteil 1" onclick={() => (viewState.breeding.speciesB = data.a!.speciesId)}>= wie 1</button>{/if}
+        </div>
+        {@render tileList(data.candidatesB, data.hiddenB, 'b')}
+      </section>
+    </div>
+  {:else}
+    {@render tileList(data.candidates, data.hidden, null)}
+  {/if}
 </article>
 
 {#if data.dynasties}<DynastyPanel />{/if}
@@ -448,6 +517,18 @@
   .small { font-size: 0.8rem; }
   .to-recycler { align-self: flex-start; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
   .tiny { font-size: 0.68rem; }
+  .altar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; }
+  .altar-head h3 { margin: 0; }
+  .repeat { font-size: 0.8rem; padding: 0.25rem 0.6rem; border-color: color-mix(in srgb, var(--teal) 50%, var(--line)); }
+  .repeat .muted { font-size: 0.72rem; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .side { display: grid; gap: 0.35rem; align-content: start; padding: 0.4rem; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line); }
+  .side.a { border-top: 3px solid var(--gold); }
+  .side.b { border-top: 3px solid #ff7ad9; }
+  .side-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+  .side-head select { flex: 1 1 8rem; min-width: 0; }
+  .same { padding: 0.15rem 0.45rem; }
+  @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
 
   .kpi.warn { border-color: var(--danger); }
   .mini { width: 100%; height: 3px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }

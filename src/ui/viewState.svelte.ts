@@ -17,7 +17,8 @@ interface ViewState {
   lab: { dailyOpen: boolean };
   /** Creature pickers (missions, Wochenexpedition) can hide working creatures and favourites. */
   expedition: { region: string; voyageOpen: boolean; hideWorking: boolean; hideLocked: boolean };
-  breeding: { species: string; rarity: string; sort: BreedingSort; invert: boolean };
+  /** `speciesB`: species filter of the second list (Zwei Zuchtlisten). */
+  breeding: { species: string; speciesB: string; rarity: string; sort: BreedingSort; invert: boolean };
   research: { theme: string; affordableOnly: boolean; grandOpen: boolean };
   /** Splicing bench: hide creatures without attempts left or with a perfect genome. */
   splicing: { hideDone: boolean; sort: string; invert: boolean };
@@ -35,7 +36,7 @@ const defaults = (): ViewState => ({
   recycler: { element: 'fire' },
   lab: { dailyOpen: false },
   expedition: { region: 'short', voyageOpen: false, hideWorking: false, hideLocked: false },
-  breeding: { species: '', rarity: '', sort: 'power', invert: false },
+  breeding: { species: '', speciesB: '', rarity: '', sort: 'power', invert: false },
   research: { theme: '', affordableOnly: false, grandOpen: false },
   splicing: { hideDone: true, sort: 'left', invert: false },
   infusion: { maxRarity: 'common', donorsOnly: false },

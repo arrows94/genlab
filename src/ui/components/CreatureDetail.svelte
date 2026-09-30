@@ -9,7 +9,7 @@
   import { toggleLock } from '@core/actions';
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
   import { fragmentValue } from '@core/features/recycler';
-  import { inRecycler, sendToRecycler, takeBackFromRecycler } from '@core/features/automation';
+  import { inRecycler, sendToRecycler, speciesLostWith, takeBackFromRecycler } from '@core/features/automation';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import GenomeView from './GenomeView.svelte';
@@ -55,7 +55,10 @@
   }
   async function doRecycle() {
     const cur = c;
-    if (cur && (await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
+    if (!cur) return;
+    const last = speciesLostWith(game, [cur.id]).length > 0;
+    const warning = last ? ` ⚠️ Es ist deine letzte ${content.species.get(cur.speciesId).name} – die Art ist danach nicht mehr in deinem Stall.` : '';
+    if ((await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.${warning}`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
   function fmtMod(op: string, v: number) {
     if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;

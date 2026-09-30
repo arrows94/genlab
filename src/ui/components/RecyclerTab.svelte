@@ -57,7 +57,8 @@
     };
   });
 
-  const KEEP = [0, 1, 2, 3, 5, 10];
+  /** The last one of a species always stays (older saves may hold 0 – it counts as 1). */
+  const KEEP = [1, 2, 3, 5, 10];
 
   // Candidate search walks all creatures – refreshed at the slow rate.
   const auto = $derived.by(() => {
@@ -178,8 +179,8 @@
     </div>
     <div class="auto-row">
       <label>Je Art behalten
-        <select value={String(auto.cfg.keepPerSpecies)} onchange={(e) => setAuto({ keepPerSpecies: Number(e.currentTarget.value) })}>
-          {#each KEEP as n (n)}<option value={String(n)}>{n === 0 ? 'keine' : `die ${n} stärksten`}</option>{/each}
+        <select value={String(Math.max(1, auto.cfg.keepPerSpecies))} onchange={(e) => setAuto({ keepPerSpecies: Number(e.currentTarget.value) })}>
+          {#each KEEP as n (n)}<option value={String(n)}>{n <= 1 ? 'die stärkste' : `die ${n} stärksten`}</option>{/each}
         </select>
       </label>
       <label class="switch"><input type="checkbox" checked={auto.cfg.keepSequenced} onchange={(e) => setAuto({ keepSequenced: e.currentTarget.checked })} /> Sequenzierte behalten</label>

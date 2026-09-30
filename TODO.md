@@ -60,6 +60,14 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
 - [x] Anomalien- und Äon-Tab ansehen – Äon-Tab ist mit den Großprojekten überarbeitet; Anomalien zeigen
       jetzt den Fortschritt zum Ziel (`conditionProgress` in `core/conditions.ts`)
 
+# TODO – Komfort
+
+- [x] Zuchtbuch (Forschung, `breedRepeat`): „↻ Letztes Paar“ in der Brutstation (`breedByHand` merkt sich das Paar in
+      `state.lastPair`, der Zuchtautomat überschreibt es nicht)
+- [x] Zwei Zuchtlisten (Forschung, `breedSplit`): eine Kandidatenliste je Elternteil mit eigenem Art-Filter
+- [x] Recycling-Automat nimmt nie die letzte Kreatur einer Art („je Art behalten“ mindestens 1); von Hand mit Warnung
+      (`speciesLostWith`)
+
 # TODO – Endgame
 
 Vorhanden: Vererbung + Äon (9 Talente), endloser Genom-Turm, 3 unendliche Forschungen,

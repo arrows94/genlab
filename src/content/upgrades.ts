@@ -83,6 +83,18 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
+    id: 'breedBook', theme: 'breeding', name: 'Zuchtbuch', category: 'research', requires: mine,
+    description: 'Die Brutstation merkt sich dein letztes Paar: „↻ Letztes Paar“ wählt es mit einem Tipp wieder aus.',
+    cost: { food: 800, gold: 150 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['breedRepeat'],
+  },
+  {
+    id: 'splitBreeding', theme: 'breeding', name: 'Zwei Zuchtlisten', category: 'research', requires: biolab,
+    description: 'Die Kandidaten der Brutstation teilen sich in eine Liste für jedes Elternteil – jede mit eigenem Art-Filter.',
+    cost: { gold: 600, essence: 10 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['breedSplit'],
+  },
+  {
     id: 'geneLab', theme: 'breeding', name: 'Genlabor', category: 'research', requires: mine,
     description: '+2 % Mutationschance beim Brüten.',
     cost: { gold: 200 }, costGrowth: 2.2, maxLevel: 10,

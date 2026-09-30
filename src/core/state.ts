@@ -292,6 +292,8 @@ export interface GameState {
   milestones: Record<string, { activeMs: number; simMs: number }>;
   prestige: Record<string, { count: number }>;
   automation: AutomationState;
+  /** The last pair bred by hand (Zuchtbuch: „↻ Letztes Paar“). */
+  lastPair: { a: number; b: number; ritual: string | null } | null;
   /** Capsules opened since the last pity-qualifying result, per capsule. */
   capsulePity: Record<string, number>;
   tower: TowerState;
@@ -354,6 +356,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     activity: { lastActiveAt: 0, sessionMs: 0 },
     milestones: {},
     prestige: {},
+    lastPair: null,
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
