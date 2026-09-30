@@ -28,8 +28,11 @@ interface ViewState {
   genome: { sequencedOnly: boolean; species: string; libraryOpen: boolean; hideCompleteGenes: boolean; sort: string; invert: boolean };
   /** Tab bar: the tab last opened in each area (group id → tab id). */
   nav: { last: Record<string, string> };
-  /** Tempo of the fight replay in the arena: 1×, 2× or 0 = skip to the result. */
-  tower: { replaySpeed: ReplaySpeed };
+  /**
+   * Tempo of the fight replay in the arena (1×, 2× or 0 = skip to the result),
+   * the protocol filter „Nur Wichtiges“ and whether the defeat analysis is open.
+   */
+  tower: { replaySpeed: ReplaySpeed; logImportant: boolean; defeatOpen: boolean };
 }
 
 export type ReplaySpeed = 0 | 1 | 2;
@@ -48,7 +51,7 @@ const defaults = (): ViewState => ({
   infusion: { maxRarity: 'common', donorsOnly: false },
   genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false, sort: 'power', invert: false },
   nav: { last: {} },
-  tower: { replaySpeed: 1 },
+  tower: { replaySpeed: 1, logImportant: true, defeatOpen: true },
 });
 
 function load(): ViewState {
@@ -69,7 +72,11 @@ function load(): ViewState {
       infusion: { ...base.infusion, ...saved.infusion },
       genome: { ...base.genome, ...saved.genome },
       nav: { last: { ...base.nav.last, ...saved.nav?.last } },
-      tower: { replaySpeed: ([0, 1, 2] as const).find((v) => v === saved.tower?.replaySpeed) ?? base.tower.replaySpeed },
+      tower: {
+        ...base.tower,
+        ...saved.tower,
+        replaySpeed: ([0, 1, 2] as const).find((v) => v === saved.tower?.replaySpeed) ?? base.tower.replaySpeed,
+      },
     };
   } catch {
     return base;

@@ -11,6 +11,7 @@ import { claimDaily, dailyAvailable } from '@core/features/daily';
 import { grandAvailable, grandCost, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { pendingDecision, resolveVoyage, runningVoyage, startVoyage } from '@core/features/voyage';
 import { totalDynastyTiers } from '@core/features/dynasty';
+import { veteranRank } from '@core/features/tower';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
 import { playBot } from './bot';
@@ -113,6 +114,9 @@ export interface DayReport {
   anomalyRecord: number;
   /** Sum of all relic levels. */
   relics: number;
+  /** Rank of Kampferfahrung (tower XP) and the current Entschlossenheit bonus. */
+  veteranRank: number;
+  resolve: number;
   /** Deepest pure line ever bred (any species) and the sum of all dynasty tiers. */
   dynastyBest: number;
   dynastyTiers: number;
@@ -207,6 +211,8 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       observatory: g.state.megaProjects.observatory?.stage ?? 0,
       anomalyRecord: g.state.anomalyRecord,
       relics: Object.values(g.state.relics).reduce((a, b) => a + b, 0),
+      veteranRank: veteranRank(g).rank,
+      resolve: g.state.tower.resolve ?? 0,
       dynastyBest: Math.max(0, ...Object.values(g.state.dynasties)),
       dynastyTiers: totalDynastyTiers(g),
       shardSources: { ...shardSources },

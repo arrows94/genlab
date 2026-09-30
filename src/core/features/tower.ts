@@ -5,7 +5,7 @@ import { activeLoci, catalogueGenome, libraryHas } from '../genetics';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature } from '../state';
+import type { Creature, FightStats } from '../state';
 import type { System } from '../systems/types';
 import type { BossTraitDef, RelicDef, StatusId, TargetingMode, TechniqueDef } from '../content/types';
 import type { ModifierProvider } from '../providers';
@@ -47,6 +47,8 @@ export interface Fighter {
   firstStrike?: boolean;
   /** Boss of its floor (crown in the arena). */
   boss?: boolean;
+  /** Wächter of its floor (a stronger single enemy between the bosses). */
+  guard?: boolean;
   /** Second boss trait that wakes below half HP (Phase 2). */
   phaseTrait?: string;
 }
@@ -79,25 +81,54 @@ export function teamSize(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.tower', ctx.balance.tower.baseTeamSize));
 }
 
-/** Enemy for a floor – deterministic per floor, independent of the game RNG. */
-export function enemyFor(ctx: GameContext, floor: number): Fighter {
+/**
+ * Dice for a floor. The three small floors of a former floor n share its element and group size (`step`
+ * seeded with n, as before the finer floors), so the tower is not more jagged than it was; floor 3n is
+ * exactly the former floor n. The floors in between pick their species with dice of their own (`own`).
+ */
+function floorDice(ctx: GameContext, prefix: string, floor: number): { step: Rng; own: Rng } {
+  const per = ctx.balance.tower.subFloors;
+  const step = Rng.fromSeed(hashSeed(`${prefix}-${Math.ceil(floor / per)}`));
+  return { step, own: floor % per === 0 ? step : Rng.fromSeed(hashSeed(`${prefix}-${floor}/${per}`)) };
+}
+
+/** Boss floor: every `bossEvery`-th. */
+export function isBossFloor(ctx: GameContext, floor: number): boolean {
+  return floor % ctx.balance.tower.bossEvery === 0;
+}
+
+/** Wächter floor: every `guardEvery`-th that is not a boss floor. */
+export function isGuardFloor(ctx: GameContext, floor: number): boolean {
+  const every = ctx.balance.tower.guardEvery;
+  return every > 0 && floor % every === 0 && !isBossFloor(ctx, floor);
+}
+
+/**
+ * Enemy for a floor – deterministic per floor, independent of the game RNG.
+ * `plain` leaves out the boss and Wächter multipliers and the trait (the
+ * weekly titan follows the floor's normal strength).
+ */
+export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolean } = {}): Fighter {
   const t = ctx.balance.tower;
-  const rng = Rng.fromSeed(hashSeed(`tower-${floor}`));
+  const { step: rng, own } = floorDice(ctx, 'tower', floor);
   const element = rng.pick(ctx.content.elements.list).id;
-  const scale = Math.pow(t.enemyGrowth, floor - 1);
-  const boss = floor % t.bossEvery === 0;
-  const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * (boss ? t.bossHpMult : 1));
+  const scale = Math.pow(t.enemyGrowth, floor - t.subFloors);
+  const boss = !opts.plain && isBossFloor(ctx, floor);
+  const guard = !opts.plain && isGuardFloor(ctx, floor);
+  const hpMult = boss ? t.bossHpMult : guard ? t.guardHpMult : 1;
+  const atkMult = boss ? t.bossAtkMult : guard ? t.guardAtkMult : 1;
+  const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * hpMult);
   const names = ctx.content.species.list.filter((s) => s.element === element);
-  const species = rng.pick(names.length ? names : ctx.content.species.list);
+  const species = own.pick(names.length ? names : ctx.content.species.list);
   const traits = ctx.content.bossTraits.list;
   const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
   return {
-    name: `${boss ? 'Boss: ' : ''}${species.name}`,
+    name: `${boss ? 'Boss: ' : guard ? 'Wächter: ' : ''}${species.name}`,
     speciesId: species.id,
     element,
     hp,
     maxHp: hp,
-    atk: Math.round((t.enemyBase['atk'] ?? 8) * scale * (boss ? t.bossAtkMult : 1)),
+    atk: Math.round((t.enemyBase['atk'] ?? 8) * scale * atkMult),
     def: Math.round((t.enemyBase['def'] ?? 5) * scale),
     spd: Math.round((t.enemyBase['spd'] ?? 5) * Math.sqrt(scale)),
     power: 1,
@@ -105,12 +136,14 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
     team: false,
     trait,
     ...(boss ? { boss: true } : {}),
+    ...(guard ? { guard: true } : {}),
     technique: techniqueFor(ctx, element)?.id,
   };
 }
 
 /**
- * Everyone the team meets on a floor – deterministic per floor. Normal floors
+ * Everyone the team meets on a floor – deterministic per floor. On a Wächter
+ * floor every foe is stronger, the first one is the Wächter. Normal floors
  * from `groupFromFloor` on may bring 2–3 foes that share the floor's strength;
  * boss floors from `companionsFromFloor` on bring two companions in front of
  * the boss, and from `phaseFromFloor` on the boss wakes a second trait below
@@ -119,9 +152,9 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
 export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
   const t = ctx.balance.tower;
   const main = enemyFor(ctx, floor);
-  const rng = Rng.fromSeed(hashSeed(`tower-group-${floor}`));
+  const { step: rng, own } = floorDice(ctx, 'tower-group', floor);
   const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
-  const pickSpecies = () => (sameElement.length ? rng.pick(sameElement) : ctx.content.species.get(main.speciesId));
+  const pickSpecies = () => (sameElement.length ? own.pick(sameElement) : ctx.content.species.get(main.speciesId));
   if (main.boss) {
     const traits = ctx.content.bossTraits.list.filter((b) => b.id !== main.trait);
     if (floor >= t.phaseFromFloor && main.trait && traits.length) main.phaseTrait = rng.pick(traits).id;
@@ -136,17 +169,19 @@ export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
     });
     return [...companions, main];
   }
-  if (floor < t.groupFromFloor) return [main];
+  // The three small floors of a former floor share its group size (thresholds from its floor 3n).
+  const stepFloor = Math.ceil(floor / t.subFloors) * t.subFloors;
+  if (stepFloor < t.groupFromFloor) return [main];
   // Bigger groups get likelier higher up.
   const r = rng.next();
-  const late = floor >= t.groupFromFloor * 2.5;
+  const late = stepFloor >= t.groupFromFloor * 2.5;
   const size = r < (late ? 0.3 : 0.5) ? 1 : r < (late ? 0.7 : 0.85) ? 2 : 3;
   if (size === 1) return [main];
   const hp = Math.max(1, Math.round((main.maxHp * (t.groupHp[size - 1] ?? 1)) / size));
   const atk = Math.max(1, Math.round((main.atk * (t.groupAtk[size - 1] ?? 1)) / size));
   return Array.from({ length: size }, (_, i): Fighter => {
     const sp = i === 0 ? ctx.content.species.get(main.speciesId) : pickSpecies();
-    return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
+    return { ...main, name: i === 0 ? main.name : sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
   });
 }
 
@@ -165,7 +200,7 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
   const global = ctx.mods();
   const relic = relicFor(ctx, c);
   const boost = (key: keyof RelicDef['bonus']) => 1 + (relic ? (relic.def.bonus[key] ?? 0) * relic.level : 0);
-  const hp = Math.round((s.hp ?? 1) * boost('hp'));
+  const hp = Math.round((s.hp ?? 1) * boost('hp') * global.factor('tower.hp') * own.factor('tower.hp'));
   return {
     name: c.name,
     speciesId: c.speciesId,
@@ -281,6 +316,8 @@ export function lowerTowerRecord(ctx: GameContext, floor: number): ActionResult 
   if (floor >= tw.best) return { ok: false, reason: `Der Rekord kann nur gesenkt werden (aktuell Etage ${tw.best}).` };
   tw.bestEver = towerBestEver(ctx);
   tw.best = floor;
+  tw.recordAt = ctx.state.lastTickAt;
+  tw.resolve = 0;
   ctx.invalidate();
   return { ok: true };
 }
@@ -291,6 +328,58 @@ export const towerMilestoneProvider: ModifierProvider = (ctx, into) => {
   if (n > 0) into.addAll('tower:milestone', ctx.balance.tower.milestoneModifiers, n);
 };
 
+/**
+ * Kampferfahrung: rank from the XP (rank n → n + 1 costs base × growth^n), the XP into the current
+ * rank and what the next one needs, and the bonus per KP and damage.
+ */
+export function veteranRank(ctx: GameContext, xp = ctx.state.tower.xp ?? 0): { rank: number; into: number; need: number; bonus: number } {
+  const t = ctx.balance.tower;
+  // Rank n → n + 1 costs base × (1 + step × n): the total up to rank n is quadratic.
+  const total = (n: number) => t.xpRankBase * (n + (t.xpRankStep * n * (n - 1)) / 2);
+  const a = (t.xpRankBase * t.xpRankStep) / 2;
+  const b = t.xpRankBase - a;
+  let rank = Math.max(0, Math.floor(a > 0 ? (-b + Math.sqrt(b * b + 4 * a * xp)) / (2 * a) : xp / t.xpRankBase));
+  // Guard against rounding at the edge of a rank.
+  while (total(rank + 1) <= xp) rank++;
+  while (rank > 0 && total(rank) > xp) rank--;
+  return { rank, into: xp - total(rank), need: t.xpRankBase * (1 + t.xpRankStep * rank), bonus: rank * t.xpRankBonus };
+}
+
+/** Kampferfahrung for winning a floor: more the higher it is, a boss counts several times. */
+export function floorXp(ctx: GameContext, floor: number): number {
+  const t = ctx.balance.tower;
+  return t.xpPerFloor * floor * (isBossFloor(ctx, floor) ? t.xpBossMult : 1);
+}
+
+/** Entschlossenheit: hours since the record last rose and the bonus they give (hourly steps, capped). */
+export function resolveInfo(ctx: GameContext): { hours: number; bonus: number } {
+  const t = ctx.balance.tower;
+  const since = ctx.state.tower.recordAt || ctx.state.lastTickAt;
+  const hours = Math.max(0, Math.floor((ctx.state.lastTickAt - since) / 3_600_000));
+  return { hours, bonus: Math.min(t.resolveCap, (t.resolvePerDay * hours) / 24) };
+}
+
+/** Kampferfahrung and Entschlossenheit as a bonus on KP and damage of every tower fighter. */
+export const towerVeteranProvider: ModifierProvider = (ctx, into) => {
+  const bonus = veteranRank(ctx).bonus + (ctx.state.tower.resolve ?? 0);
+  if (bonus <= 0) return;
+  into.addAll('tower:veteran', [
+    { target: 'tower.hp', op: 'pct', value: bonus },
+    { target: 'tower.damage', op: 'pct', value: bonus },
+  ]);
+};
+
+/** Adds Kampferfahrung for a won floor; a new rank refreshes the bonuses. */
+function gainXp(ctx: GameContext, floor: number): void {
+  const before = veteranRank(ctx).rank;
+  ctx.state.tower.xp = (ctx.state.tower.xp ?? 0) + floorXp(ctx, floor);
+  const after = veteranRank(ctx).rank;
+  if (after > before) {
+    ctx.invalidate();
+    ctx.bus.emit('towerRank', { rank: after });
+  }
+}
+
 export function elementMultiplier(ctx: GameContext, attacker: string, defender: string): number {
   if (ctx.content.elements.get(attacker).strongAgainst.includes(defender)) return ctx.balance.tower.strongMult;
   if (ctx.content.elements.get(defender).strongAgainst.includes(attacker)) return ctx.balance.tower.weakMult;
@@ -298,18 +387,28 @@ export function elementMultiplier(ctx: GameContext, attacker: string, defender: 
 }
 
 /**
- * Damage of one hit: attack × multipliers, reduced by defence in two steps –
- * a percentage (defScale / (defScale + VER)) and then a share that depends on
- * VER against the attacker's ANG (up to `defRatio` when VER ≫ ANG), so it
- * works the same on every floor. A hit always does at least 1.
+ * First step of the defence: the share of a hit that gets through, 1 / (1 + defWeight × VER / ANG).
+ * Only the ratio counts, so a fight lasts about as long on every floor – with a fixed scale fights
+ * high up grew longer and longer (VER grows with the floor, the damage per hit did not).
  */
+export function defFactor(ctx: GameContext, def: number, atk: number): number {
+  return 1 / (1 + (ctx.balance.tower.defWeight * def) / Math.max(1, atk));
+}
+
+/**
+ * Damage of one hit: attack × multipliers, reduced by defence in two steps –
+ * `defFactor` and then a share that depends on VER against the attacker's ANG
+ * (up to `defRatio` when VER ≫ ANG). Both only look at ratios, so they work
+ * the same on every floor. A hit always does at least 1.
+ */
+
 export function damage(ctx: GameContext, att: Fighter, def: Fighter, rng: Rng): number {
   const t = ctx.balance.tower;
   const mult = elementMultiplier(ctx, att.element, def.element);
   const elem = mult > 1 ? mult * att.elementPower : mult;
   const raw = att.atk * att.power * elem * rng.range(0.9, 1.1);
   const guard = 1 - t.defRatio * (def.def / Math.max(1, def.def + att.atk));
-  const reduced = raw * (t.defScale / (t.defScale + def.def)) * guard;
+  const reduced = raw * defFactor(ctx, def.def, att.atk * att.power) * guard;
   return Math.max(1, Math.round(reduced));
 }
 
@@ -365,9 +464,10 @@ export interface FightEvent {
   /**
    * (none): normal hit · miss: dodged (dmg 0) · heal: HP healed (dmg = amount) ·
    * shift: the boss changes its element (a = t) · tech: a technique is used (dmg = its hit) ·
-   * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t.
+   * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t ·
+   * enrage: the enemies' Wut begins (a = t = the first enemy standing).
    */
-  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep';
+  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep' | 'enrage';
   /** New element after a shift. */
   element?: string;
   /** Technique id (tech events). */
@@ -396,6 +496,8 @@ export interface FighterSnapshot {
   row?: Row;
   /** Boss of the floor. */
   boss?: boolean;
+  /** Wächter of the floor. */
+  guard?: boolean;
 }
 
 export interface FightResult {
@@ -407,10 +509,12 @@ export interface FightResult {
   log: string[];
   fighters: FighterSnapshot[];
   events: FightEvent[];
+  /** Totals per fighter (for the defeat analysis). */
+  stats: FightStats;
 }
 
 // Enough for a long group fight (three foes, five fighters, about 40 s) to replay to the end.
-const maxEvents = 400;
+export const MAX_FIGHT_EVENTS = 400;
 const maxLog = 24;
 
 /** Seconds between two actions of each fighter: relative to the mean speed of everyone in the fight. */
@@ -440,7 +544,7 @@ const HARMFUL: StatusId[] = ['burn', 'poison', 'stun', 'slow'];
  * Team synergies apply at the start. Team HP is full at the start of every
  * floor. Deterministic for a given RNG state.
  */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number } = {}): FightResult {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number; replay?: boolean; enrage?: boolean } = {}): FightResult {
   const cfg = ctx.balance.tower;
   const foes = Array.isArray(enemies) ? enemies : [enemies];
   const log: string[] = [];
@@ -451,12 +555,23 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const intervals = actionIntervals(ctx, order);
   const fighters: FighterSnapshot[] = order.map((f, i) => ({
     name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]!,
-    ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}),
+    ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}), ...(f.guard ? { guard: true } : {}),
   }));
-  const note = (line: string) => log.length < maxLog && log.push(line);
-  const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
+  // Without replay (fights nobody watches, e.g. offline) the events and the protocol stay empty; the outcome is the same.
+  const replay = opts.replay ?? true;
+  const note = (line: string) => replay && log.length < maxLog && log.push(line);
+  const record = (e: FightEvent) => replay && events.length < MAX_FIGHT_EVENTS && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
   let dealt = 0;
-  const done = (win: boolean, seconds: number): FightResult => ({ win, dealt, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
+  const zeros = () => order.map(() => 0);
+  const stats: FightStats = {
+    dealt: zeros(), taken: zeros(), healed: zeros(), hits: zeros(), strong: zeros(), weak: zeros(), missed: zeros(), dodged: zeros(),
+    hpLeft: zeros(), downAt: order.map(() => -1), shielded: 0, timeout: false, seconds: 0,
+  };
+  const done = (win: boolean, seconds: number, timeout = false): FightResult => {
+    const secs = Math.round(seconds * 10) / 10;
+    Object.assign(stats, { hpLeft: order.map((f) => Math.max(0, f.hp)), timeout, seconds: secs });
+    return { win, dealt, seconds: secs, log, fighters, events, stats };
+  };
   const traitDef = (id: string | undefined) => (id && ctx.content.bossTraits.has(id) ? ctx.content.bossTraits.get(id) : null);
   // Boss traits per fighter; a phase trait joins below half HP.
   const traits = order.map((f) => [traitDef(f.trait)].filter((t): t is BossTraitDef => !!t));
@@ -466,6 +581,10 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const limit = opts.limitSec ?? cfg.maxFightSec;
   const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
   const leader = foes.find((f) => f.boss) ?? foes[foes.length - 1]!;
+  // Wut: enemies hit harder with every second after enrageAfterSec (no hard time limit in the tower).
+  const enrageOn = opts.enrage ?? true;
+  const wut = (at: number) => (enrageOn && at > cfg.enrageAfterSec ? 1 + cfg.enrageGrowth * (at - cfg.enrageAfterSec) : 1);
+  let enraged = false;
 
   // Synergies: pairs of one element hit harder; a colourful team against the Wandler.
   for (const syn of teamSynergies(ctx, team.map((f) => f.element), leader.trait)) {
@@ -474,8 +593,8 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (syn.kind === 'diversity') for (const f of team) f.power *= 1 + syn.value;
   }
 
-  // Status per fighter: until when, strength, and the source's attack for damage over time.
-  const statuses = order.map(() => new Map<StatusId, { until: number; value: number; src: number }>());
+  // Status per fighter: until when, strength, the source's attack for damage over time and who put it on.
+  const statuses = order.map(() => new Map<StatusId, { until: number; value: number; src: number; by: number }>());
   const has = (i: number, id: StatusId, at: number) => {
     const st = statuses[i]!.get(id);
     return st && st.until > at ? st : undefined;
@@ -493,10 +612,14 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const teamDown = () => team.every((t) => t.hp <= 0);
   const over = () => foesDown() || teamDown();
 
-  const hurt = (i: number, dmg: number) => {
+  const hurt = (i: number, dmg: number, by: number, at: number) => {
+    const wasUp = order[i]!.hp > 0;
     order[i]!.hp -= dmg;
     taken[i]! += dmg;
     if (isFoe(i)) dealt += dmg;
+    stats.taken[i]! += dmg;
+    stats.dealt[by]! += dmg;
+    if (wasUp && order[i]!.hp <= 0) stats.downAt[i] = Math.round(at * 100) / 100;
   };
 
   /** Phase 2: a boss gets its second trait once it drops below half HP. */
@@ -522,12 +645,12 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
       if (shield.value <= 0) statuses[ti]!.delete('shield');
     }
     const hpDmg = dmg - absorbed;
-    hurt(ti, hpDmg);
+    hurt(ti, hpDmg, ai, at);
     record({ at, a: ai, t: ti, dmg: hpDmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, order[ai]!.element, target.element), ...(absorbed ? { absorbed } : {}), ...extra });
     // Dornenhaut and Prisma: a share of the damage goes back to the attacker.
     const back = Math.round(dmg * ((target.thorns ?? 0) + (has(ti, 'reflect', at)?.value ?? 0)));
     if (back > 0 && order[ai]!.hp > 0 && target !== order[ai]) {
-      hurt(ai, back);
+      hurt(ai, back, ti, at);
       record({ at, a: ti, t: ai, dmg: back, hp: Math.max(0, order[ai]!.hp), m: 1, kind: 'reflect' });
       checkPhase(ai, at);
     }
@@ -540,6 +663,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const healed = Math.min(f.maxHp - f.hp, Math.round(amount));
     if (healed <= 0 || f.hp <= 0) return;
     f.hp += healed;
+    stats.healed[ti]! += healed;
     record({ at, a: ai, t: ti, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
   };
 
@@ -553,7 +677,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
       until = next[ti]!;
     }
     if (id === 'shield') v = Math.round(value * f.maxHp);
-    statuses[ti]!.set(id, { until, value: v, src: order[ai]!.atk * order[ai]!.power });
+    statuses[ti]!.set(id, { until, value: v, src: order[ai]!.atk * order[ai]!.power, by: ai });
     record({ at, a: ai, t: ti, dmg: 0, hp: Math.max(0, f.hp), m: 1, kind: 'status', status: id, until: Math.round(until * 100) / 100 });
   };
 
@@ -576,6 +700,8 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const m = elementMultiplier(ctx, att.element, target.element);
     const evade = Math.min(0.6, evadeChance(ctx, att, target) + (has(ti, 'evade', at)?.value ?? 0));
     if (rng.chance(evade)) {
+      stats.missed[ai]!++;
+      stats.dodged[ti]!++;
       record({ at, a: ai, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss', ...(extra.tech ? { tech: extra.tech } : {}) });
       return false;
     }
@@ -586,7 +712,15 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (mult !== 1) dmg = Math.max(mult > 0 ? 1 : 0, Math.round(dmg * mult));
     // Element-Schild: only hits with element advantage get through in full.
     const shield = hasTrait(ti, 'shield');
-    if (att.team && shield && m <= 1 && dmg > 0) dmg = Math.max(1, Math.round(dmg * shield.value));
+    if (att.team && shield && m <= 1 && dmg > 0) {
+      const kept = Math.max(1, Math.round(dmg * shield.value));
+      stats.shielded += dmg - kept;
+      dmg = kept;
+    }
+    if (!att.team && dmg > 0) dmg = Math.round(dmg * wut(at));
+    stats.hits[ai]!++;
+    if (m > 1) stats.strong[ai]!++;
+    if (m < 1) stats.weak[ai]!++;
     land(ai, ti, dmg, at, { ...extra, ...(crit ? { crit: true } : {}) });
     return true;
   };
@@ -613,6 +747,12 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const now = next[who]!;
     // Boss traits and statuses tick every full second of fight time before this action.
     while (tick <= now && tick <= limit) {
+      if (enrageOn && !enraged && tick > cfg.enrageAfterSec) {
+        enraged = true;
+        const i = order.findIndex((f, k) => isFoe(k) && f.hp > 0);
+        if (i >= 0) record({ at: cfg.enrageAfterSec, a: i, t: i, dmg: 0, hp: order[i]!.hp, m: 1, kind: 'enrage' });
+        note(`${fmt(cfg.enrageAfterSec)} · Die Gegner werden wütend`);
+      }
       for (let i = first; i < order.length; i++) {
         const f = order[i]!;
         if (f.hp > 0 && hasTrait(i, 'shift')) {
@@ -627,8 +767,15 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
         for (const [id, st] of statuses[i]!) {
           if (id === 'burn' || id === 'poison') {
             // Damage over time, reduced like a hit by the percentage part of the defence.
-            const dmg = Math.max(1, Math.round(st.src * st.value * (cfg.defScale / (cfg.defScale + f.def))));
-            hurt(i, dmg);
+            let dmg = Math.max(1, Math.round(st.src * st.value * defFactor(ctx, f.def, st.src) * (order[st.by]!.team ? 1 : wut(tick))));
+            // The Element-Schild also dampens burn and poison from a source without element advantage.
+            const shield = hasTrait(i, 'shield');
+            if (shield && order[st.by]!.team && elementMultiplier(ctx, order[st.by]!.element, f.element) <= 1) {
+              const kept = Math.max(1, Math.round(dmg * shield.value));
+              stats.shielded += dmg - kept;
+              dmg = kept;
+            }
+            hurt(i, dmg, st.by, tick);
             record({ at: tick, a: i, t: i, dmg, hp: Math.max(0, f.hp), m: 1, kind: 'dot', status: id });
             checkPhase(i, tick);
           }
@@ -645,6 +792,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
         const healed = Math.min(f.maxHp - f.hp, Math.round(taken[i]! * regen.value));
         if (healed > 0) {
           f.hp += healed;
+          stats.healed[i]! += healed;
           record({ at: tick, a: i, t: i, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
           note(`${fmt(tick)} · ${f.name} heilt ${healed}`);
         }
@@ -657,7 +805,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (ended) return ended;
     if (now > limit) {
       log.push('Zeit abgelaufen');
-      return done(false, limit);
+      return done(false, limit, true);
     }
     // Burn or poison may have finished the actor off during the ticks.
     if (order[who]!.hp <= 0) continue;
@@ -769,18 +917,30 @@ function missingRareAlleles(ctx: GameContext): { locus: string; allele: string }
   return activeLoci(ctx).flatMap((l) => l.alleles.filter((a) => a.weight <= 10 && !libraryHas(ctx, l.id, a.id)).map((a) => ({ locus: l.id, allele: a.id })));
 }
 
+/**
+ * Turm-Marken for clearing a floor. The amount per floor may be a fraction
+ * (tokensPerFloor × (1 + growth × (floor − 1))); paying the step of the
+ * rounded running sum gives whole numbers that add up to exactly that.
+ */
+export function floorTokens(ctx: GameContext, floor: number): Decimal {
+  const t = ctx.balance.tower;
+  const total = (f: number) => (f <= 0 ? 0 : Math.round(t.tokensPerFloor * (f + (t.tokenGrowthPerFloor * f * (f - 1)) / 2)));
+  return D(Math.max(0, total(floor) - total(floor - 1)));
+}
+
 /** Side-effect-free preview of what clearing a floor pays. */
-export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; checkpoint: boolean; milestone: boolean } {
+export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; guard: boolean; checkpoint: boolean; milestone: boolean } {
   const t = ctx.balance.tower;
   const alleleFloor = floor % t.alleleEvery === 0;
   const allele = alleleFloor && missingRareAlleles(ctx).length > 0;
-  let tokens = D(t.tokensPerFloor * (1 + t.tokenGrowthPerFloor * (floor - 1))).floor();
+  let tokens = floorTokens(ctx, floor);
   if (alleleFloor && !allele) tokens = tokens.mul(2);
   return {
     tokens,
     catalyst: floor % t.catalystEvery === 0 ? 1 + Math.floor(floor / (t.catalystEvery * 5)) : 0,
     allele,
-    boss: floor % t.bossEvery === 0,
+    boss: isBossFloor(ctx, floor),
+    guard: isGuardFloor(ctx, floor),
     checkpoint: floor % t.checkpointEvery === 0,
     milestone: floor % t.milestoneEvery === 0,
   };
@@ -789,7 +949,7 @@ export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Deci
 function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null } {
   const t = ctx.balance.tower;
   const rewards: Record<string, Decimal> = {};
-  rewards['towerTokens'] = D(t.tokensPerFloor * (1 + t.tokenGrowthPerFloor * (floor - 1))).floor();
+  rewards['towerTokens'] = floorTokens(ctx, floor);
   if (floor % t.catalystEvery === 0) rewards['catalyst'] = D(1 + Math.floor(floor / (t.catalystEvery * 5)));
   let allele: { locus: string; allele: string } | null = null;
   if (floor % t.alleleEvery === 0) {
@@ -803,24 +963,34 @@ function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string
   return { rewards, allele };
 }
 
-/** Fights the next floor of the running tower run. */
-export function fightNextFloor(ctx: GameContext): void {
+/** Fights the next floor of the running tower run (`replay`: keep the events for the arena). */
+export function fightNextFloor(ctx: GameContext, replay = true): void {
   const tw = ctx.state.tower;
   const run = tw.run;
   if (!run) return;
   const team = run.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
-  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng);
-  tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, at: ctx.state.lastTickAt };
+  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng, { replay });
+  tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
+    tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
     ctx.bus.emit('towerFloor', { floor, win: false, rewards: {}, allele: null });
     endRun(ctx);
     return;
   }
   run.floor = floor;
+  gainXp(ctx, floor);
   // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
   const record = floor > towerBestEver(ctx);
+  if (floor > tw.best) {
+    // A new record: the Entschlossenheit starts over.
+    tw.recordAt = ctx.state.lastTickAt;
+    if (tw.resolve) {
+      tw.resolve = 0;
+      ctx.invalidate();
+    }
+  }
   tw.best = Math.max(tw.best, floor);
   tw.bestEver = Math.max(tw.bestEver ?? 0, tw.best);
   const { rewards, allele } = floorRewards(ctx, floor);
@@ -839,6 +1009,14 @@ export const towerSystem: System = {
   id: 'tower',
   update(ctx, dtMs) {
     const tw = ctx.state.tower;
+    if (!ctx.state.features['tower']) return;
+    // Entschlossenheit grows by the hour while the record stands still.
+    if (!tw.recordAt) tw.recordAt = ctx.state.lastTickAt;
+    const resolve = resolveInfo(ctx).bonus;
+    if (resolve !== (tw.resolve ?? 0)) {
+      tw.resolve = resolve;
+      ctx.invalidate();
+    }
     const interval = fightIntervalMs(ctx);
     if (!tw.run) {
       // Auto-restart (tower upgrade) after a defeat, where the last run started (checkpoint or floor 1).
@@ -848,7 +1026,8 @@ export const towerSystem: System = {
     tw.run.elapsedMs += dtMs;
     while (tw.run && tw.run.elapsedMs >= interval) {
       tw.run.elapsedMs -= interval;
-      fightNextFloor(ctx);
+      // A long step (offline) fights many floors at once: only the last one is replayed in the arena.
+      fightNextFloor(ctx, tw.run.elapsedMs < interval);
     }
   },
 };

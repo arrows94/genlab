@@ -26,10 +26,22 @@ function bossSpecies(ctx: GameContext, element: string): string {
   return [...pool].sort((a, b) => (TIER_ORDER[b.tier] ?? 0) - (TIER_ORDER[a.tier] ?? 0))[0]!.id;
 }
 
-/** Boss fighter for the current week (fresh HP for every attempt – only damage counts). */
+/**
+ * The normal enemy of a floor, without boss or Wächter multipliers: the titan
+ * follows the record smoothly (a record on a boss floor would otherwise make it
+ * jump ×bossHpMult and drop again one floor later).
+ */
+function titanBase(ctx: GameContext, floor: number): Fighter {
+  return enemyFor(ctx, floor, { plain: true });
+}
+
+/**
+ * Boss fighter for the current week (fresh HP for every attempt – only damage counts).
+ * Like the tower bosses it uses no Element-Technik.
+ */
 export function bossFighter(ctx: GameContext): Fighter {
   const b = ctx.state.weeklyBoss;
-  const base = enemyFor(ctx, b.floor);
+  const base = titanBase(ctx, b.floor);
   const cfg = ctx.balance.weeklyBoss;
   return {
     ...base,
@@ -39,6 +51,7 @@ export function bossFighter(ctx: GameContext): Fighter {
     hp: Infinity,
     maxHp: b.maxHp,
     atk: Math.round(base.atk * cfg.atkMult),
+    technique: undefined,
   };
 }
 
@@ -63,7 +76,7 @@ export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt
       element,
       species: bossSpecies(ctx, element),
       floor,
-      maxHp: Math.round(enemyFor(ctx, floor).maxHp * cfg.hpMult),
+      maxHp: Math.round(titanBase(ctx, floor).maxHp * cfg.hpMult),
       damage: 0,
       tiers: 0,
       last: null,
@@ -86,7 +99,7 @@ export function adaptWeeklyBoss(ctx: GameContext): void {
   if (!ctx.state.features['weeklyBoss'] || b.maxHp <= 0) return;
   const cfg = ctx.balance.weeklyBoss;
   const floor = Math.max(cfg.minFloor, ctx.state.tower.best);
-  const maxHp = Math.round(enemyFor(ctx, floor).maxHp * cfg.hpMult);
+  const maxHp = Math.round(titanBase(ctx, floor).maxHp * cfg.hpMult);
   b.damage = Math.round((b.damage / b.maxHp) * maxHp);
   b.floor = floor;
   b.maxHp = maxHp;
@@ -115,6 +128,16 @@ export function bossDefeated(ctx: GameContext): boolean {
   return b.maxHp > 0 && b.damage >= b.maxHp;
 }
 
+/**
+ * Reminder for the prestige dialog: attacks left while the team is at its
+ * strongest (a reset starts the stable over). Empty when there is nothing to use.
+ */
+export function unusedAttacksText(ctx: GameContext): string {
+  const b = ctx.state.weeklyBoss;
+  if (!ctx.state.features['weeklyBoss'] || b.attempts < 1 || bossDefeated(ctx) || team(ctx).length === 0) return '';
+  return `Du hast noch ${b.attempts === 1 ? 'einen Angriff' : `${b.attempts} Angriffe`} auf den Wochen-Titan – dein Team ist jetzt am stärksten, danach fängt dein Stall von vorn an.`;
+}
+
 /** One attempt: the tower team fights for `fightSec` seconds of fight time; all damage counts. */
 export function attackWeeklyBoss(ctx: GameContext): ActionResult {
   if (!ctx.state.features['weeklyBoss']) return { ok: false, reason: 'Der Wochen-Boss ist noch nicht erschienen.' };
@@ -129,7 +152,8 @@ export function attackWeeklyBoss(ctx: GameContext): ActionResult {
   // only the damage counts. Its floor's boss trait does not apply.
   const fighters = members.map((c) => fighterFor(ctx, c));
   const boss = { ...bossFighter(ctx), trait: undefined };
-  const fight = simulateFight(ctx, fighters, boss, ctx.rng, { limitSec: ctx.balance.weeklyBoss.fightSec });
+  // Only the damage within fightSec counts – no Wut here.
+  const fight = simulateFight(ctx, fighters, boss, ctx.rng, { limitSec: ctx.balance.weeklyBoss.fightSec, enrage: false });
   const dealt = fight.dealt;
   const rounds = fight.seconds;
   const counted = Math.min(dealt, b.maxHp - b.damage);

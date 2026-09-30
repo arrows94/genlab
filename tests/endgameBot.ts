@@ -1,9 +1,10 @@
+import { buyUpgrade } from '@core/actions';
 import { effectiveStats } from '@core/creatures';
 import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
 import { buyRelic, elementMultiplier, enemyFor, equipRelic, relicCost, relicLevel, roleOf, setRow, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
-import { attackWeeklyBoss } from '@core/features/weeklyBoss';
+import { attackWeeklyBoss, bossAttempts } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import type { Game } from '@core/game';
 import type { Creature } from '@core/state';
@@ -49,19 +50,36 @@ function memory(g: Game): BotMemory {
 export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
   const { depositShare = 0.3 } = opts;
   feedMegaProjects(g, depositShare);
+  ensureTowerRoutine(g);
   buyRelics(g);
   // The tower routine keeps the same team forever: rebuild it from the strongest creatures each visit.
   if (g.state.tower.run) stopRun(g);
   climbTower(g);
-  // Weekly boss: all attacks of the day (the team must not be climbing).
+  // Weekly boss: attacks are saved for the strongest team (right before a reset, see spendBossAttacks);
+  // only what the next daily refill would push over the limit is used now.
   if (g.state.features.weeklyBoss && g.state.tower.team.length > 0) {
-    for (let i = 0; i < 10 && g.state.weeklyBoss.attempts > 0; i++) if (!attackWeeklyBoss(g).ok) break;
+    const { perDay, max } = bossAttempts(g);
+    for (let i = 0; i < 10 && g.state.weeklyBoss.attempts > max - perDay; i++) if (!attackWeeklyBoss(g).ok) break;
   }
+}
+
+/**
+ * All saved weekly-boss attacks, with a freshly picked team – called right
+ * before an inheritance or an Äon, when the stable is at its strongest (the
+ * titan stays the same all week, the stable starts over after a reset).
+ */
+export function spendBossAttacks(g: Game): void {
+  if (!g.state.features.weeklyBoss || g.state.weeklyBoss.attempts < 1) return;
+  if (g.state.tower.run) stopRun(g);
+  climbTower(g);
+  if (g.state.tower.team.length === 0) return;
+  for (let i = 0; i < 10 && g.state.weeklyBoss.attempts > 0; i++) if (!attackWeeklyBoss(g).ok) break;
 }
 
 /** Called every few simulated seconds while a session runs. */
 export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
   const { aeonAt = 3, aeonGrowth = 2, anomalies = true, anomalyTimeoutH = 12 } = opts;
+  ensureTowerRoutine(g);
   climbTower(g);
   spendShards(g);
   if (anomalies) playAnomalies(g, anomalyTimeoutH);
@@ -72,6 +90,7 @@ export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
     if (gain >= aeonAt + aeonGrowth * done) {
       // Everything that the Äon would take is better spent on the Großprojekt.
       feedMegaProjects(g, 1);
+      spendBossAttacks(g);
       performPrestige(g, 'aeon');
       spendShards(g);
     }
@@ -126,6 +145,14 @@ function climbTower(g: Game): void {
   const owned = g.content.relics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
   for (let i = 0; i < size; i++) equipRelic(g, i, owned[i]?.id ?? null);
   startRun(g);
+}
+
+/**
+ * The Turm-Routine (auto-restart) first – an Äon resets research, and without it the tower only
+ * fights while someone watches. A player buys it back right away.
+ */
+function ensureTowerRoutine(g: Game): void {
+  if (g.state.features.tower && !g.state.features.towerAuto) buyUpgrade(g, 'towerRoutine');
 }
 
 /**

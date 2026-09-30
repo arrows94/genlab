@@ -25,7 +25,7 @@ function megaGame(seed = 7) {
   const g = makeGame(seed);
   for (const f of ['farm', 'mine', 'biolab', 'breeding', 'expedition', 'tower', 'inheritance', 'aeon', 'megaProjects']) unlockFeature(g, f);
   g.state.prestige.inheritance = { count: 3 };
-  g.state.tower.best = 20; // the Äon (and with it the Großprojekt) comes back after each reset
+  g.state.tower.best = 60; // the Äon (and with it the Großprojekt) comes back after each reset
   return g;
 }
 

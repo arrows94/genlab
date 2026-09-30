@@ -141,7 +141,7 @@ Schwächen: vieles ist irgendwann „fertig“, und die Genetik spielt am Ende k
   - [ ] Siebter 28-Tage-Lauf (Regeneration neu, Bot mit Element-Wahl): Turm 39 von Tag 6 bis 14, dann 51 ab Tag 15
         bis Tag 28 – Etage 50 fällt jetzt, Etage 40 hält trotzdem (das Team wäre auch ohne Heilung zu schwach).
         Die Team-Stärke wächst nur in Sprüngen (letzte Relikt-Stufen, Talente), der Turm um ×1,11 je Etage – dazwischen
-        acht bis dreizehn Tage Stillstand. Ansehen: eine Turm-Stärke, die mit jeder Vererbung oder jedem Äon wächst?
+        acht bis dreizehn Tage Stillstand. Geplant unter „TODO – Turm: Stillstand abbauen“ (Boss-Mauer, Kampferfahrung)
 - [x] **Anomalien mit Stufen und Kombinationen**
   - [x] Schwierigkeitsstufen I–V pro Anomalie: Stufe n+1 öffnet sich, wenn Stufe n gemeistert ist. Jede weitere
         Stufe verschärft die Regel (`perLevel`) und vergrößert das Ziel ×4 (`balance.anomalies.goalGrowth`)
@@ -404,9 +404,17 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
       bleibt. Der Äon-Bot streut je Seed stark, weil jede Änderung am Kampf die Würfe des ganzen Spiels verschiebt.
       Turm-Rekord Tag 1–5: Seed 7 19 26 35 39 39 (`main` 18 19 29 39 39), Seed 99 17 25 29 36 37 (`main` 18 26 32 42
       42). Äon-Bot 12 Tage (Seed 2024): 19 29 35 35 39, dann 39 bis Tag 12 (`main` 19 25 32 35 36, ab Tag 9 44)
-- [ ] Äon-Bot 12 Tage: Wochen-Boss ab Woche 2 nur 15–76 % (`main` jede Woche 100 %), Turm bleibt bei 39 (`main` 44).
-      Prüfen, ob es an der neuen Teamwahl liegt (Kampfwert statt Summe der Werte; der Bot nimmt das Turm-Team auch für
-      den Wochen-Boss) oder an der Streuung – eigenes Team für den Wochen-Boss (Schaden in 20 s zählt) ausprobieren
+- [x] Äon-Bot 12 Tage: Wochen-Boss ab Woche 2 nur 15–76 % (`main` jede Woche 100 %), Turm bleibt bei 39 (`main` 44).
+      Befund (Seed 2024, jeder Angriff mit festen Seeds nachgerechnet): Die Teamwahl war es nicht – Turm-Team, stärkste
+      nach Kampfkraft, alte Auswahl und ein gezielt auf den Titan gewähltes Team lagen je Angriff innerhalb von
+      ±0,3 Prozentpunkten; ohne Titan-Technik ebenso. Der Titan wird zu Wochenbeginn aus dem Rekord gebaut (Woche 2:
+      Etage 39) und bleibt die Woche über gleich stark, der Bot griff aber bei jedem Einchecken an – auch direkt nach
+      einer Vererbung mit frisch zurückgesetztem Stall (0 % je Angriff); nur kurz vor dem Äon brachte ein Angriff 5 %.
+      Jetzt spart der Bot seine Angriffe und setzt sie direkt vor Vererbung und Äon ein (sonst nur, was die nächste
+      Tagesfüllung verfallen ließe). Gleich mit behoben: Der Titan übernahm auf einer Boss-Etage als Rekord deren
+      ×2,2 KP und ×1,3 ANG (Rekord 40 schwerer als 41) und setzte die Technik des Etagen-Elements statt keiner ein.
+      Äon-Bot 12 Tage vorher/nachher: Woche 2 26 % → 99 %, Turm ab Tag 8 39 → 48 (Relikte aus den Boss-Belohnungen),
+      Äonen gleich (2). Für Spieler: Tipp im Panel, ungenutzte Angriffe im Bestätigungsdialog der Vererbung
 - [x] Test-Bot wählt sein Team nach Kampfwert (KP × (1 + VER/ANG des Gegners) × ANG × (TMP-Verhältnis)^0,8 × Element)
       gegen den nächsten Boss – oder gegen die Etage, an der die letzten Läufe endeten
 - [x] Wochen-Boss nutzt dieselbe Kampf-Logik (`simulateFight` mit eigenem Zeitlimit `weeklyBoss.fightSec`, zählt
@@ -420,8 +428,13 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
       nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
 - [x] Tempo-Regler für die Wiedergabe (1×/2×/überspringen) in der Kopfzeile der Arena, gemerkt in `viewState.tower`
-- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen)
-- [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
+- [x] Kampfprotokoll lesbarer (Icons statt Textzeilen): aus den Wiedergabe-Ereignissen (`fightProtocol` in
+      `features/towerReport.ts`), Namen in Elementfarbe, Rand nach gut/schlecht fürs Team, Filter „Nur Wichtiges“
+- [x] Nach einer Niederlage: kurze Auswertung mit Tipp (`analyzeDefeat`): Die Simulation zählt je Kämpfer Schaden,
+      Heilung, Treffer mit Vor-/Nachteil, Ausweicher und Ausfallzeit (`FightStats`, ohne zusätzliche Würfe). Gründe:
+      Zeit abgelaufen, knapp, deutlich zu schwach, Element-Schild, Heilung der Gegner, Element-Nachteil, Wandler,
+      Tempo, früh gefallenes Teammitglied – die drei stärksten werden gezeigt. Die letzte Niederlage bleibt im
+      Spielstand (`tower.lastDefeat`), bis ein späterer Lauf an ihrer Etage vorbeikommt
 
 ## Leitplanken
 
@@ -429,26 +442,120 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Alte Spielstände: Aufstellung (Reihen) hat einen Standard (alle vorne), nichts muss neu eingestellt werden
 - [x] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen (je Schritt)
 
-# TODO – Turm: feinere Etagen und Genom-Keller
+# TODO – Turm: Stillstand abbauen, feinere Etagen und Genom-Keller
 
-## Etagen ×3 (heute Etage 10 = künftig Etage 30)
+Befund (Äon-Bot, 28 Tage): acht bis dreizehn Tage ohne Turm-Fortschritt, die Team-Stärke wächst nur in Sprüngen
+(letzte Relikt-Stufen, Talente). Messung der Boss-Mauer (festes Team aus vier Elementen, Faktor auf KP/ANG/VER für
+50 % Siegchance, je 30 Kämpfe): Etage 35 0,28 · 38 0,43 · 39 0,83 · **40 (Regeneration) 2,19** · 41 0,91 · 45 1,76 ·
+49 5,19 · **50 (Element-Schild, ohne Vorteil) 25,7** · 51 11,2. Ein Boss verlangt also das 2,6- bis 5-Fache der Werte der
+Etage davor – so viel wie 9 bis 15 normale Etagen (je Etage ×1,11 KP und ×1,11 ANG, also ×1,23 „Stärke“).
 
-Aus jeder Etage werden drei kleinere. Der Aufstieg fühlt sich flüssiger an, und die Stärke-Kurve bleibt gleich,
-wenn alle etagenbezogenen Zahlen mitwandern.
+Drei Schritte, in dieser Reihenfolge – jeder für sich mit dem Äon-Bot (28 Tage, Seed 2024) vorher/nachher gemessen:
 
-- [ ] Gegner-Wachstum je Etage 1,11^(1/3) ≈ 1,0354 statt 1,11 (`tower.enemyGrowth`)
-- [ ] Alle Etagen-Schwellen ×3: `bossEvery` 30, `checkpointEvery` 30, `bossTraitFromFloor` 60, `milestoneEvery` 150,
-      `groupFromFloor` 36, `companionsFromFloor` 60, `phaseFromFloor` 90, `catalystEvery` 30, `alleleEvery` 75,
-      `weeklyBoss.minFloor` 30, `timeCrystals.towerEvery` 75, Erfolge `towerMilestones` ×3
-- [ ] Ertrag je Etage anpassen (`tokensPerFloor`, `tokenGrowthPerFloor`), damit Turm-Marken pro Stunde gleich bleiben
-      – oder bewusst etwas mehr
-- [ ] Tempo entscheiden: Kampfpause `fightIntervalSec` (8 s) auf etwa ein Drittel senken, sonst dauert derselbe
-      Fortschritt dreimal so lang. Offline-Berechnung mit dreimal so vielen Kämpfen messen
-- [ ] Spielstand-Migration (`MIGRATIONS`): Rekord, aktuelle Etage, Kontrollpunkte, erreichte Meilensteine und
-      Wochen-Boss-Etage ×3
-- [ ] Texte mit Etagenzahlen durchsuchen (Forschung, Talente, Hinweise wie „alle 10 Etagen“, Boss-Vorschau)
-- [ ] Tests und Test-Bots auf die neue Zählung umstellen; Äon-Bot vorher/nachher vergleichen (neu ÷ 3 = alt)
-- [ ] Eintrag in `changelog.ts`: Der Rekord springt auf das Dreifache – den Spielern erklären, dass nichts verloren geht
+1. **Etagen ×3** zuerst: eine reine Umzählung mit klarer Prüfung (neu ÷ 3 ≈ alt). Danach werden Schritt 2 und 3
+   gleich in der endgültigen Zählung kalibriert statt zweimal
+2. **Boss-Mauer abflachen**: die Ursache der langen Stillstände
+3. **Kampferfahrung**: dauerhafte Turm-Stärke, die auch im Stillstand wächst und jede Vererbung und jedes Äon übersteht
+
+## Schritt 1 – Etagen ×3 (heute Etage 10 = künftig Etage 30), Kampfpause 4 s
+
+Aus jeder Etage werden drei kleinere, die neue Etage 3n ist genau so stark wie heute Etage n. Der Aufstieg fühlt sich
+flüssiger an; die Mauern selbst ändert erst Schritt 2.
+
+- [x] Gegner-Wachstum je Etage 1,11^(1/3) ≈ 1,0354 statt 1,11 (`tower.enemyGrowth`), mit Versatz in `enemyFor`
+      (Exponent `floor − subFloors`), damit Etage 3n genau der alten Etage n entspricht – die Etagen 1 und 2 werden
+      minimal leichter als die heutige Etage 1. Etage 3n würfelt mit dem Schlüssel der alten Etage n: gleiche Gegner,
+      Elemente, Boss-Eigenheiten und Gruppen wie vorher (die bekannten Bosse bleiben an ihrer umgerechneten Stelle)
+- [x] Alle Etagen-Schwellen ×3: `bossEvery` 30, `checkpointEvery` 30, `catalystEvery` 30, `bossTraitFromFloor` 60,
+      `companionsFromFloor` 60, `phaseFromFloor` 90, `groupFromFloor` 36, `alleleEvery` 75, `milestoneEvery` 150,
+      `weeklyBoss.minFloor` 30, `timeCrystals.towerEvery` 75, `activity.towerMilestones` ×3
+- [x] Inhalte: Freischaltung Wochen-Boss Etage 10 → 30, Äon 15 → 45; Erfolge „Etage 10/50/100“ → 30/150/300
+      (Namen, Beschreibungen, Boni bleiben)
+- [x] Kampfpause `fightIntervalSec` 8 → 4 s: in alten Etagen gerechnet 1,5-mal so langsam wie heute, dafür bleibt die
+      Arena-Wiedergabe verfolgbar (ein Durchschnittskampf von 9 s Kampfzeit läuft etwa doppelt so schnell statt 3,4-mal
+      bei 2,7 s). Talent „Sturmlauf“ halbiert weiter (2 s, Untergrenze 1 s bleibt)
+- [x] Turm-Marken: gleich viele pro Stunde wie heute – je neue Etage die Hälfte der Marken der entsprechenden alten
+      Etage. Weil Marken abgerundet werden (0,67 pro Etage ergäbe 0), wird die Differenz einer Summenformel ausgezahlt:
+      ganze Zahlen, über mehrere Etagen genau die gewünschte Menge
+- [x] Spielstand-Migration (`SAVE_VERSION` 9 → 10): ×3 für `tower.best`, `bestEver`, `run.floor`, Bestenliste,
+      letzte Läufe, `lastResult.floor`, `lastDefeat.floor`, `weeklyBoss.floor`, Statistik `record.towerFloor`;
+      Startetage eines Laufs s → 3·(s − 1) + 1; Zeitmarken `tower:10` … umbenennen. Die KP des Wochen-Titans bleiben
+      durch die exakte Abbildung gleich; Checkpoint, Meilenstein-Boni und Zeitkristall-Rekorde folgen aus dem Rekord
+- [x] Offline-Last: gemessen 0,16 ms je Kampf (Desktop); 12 h offline mit Dauerkampf 0,9 s heute, etwa 1,8 s mit 4 s.
+      Jetzt behält nur der letzte Kampf eines großen Zeitschritts seine Wiedergabe-Daten (`simulateFight` mit
+      `replay: false`) – ein Kampf ohne sie ist 35–45 % schneller, das gleicht die doppelte Kampfzahl fast aus
+- [ ] Auf dem Handy nachmessen, wie lange das Laden nach 12 h mit Dauerkampf (Auto-Neustart) dauert
+- [x] Turm-Spalte: Hinweis „nächster Boss in N Etagen“ (die Spalte zeigt nur ±4 Etagen, bis zum Boss sind es bis zu 30)
+- [x] Texte mit Etagenzahlen (auch `CONTENT.md`, `README.md`): die meisten lesen die Zahlen aus `balance`; fest eingetragen sind Erfolge und
+      Freischaltungen. Alte Versionshinweise bleiben als Geschichte stehen
+- [x] Tests und Test-Bots auf die neue Zählung; Äon-Bot vorher/nachher (neu ÷ 3 ≈ alt, wegen 4 s etwas später erreicht).
+      Erster 28-Tage-Lauf (Seed 2024): Turm zur Mitte 4–9 alte Etagen zurück, am Ende 46,3 statt 49 – Wand-Messung:
+      Jede Zwischenetage würfelte eigenes Element und eigene Gruppengröße (dreimal so viele ungünstige Etagen), und ein
+      Wächter allein war weit oben eine Spitze (Etage 140: Faktor 5,76 statt ~2,8; Einzelgegner schlagen bis zuletzt voll
+      zu). Jetzt teilen die drei kleinen Etagen einer früheren Etage deren Element und Gruppengröße, Wächter behalten die
+      Aufstellung ihrer Etage. Zweiter Lauf (Seed 2024, 28 Tage), neu ÷ 3 gegen alt: Tag 4 17 / 36, Tag 9 48 / 48,
+      Tag 10–28 49,7 / 48–49; Äonen 6 / 5, Talente 13 / 14, Observatorium 3/4 / 4/4. Die langsamen ersten vier Tage sind
+      Streuung: 10 Tage mit Seed 7 (Tag 2 26 / 19, Tag 10 39,7 / 39) und Seed 99 (Tag 4 36,3 / 39, Tag 10 39,7 / 39).
+      Der Stillstand bleibt wie vorher (Seed 7 und 99: 119 bzw. 39 ab Tag 4) – dafür sind Schritt 2 und 3 da
+- [x] Versionshinweis: Der Rekord springt auf das Dreifache – nichts geht verloren, jede alte Etage ist jetzt drei
+      kleinere
+
+## Schritt 2 – Boss-Mauer abflachen
+
+Ziel: Ein Boss kostet so viel wie etwa **3–4 normale Etagen** (in alter Zählung; Faktor ≈ 1,35–1,5 auf die Werte der
+Etage davor) statt 9–15. Der Element-Schild bleibt ein Rätsel („Vorteil nötig“): mit Vorteil wie ein normaler Boss,
+ohne Vorteil deutlich schwerer (Ziel ≈ 8 Etagen statt 15+).
+
+- [x] Mauer-Messung als dauerhafter Test (`tests/towerCurve.test.ts`, Helfer `tests/towerCurve.ts`): benötigter Faktor
+      auf KP/ANG/VER fester Teams (gemischt, einfarbig mit und ohne Vorteil) je Boss-Etage gegenüber den Etagen davor;
+      `GENLAB_CURVE=1` gibt den Bericht aus. Vorher: gemischt Ø 9,9 frühere Etagen (5,7–13,4), Schild ohne Vorteil 19–20
+- [x] Befund 1 – Zeitlimit: weit oben endeten Kämpfe an der Grenze der Team-Stärke am 40-s-Limit, ein Boss mit ×2,2 KP
+      verlangte das 2,2-Fache der Werte (~7,5 Etagen) schon ohne Eigenheit, der ganze Turm wurde ab ~Etage 100 doppelt
+      so steil (×1,23 je frühere Etage statt ×1,11). Ein mitwachsendes Limit (`fightLimitSec`) half in der Messung, im
+      Äon-Bot kaum – verworfen
+- [x] Befund 2 – Verteidigung: mit dem festen `defScale` (50) wurden Kämpfe weit oben immer länger (Etage 123: 116 s,
+      ab 150: 300 s). Jetzt skalenfrei: ein Treffer wird durch 1 + `defWeight` (0,5) × VER/ANG geteilt – Kämpfe dauern
+      auf jeder Höhe 20–40 s, die Kurve bleibt ×1,11 je frühere Etage, der frühe Turm fast gleich (Etage 33: 0,0255
+      statt 0,0237). Das widerruft die Entscheidung „`defScale` bleibt fest“ (Kampfsystem Schritt 2)
+- [x] Befund 3 – ohne Zeitlimit gewinnen Heiler-Teams jeden Boss (Schild und Regeneration verlängern nur). Deshalb
+      **Wut statt Zeitlimit**: ab 30 s Kampfzeit jede Sekunde +10 % Gegner-Schaden (`enrageAfterSec`, `enrageGrowth`),
+      300 s nur als Notbremse (Patt). Der Wochen-Boss hat keine Wut
+- [x] Boss-Werte: KP ×1,3 (vorher 2,2), ANG ×1,05 (1,3), Begleiter 0,2/0,2 (0,35/0,4), Regeneration 25 % (40),
+      Flächenangriff 40 % (60), Element-Schild ¼ – jetzt auch gegen Brand und Gift ohne Vorteil. Ergebnis gemischt
+      Ø 3,7 frühere Etagen (höchstens 4,3); Schild mit Vorteil 2,4–3,8, ohne 5,4–7,0
+- [x] Boss-Eigenheiten behalten ihren Charakter – nur ihre Stärke wurde angepasst
+- [x] Äon-Bot: Turm deutlich höher – Seed 2024 (28 Tage) 198 statt 149, Seed 7 und 99 (10 Tage) 149–155 statt 119.
+      Diagnose mit dem echten Bot-Team (Seed 7, Tag 4): Etage 149 braucht Faktor 0,87, Boss 150 1,22 → ×1,4 ≈ 3,2 frühere
+      Etagen, im Ziel. Der Stillstand bleibt trotzdem (Seed 7: 149 ab Tag 4; Seed 2024: 174 an Tag 10–18, 198 ab Tag
+      19): Fortschritt gibt es nur am Höhepunkt eines Durchlaufs, nach jeder Vererbung fängt der Stall von vorn an
+      (Tag 5–8 braucht das Team Faktor 3,5–4,5). Genau dafür ist Schritt 3 da
+- [ ] Wochen-Boss nachstellen: Der Titan folgt dem jetzt höheren Rekord – ab Woche 2 schafft der Bot nur noch 0–11 %
+      (einmal 47 %), vorher meist 100 %. `weeklyBoss.hpMult` (25) oder die Etage des Titans (z. B. Rekord minus einige
+      Etagen) mit dem Äon-Bot neu einstellen
+- [x] Wächter alle 10 Etagen (vorgezogen in Schritt 1): ein Gegner allein mit ×1,12 KP und ×1,1 ANG – etwa eine
+      frühere Etage stärker –, kein Checkpoint, keine Eigenheit; 🛡️ in der Turm-Spalte, Hinweis in der Vorschau
+
+## Schritt 3 – Kampferfahrung (Turm-Stärke, die jede Vererbung und jedes Äon übersteht)
+
+Der Stall fängt nach jeder Vererbung von vorn an, der Turm-Rekord nicht. Die Kampferfahrung gleicht das aus: Jeder Sieg
+im Turm bringt Erfahrung, sie gehört dem Spieler (wie Relikte) und macht jedes künftige Turm-Team stärker. Wer an einer
+Mauer hängt und mit Auto-Neustart weiterkämpft, kommt dadurch langsam, aber sicher weiter.
+
+- [ ] Erfahrung: 1 je gewonnene Etage, 10 je Boss (Startwerte); auch offline. Sie übersteht Vererbung und Äon
+      (`tower.xp` im Spielstand, neue Felder mit Standardwert – keine Migration)
+- [ ] Ränge: Rang n → n + 1 kostet 100 × 1,15ⁿ Erfahrung (Startwerte). Je Rang +2 % KP und +2 % Schaden im Turm und
+      gegen den Wochen-Boss. Grober Takt im Stillstand (etwa 900 Etagen pro Stunde mit 4 s): Rang ~20 nach einem Tag,
+      ~30 nach drei, ~40 nach zwölf – die Kosten wachsen schneller als die Erfahrung, Zucht bleibt der Hauptweg
+- [ ] Neues Modifier-Ziel `tower.hp` (in `fighterFor` wie `tower.damage`); die Kampferfahrung als eigener
+      `ModifierProvider`
+- [ ] Kalibrieren mit dem Äon-Bot (28 Tage): Stillstände zusammen mit Schritt 2 höchstens etwa 3 Tage; an Tag 28 macht
+      die Kampferfahrung höchstens etwa ein Drittel der Turm-Stärke aus
+- [ ] Anzeige: Rang, Balken bis zum nächsten Rang und aktuelle Wirkung in der Kopfzeile des Turms; in „Warum
+      verloren?“ ein Hinweis, dass Weiterkämpfen Erfahrung bringt
+- [ ] Optional: Äon-Talent „Veteranen“ (+50 % Erfahrung) oder ein Resonanz-Knoten, damit auch das Äon den Turm
+      spürbar beschleunigt
+- [ ] Verworfen (vorerst): Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs – wächst in groben Sprüngen
+      (1–2 Vererbungen am Tag) und belohnt nicht, dass man an einer Mauer weiterkämpft
 
 ## Genom-Keller (Gegenstück zum Turm, ersetzt die Idee „Dunkler Turm“)
 

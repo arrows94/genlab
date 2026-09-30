@@ -134,13 +134,13 @@ export const weeklyMutations: WeeklyMutationDef[] = [
 /** Tricks of tower bosses from `balance.tower.bossTraitFromFloor` on (one per boss, fixed per floor). */
 export const bossTraits: BossTraitDef[] = [
   { id: 'elementShield', name: 'Element-Schild', icon: '🛡️', kind: 'shield', value: 0.25,
-    description: 'Nimmt nur ein Viertel des Schadens – außer von Angriffen mit Element-Vorteil.' },
+    description: 'Nimmt nur ein Viertel des Schadens (auch von Brand und Gift) – außer von Angriffen mit Element-Vorteil.' },
   { id: 'shifter', name: 'Wandler', icon: '🔄', kind: 'shift', value: 0, targeting: 'weakest',
     description: 'Wechselt jede Sekunde Kampfzeit sein Element und jagt das Teammitglied mit den wenigsten KP. Ein bunt gemischtes Team hilft.' },
-  { id: 'sweeper', name: 'Flächenangriff', icon: '🌊', kind: 'sweep', value: 0.6,
-    description: 'Jede dritte Aktion trifft die ganze hintere Reihe mit 60 % Schaden – steht niemand hinten, alle.' },
-  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.4, targeting: 'back',
-    description: 'Heilt jede Sekunde Kampfzeit 40 % des Schadens, den er in dieser Sekunde genommen hat, und greift bevorzugt die hintere Reihe an. Je schneller er fällt, desto weniger kann er heilen.' },
+  { id: 'sweeper', name: 'Flächenangriff', icon: '🌊', kind: 'sweep', value: 0.4,
+    description: 'Jede dritte Aktion trifft die ganze hintere Reihe mit 40 % Schaden – steht niemand hinten, alle.' },
+  { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.25, targeting: 'back',
+    description: 'Heilt jede Sekunde Kampfzeit 25 % des Schadens, den er in dieser Sekunde genommen hat, und greift bevorzugt die hintere Reihe an. Je schneller er fällt, desto weniger kann er heilen.' },
 ];
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */

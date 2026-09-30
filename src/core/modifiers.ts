@@ -46,7 +46,7 @@ export const MODIFIER_ROOTS = [
   'infusion',
   'capsule', // capsule.fragmentYield
   'recycler', // recycler.time (Recycling-Automat, seconds per creature)
-  'tower', // tower.damage, tower.elementDamage
+  'tower', // tower.damage, tower.hp, tower.elementDamage
   'element', // element.<id>.production
   'creature',
   'contracts', // contracts.reward

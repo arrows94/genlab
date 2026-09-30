@@ -230,8 +230,12 @@ export interface Balance {
      * speed)^speedExponent seconds of fight time – relative, so it works on every floor.
      */
     speedExponent: number;
-    /** Fight time limit in seconds (a draw counts as a defeat). */
+    /** Emergency brake in seconds of fight time: a fight that lasts this long is a stalemate and counts as lost. */
     maxFightSec: number;
+    /** Wut: from this second of fight time on the enemies hit harder … */
+    enrageAfterSec: number;
+    /** … by this share more per further second (additive: 0.1 → ×2 after ten seconds of Wut). */
+    enrageGrowth: number;
     /** Dodge chance per 100 % speed lead of the defender over the attacker … */
     evadePerSpeedLead: number;
     /** … capped at this. */
@@ -266,15 +270,25 @@ export interface Balance {
     /** Three or more different elements: +share damage against the Wandler. */
     diversityBonus: number;
     enemyBase: Record<string, number>;
-    /** Enemy stats × growth^(floor − 1). */
+    /** Enemy stats × growth^(floor − subFloors). */
     enemyGrowth: number;
+    /**
+     * Small floors per former floor (3): enemy stats × growth^(floor − subFloors), and floor 3n rolls the same
+     * enemy, element and boss trait as the former floor n.
+     */
+    subFloors: number;
     bossEvery: number;
     bossHpMult: number;
     bossAtkMult: number;
+    /** Wächter: every n-th floor (not a boss floor) the foes are stronger – no checkpoint, no trait. */
+    guardEvery: number;
+    guardHpMult: number;
+    guardAtkMult: number;
     strongMult: number;
     weakMult: number;
-    /** Damage = atk × mult × defScale / (defScale + def). */
-    defScale: number;
+    /** Damage = atk × mult / (1 + defWeight × def / atk) (scale-free: fights last as long on every floor). */
+    defWeight: number;
+    /** Turm-Marken of floor f: tokensPerFloor × (1 + tokenGrowthPerFloor × (f − 1)), paid as whole numbers (running sum). */
     tokensPerFloor: number;
     tokenGrowthPerFloor: number;
     catalystEvery: number;
@@ -291,6 +305,17 @@ export interface Balance {
     milestoneShards: number;
     /** Permanent bonus per milestone reached (stacks). */
     milestoneModifiers: ModifierDef[];
+    /** Kampferfahrung per won floor: xpPerFloor × floor (higher floors teach more), a boss × xpBossMult. Survives every reset. */
+    xpPerFloor: number;
+    xpBossMult: number;
+    /** Rank n → n + 1 costs xpRankBase × (1 + xpRankStep × n) – linear, so ranks keep coming late. */
+    xpRankBase: number;
+    xpRankStep: number;
+    /** Per rank: this share more KP and damage in the tower (and against the weekly boss). */
+    xpRankBonus: number;
+    /** Entschlossenheit: while the record does not rise, +resolvePerDay KP and damage per day (hourly steps), at most resolveCap; a new record resets it. */
+    resolvePerDay: number;
+    resolveCap: number;
   };
   anomalies: {
     /** Highest difficulty stage (I–V). */

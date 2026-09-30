@@ -163,8 +163,9 @@ function wireEvents(g: Game): void {
     if (e.allele) {
       const locus = content.genes.get(e.allele.locus);
       toast(`🗼 Etage ${e.floor}: seltenes Allel ${locus.alleles.find((a) => a.id === e.allele!.allele)?.name} (${locus.name}) für die Genbibliothek!`, 'rare', 6000);
-    } else if (e.win && e.floor % 10 === 0) toast(`🗼 Etage ${e.floor} bezwungen! ${amounts(e.rewards)}`, 'rare');
+    } else if (e.win && e.floor % g.balance.tower.bossEvery === 0) toast(`🗼 Etage ${e.floor} bezwungen! ${amounts(e.rewards)}`, 'rare');
   });
+  g.bus.on('towerRank', (e) => toast(`🎖 Kampferfahrung: Rang ${e.rank} – +${Math.round(e.rank * g.balance.tower.xpRankBonus * 100)} % KP und Schaden im Turm`, 'rare'));
   g.bus.on('towerRunEnded', (e) => toast(`🗼 Turm-Lauf beendet auf Etage ${e.floor}.`, 'info'));
   g.bus.on('talentBought', (e) => toast(`⏳ Talent gelernt: ${content.talents.get(e.talent).name}`, 'rare'));
   g.bus.on('resonanceBought', (e) => toast(`〰️ ${content.resonances.get(e.resonance).name} auf Stufe ${e.level}`, 'info'));

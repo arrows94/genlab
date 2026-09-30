@@ -58,7 +58,7 @@ export const features: FeatureDef[] = [
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   {
     id: 'weeklyBoss', name: 'Wochen-Boss', hint: 'Ein Wochen-Boss erscheint im Genom-Turm! Greife ihn jeden Tag an – der Schaden sammelt sich über die ganze Woche.',
-    condition: { type: 'towerFloor', floor: 10 },
+    condition: { type: 'towerFloor', floor: 30 },
   },
   {
     id: 'grandResearch', name: 'Großforschung', hint: 'Großforschung: Im Forschungs-Tab laufen jetzt Projekte über Stunden und Tage – mit großen Boni, die jede Vererbung überdauern.',
@@ -82,7 +82,7 @@ export const features: FeatureDef[] = [
   { id: 'anomalies', name: 'Anomalien', tab: 'anomalies', hint: 'Anomalien entdeckt: Durchläufe mit besonderen Regeln und dauerhaften Belohnungen.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 2 } },
   {
     id: 'aeon', name: 'Äon', tab: 'aeon', hint: 'Das Äon ruft: Ein tieferer Neustart für Äon-Splitter und einen eigenen Talentbaum.',
-    condition: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 3 }, { type: 'towerFloor', floor: 15 }] },
+    condition: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 3 }, { type: 'towerFloor', floor: 45 }] },
   },
   {
     id: 'megaProjects', name: 'Großprojekte', hint: 'Großprojekt: Im Äon-Tab wartet das Äon-Observatorium. Zahle über mehrere Tage ein – es öffnet neue Stufen im Talentbaum. Einzahlungen gehen bei keinem Neustart verloren.',
@@ -134,9 +134,10 @@ export const achievements: AchievementDef[] = [
   { id: 'fullyInfused', name: 'Vollendet', description: 'Eine Kreatur auf Infusionsstufe +10 gebracht.', condition: { type: 'statistic', statistic: 'record.infusion', amount: 10 }, modifiers: [{ target: 'infusion.ep', op: 'pct', value: 0.1 }] },
   { id: 'breakthrough', name: 'Durchbruch', description: 'Eine Seltenheit per Durchbruch erhöht.', condition: { type: 'statistic', statistic: 'breakthroughs', amount: 1 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.05 }] },
   { id: 'capsuleCollector', name: 'Kapselsammler', description: '50 Gen-Kapseln geöffnet.', condition: { type: 'statistic', statistic: 'capsulesOpened', amount: 50 }, modifiers: [{ target: 'capsule.fragmentYield', op: 'pct', value: 0.1 }] },
-  { id: 'tower10', name: 'Turmläufer', description: 'Etage 10 im Genom-Turm.', condition: { type: 'towerFloor', floor: 10 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.05 }] },
-  { id: 'tower50', name: 'Turmstürmer', description: 'Etage 50 im Genom-Turm.', condition: { type: 'towerFloor', floor: 50 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.1 }] },
-  { id: 'tower100', name: 'Turmspitze?', description: 'Etage 100 im Genom-Turm.', condition: { type: 'towerFloor', floor: 100 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.1 }] },
+  // Ids keep the floor numbers from before the finer floors (×3) – saves refer to them.
+  { id: 'tower10', name: 'Turmläufer', description: 'Etage 30 im Genom-Turm.', condition: { type: 'towerFloor', floor: 30 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.05 }] },
+  { id: 'tower50', name: 'Turmstürmer', description: 'Etage 150 im Genom-Turm.', condition: { type: 'towerFloor', floor: 150 }, modifiers: [{ target: 'tower.damage', op: 'pct', value: 0.1 }] },
+  { id: 'tower100', name: 'Turmspitze?', description: 'Etage 300 im Genom-Turm.', condition: { type: 'towerFloor', floor: 300 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.1 }] },
   { id: 'perfectGenome', name: 'Makellos', description: 'Ein perfektes Genom entdeckt.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 1 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'shinyFound', name: 'Schillernd!', description: 'Eine schillernde Kreatur gefunden.', condition: { type: 'statistic', statistic: 'shinies', amount: 1 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
   { id: 'anomalist', name: 'Anomalist', description: 'Alle Anomalien gemeistert.', condition: { type: 'all', of: [

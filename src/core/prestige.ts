@@ -41,6 +41,7 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
     s.creatures = s.creatures.filter((c) => c.job?.kind === 'mission' && away.has(c.job.target));
     s.tower.run = null;
     s.tower.team = [];
+    s.tower.lastDefeat = null;
   }
   if (r.processes) s.processes = kept;
   if (r.buffs) s.buffs = [];

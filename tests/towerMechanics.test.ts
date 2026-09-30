@@ -3,9 +3,10 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, enemiesFor, techniqueFor, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
+import { resetLayer } from '@core/prestige';
 import type { Fighter } from '@core/features/tower';
 import { balance, content, makeGame } from './helpers';
 
@@ -37,17 +38,17 @@ describe('boss traits', () => {
   });
 
   const fight = (g: ReturnType<typeof towerGame>, trait: string | undefined, team: Fighter[]) => {
-    const enemy = { ...enemyFor(g, 40), trait, hp: 1e9, maxHp: 1e9 };
+    const enemy = { ...enemyFor(g, 120), trait, hp: 1e9, maxHp: 1e9 };
     enemy.element = neutralFor(g, team[0]!.element);
     return { enemy, result: simulateFight(g, team.map((f) => ({ ...f })), enemy, Rng.fromSeed(7)) };
   };
 
-  it('Element-Schild lets only a quarter through without element advantage', () => {
+  it('Element-Schild lets only its share through without element advantage', () => {
     const g = towerGame();
     const team = [fighterFor(g, champion(g, 5000))];
     const plain = fight(g, undefined, team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
     const shielded = fight(g, 'elementShield', team).result.events.find((e) => e.a === 0 && !e.kind)!.dmg;
-    expect(shielded).toBe(Math.max(1, Math.round(plain * 0.25)));
+    expect(shielded).toBe(Math.max(1, Math.round(plain * content.bossTraits.get('elementShield').value)));
   });
 
   it('Wandler changes its element every round, Regeneration heals', () => {
@@ -72,7 +73,7 @@ describe('boss traits', () => {
 
   it('a regenerating boss is no wall: twice the power of its plain version is enough', () => {
     const g = towerGame();
-    const boss = enemyFor(g, 40);
+    const boss = enemyFor(g, 120);
     expect(boss.trait).toBe('regenerator');
     const wins = (power: number, trait: string | undefined) => {
       const team = ['emberpup', 'bubbloon', 'voltmouse'].map((s) => fighterFor(g, champion(g, power, s)));
@@ -125,7 +126,7 @@ describe('Aktionsleiste', () => {
 
   it('speed wins fights: +50 % Tempo helps about as much as +50 % Angriff', () => {
     const g = towerGame();
-    const enemy = enemyFor(g, 25);
+    const enemy = enemyFor(g, 75);
     const team = (boost: Partial<Record<'atk' | 'spd', number>>) =>
       ['fire', 'water', 'earth'].map((e) => unit(Math.round(16 * (boost.spd ?? 1)), { element: e, hp: 200, maxHp: 200, atk: Math.round(70 * (boost.atk ?? 1)), def: 33 }));
     const wins = (boost: Partial<Record<'atk' | 'spd', number>>) => {
@@ -151,9 +152,12 @@ describe('rows, roles and defence', () => {
     const hit = (def: number) => damage(g, unit({ atk: 100 }), unit({ def }), Rng.fromSeed(1));
     // The same seed rolls the same ±10 % spread.
     const rawNoDef = 100 * Rng.fromSeed(1).range(0.9, 1.1);
-    const expected = (def: number) => Math.max(1, Math.round(rawNoDef * (t.defScale / (t.defScale + def)) * (1 - t.defRatio * (def / (def + 100)))));
+    const expected = (def: number) => Math.max(1, Math.round((rawNoDef / (1 + (t.defWeight * def) / 100)) * (1 - t.defRatio * (def / (def + 100)))));
     expect(hit(50)).toBe(expected(50));
-    expect(hit(50)).toBeLessThan(Math.round(rawNoDef * (t.defScale / (t.defScale + 50))));
+    expect(hit(50)).toBeLessThan(Math.round(rawNoDef / (1 + (t.defWeight * 50) / 100)));
+    // Only the ratio counts: ten times ANG and VER, ten times the damage.
+    const big = damage(g, unit({ atk: 1000 }), unit({ def: 500 }), Rng.fromSeed(1));
+    expect(big / hit(50)).toBeCloseTo(10, 0);
     // Twice the defence of the attack blocks 2/3 of defRatio in the second step.
     expect(hit(200)).toBe(expected(200));
     expect(hit(1e9)).toBe(1);
@@ -342,6 +346,24 @@ describe('Gegner und Turm (Schritt 4)', () => {
     expect(hits).toEqual([1, 2]);
   });
 
+  it('Wut: from enrageAfterSec on the enemies hit harder every second, the weekly boss has none', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const r = simulateFight(g, [unit({ hp: 1e12, maxHp: 1e12, def: 0 })], foe({ atk: 100, spd: 10, technique: undefined, hp: 1e12, maxHp: 1e12 }), Rng.fromSeed(4), { limitSec: t.enrageAfterSec + 20 });
+    const hits = r.events.filter((e) => e.a === 1 && !e.kind);
+    const early = hits.filter((e) => e.at < t.enrageAfterSec).map((e) => e.dmg);
+    const late = hits.filter((e) => e.at > t.enrageAfterSec + 15).map((e) => e.dmg);
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(avg(late) / avg(early)).toBeGreaterThan(1 + t.enrageGrowth * 14);
+    expect(r.events.some((e) => e.kind === 'enrage' && e.at === t.enrageAfterSec)).toBe(true);
+    const calm = simulateFight(g, [unit({ hp: 1e12, maxHp: 1e12, def: 0 })], foe({ atk: 100, spd: 10, technique: undefined, hp: 1e12, maxHp: 1e12 }), Rng.fromSeed(4), { limitSec: t.enrageAfterSec + 20, enrage: false });
+    expect(calm.events.some((e) => e.kind === 'enrage')).toBe(false);
+    // Without a time limit a team that heals everything still falls to the Wut.
+    const healer = simulateFight(g, [unit({ hp: 3000, maxHp: 3000, atk: 1, technique: 'spring', element: 'water' })], foe({ atk: 300, spd: 10, technique: undefined }), Rng.fromSeed(5));
+    expect(healer.win).toBe(false);
+    expect(healer.stats.timeout).toBe(false);
+  });
+
   it('enemies use techniques of their element, bosses rely on their traits', () => {
     const g = towerGame();
     expect(enemyFor(g, 5).technique).toBe(techniqueFor(g, enemyFor(g, 5).element)!.id);
@@ -352,6 +374,85 @@ describe('Gegner und Turm (Schritt 4)', () => {
     expect(r.events.filter((e) => e.a === 1).length / techs.length).toBeGreaterThanOrEqual(balance.tower.enemyTechniqueEvery - 1);
     const b = simulateFight(g, [unit({ hp: 1e9, maxHp: 1e9 })], foe({ technique: 'blaze', atk: 50, spd: 20, boss: true }), Rng.fromSeed(3), { limitSec: 10 });
     expect(b.events.some((e) => e.a === 1 && e.kind === 'tech')).toBe(false);
+  });
+});
+
+describe('Kampferfahrung', () => {
+  it('rank n → n + 1 costs base × (1 + step × n)', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    expect(veteranRank(g, 0)).toMatchObject({ rank: 0, into: 0, need: t.xpRankBase, bonus: 0 });
+    expect(veteranRank(g, t.xpRankBase - 1).rank).toBe(0);
+    expect(veteranRank(g, t.xpRankBase).rank).toBe(1);
+    const two = t.xpRankBase * (1 + (1 + t.xpRankStep));
+    for (const n of [5, 17, 40]) {
+      const total = t.xpRankBase * (n + (t.xpRankStep * n * (n - 1)) / 2);
+      expect(veteranRank(g, total).rank).toBe(n);
+      expect(veteranRank(g, total - 0.5).rank).toBe(n - 1);
+    }
+    expect(veteranRank(g, two - 1).rank).toBe(1);
+    expect(veteranRank(g, two)).toMatchObject({ rank: 2, bonus: 2 * t.xpRankBonus });
+    expect(veteranRank(g, two + 5).into).toBeCloseTo(5);
+  });
+
+  it('won floors bring XP (bosses more), a new rank raises KP and damage in the tower', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    const plain = fighterFor(g, c);
+    const ranks: number[] = [];
+    g.bus.on('towerRank', (e) => ranks.push(e.rank));
+    expect(startRun(g, false).ok).toBe(true);
+    for (let i = 0; i < t.bossEvery; i++) fightNextFloor(g);
+    let expected = 0;
+    for (let f = 1; f <= t.bossEvery; f++) expected += floorXp(g, f);
+    expect(g.state.tower.xp).toBeCloseTo(expected, 6);
+    expect(floorXp(g, t.bossEvery)).toBeCloseTo(t.xpPerFloor * t.bossEvery * t.xpBossMult, 6);
+    expect(ranks).toEqual([]);
+    g.state.tower.xp = t.xpRankBase - floorXp(g, t.bossEvery + 1) / 2;
+    fightNextFloor(g);
+    expect(ranks).toEqual([1]);
+    g.state.tower.xp = t.xpRankBase * 10;
+    g.invalidate();
+    const rank = veteranRank(g);
+    expect(rank.rank).toBeGreaterThan(0);
+    const vet = fighterFor(g, c);
+    expect(vet.hp).toBe(Math.round(plain.hp * (1 + rank.bonus)));
+    expect(vet.power / plain.power).toBeCloseTo(1 + rank.bonus, 5);
+  });
+
+  it('Entschlossenheit grows by the hour while the record stands still and resets with a new one', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    g.step(100);
+    const start = g.state.lastTickAt;
+    expect(g.state.tower.recordAt).toBe(start);
+    const plain = fighterFor(g, c).hp;
+    g.state.lastTickAt = start + 36 * 3_600_000;
+    g.step(100);
+    expect(resolveInfo(g).bonus).toBeCloseTo((t.resolvePerDay * 36) / 24, 6);
+    expect(g.state.tower.resolve).toBeCloseTo((t.resolvePerDay * 36) / 24, 6);
+    expect(fighterFor(g, c).hp).toBeGreaterThan(plain);
+    g.state.lastTickAt = start + 100 * 24 * 3_600_000;
+    g.step(100);
+    expect(g.state.tower.resolve).toBe(t.resolveCap);
+    // A new record: back to zero.
+    expect(startRun(g, false).ok).toBe(true);
+    fightNextFloor(g);
+    expect(g.state.tower.resolve).toBe(0);
+    expect(g.state.tower.recordAt).toBe(g.state.lastTickAt);
+  });
+
+  it('survives inheritance and Äon', () => {
+    const g = towerGame();
+    g.state.tower.xp = 12345;
+    resetLayer(g, content.prestigeLayers.get('inheritance'));
+    expect(g.state.tower.xp).toBe(12345);
+    resetLayer(g, content.prestigeLayers.get('aeon'));
+    expect(g.state.tower.xp).toBe(12345);
   });
 });
 

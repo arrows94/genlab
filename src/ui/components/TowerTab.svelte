@@ -6,8 +6,9 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
+  import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
@@ -91,13 +92,14 @@
     // Events are capped – make the end state match the outcome.
     fighters.forEach((f, i) => {
       if (lr.win && !f.team) hp[i] = 0;
-      if (!lr.win && f.team && lr.log.at(-1) !== 'Zeit abgelaufen') hp[i] = 0;
+      if (!lr.win && f.team && !(lr.stats?.timeout ?? lr.log.at(-1) === 'Zeit abgelaufen')) hp[i] = 0;
     });
     return { hp, elements };
   }
 
-  /** Seconds the fight lasted (from the log line, else the last event). */
+  /** Seconds the fight lasted (from the fight stats or the log line, else the last event). */
   function fightSeconds(lr: LastResult, events: ReplayEvent[]): number {
+    if (lr.stats) return lr.stats.seconds;
     const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
     if (m) return Number(m[1]!.replace(',', '.'));
     if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
@@ -122,6 +124,11 @@
     if (e.kind === 'phase' && e.trait && content.bossTraits.has(e.trait)) {
       const tr = content.bossTraits.get(e.trait);
       show(e.t, `${tr.icon} ${tr.name}!`, 'tech');
+      play('drum');
+      return;
+    }
+    if (e.kind === 'enrage') {
+      show(e.a, '😡 Wut!', 'tech');
       play('drum');
       return;
     }
@@ -177,7 +184,7 @@
     banner = null;
     popups = [];
     marks = {};
-    if (lr.floor % game.balance.tower.bossEvery === 0) play('drum');
+    if (isBossFloor(game, lr.floor)) play('drum');
     if (prefs.reduceMotion || viewState.tower.replaySpeed === 0) return finish(lr, key, seconds);
     // One fixed time scale for every fight (short fights stay short, long ones long);
     // only fights that would outlast the pause until the next floor are sped up.
@@ -292,7 +299,10 @@
       current,
       nextFloor,
       enemy,
-      boss: nextFloor % game.balance.tower.bossEvery === 0,
+      boss: isBossFloor(game, nextFloor),
+      guard: enemy.guard === true,
+      // The column shows only a few floors around the team – the next boss may be far above.
+      bossIn: game.balance.tower.bossEvery - (nextFloor % game.balance.tower.bossEvery || game.balance.tower.bossEvery),
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
       targeting: targetingOf(game, enemy),
       group,
@@ -302,6 +312,8 @@
       synergies: teamSynergies(game, team.map((c) => content.species.get(c.speciesId).element), enemy.trait),
       roles: Object.fromEntries(team.map((c) => [c.id, roleOf(game, effectiveStats(game, c))])) as Record<number, ReturnType<typeof roleOf>>,
       milestones: towerMilestones(game),
+      veteran: veteranRank(game),
+      resolve: resolveInfo(game),
       nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
       reward: floorRewardInfo(game, nextFloor),
       floors,
@@ -370,23 +382,32 @@
     weakest: 'Jagt immer das Teammitglied mit den wenigsten KP – Reihen schützen nicht.',
   } as const;
   /** Status symbols in the arena. */
-  const STATUS: Record<string, { icon: string; name: string; harmful: boolean }> = {
-    burn: { icon: '🔥', name: 'Brand', harmful: true },
-    poison: { icon: '☠️', name: 'Gift', harmful: true },
-    stun: { icon: '⚡', name: 'Betäubt', harmful: true },
-    slow: { icon: '❄️', name: 'Verlangsamt', harmful: true },
-    shield: { icon: '🪨', name: 'Schild', harmful: false },
-    evade: { icon: '🌬️', name: 'Ausweichen', harmful: false },
-    regen: { icon: '🌿', name: 'Regeneration', harmful: false },
-    armor: { icon: '🛡️', name: 'Panzer', harmful: false },
-    reflect: { icon: '💎', name: 'Rückstrahlung', harmful: false },
-  };
+  const STATUS: Record<string, { icon: string; name: string; harmful: boolean }> = STATUS_INFO;
+
+  /** Why the latest run was lost (until a later run gets past that floor). */
+  const defeat = $derived.by(() => {
+    view.slowFrame;
+    return currentDefeat(game);
+  });
+  let logOpen = $state(false);
+  /** Icon protocol of the last fight – built only while the protocol is open. */
+  const protocol = $derived.by(() => {
+    view.slowFrame;
+    const lr = game.state.tower.lastResult;
+    if (!logOpen || !lr?.fighters?.length) return [];
+    const all = fightProtocol(game, lr);
+    return viewState.tower.logImportant ? all.filter((p) => p.important) : all;
+  });
   /** Statuses of a fighter still running at the replay clock. */
   const activeMarks = (i: number) => (arena.mode === 'fight' ? Object.entries(marks[i] ?? {}).filter(([, until]) => until > arena.clock).map(([id]) => STATUS[id]).filter((x) => !!x) : []);
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
 </script>
+
+{#snippet who(f: { name: string; element: string; team: boolean } | undefined)}
+  {#if f}<span class="who" class:foe={!f.team} style="--el: {el(f.element).color}" title="{f.team ? 'Team' : 'Gegner'}: {f.name}">{f.name}</span>{/if}
+{/snippet}
 
 {#snippet unit(u: Unit, i: number, big: boolean)}
   {@const species = content.species.get(u.speciesId)}
@@ -405,7 +426,7 @@
     style="--el: {el(u.element).color}"
   >
     <div class="art">
-      {#if !u.team && (u.boss ?? (foeUnits.length === 1 && arena.floor % game.balance.tower.bossEvery === 0))}<span class="crown">👑</span>{/if}
+      {#if !u.team && (u.boss ?? (foeUnits.length === 1 && isBossFloor(game, arena.floor)))}<span class="crown">👑</span>{/if}
       <span class="platform" aria-hidden="true"></span>
       <CreatureSvg appearance={look(u)} shape={species.shape} tier={species.tier} size={big ? 104 : 60} shiny={u.creature?.shiny ?? false} />
       {#each sparks.filter((p) => p.t === i) as p (p.id)}<span class="spark" style="--sc: {p.color}" aria-hidden="true"></span>{/each}
@@ -442,6 +463,15 @@
     <span class="kpi"><b class="num">🚩 {data.cp}</b><small>Checkpoint</small></span>
     <span class="kpi" class:live={!!data.tw.run}><b class="num">{data.tw.run ? data.tw.run.floor : '–'}</b><small>{data.tw.run ? 'Aktueller Lauf' : 'Kein Lauf'}</small></span>
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
+    <span class="kpi veteran" title="Kampferfahrung: Jede gewonnene Etage bringt Erfahrung – je höher, desto mehr, ein Boss {game.balance.tower.xpBossMult}-mal so viel. Sie bleibt bei jeder Vererbung und jedem Äon. Je Rang +{formatPercent(game.balance.tower.xpRankBonus, 0)} KP und Schaden im Turm und gegen den Wochen-Boss – jetzt +{formatPercent(data.veteran.bonus, 0)}. Noch {formatNumber(Math.ceil(data.veteran.need - data.veteran.into))} bis Rang {data.veteran.rank + 1}.">
+      <b class="num">🎖 {data.veteran.rank}</b><small>Rang · +{formatPercent(data.veteran.bonus, 0)}</small>
+      <span class="xpbar"><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
+    </span>
+    {#if data.resolve.bonus > 0}
+      <span class="kpi resolve" title="Entschlossenheit: Seit {formatDuration(data.resolve.hours * 3_600_000)} kein neuer Rekord – dein Team beißt sich fest: je Tag +{formatPercent(game.balance.tower.resolvePerDay, 0)} KP und Schaden im Turm, höchstens +{formatPercent(game.balance.tower.resolveCap, 0)}. Ein neuer Rekord setzt sie zurück.">
+        <b class="num">💪 +{formatPercent(data.resolve.bonus, 0)}</b><small>Entschlossenheit</small>
+      </span>
+    {/if}
     <span class="kpi" title="Alle {game.balance.tower.milestoneEvery} Etagen: einmalig {game.balance.tower.milestoneShards} Äon-Splitter und dauerhaft +15 % Turm-Schaden, +10 % Produktion"><b class="num">🏅 {data.milestones}</b><small>Meilensteine · nächster {data.nextMilestone}</small></span>
   </div>
 </header>
@@ -454,10 +484,11 @@
     <div class="roof"></div>
     {#if data.aboveBest}<div class="floor ghost"><span class="small muted">⋮ Rekord {data.tw.best}</span></div>{/if}
     {#each data.floors as fl (fl.f)}
-      <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:best={fl.best}>
+      <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:guard={fl.guard} class:best={fl.best}>
         <span class="fnum num">{fl.f}</span>
         <span class="icons">
           {#if fl.boss}<span title="Boss{fl.trait ? `: ${fl.trait.name}` : ''}">👑</span>{/if}
+          {#if fl.guard}<span title="Wächter: stärkere Gegner, etwa wie drei Etagen weiter oben">🛡️</span>{/if}
           {#if fl.trait}<span title="{fl.trait.name}: {fl.trait.description}">{fl.trait.icon}</span>{/if}
           {#if fl.milestone}<span title="Meilenstein">🏅</span>{/if}
           {#if fl.checkpoint}<span title="Checkpoint">🚩</span>{/if}
@@ -478,12 +509,13 @@
       </div>
     {/each}
     <div class="base"></div>
+    {#if !data.boss}<p class="bossin small muted" title="Boss-Etagen alle {game.balance.tower.bossEvery} Etagen, mit Checkpoint">👑 Boss in {data.bossIn} {data.bossIn === 1 ? 'Etage' : 'Etagen'}</p>{/if}
   </aside>
 
   <!-- Arena -->
   <section class="arena panel" style="--foe: {el(data.enemy.element).color}">
     <div class="arena-head">
-      <span class="floor-tag" class:boss={arena.floor % game.balance.tower.bossEvery === 0}>Etage <b class="num">{arena.floor}</b></span>
+      <span class="floor-tag" class:boss={isBossFloor(game, arena.floor)}>Etage <b class="num">{arena.floor}</b></span>
       <span class="small muted">
         {#if arena.mode === 'fight'}
           {replay && !replay.done ? 'Kampf läuft …' : data.tw.lastResult?.win ? 'Gewonnen' : 'Verloren'}
@@ -494,7 +526,7 @@
         {/if}
       </span>
       {#if arena.mode === 'fight'}
-        <span class="clock num" title="Kampfzeit (Limit {game.balance.tower.maxFightSec} s)">⏱ {formatNumber(arena.clock, { decimals: 1 })} s</span>
+        <span class="clock num" title="Kampfzeit – kein Zeitlimit, aber ab {game.balance.tower.enrageAfterSec} s werden die Gegner wütend: jede Sekunde +{formatPercent(game.balance.tower.enrageGrowth, 0)} Schaden">⏱ {formatNumber(arena.clock, { decimals: 1 })} s{#if arena.clock > game.balance.tower.enrageAfterSec}<span class="wut"> 😡 ×{formatNumber(1 + game.balance.tower.enrageGrowth * (arena.clock - game.balance.tower.enrageAfterSec), { decimals: 1 })}</span>{/if}</span>
       {/if}
       <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
         {#each SPEEDS as s (s.v)}
@@ -502,9 +534,6 @@
         {/each}
       </span>
     </div>
-    {#if arena.mode === 'fight'}
-      <div class="timebar" title="Kampfzeit bis zum Limit von {game.balance.tower.maxFightSec} s"><div style="width: {Math.min(1, arena.clock / game.balance.tower.maxFightSec) * 100}%"></div></div>
-    {/if}
     {#if order.length}
       <div class="turns" aria-label="Zugfolge">
         <span class="small muted">Zugfolge</span>
@@ -582,6 +611,9 @@
       {#if data.trait}
         <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
       {/if}
+      {#if data.guard}
+        <p class="trait small guard">🛡️ <b>Wächter-Etage:</b> die Gegner sind stärker – etwa wie drei Etagen weiter oben. Kein Checkpoint.</p>
+      {/if}
       {#if data.phase && content.bossTraits.has(data.phase)}
         {@const ph = content.bossTraits.get(data.phase)}
         <p class="trait small phase"><b>Phase 2 unter {formatPercent(game.balance.tower.phaseAt, 0)} KP – {ph.icon} {ph.name}:</b> {ph.description}</p>
@@ -626,10 +658,64 @@
       {/if}
     </div>
 
+    {#if defeat}
+      <details class="defeat" bind:open={viewState.tower.defeatOpen}>
+        <summary>
+          <b>Warum verloren?</b>
+          <span class="small muted">Etage {defeat.floor} · {defeat.timeout ? 'Patt – abgebrochen' : `Team besiegt nach ${formatNumber(defeat.seconds, { decimals: 1 })} s`}</span>
+        </summary>
+        <div class="foehp" title="KP der Gegner am Ende des Kampfes">
+          <span class="small muted">Gegner-KP übrig</span>
+          <div class="bar"><div style="width: {defeat.foeHpLeft * 100}%"></div></div>
+          <b class="num small">{formatPercent(defeat.foeHpLeft, 0)}</b>
+        </div>
+        <ul class="reasons">
+          {#each defeat.reasons as r (r.id)}
+            <li>
+              <span class="ricon">{r.icon}</span>
+              <div>
+                <b>{r.title}</b>
+                <p class="small">{r.text}</p>
+                <p class="small tip">💡 {r.tip}</p>
+              </div>
+            </li>
+          {/each}
+        </ul>
+        <div class="members">
+          {#each defeat.members as m (m.index)}
+            <span class="member" class:down={m.downAt >= 0} style="--el: {el(m.element).color}">
+              <span class="mname" title={m.name}>{m.name}</span>
+              <span class="num small" title="Ausgeteilter Schaden">⚔ {formatNumber(m.dealt)}</span>
+              <span class="num small muted" title="Eingesteckter Schaden">🩸 {formatNumber(m.taken)}</span>
+              <span class="small muted">{m.downAt >= 0 ? `💀 ${formatNumber(m.downAt, { decimals: 1 })} s` : 'hielt durch'}</span>
+            </span>
+          {/each}
+        </div>
+      </details>
+    {/if}
+
     {#if data.tw.lastResult}
-      <details class="log">
-        <summary class="small muted">Kampfprotokoll · Etage {data.tw.lastResult.floor} {data.tw.lastResult.win ? '✅' : '❌'}</summary>
-        <ul>{#each data.tw.lastResult.log as line, i (i)}<li>{line}</li>{/each}</ul>
+      {@const lr = data.tw.lastResult}
+      <details class="log" bind:open={logOpen}>
+        <summary class="small muted">Kampfprotokoll · Etage {lr.floor} {lr.win ? '✅' : '❌'}</summary>
+        {#if logOpen}
+          {#if lr.fighters?.length}
+            <label class="small muted only"><input type="checkbox" bind:checked={viewState.tower.logImportant} /> Nur Wichtiges</label>
+            <ol class="proto">
+              {#each protocol as p, k (k)}
+                <li class={p.tone}>
+                  <span class="at num">{formatNumber(p.at, { decimals: 1 })} s</span>
+                  {#if p.a >= 0}{@render who(lr.fighters?.[p.a])}{/if}
+                  <span class="pic">{p.icon}</span>
+                  {#if p.t >= 0}{@render who(lr.fighters?.[p.t])}{/if}
+                  <span class="ptx">{p.text}</span>
+                </li>
+              {/each}
+            </ol>
+          {:else}
+            <ul class="oldlog">{#each lr.log as line, i (i)}<li>{line}</li>{/each}</ul>
+          {/if}
+        {/if}
       </details>
     {/if}
   </section>
@@ -784,6 +870,13 @@
   .floor.ghost { background: none; border-style: dashed; justify-content: center; }
   .floor.cleared { color: var(--text); background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--teal) 10%, var(--bg-2)) 0 18px, var(--panel-2) 18px 20px); }
   .floor.boss { border-color: color-mix(in srgb, var(--danger) 60%, var(--line)); }
+  .floor.guard { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+  .bossin { margin: 0.35rem 0 0; text-align: center; }
+  .wut { color: var(--danger); font-weight: 700; }
+  .veteran { gap: 0.1rem; }
+  .xpbar { width: 100%; height: 3px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .xpbar span { display: block; height: 100%; background: var(--gold); }
+  .trait.guard { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .floor.next { border: 2px solid var(--gold); color: var(--text); animation: glow 1.6s ease-in-out infinite; }
   .floor.best::after { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; border-top: 2px dashed var(--gold); }
   .fnum { font-weight: 700; min-width: 1.8rem; }
@@ -809,8 +902,6 @@
   .clock ~ .speed { margin-left: 0; }
   .speed button { border: 0; border-radius: 0; padding: 0.1rem 0.45rem; font-size: 0.75rem; background: var(--bg-2); }
   .speed button.on { background: var(--petrol); color: #fff; }
-  .timebar { height: 3px; margin-top: 0.35rem; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .timebar div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold), var(--danger)); background-size: 100vw 100%; }
   .turns { display: flex; align-items: center; gap: 0.25rem; margin-top: 0.45rem; padding: 0.2rem 0.4rem; border-radius: 99px; background: #0006; border: 1px solid var(--line); overflow: hidden; }
   .turns > .small { margin-right: 0.25rem; white-space: nowrap; }
   .turn { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--el) 70%, transparent); background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); transition: transform 0.2s; }
@@ -929,7 +1020,38 @@
   .go { background: linear-gradient(90deg, var(--petrol), var(--violet)); }
   .auto { margin-left: auto; }
   .log { margin-top: 0.5rem; }
-  .log ul { list-style: none; padding: 0; margin: 0.3rem 0 0; font-size: 0.75rem; font-family: var(--mono); color: var(--muted); }
+  .log summary, .defeat summary { cursor: pointer; }
+  .oldlog { list-style: none; padding: 0; margin: 0.3rem 0 0; font-size: 0.75rem; font-family: var(--mono); color: var(--muted); }
+  .only { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0.35rem 0; }
+  .proto { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; max-height: 18rem; overflow-y: auto; font-size: 0.75rem; }
+  .proto li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding: 0.1rem 0.4rem; border-radius: 6px; border-left: 3px solid var(--line); background: var(--bg-2); }
+  .proto li.good { border-left-color: var(--teal); }
+  .proto li.bad { border-left-color: var(--danger); }
+  .at { min-width: 3.1rem; color: var(--muted); font-family: var(--mono); }
+  .pic { width: 1.3rem; text-align: center; }
+  .who {
+    max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 0.4rem; border-radius: 99px;
+    border: 1px solid var(--el); background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--text);
+  }
+  /* Foes stand out even when they share species and element with the team. */
+  .who.foe { border-style: dashed; background: color-mix(in srgb, var(--danger) 26%, transparent); }
+
+  .defeat {
+    margin-top: 0.6rem; padding: 0.45rem 0.6rem; border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--danger) 50%, var(--line)); background: color-mix(in srgb, var(--danger) 7%, var(--bg-2));
+  }
+  .foehp { display: flex; align-items: center; gap: 0.5rem; margin: 0.45rem 0 0.2rem; }
+  .foehp .bar { flex: 1; height: 7px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .foehp .bar div { height: 100%; background: var(--danger); }
+  .reasons { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.45rem; }
+  .reasons li { display: flex; gap: 0.5rem; align-items: flex-start; }
+  .reasons p { margin: 0.1rem 0 0; }
+  .ricon { width: 1.6rem; font-size: 1.2rem; line-height: 1.3; text-align: center; }
+  .tip { color: var(--teal); }
+  .members { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+  .member { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem; padding: 0.1rem 0.5rem; border-radius: 8px; border: 1px solid var(--el); background: var(--bg-2); font-size: 0.78rem; }
+  .member.down { opacity: 0.75; }
+  .mname { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 
   /* Team */
   .team-panel { margin-top: 0.75rem; }

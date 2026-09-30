@@ -5,6 +5,7 @@
   import {
     currentRunStart, nextPrestigePoint, performPrestige, prestigeBonusPreview, prestigeGain, prestigeTimeline, resetImpactText, resetOverview,
   } from '@core/prestige';
+  import { unusedAttacksText } from '@core/features/weeklyBoss';
   import { game, view, act, save, ask } from '../store.svelte';
 
   /**
@@ -66,7 +67,8 @@
 
   async function confirm() {
     const gain = formatNumber(data.gain);
-    if (!(await ask(`${text.action}? ${layer.description} ${resetImpactText(game)}`, { ok: text.action, danger: true }))) return;
+    const boss = layer.resets.creatures ? unusedAttacksText(game) : '';
+    if (!(await ask(`${text.action}? ${layer.description} ${resetImpactText(game)} ${boss}`.trim(), { ok: text.action, danger: true }))) return;
     if (!act(performPrestige(game, layer.id))) return;
     save();
     const key = Date.now();

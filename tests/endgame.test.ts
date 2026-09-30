@@ -10,7 +10,7 @@ import { canConsume } from '@core/features/stable';
 import { startBreeding } from '@core/features/breeding';
 import { revealGenome } from '@core/features/sequencing';
 import { usePotion } from '@core/features/market';
-import { elementMultiplier, enemyFor, fighterFor, floorRewardInfo, setTeam, setTowerAutoRestart, simulateFight, startRun, stopRun, teamSize } from '@core/features/tower';
+import { elementMultiplier, enemiesFor, enemyFor, fighterFor, floorRewardInfo, floorTokens, setTeam, setTowerAutoRestart, simulateFight, startRun, stopRun, teamSize } from '@core/features/tower';
 import { buyTalent } from '@core/features/talents';
 import { abandonAnomaly, startAnomaly } from '@core/features/anomalies';
 import { activeMutation, mutationForWeek, upcomingMutation, weekIndex } from '@core/features/weekly';
@@ -44,7 +44,44 @@ describe('genome tower', () => {
     const g = endgame();
     expect(enemyFor(g, 7)).toEqual(enemyFor(g, 7));
     expect(enemyFor(g, 50).hp).toBeGreaterThan(enemyFor(g, 49).hp);
-    expect(enemyFor(g, 10).name.startsWith('Boss')).toBe(true);
+    expect(enemyFor(g, balance.tower.bossEvery).name.startsWith('Boss')).toBe(true);
+    expect(enemyFor(g, balance.tower.guardEvery).name.startsWith('Wächter')).toBe(true);
+  });
+
+  it('three small floors make one former floor: floor 3n is as strong as the former floor n', () => {
+    const g = endgame();
+    const base = balance.tower.enemyBase;
+    for (const n of [1, 5, 13, 29]) {
+      const e = enemyFor(g, 3 * n, { plain: true });
+      expect(e.maxHp).toBe(Math.round(base['hp']! * Math.pow(1.11, n - 1)));
+      expect(e.atk).toBe(Math.round(base['atk']! * Math.pow(1.11, n - 1)));
+    }
+    // Boss every 30 floors (former 10), a Wächter on every other tenth floor: the floor's foes, stronger.
+    expect(enemyFor(g, 30).boss).toBe(true);
+    const guard = enemiesFor(g, 50);
+    expect(guard[0]!.guard).toBe(true);
+    expect(guard[0]!.name.startsWith('Wächter')).toBe(true);
+    expect(guard.reduce((n, x) => n + x.maxHp, 0)).toBeGreaterThan(enemyFor(g, 50, { plain: true }).maxHp);
+    expect(enemyFor(g, 60).guard).toBeUndefined();
+    // The three small floors of a former floor share its element and group size, only the strength steps up.
+    for (const n of [23, 35, 52]) {
+      const [a, b, c] = [3 * n - 2, 3 * n - 1, 3 * n].map((f) => enemiesFor(g, f));
+      expect(new Set([a!, b!, c!].map((x) => `${x[0]!.element}:${x.length}`)).size).toBe(1);
+      expect(a![0]!.maxHp).toBeLessThan(c![0]!.maxHp);
+    }
+  });
+
+  it('Turm-Marken per floor add up to the formula in whole numbers', () => {
+    const g = endgame();
+    const t = balance.tower;
+    let sum = 0;
+    for (let f = 1; f <= 90; f++) {
+      const n = floorTokens(g, f).toNumber();
+      expect(Number.isInteger(n)).toBe(true);
+      sum += n;
+    }
+    const exact = t.tokensPerFloor * (90 + (t.tokenGrowthPerFloor * 90 * 89) / 2);
+    expect(Math.abs(sum - exact)).toBeLessThanOrEqual(0.5);
   });
 
   it('element strengths and weaknesses matter', () => {
@@ -81,16 +118,16 @@ describe('genome tower', () => {
 
   it('the next run starts at the last checkpoint', () => {
     const g = endgame();
-    g.state.tower.best = 27;
+    g.state.tower.best = 2 * balance.tower.checkpointEvery + 7;
     setTeam(g, [champion(g, 10).id]);
     startRun(g, true);
-    expect(g.state.tower.run?.startFloor).toBe(21);
+    expect(g.state.tower.run?.startFloor).toBe(2 * balance.tower.checkpointEvery + 1);
   });
 
   it('auto-restart begins where the last run began (checkpoint or floor 1)', () => {
     const g = endgame();
     unlockFeature(g, 'towerAuto');
-    g.state.tower.best = 27;
+    g.state.tower.best = 2 * balance.tower.checkpointEvery + 7;
     setTeam(g, [champion(g, 10).id]);
     setTowerAutoRestart(g, true);
     startRun(g, false);
@@ -101,16 +138,17 @@ describe('genome tower', () => {
     startRun(g, true);
     stopRun(g);
     g.step(100);
-    expect(g.state.tower.run?.startFloor).toBe(21);
+    expect(g.state.tower.run?.startFloor).toBe(2 * balance.tower.checkpointEvery + 1);
   });
 
-  it('floor 25 grants a rare allele for the gene library', () => {
+  it('every alleleEvery-th floor grants a rare allele for the gene library', () => {
     const g = endgame();
+    const every = balance.tower.alleleEvery;
     const events: ({ locus: string; allele: string } | null)[] = [];
-    g.bus.on('towerFloor', (e) => e.floor === 25 && events.push(e.allele));
+    g.bus.on('towerFloor', (e) => e.floor === every && events.push(e.allele));
     setTeam(g, [champion(g, 5000).id]);
     startRun(g, false);
-    for (let i = 0; i < 25; i++) g.step(balance.tower.fightIntervalSec * 1000);
+    for (let i = 0; i < every; i++) g.step(balance.tower.fightIntervalSec * 1000);
     expect(events[0]).not.toBeNull();
     expect(g.state.geneLibrary[`${events[0]!.locus}:${events[0]!.allele}`]).toBe(true);
   });
@@ -133,10 +171,12 @@ describe('genome tower', () => {
   it('reward preview matches the floor schedule without side effects', () => {
     const g = endgame();
     const library = { ...g.state.geneLibrary };
-    expect(floorRewardInfo(g, 1).tokens.toNumber()).toBe(balance.tower.tokensPerFloor);
-    expect(floorRewardInfo(g, 10)).toMatchObject({ boss: true, checkpoint: true, catalyst: 1 });
-    expect(floorRewardInfo(g, 25).allele).toBe(true);
-    expect(floorRewardInfo(g, 7)).toMatchObject({ boss: false, catalyst: 0, allele: false });
+    const t = balance.tower;
+    expect(floorRewardInfo(g, 1).tokens.toNumber()).toBe(t.tokensPerFloor);
+    expect(floorRewardInfo(g, t.bossEvery)).toMatchObject({ boss: true, guard: false, checkpoint: true, catalyst: 1 });
+    expect(floorRewardInfo(g, t.guardEvery)).toMatchObject({ boss: false, guard: true, checkpoint: false });
+    expect(floorRewardInfo(g, t.alleleEvery).allele).toBe(true);
+    expect(floorRewardInfo(g, 7)).toMatchObject({ boss: false, guard: false, catalyst: 0, allele: false });
     expect(g.state.geneLibrary).toEqual(library);
   });
 
@@ -197,7 +237,7 @@ describe('Äon prestige and talents', () => {
     g.state.prestige.inheritance = { count: 3 };
     g.state.upgrades.autoGatherer = 5;
     g.state.upgrades.geneticMastery = 4;
-    g.state.tower.best = 33;
+    g.state.tower.best = 99;
     g.state.geneLibrary['strength:Kt'] = true;
     g.state.talents.aeonHarvest = true;
     const dex = { ...g.state.dex };
@@ -210,7 +250,7 @@ describe('Äon prestige and talents', () => {
     expect(g.state.dex).toEqual(dex);
     expect(g.state.geneLibrary['strength:Kt']).toBe(true);
     expect(g.state.talents.aeonHarvest).toBe(true);
-    expect(g.state.tower.best).toBe(33);
+    expect(g.state.tower.best).toBe(99);
     expect(g.state.features.collect).toBe(true);
     expect(g.state.features.aeon).toBe(true);
     expect(g.state.creatures).toHaveLength(1);

@@ -161,15 +161,65 @@ export interface TowerState {
     log: string[];
     /** Replay data for the arena (missing in older saves). */
     /** `interval` (seconds between actions) and the event times `at` are missing in saves before the Aktionsleiste. */
-    fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number; row?: 'front' | 'back'; boss?: boolean }[];
+    fighters?: FightFighterSnapshot[];
+    /** Totals of the fight (missing in older saves). */
+    stats?: FightStats;
     events?: {
       at?: number; a: number; t: number; dmg: number; hp: number; m: number;
-      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep'; trait?: string;
+      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep' | 'enrage'; trait?: string;
       element?: string; tech?: string; status?: 'burn' | 'poison' | 'stun' | 'slow' | 'shield' | 'evade' | 'regen' | 'armor' | 'reflect'; until?: number; crit?: boolean; absorbed?: number;
     }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
   } | null;
+  /** Kampferfahrung from won floors – belongs to the player, survives every reset. */
+  xp: number;
+  /** When the record last rose (lastTickAt; 0 = not yet known) and the Entschlossenheit bonus built up since. */
+  recordAt: number;
+  resolve: number;
+  /** The fight that ended the latest lost run – for the defeat analysis (kept while later runs climb towards it). */
+  lastDefeat: { floor: number; at: number; fighters: FightFighterSnapshot[]; stats: FightStats } | null;
+}
+
+/** A fighter of a tower fight as the arena and the defeat analysis see it. */
+export interface FightFighterSnapshot {
+  name: string;
+  speciesId: string;
+  element: string;
+  maxHp: number;
+  team: boolean;
+  interval?: number;
+  row?: 'front' | 'back';
+  boss?: boolean;
+}
+
+/**
+ * Totals of one tower fight. Arrays are per fighter, in the order of the
+ * fight's fighters (team first, then the foes).
+ */
+export interface FightStats {
+  /** Damage done to the other side (hits, techniques, burn/poison, thorns). */
+  dealt: number[];
+  /** Damage taken (after shields). */
+  taken: number[];
+  /** HP healed on this fighter (techniques, regeneration). */
+  healed: number[];
+  /** Hits that landed, and those with element advantage (strong) or disadvantage (weak). */
+  hits: number[];
+  strong: number[];
+  weak: number[];
+  /** Own attacks the target dodged, and attacks this fighter dodged. */
+  missed: number[];
+  dodged: number[];
+  /** HP at the end (0 = down) and the fight time it fell (-1 = still standing). */
+  hpLeft: number[];
+  downAt: number[];
+  /** Damage of team hits an Element-Schild swallowed. */
+  shielded: number;
+  /** The time limit ended the fight. */
+  timeout: boolean;
+  /** Fight time in seconds when it ended. */
+  seconds: number;
 }
 
 /** A concrete requirement of an offered Gen-Auftrag (parameters rolled). */
@@ -360,7 +410,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0 },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
