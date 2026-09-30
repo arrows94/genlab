@@ -1,7 +1,7 @@
 import type { GameContext } from '../context';
 import type { Buff, Process } from '../state';
 import { expireBuffs } from './buffs';
-import { completeProcesses } from './processes';
+import { completeProcesses, isWaiting } from './processes';
 
 /** Offline cap for the full simulation (production, automation, tower …). */
 export function offlineCapMs(ctx: GameContext): number {
@@ -23,7 +23,8 @@ const EPSILON_MS = 1e-3;
  * `process.<kind>.speed` for the remaining processes.
  */
 export function advanceTimers(ctx: GameContext, ms: number): void {
-  const running = new Set<Process>(ctx.state.processes);
+  // Finished processes waiting for the player take no time.
+  const running = new Set<Process>(ctx.state.processes.filter((p) => !isWaiting(ctx, p)));
   let remaining = ms;
   while (remaining > 0 && (running.size > 0 || ctx.state.buffs.length > 0)) {
     for (const p of running) if (!ctx.state.processes.includes(p)) running.delete(p);
@@ -55,7 +56,7 @@ export function advanceTimers(ctx: GameContext, ms: number): void {
       p.elapsedMs = p.durationMs;
       running.delete(p);
     }
-    completeProcesses(ctx, finished);
+    completeProcesses(ctx, finished.filter((p) => !isWaiting(ctx, p)));
     expireBuffs(ctx, expired);
   }
 }

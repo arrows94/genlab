@@ -26,7 +26,11 @@ interface ViewState {
   infusion: { maxRarity: string; donorsOnly: boolean };
   /** Genome viewer in the Genlabor: search and filters of the creature gallery. */
   genome: { sequencedOnly: boolean; species: string; libraryOpen: boolean; hideCompleteGenes: boolean; sort: string; invert: boolean };
+  /** Tempo of the fight replay in the arena: 1×, 2× or 0 = skip to the result. */
+  tower: { replaySpeed: ReplaySpeed };
 }
+
+export type ReplaySpeed = 0 | 1 | 2;
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
 
@@ -41,6 +45,7 @@ const defaults = (): ViewState => ({
   splicing: { hideDone: true, sort: 'left', invert: false },
   infusion: { maxRarity: 'common', donorsOnly: false },
   genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false, sort: 'power', invert: false },
+  tower: { replaySpeed: 1 },
 });
 
 function load(): ViewState {
@@ -60,6 +65,7 @@ function load(): ViewState {
       splicing: { ...base.splicing, ...saved.splicing },
       infusion: { ...base.infusion, ...saved.infusion },
       genome: { ...base.genome, ...saved.genome },
+      tower: { replaySpeed: ([0, 1, 2] as const).find((v) => v === saved.tower?.replaySpeed) ?? base.tower.replaySpeed },
     };
   } catch {
     return base;

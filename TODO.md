@@ -405,7 +405,8 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Technik-Namen einblenden, Zustands-Symbole, kritische Treffer, Brand/Gift-Schaden, Rückschaden, Schild
 - [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
       nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
-- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
+- [x] Tempo-Regler für die Wiedergabe (1×/2×/überspringen) in der Kopfzeile der Arena, gemerkt in `viewState.tower`
+- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen)
 - [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
 
 ## Leitplanken
@@ -460,14 +461,17 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 
 # TODO – Brut
 
-- [ ] **Brutritual muss selbst geöffnet werden**: Ritual-Eier schlüpfen nicht mehr von allein, sondern bleiben
+- [x] **Brutritual muss selbst geöffnet werden**: Ritual-Eier schlüpfen nicht mehr von allein, sondern bleiben
       fertig im Ritualnest liegen, bis der Spieler sie antippt
-  - [ ] Core: fertiges Ritual-Ei als „bereit“ merken statt sofort schlüpfen, Aktion `openRitualEgg`
-  - [ ] Das Ritualnest bleibt belegt, bis das Ei geöffnet ist (kein neues Ritual davor)
-  - [ ] Enthüllung beim Öffnen: Ei wackelt, bricht auf, Leuchten in der Farbe der Seltenheit; `.reduce-motion` beachten
-  - [ ] Hinweis „Ritual-Ei ist bereit“ (Tab-Punkt, optional Benachrichtigung), auch nach Offline-Zeit
-  - [ ] Der Zuchtautomat öffnet Ritual-Eier nicht – das bleibt der Moment des Spielers
-  - [ ] Test-Bots öffnen fertige Ritual-Eier selbst; Changelog-Eintrag
+  - [x] Core: `ProcessHandler.waitsForPlayer` – ein fertiger Vorgang bleibt stehen (`isWaiting`), auch in der
+        Offline-Zeit über dem Deckel; Aktion `openRitualEgg` schließt ihn ab und gibt die Schlüpflinge zurück
+  - [x] Das Ritualnest bleibt belegt, bis das Ei geöffnet ist (kein neues Ritual davor)
+  - [x] Enthüllung beim Öffnen: Ei wackelt, bricht auf, Karte mit Strahlen in der Farbe der Seltenheit;
+        mit reduzierter Bewegung sofort
+  - [x] Hinweis: Zähler am Reiter Brutstation (`readyRitualEggs`), Benachrichtigung „Ritual-Ei bereit ✨“ statt
+        „Ei geschlüpft“
+  - [x] Der Zuchtautomat öffnet Ritual-Eier nicht – das bleibt der Moment des Spielers
+  - [x] Test-Bot (`tests/longrun.ts`) öffnet fertige Ritual-Eier selbst; Changelog-Eintrag
 
 # TODO – GenLab RPG (ein Monster, aktiver Dungeon)
 
@@ -480,12 +484,11 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Vor dem Start klären
 
 - [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
-- [ ] Stufen (noch offen, Varianten zum Abwägen):
-  - A: nur innerhalb eines Laufs – jeder Lauf startet bei Stufe 1 (reines Roguelite, jeder Lauf gleich fair)
-  - B: dauerhaft je Monster, aber nur im Turm und im Dungeon wirksam, nie in Zucht, Anlagen oder Vererbung
-    (bindet an ein Lieblingsmonster; Frage: was passiert beim Verkaufen oder bei der Vererbung?)
-  - C: Mischform – Lauf-Stufe startet bei 1, dazu ein langsamer dauerhafter „Erfahrungsrang“ je Monster mit kleinem
-    Startbonus (z. B. +1 Verbesserung zu Beginn)
+- [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
+      wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
+      Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
+  - [ ] Offen: Wie schnell wächst der Rang, was bringt er je Stufe, und was passiert mit ihm beim Verkaufen,
+        Recyceln oder bei der Vererbung (Vorschlag: Rang hängt an der Kreatur und geht mit ihr verloren)?
 - [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
       Turm-Kurve)
 

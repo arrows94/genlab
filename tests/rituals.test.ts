@@ -9,9 +9,12 @@ import {
   eggs,
   mutationChance,
   nestEggs,
+  openRitualEgg,
+  readyRitualEggs,
   ritualEggs,
   startBreeding,
 } from '@core/features/breeding';
+import { plannedNotices } from '@core/notices';
 import { sell } from '@core/features/stable';
 import { breedingPreview } from '@core/features/planner';
 import { unlockFeature } from '@core/systems/unlocks';
@@ -30,13 +33,14 @@ function ritualGame(prestige = 2, seed = 5) {
   return g;
 }
 
-/** Lays an egg with the ritual and hatches it right away; returns the child. */
+/** Lays an egg with the ritual and hatches it right away (ritual eggs are opened by hand); returns the child. */
 function hatch(g: ReturnType<typeof makeGame>, a: number, b: number, ritual?: string) {
   expect(startBreeding(g, a, b, ritual).ok).toBe(true);
   const egg = eggs(g)[0]!;
   egg.elapsedMs = egg.durationMs - 50;
   const before = new Set(g.state.creatures.map((c) => c.id));
   g.advance(200);
+  if (ritual) expect(openRitualEgg(g, egg.id).ok).toBe(true);
   return g.state.creatures.filter((c) => !before.has(c.id));
 }
 
@@ -83,11 +87,49 @@ describe('Besondere Brut', () => {
       egg.elapsedMs = egg.durationMs - 50;
       const before = new Set(g.state.creatures.map((c) => c.id));
       g.advance(200);
+      expect(openRitualEgg(g, egg.id).ok).toBe(true);
       return g.state.creatures.filter((c) => !before.has(c.id));
     })();
     expect(children).toHaveLength(1);
     expect(children[0]!.speciesId).toBe('emberpup');
     expect(children[0]!.parents).toEqual([a.id, b.id]);
+  });
+
+  it('waits in the Ritualnest until the player opens it', () => {
+    const g = ritualGame();
+    const [a, b] = g.state.creatures;
+    expect(startBreeding(g, a!.id, b!.id, 'noble').ok).toBe(true);
+    const egg = ritualEggs(g)[0]!;
+    expect(openRitualEgg(g, egg.id)).toEqual({ ok: false, reason: 'Das Ritual-Ei ist noch nicht fertig.' });
+    const count = g.state.creatures.length;
+    // Far beyond its time – live and offline beyond the cap: nothing hatches on its own.
+    egg.elapsedMs = egg.durationMs - 50;
+    g.advance(1_000);
+    g.simulateOffline(g.offlineCapMs() + 48 * H);
+    expect(g.state.creatures).toHaveLength(count);
+    expect(readyRitualEggs(g).map((p) => p.id)).toEqual([egg.id]);
+    expect(egg.elapsedMs).toBe(egg.durationMs);
+    // The nest stays taken, and the waiting egg plans no notice.
+    const c = createCreature(g, { speciesId: 'emberpup', source: 'other' });
+    const d = createCreature(g, { speciesId: 'bubbloon', source: 'other' });
+    expect(startBreeding(g, c.id, d.id, 'crossing')).toEqual({ ok: false, reason: 'Das Ritualnest ist belegt.' });
+    expect(plannedNotices(g, 0).some((n) => n.kind === 'ritualEgg')).toBe(false);
+
+    const opened = openRitualEgg(g, egg.id);
+    expect(opened.ok).toBe(true);
+    expect(opened.hatched?.length).toBeGreaterThan(0);
+    expect(ritualEggs(g)).toHaveLength(0);
+    expect(openRitualEgg(g, egg.id)).toEqual({ ok: false, reason: 'Dieses Ritual-Ei gibt es nicht mehr.' });
+  });
+
+  it('announces a running ritual egg as ready, not as hatched', () => {
+    const g = ritualGame();
+    const [a, b] = g.state.creatures;
+    expect(startBreeding(g, a!.id, b!.id, 'noble').ok).toBe(true);
+    const notice = plannedNotices(g, 0).find((n) => n.kind === 'ritualEgg');
+    expect(notice?.title).toBe('Ritual-Ei bereit ✨');
+    expect(notice?.at).toBe(3 * H);
+    expect(plannedNotices(g, 0).some((n) => n.kind === 'egg')).toBe(false);
   });
 
   it('the Kreuzungsritual always brings the hybrid of a matching pair', () => {

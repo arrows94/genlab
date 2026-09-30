@@ -35,6 +35,10 @@ interface NoticeText {
   many: (n: number) => string;
 }
 
+/** Notice key of ritual eggs (a process of kind `egg` with its own text). */
+const RITUAL_EGG = 'ritualEgg';
+const noticeKind = (p: Process) => (p.kind === EGG && (p.data as EggData).ritual ? RITUAL_EGG : p.kind);
+
 /** Process kinds that announce their end; new long projects add an entry here. */
 const TEXTS: Record<string, NoticeText> = {
   [MISSION]: {
@@ -53,6 +57,15 @@ const TEXTS: Record<string, NoticeText> = {
       return `Das Ei von ${a} und ${b} ist geschlüpft.`;
     },
     many: (n) => `${n} Eier sind geschlüpft.`,
+  },
+  // Ritual eggs do not hatch on their own – they wait to be opened.
+  [RITUAL_EGG]: {
+    title: 'Ritual-Ei bereit ✨',
+    one: (ctx, p) => {
+      const [a, b] = ((p.data as EggData).sample ?? []).map((c) => c.name);
+      return `Das Ritual-Ei${a && b ? ` von ${a} und ${b}` : ''} ist bereit – öffne es in der Brutstation.`;
+    },
+    many: (n) => `${n} Ritual-Eier sind bereit – öffne sie in der Brutstation.`,
   },
   [VOYAGE]: {
     title: 'Wochenexpedition zurück 🗺️',
@@ -96,8 +109,8 @@ const TEXTS: Record<string, NoticeText> = {
 export function plannedNotices(ctx: GameContext, now = ctx.state.lastTickAt): Notice[] {
   const cfg = ctx.balance.notifications;
   const due = ctx.state.processes
-    .filter((p) => TEXTS[p.kind] && p.durationMs >= cfg.minDurationSec * 1000)
-    .map((p) => ({ p, at: now + processRemainingMs(ctx, p) }))
+    .filter((p) => TEXTS[noticeKind(p)] && p.durationMs >= cfg.minDurationSec * 1000 && p.elapsedMs < p.durationMs)
+    .map((p) => ({ p, kind: noticeKind(p), at: now + processRemainingMs(ctx, p) }))
     .sort((x, y) => x.at - y.at);
 
   const notices: Notice[] = [];
@@ -111,11 +124,11 @@ export function plannedNotices(ctx: GameContext, now = ctx.state.lastTickAt): No
     groups.delete(kind);
   };
   for (const item of due) {
-    const g = groups.get(item.p.kind);
-    if (g && item.at - g.first > cfg.groupSec * 1000) flush(item.p.kind);
-    const open = groups.get(item.p.kind);
+    const g = groups.get(item.kind);
+    if (g && item.at - g.first > cfg.groupSec * 1000) flush(item.kind);
+    const open = groups.get(item.kind);
     if (open) open.items.push(item);
-    else groups.set(item.p.kind, { first: item.at, items: [item] });
+    else groups.set(item.kind, { first: item.at, items: [item] });
   }
   for (const kind of [...groups.keys()]) flush(kind);
 
