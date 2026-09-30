@@ -63,6 +63,81 @@ export interface Balance {
     /** Rewards when the total damage reaches `at` × boss HP (in order). */
     tiers: { at: number; rewards: ResourceAmounts }[];
   };
+  rpg: {
+    /** Hours until the next Fackel while below the stock limit (real clock, also offline). */
+    torchHours: number;
+    /** Fackeln stored at most by refilling (rewards may go beyond). */
+    maxTorches: number;
+    /** Fackeln with every Tagesbelohnung once the RPG is unlocked, and on the calendar's last day. */
+    dailyTorches: number;
+    dailyTorchesLast: number;
+    /** Share of the carried (not yet secured) loot kept after a defeat. */
+    defeatKeep: number;
+    /** Tower status durations (seconds) per dungeon round; burn, poison and regen values scale with it. */
+    secondsPerRound: number;
+    /** Rounds before the element technique can be used again. */
+    techniqueCooldown: number;
+    /** Foe stats = tower enemy of the floor × these (a duel of one hero, not a team). */
+    enemyMult: { hp: number; atk: number; def: number; spd: number };
+    /** Damage of a charged heavy blow as a multiple of a normal hit. */
+    heavyMult: number;
+    /** A guarding foe absorbs this share of its max HP during the round. */
+    guardShare: number;
+    /** A healing foe heals this share of its max HP. */
+    healShare: number;
+    /** Special attack charge per round, per own hit that lands and per hit taken (1 = ready). */
+    chargePerRound: number;
+    chargePerHit: number;
+    chargeWhenHit: number;
+    /** Lines kept in the fight log. */
+    logSize: number;
+    /** From this round on the foe's damage grows by `enrageGrowth` per round (Wut). */
+    enrageAfter: number;
+    enrageGrowth: number;
+    /** How many ways are offered after a room: [min, max]. */
+    choices: [number, number];
+    /** Weights of the room kinds offered (the boss comes on its own at the end). */
+    roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
+    /** XP per won fight (the boss ends the run). */
+    xp: { fight: number; elite: number };
+    /** XP from level n to n+1: xpBase × xpGrowth^(n − 1). */
+    xpBase: number;
+    xpGrowth: number;
+    /** Share of max HP healed on a level-up. */
+    levelHeal: number;
+    /** Upgrades offered per level-up. */
+    upgradeChoices: number;
+    /** Erfahrungsrang XP for beating a boss (on top of the fights' XP). */
+    rankXpBoss: number;
+    /** XP from rank n to n+1: rankXpBase × rankXpGrowth^n. */
+    rankXpBase: number;
+    rankXpGrowth: number;
+    maxRank: number;
+    /** Dungeon stat bonus per rank (0.02 = +2 %). */
+    rankStats: number;
+    /** Every n-th rank gives one upgrade to choose at the start of a run. */
+    rankUpgradeEvery: number;
+    /** Share of max HP a rest heals. */
+    restHeal: number;
+    /**
+     * Loot per room kind: `fixed` × the dungeon's `loot`; each `chance` entry gives one piece with that
+     * probability × the dungeon's `loot` (at most 1). Key `alleleSamples` catalogues missing alleles.
+     */
+    loot: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', { fixed: ResourceAmounts; chance?: Record<string, number> }>>;
+    /** Chance of a piece of equipment per room kind (× the dungeon's loot, at most 1). */
+    gearChance: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', number>>;
+    /** Rarity weights of found equipment; deeper dungeons raise rarer ones by `gearRarityShift` × order × (loot − 1). */
+    gearRarityWeights: Record<string, number>;
+    gearRarityShift: number;
+    /** Value multiplier of equipment per rarity. */
+    gearRarityMult: Record<string, number>;
+    /** Pieces the player can own; more found ones are taken apart. */
+    maxItems: number;
+    /** Runen for taking a piece apart, per rarity. */
+    salvage: Record<string, number>;
+    /** Most of these per week (paid out) from the dungeon. */
+    weeklyCap: ResourceAmounts;
+  };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
     baseSlots: number;

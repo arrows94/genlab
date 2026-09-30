@@ -54,6 +54,72 @@ export const balance: Balance = {
       { at: 1, rewards: { towerTokens: 400, timeCrystals: 2, aeonShards: 1 } },
     ],
   },
+  rpg: {
+    // Fackeln: one per run; they come back by the real clock, a small stock saves up for a day off.
+    torchHours: 6,
+    maxTorches: 3,
+    // Every Tagesbelohnung brings Fackeln too (the last, big day of the calendar more); may go beyond the stock.
+    dailyTorches: 1,
+    dailyTorchesLast: 2,
+    // A defeat keeps this share of the carried loot (secured loot is always safe).
+    defeatKeep: 0.5,
+    // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
+    secondsPerRound: 2,
+    techniqueCooldown: 3,
+    // Foes: the tower enemy of the dungeon's floor, adjusted for a duel of one hero.
+    enemyMult: { hp: 0.35, atk: 0.3, def: 0.25, spd: 1 },
+    // Foe moves: heavy blow after charging, shield against this round's hits, healing.
+    heavyMult: 2.2,
+    guardShare: 0.3,
+    healShare: 0.2,
+    // Special attack: charged by rounds, own hits and hits taken (1 = ready).
+    chargePerRound: 0.1,
+    chargePerHit: 0.1,
+    chargeWhenHit: 0.15,
+    logSize: 8,
+    // Wut like in the tower: from round enrageAfter on the foe hits enrageGrowth harder every round (no endless fights).
+    enrageAfter: 15,
+    enrageGrowth: 0.2,
+    // Dungeon: after each room 2–3 ways, drawn by these weights.
+    choices: [2, 3],
+    roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
+    // Run levels: XP per won fight, XP for level n → n+1 = xpBase × xpGrowth^(n − 1); a level-up heals a little.
+    xp: { fight: 10, elite: 25 },
+    xpBase: 20,
+    xpGrowth: 1.4,
+    levelHeal: 0.15,
+    upgradeChoices: 3,
+    // Erfahrungsrang (lasting, per monster): all dungeon XP counts, the boss adds rankXpBoss. Rank n needs
+    // rankXpBase × rankXpGrowth^(n − 1) more; each rank +rankStats on all dungeon stats, every rankUpgradeEvery-th
+    // rank one upgrade to choose at the start of a run.
+    rankXpBoss: 40,
+    rankXpBase: 60,
+    rankXpGrowth: 1.6,
+    maxRank: 10,
+    rankStats: 0.02,
+    rankUpgradeEvery: 3,
+    // A rest heals this share of max HP and secures the carried loot.
+    restHeal: 0.4,
+    // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
+    // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
+    loot: {
+      fight: { fixed: { towerTokens: 3 }, chance: { catalyst: 0.08, alleleSamples: 0.05, runes: 0.2 } },
+      elite: { fixed: { towerTokens: 8, runes: 2 }, chance: { catalyst: 0.35, alleleSamples: 0.25, timeCrystals: 0.1 } },
+      treasure: { fixed: { towerTokens: 6, runes: 1 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
+      boss: { fixed: { towerTokens: 25, catalyst: 1, runes: 8 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
+    },
+    // Equipment: chance per room kind (× loot factor, at most 1), rarity by weights – deeper dungeons shift them
+    // up (weight × (1 + (loot − 1) × gearRarityShift × rarity order)); rarer pieces multiply their values.
+    gearChance: { fight: 0.04, elite: 0.3, treasure: 0.15, boss: 1 },
+    gearRarityWeights: { common: 60, uncommon: 26, rare: 10, epic: 3.5, legendary: 0.5, mythic: 0 },
+    gearRarityShift: 0.35,
+    gearRarityMult: { common: 1, uncommon: 1.35, rare: 1.8, epic: 2.4, legendary: 3.2, mythic: 4.2 },
+    maxItems: 40,
+    // Taking equipment apart gives Runen by rarity (also for pieces found while the collection is full).
+    salvage: { common: 2, uncommon: 4, rare: 8, epic: 16, legendary: 32, mythic: 64 },
+    // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
+    weeklyCap: { timeCrystals: 6, aeonShards: 2 },
+  },
   timeCrystals: {
     skipHours: 4,
     longProjectHours: 1,

@@ -642,6 +642,176 @@ export interface VoyageDecisionDef {
   options: [VoyageOptionDef, VoyageOptionDef];
 }
 
+/** GenLab RPG: where a skill sits on the hero. Element techniques are derived from `techniques`. */
+export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special';
+
+/** A turn-based skill of the GenLab RPG hero. */
+export interface RpgSkillDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** In content only basic, third and special (techniques come from `techniques`). */
+  slot: RpgSkillSlot;
+  /** enemy: hits the foe (statuses land on it) · self: acts on the hero. */
+  target: 'enemy' | 'self';
+  /** Damage as a multiple of a normal hit (0 = none). */
+  hit: number;
+  /** Number of hits (default 1), each rolled on its own. */
+  hits?: number;
+  /** Heals this share of the hero's max HP. */
+  heal?: number;
+  /** Removes harmful statuses (burn, poison, stun, slow) from the hero. */
+  cleanse?: boolean;
+  /**
+   * Status in rounds. value: burn/poison share of the user's ANG per round · stun: skips the next turn ·
+   * slow: acts last · shield: share of max HP absorbed · evade: dodge chance · regen: share of max HP per round ·
+   * armor: +share VER · reflect: share of damage taken sent back.
+   */
+  status?: { id: StatusId; rounds: number; value: number };
+  /** Rounds before the skill can be used again (0 = every round). */
+  cooldown: number;
+  /** Third skill: who gets it – an Erbanlage (after deep sequencing), an ability, or a role as fallback. */
+  from?: { latent?: string; ability?: string; role?: 'tank' | 'attacker' | 'fast' };
+}
+
+/** What a dungeon foe does next; shown to the player before they choose. */
+export type RpgIntent = 'attack' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
+
+/** A kind of dungeon foe; species and element come from the dungeon. */
+export interface RpgEnemyDef {
+  id: string;
+  /** Prefix to the species name, e.g. „Wilder“. */
+  name: string;
+  kind: 'normal' | 'elite' | 'boss';
+  /** Moves in order, repeated. */
+  pattern: RpgIntent[];
+  /** Multipliers on the dungeon strength. */
+  hp: number;
+  atk: number;
+  def: number;
+  spd: number;
+}
+
+/** Room kinds of a dungeon; after each room the player picks the next from 2–3. */
+export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'boss';
+
+/** A dungeon of the GenLab RPG: element theme, strength and length. */
+export interface RpgDungeonDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Foes come from species of these elements. */
+  elements: string[];
+  /** Strength of the first room on the tower scale (enemy of this floor). */
+  floor: number;
+  /** Strength added per room. */
+  floorsPerRoom: number;
+  /** Rooms before the boss. */
+  rooms: number;
+  /** Loot multiplier (deeper dungeons pay more). */
+  loot: number;
+  /** Dungeon that must be cleared first. */
+  requires?: string;
+}
+
+/** What an event choice does to the run. */
+export interface RpgEventOutcome {
+  /** Text shown afterwards. */
+  result: string;
+  /** HP change as a share of max HP (negative = damage, never below 1 HP). */
+  hp?: number;
+  /** Extra loot: this many times a treasure room's loot. */
+  loot?: number;
+  /** Secures the carried loot like a rest. */
+  secure?: boolean;
+}
+
+export interface RpgEventOption extends RpgEventOutcome {
+  label: string;
+  /** Chance that it works (default 1); otherwise `fail` happens. */
+  chance?: number;
+  fail?: RpgEventOutcome;
+}
+
+/** An event room: a short scene with two choices. */
+export interface RpgEventDef {
+  id: string;
+  name: string;
+  icon: string;
+  text: string;
+  weight: number;
+  options: [RpgEventOption, RpgEventOption];
+}
+
+/** Passive effects of run upgrades (they add up). */
+export interface RpgPerks {
+  /** Extra damage share of the special attack. */
+  specialPower?: number;
+  /** Extra special charge per round. */
+  chargePerRound?: number;
+  /** Heals this share of the damage the hero deals. */
+  lifesteal?: number;
+  /** Chance of a critical hit (× `tower.critMult`). */
+  crit?: number;
+  /** Heals this share of max HP at the end of every round. */
+  regen?: number;
+  /** Rounds less cooldown for the element technique and the third skill (at least 1). */
+  cooldown?: number;
+}
+
+/** A choice on a level-up in the dungeon (only for this run). */
+export interface RpgUpgradeDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  weight: number;
+  /** How often it can be taken in one run (default unlimited). */
+  max?: number;
+  /** Stat bonuses as shares (0.15 = +15 %). */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  perks?: RpgPerks;
+}
+
+export type RpgGearSlot = 'weapon' | 'armor' | 'charm';
+
+/** Equipment of the GenLab RPG: belongs to the player, fits every monster, only works in the dungeon. */
+export interface RpgGearDef {
+  id: string;
+  name: string;
+  icon: string;
+  slot: RpgGearSlot;
+  /** Values of a common piece; rarer pieces multiply them (`balance.rpg.gearRarityMult`). */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  perks?: Omit<RpgPerks, 'cooldown'>;
+}
+
+/** Lasting GenLab RPG progress, bought with Runen between runs. */
+export interface RpgMetaDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  cost: number;
+  costGrowth: number;
+  maxLevel: number;
+  /** Effects per level. */
+  effect: {
+    /** Dungeon stat bonus shares. */
+    stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+    /** More Fackeln in stock. */
+    torches?: number;
+    /** Special charge at the start of every fight. */
+    startCharge?: number;
+    /** Extra share of max HP a rest heals. */
+    restHeal?: number;
+    /** The hero also gets its role skill as a fourth skill (when its third skill comes from elsewhere). */
+    roleSkill?: boolean;
+  };
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -678,6 +848,13 @@ export interface ContentData {
   relics: RelicDef[];
   techniques: TechniqueDef[];
   nameLists: NameListDef[];
+  rpgSkills: RpgSkillDef[];
+  rpgEnemies: RpgEnemyDef[];
+  rpgDungeons: RpgDungeonDef[];
+  rpgEvents: RpgEventDef[];
+  rpgUpgrades: RpgUpgradeDef[];
+  rpgGear: RpgGearDef[];
+  rpgMeta: RpgMetaDef[];
 }
 
 export interface Registry<T extends { id: string }> {

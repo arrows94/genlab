@@ -23,6 +23,7 @@ import { breedingRituals } from './rituals';
 import { latentTraits } from './latent';
 import { grandResearch } from './grandResearch';
 import { nameLists } from './names';
+import { rpgDungeons, rpgEnemies, rpgEvents, rpgGear, rpgMeta, rpgSkills, rpgUpgrades } from './rpg';
 
 export { balance } from './balance';
 
@@ -62,6 +63,13 @@ export const contentData: ContentData = {
   relics,
   techniques,
   nameLists,
+  rpgSkills,
+  rpgEnemies,
+  rpgDungeons,
+  rpgEvents,
+  rpgUpgrades,
+  rpgGear,
+  rpgMeta,
 };
 
 /** Validated content. Throws a readable error listing every broken entry. */

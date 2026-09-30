@@ -170,6 +170,9 @@ function repairReferences(state: GameState): void {
   const ids = new Set(state.creatures.map((c) => c.id));
   state.tower.team = state.tower.team.filter((id) => ids.has(id));
   state.tower.back = state.tower.back.filter((id) => ids.has(id));
+  if (state.rpg.run && !ids.has(state.rpg.run.creatureId)) state.rpg.run = null;
+  const items = new Set(state.rpg.items.map((i) => i.id));
+  for (const slot of ['weapon', 'armor', 'charm'] as const) if (state.rpg.equipped[slot] !== null && !items.has(state.rpg.equipped[slot]!)) state.rpg.equipped[slot] = null;
 }
 
 export function deserialize(json: string, migrations: Record<number, Migration> = MIGRATIONS, target = SAVE_VERSION): { state: GameState; savedAt: number } {

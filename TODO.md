@@ -604,60 +604,82 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Vor dem Start klären
 
-- [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
+- [x] Freischaltung: ab Turm-Etage 20 (nach dem Bot schafft ein Turm-Monster dann das Wurzellabyrinth; liegt
+      zwischen Turm und Wochen-Boss). `towerFloor` zählt auch den Rekord aller Zeiten – nach einem Äon ist das RPG
+      sofort wieder da
 - [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
       wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
       Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
-  - [ ] Offen: Wie schnell wächst der Rang, was bringt er je Stufe, und was passiert mit ihm beim Verkaufen,
-        Recyceln oder bei der Vererbung (Vorschlag: Rang hängt an der Kreatur und geht mit ihr verloren)?
-- [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
-      Turm-Kurve)
+  - [x] Festgelegt: Alle Dungeon-Erfahrung zählt (Boss extra), Rang n braucht `rankXpBase × rankXpGrowth^n`,
+        höchstens Rang 10; je Rang +2 % auf alle Dungeon-Werte, jeder 3. Rang eine Verbesserung zum Start.
+        Der Rang hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
+- [x] Gilt die Ausrüstung auch im Turm? Festgelegt: nein – sie wirkt nur im Dungeon, die Turm-Kurve bleibt unberührt
 
 ## Schritt 1 – Grundlage und Spam-Schutz
 
-- [ ] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
+- [x] Neues Modul `core/features/rpg.ts`: Lauf-Zustand im Spielstand (Monster, Raum, KP, Stufe, Beute) – deterministisch
       mit dem Spiel-RNG, übersteht Neuladen, pausiert offline
-- [ ] Monster auswählen: Es ist während des Laufs beschäftigt (eigener Job), `canConsume` schützt es
+- [x] Monster auswählen: Es ist während des Laufs beschäftigt (eigener Job), `canConsume` schützt es
 - [ ] **Eintritts-Ressource gegen Spammen**, Vorschlag „Fackeln“ 🔥: 1 neue alle 6 h, höchstens 3 gespeichert
       (Muster wie `weeklyBoss.attemptsPerDay` / `maxAttempts`); weitere aus Gen-Aufträgen, Wochen-Boss und
       Turm-Meilensteinen; Zahlen in `balance.ts`
-- [ ] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
-- [ ] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
+  - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
+  - [x] Tagesbelohnung: +1 Fackel, am letzten Kalendertag +2 (`balance.rpg.dailyTorches`), auch über den Vorrat hinaus
+  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
+- [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
+      (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
+- [x] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
 
 ## Schritt 2 – Rundenkampf
 
-- [ ] Ablauf: Spieler wählt eine Fähigkeit, dann handelt der Gegner; Tempo (TMP) bestimmt, wer zuerst zieht
-- [ ] Drei Fähigkeiten aus dem Monster abgeleitet: Grundangriff, Element-Technik (wie im Turm, `content/techniques.ts`),
+- [x] Ablauf: Spieler wählt eine Fähigkeit, dann handelt der Gegner; Tempo (TMP) bestimmt, wer zuerst zieht
+- [x] Drei Fähigkeiten aus dem Monster abgeleitet: Grundangriff, Element-Technik (wie im Turm, `content/techniques.ts`),
       eine dritte aus Fähigkeiten oder Erbanlagen (Schutz, Heilung, Gift …); mit Abklingzeit in Runden
-- [ ] Eine stärkere Fähigkeit (Spezialangriff), lädt sich über Treffer und Runden auf
-- [ ] Werte aus den Zuchtwerten (KP, ANG, VER, TMP), Element-Vorteil wie im Turm – gute Zucht zahlt sich aus
-- [ ] Gegner zeigen ihren nächsten Zug an (Angriff, Aufladen, Schild), damit jede Wahl zählt
-- [ ] Kampf-Logik ohne DOM, testbar in Node; Inhalte (Gegner, Fähigkeiten) als Daten mit Prüfung in `validate.ts`
+      (`content/rpg.ts`, `features/rpgCombat.ts`: aufgedeckte Erbanlage vor Fähigkeit vor Rolle)
+- [x] Eine stärkere Fähigkeit (Spezialangriff), lädt sich über Treffer und Runden auf
+- [x] Werte aus den Zuchtwerten (KP, ANG, VER, TMP), Element-Vorteil wie im Turm – gute Zucht zahlt sich aus
+- [x] Gegner zeigen ihren nächsten Zug an (Angriff, Aufladen, Schild), damit jede Wahl zählt
+- [x] Kampf-Logik ohne DOM, testbar in Node; Inhalte (Gegner, Fähigkeiten) als Daten mit Prüfung in `validate.ts`
 
 ## Schritt 3 – Dungeon und Roguelite
 
-- [ ] Dungeon aus Räumen: Kampf, Elite, Schatz, Rast (heilen, Beute sichern), Ereignis, Boss am Ende;
+- [x] Dungeon aus Räumen: Kampf, Elite, Schatz, Rast (heilen, Beute sichern), Ereignis, Boss am Ende;
       nach jedem Raum Wahl aus 2–3 Wegen
-- [ ] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
+  - [x] Kampf, Elite, Schatz, Rast, Boss; Wegwahl nach `balance.rpg.roomWeights`
+  - [x] Ereignisse (`rpgEvents`: kurze Szene, zwei Entscheidungen, riskante mit Fehlschlag)
+- [x] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
       passiver Effekt) – so wird jeder Lauf anders
-- [ ] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
-- [ ] Niederlage beendet den Lauf, gesicherte Beute bleibt
+      (`rpgUpgrades`: Werte, Fokus/Kraftspeicher für den Spezialangriff, Lebensraub, Kritisch, Zweite Luft, Drill)
+- [x] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
+      (`rpgDungeons`: Stärke auf der Turm-Skala je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
+- [x] Niederlage beendet den Lauf, gesicherte Beute bleibt
 
 ## Schritt 4 – Belohnungen und Ausrüstung
 
-- [ ] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
-- [ ] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
+- [x] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
+- [x] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
       und Äon, kann jedem Monster angelegt werden
-- [ ] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,
+      (`rpgGear`; getragene Funde gehen bei einer Niederlage verloren, Bosse lassen immer ein Teil fallen)
+- [x] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,
       mehr Fackeln)
-- [ ] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
+      (Runen 🪬 aus Elite, Boss und zerlegter Ausrüstung; `rpgMeta`: Werte, Vorladen, Rast, Fackelhalter, Vielseitig)
+- [x] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
       Einfluss auf Idle-Wirtschaft und Äon-Splitter
+      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`; der Held ist
+      ein Mitglied eines gemischten Turm-Teams, das Etage F gerade hält. Stand: Wurzellabyrinth ab F20–30,
+      Glutgrotten ~F60, Flutgewölbe ~F100–120, Sturmspitze ~F120–150, Schattengruft ~F160–180, Kristallkern ~F200+
+      – ohne Rang, Ausrüstung und Runen-Wissen. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter
+      begrenzt der Wochen-Deckel)
+  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil (etwa ×1,5 Stärke) – mehr Streuung?
 
 ## Schritt 5 – Darstellung
 
-- [ ] Eigener Bildschirm „GenLab RPG“ (auf dem Handy Vollbild), Raumkarte, Fähigkeitsknöpfe unten in Daumenreichweite
-- [ ] Kämpfer, Zustände und Zahlen wie in der Turm-Arena wiederverwenden; `.reduce-motion` beachten
-- [ ] Sound-Hooks gleich mit anlegen (siehe „TODO – Sound“)
+- [x] Eigener Bildschirm „GenLab RPG“ (auf dem Handy Vollbild), Raumkarte, Fähigkeitsknöpfe unten in Daumenreichweite
+      (Reiter „GenLab RPG“ unter Abenteuer, als Vorschau unter Optionen einschaltbar; Fähigkeiten klebend unten)
+- [x] Kämpfer, Zustände und Zahlen wie in der Turm-Arena wiederverwenden; `.reduce-motion` beachten
+      (Kreaturbilder, Zustands-Symbole, KP-Balken, Wackeln und schwebende Schadenszahlen je Runde)
+- [x] Sound-Hooks gleich mit anlegen (siehe „TODO – Sound“)
+      (Ereignisse `rpgRound`, `rpgRunEnded`, `rpgLevelUp` → Turm-Klänge in `ui/soundEvents.ts`)
 
 ## Weitere Ideen
 
@@ -668,6 +690,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Leitplanken
 
-- [ ] Das Idle-Spiel bleibt Hauptsache: RPG ist freiwillig, seine Belohnungen beschleunigen nur
-- [ ] Deterministisch und im Spielstand; Zahlen in `balance.ts`, Inhalte in `content/`, Regeln in `core`
-- [ ] Alte Spielstände: neue Felder mit Standardwerten, keine Migration nötig
+- [x] Das Idle-Spiel bleibt Hauptsache: RPG ist freiwillig, seine Belohnungen beschleunigen nur
+      (Wochen-Deckel für Zeitkristalle und Äon-Splitter, Ausrüstung wirkt nicht im Turm)
+- [x] Deterministisch und im Spielstand; Zahlen in `balance.ts`, Inhalte in `content/`, Regeln in `core`
+- [x] Alte Spielstände: neue Felder mit Standardwerten, keine Migration nötig

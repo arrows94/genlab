@@ -1,4 +1,4 @@
-import type { Decimal } from '../num';
+import { D, type Decimal } from '../num';
 import { catalogueSamples } from '../genetics';
 import { grant } from '../resources';
 import { rewardAmounts } from '../rewards';
@@ -26,7 +26,13 @@ export function nextDailyAt(ctx: GameContext, nowMs = ctx.state.lastTickAt): num
 
 export function dailyReward(ctx: GameContext, step = ctx.state.daily.step): { amounts: Record<string, Decimal>; alleleSamples: number } {
   const spec = ctx.balance.daily.rewards[step % dailySteps(ctx)] ?? {};
-  return { amounts: rewardAmounts(ctx, spec, 'daily.reward'), alleleSamples: spec.alleleSamples ?? 0 };
+  const amounts = rewardAmounts(ctx, spec, 'daily.reward');
+  // Fackeln for the GenLab RPG: a fixed number, they do not grow with production.
+  if (ctx.state.features['rpg']) {
+    const cfg = ctx.balance.rpg;
+    amounts['torches'] = D(step % dailySteps(ctx) === dailySteps(ctx) - 1 ? cfg.dailyTorchesLast : cfg.dailyTorches);
+  }
+  return { amounts, alleleSamples: spec.alleleSamples ?? 0 };
 }
 
 export function claimDaily(ctx: GameContext, nowMs = ctx.state.lastTickAt): ActionResult {

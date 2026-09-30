@@ -36,6 +36,7 @@
   import RecyclerTab from './components/RecyclerTab.svelte';
   import CreatureDetail from './components/CreatureDetail.svelte';
   import TowerTab from './components/TowerTab.svelte';
+  import RpgTab from './components/RpgTab.svelte';
   import AeonTab from './components/AeonTab.svelte';
   import AnomaliesTab from './components/AnomaliesTab.svelte';
   import WeeklyBanner from './components/WeeklyBanner.svelte';
@@ -54,6 +55,7 @@
     market: { label: 'Markt', icon: '⚗️', component: MarketTab },
     recycler: { label: 'Recycler', icon: '♻️', component: RecyclerTab },
     tower: { label: 'Turm', icon: '🗼', component: TowerTab },
+    rpg: { label: 'GenLab RPG', icon: '🔥', component: RpgTab },
     anomalies: { label: 'Anomalien', icon: '🌀', component: AnomaliesTab },
     aeon: { label: 'Äon', icon: '⏳', component: AeonTab },
     dex: { label: 'Dex', icon: '📖', component: DexTab },
@@ -69,7 +71,7 @@
   const GROUPS: { id: string; label: string; icon: string; tabs: string[] }[] = [
     { id: 'base', label: 'Labor', icon: '🧬', tabs: ['lab', 'facilities', 'research', 'market'] },
     { id: 'breed', label: 'Zucht', icon: '🥚', tabs: ['breeding', 'genetics', 'recycler', 'contracts'] },
-    { id: 'adventure', label: 'Abenteuer', icon: '🧭', tabs: ['expedition', 'tower', 'anomalies'] },
+    { id: 'adventure', label: 'Abenteuer', icon: '🧭', tabs: ['expedition', 'tower', 'anomalies', 'rpg'] },
     { id: 'progress', label: 'Fortschritt', icon: '♾️', tabs: ['prestige', 'aeon', 'dex', 'stats'] },
     { id: 'settings', label: 'Optionen', icon: '⚙️', tabs: ['settings'] },
   ];

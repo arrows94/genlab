@@ -1,6 +1,7 @@
 import { D, type Decimal } from './num';
 import type { RngState } from './rng';
 import type { ModifierDef } from './modifiers';
+import type { RpgRoomKind, StatusId } from './content/types';
 
 export type StatBlock = Record<string, number>;
 
@@ -15,7 +16,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower';
+  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower' | 'rpg';
   target: string;
 }
 
@@ -308,6 +309,146 @@ export interface MegaProjectState {
   paid: Record<string, Decimal>;
 }
 
+/** A status in the dungeon, counted in rounds. burn/poison/regen: HP per round, shield: HP left to absorb, else a share. */
+export interface RpgStatus {
+  id: StatusId;
+  rounds: number;
+  value: number;
+}
+
+/** One side of a dungeon fight. */
+export interface RpgCombatant {
+  name: string;
+  speciesId: string;
+  element: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  spd: number;
+  statuses: RpgStatus[];
+}
+
+export interface RpgFoe extends RpgCombatant {
+  /** `rpgEnemies` id. */
+  enemy: string;
+  kind: 'normal' | 'elite' | 'boss';
+  /** Position in the move pattern: the shown next move. */
+  step: number;
+}
+
+/** What happened in the latest round (for sounds and hit animations). */
+export interface RpgEvent {
+  by: 'hero' | 'foe';
+  kind: 'hit' | 'miss' | 'heal' | 'skill';
+  /** Damage of a hit and its element factor (> 1 strong, < 1 weak). */
+  dmg?: number;
+  m?: number;
+  crit?: boolean;
+  /** An element technique, third skill or special (not the basic attack). */
+  special?: boolean;
+}
+
+/** A running fight: the hero chooses a skill, then both act in speed order. */
+export interface RpgBattle {
+  hero: RpgCombatant;
+  foe: RpgFoe;
+  round: number;
+  /** Rounds until a skill is ready again (skill id → rounds, missing = ready). */
+  cooldowns: Record<string, number>;
+  /** Special attack charge, 0 … 1. */
+  charge: number;
+  /** Latest lines of the fight, newest last. */
+  log: string[];
+  /** Events of the latest round (missing in fights started before they existed). */
+  last?: RpgEvent[];
+}
+
+/** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */
+export interface RpgRun {
+  creatureId: number;
+  /** `rpgDungeons` id. */
+  dungeon: string;
+  /** Rooms offered next (pick one); empty while inside a room. */
+  choices: RpgRoomKind[];
+  /** The room the hero is in (a fight not yet won, an event not yet decided), null between rooms. */
+  room: RpgRoomKind | null;
+  /** Event waiting for the player's choice (`rpgEvents` id). */
+  event: string | null;
+  /** Result text of the last event choice (until the next room). */
+  eventResult: string | null;
+  /** Current HP (they carry over from room to room). */
+  hp: number;
+  /** Run level (starts at 1 every run) and experience towards the next one. */
+  level: number;
+  xp: number;
+  /** Upgrades chosen on level-ups (ids, may repeat). */
+  upgrades: string[];
+  /** Upgrades offered for a level-up that is not chosen yet (empty = none waiting). */
+  offer: string[];
+  /** Further level-ups waiting after the current offer. */
+  pendingLevels: number;
+  /** Rooms cleared so far. */
+  depth: number;
+  /** Loot carried but not yet safe: lost in part on a defeat. */
+  loot: Record<string, number>;
+  /** Loot already made safe this run (paid out at the moment it was secured). */
+  secured: Record<string, number>;
+  /** Equipment found and still carried (lost on a defeat), and equipment already made safe this run. */
+  gear: RpgItem[];
+  securedGear: RpgItem[];
+  /** Wall clock of the start. */
+  startedAt: number;
+  battle: RpgBattle | null;
+}
+
+/** A piece of equipment the player owns. */
+export interface RpgItem {
+  id: number;
+  /** `rpgGear` id. */
+  gear: string;
+  rarity: string;
+}
+
+/** How the last run ended, for the summary. */
+export interface RpgResult {
+  win: boolean;
+  dungeon: string;
+  /** The boss fell. */
+  cleared: boolean;
+  depth: number;
+  level: number;
+  /** Everything the run paid out (secured, kept after a defeat or brought home). */
+  loot: Record<string, number>;
+  /** Equipment the run brought home. */
+  gear: RpgItem[];
+  at: number;
+}
+
+/** GenLab RPG: a single monster in an active, turn-based dungeon (see `features/rpg.ts`). */
+export interface RpgState {
+  /** Wall clock the refill of the next Fackel started (0 = stock full, -1 = never unlocked: fill up once). */
+  torchAt: number;
+  run: RpgRun | null;
+  lastResult: RpgResult | null;
+  /** Runs started ever. */
+  runs: number;
+  /** Boss victories per dungeon (a clear opens the next dungeon). */
+  cleared: Record<string, number>;
+  /** Deepest room reached per dungeon. */
+  best: Record<string, number>;
+  /** Erfahrungsrang: dungeon XP collected per creature id – it goes with the creature. */
+  ranks: Record<string, number>;
+  /** Capped loot paid out this week (`balance.rpg.weeklyCap`). */
+  weekly: { week: number; got: Record<string, number> };
+  /** Equipment owned (survives every reset) and what is worn – by whichever monster goes in. */
+  items: RpgItem[];
+  equipped: Record<'weapon' | 'armor' | 'charm', number | null>;
+  nextItemId: number;
+  /** Lasting progress bought with Runen (`rpgMeta` id → level). */
+  meta: Record<string, number>;
+}
+
 export interface GameState {
   rng: RngState;
   /** Total simulated time in ms (including offline). */
@@ -380,6 +521,7 @@ export interface GameState {
   /** Recent prestige runs, oldest first (capped by `balance.prestigeLogSize`). */
   prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
+  rpg: RpgState;
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -429,6 +571,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {} },
   };
 }
 

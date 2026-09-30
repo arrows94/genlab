@@ -1,4 +1,5 @@
 import type { Decimal } from './num';
+import type { RpgEvent } from './state';
 
 /** All game events. Add new events here; listeners are fully typed. */
 export interface GameEvents {
@@ -33,6 +34,11 @@ export interface GameEvents {
   recipeHinted: { recipe: string };
   towerFloor: { floor: number; win: boolean; rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null };
   towerRunEnded: { floor: number };
+  /** One round in the GenLab RPG dungeon; `outcome` once the fight is decided. */
+  rpgRound: { events: RpgEvent[]; outcome: 'win' | 'lose' | null; boss: boolean };
+  /** A GenLab RPG run ended (`cleared`: the boss fell). */
+  rpgRunEnded: { win: boolean; cleared: boolean };
+  rpgLevelUp: { level: number };
   /** A new rank of Kampferfahrung. */
   towerRank: { rank: number };
   talentBought: { talent: string };

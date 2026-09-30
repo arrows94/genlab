@@ -88,6 +88,12 @@ export const features: FeatureDef[] = [
     id: 'megaProjects', name: 'Großprojekte', hint: 'Großprojekt: Im Äon-Tab wartet das Äon-Observatorium. Zahle über mehrere Tage ein – es öffnet neue Stufen im Talentbaum. Einzahlungen gehen bei keinem Neustart verloren.',
     condition: { type: 'feature', feature: 'aeon' },
   },
+  // GenLab RPG: a tower monster clears the first dungeon from about floor 20 on (tests/rpgBot.ts). The record
+  // survives an Äon, so the RPG comes back at once.
+  {
+    id: 'rpg', name: 'GenLab RPG', tab: 'rpg', hint: 'GenLab RPG: Schicke ein einzelnes Monster in den Dungeon (Abenteuer) – rundenbasiert, du wählst jeden Zug. Jeder Lauf kostet eine Fackel 🔥.',
+    condition: { type: 'towerFloor', floor: 20 },
+  },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];
 
