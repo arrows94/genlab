@@ -10,7 +10,7 @@ import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { heroCombatant, heroPerks, heroStats, makeFoe, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker } from './rpgCombat';
+import { heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -23,6 +23,11 @@ const HOUR = 3_600_000;
 
 export function torches(ctx: GameContext): number {
   return Math.floor((ctx.state.resources['torches'] ?? D(0)).toNumber());
+}
+
+/** Fackeln stored at most by refilling (more with „Fackelhalter“). */
+export function maxTorches(ctx: GameContext): number {
+  return ctx.balance.rpg.maxTorches + metaEffects(ctx).torches;
 }
 
 /** Wall clock of the next Fackel (null while the stock is full or the RPG is locked). */
@@ -41,12 +46,13 @@ export function refreshTorches(ctx: GameContext, nowMs = ctx.state.lastTickAt): 
   const r = ctx.state.rpg;
   const cfg = ctx.balance.rpg;
   const have = torches(ctx);
+  const max = maxTorches(ctx);
   if (r.torchAt < 0) {
-    grant(ctx, 'torches', Math.max(0, cfg.maxTorches - have), 'rpg:torch');
+    grant(ctx, 'torches', Math.max(0, max - have), 'rpg:torch');
     r.torchAt = 0;
     return;
   }
-  if (have >= cfg.maxTorches) {
+  if (have >= max) {
     r.torchAt = 0;
     return;
   }
@@ -57,9 +63,9 @@ export function refreshTorches(ctx: GameContext, nowMs = ctx.state.lastTickAt): 
   const interval = cfg.torchHours * HOUR;
   const ready = Math.floor((nowMs - r.torchAt) / interval);
   if (ready <= 0) return;
-  const add = Math.min(ready, cfg.maxTorches - have);
+  const add = Math.min(ready, max - have);
   grant(ctx, 'torches', add, 'rpg:torch');
-  r.torchAt = have + add >= cfg.maxTorches ? 0 : r.torchAt + ready * interval;
+  r.torchAt = have + add >= max ? 0 : r.torchAt + ready * interval;
 }
 
 export const rpgSystem: System = {
@@ -181,12 +187,51 @@ function payOut(ctx: GameContext, loot: Record<string, number>): void {
   }
 }
 
-/** Puts found equipment into the player's collection (while there is room). Returns what fit. */
+/** Puts found equipment into the player's collection; pieces beyond its limit are taken apart for Runen. Returns what fit. */
 function keepGear(ctx: GameContext, items: RpgItem[]): RpgItem[] {
   const r = ctx.state.rpg;
   const fit = items.slice(0, Math.max(0, ctx.balance.rpg.maxItems - r.items.length));
   r.items.push(...fit);
+  for (const item of items.slice(fit.length)) grant(ctx, 'runes', salvageValue(ctx, item), 'rpg:salvage');
   return fit;
+}
+
+/** Runen for taking a piece apart. */
+export function salvageValue(ctx: GameContext, item: RpgItem): number {
+  return ctx.balance.rpg.salvage[item.rarity] ?? 1;
+}
+
+/** Takes a piece of equipment apart for Runen (not while it is worn). */
+export function salvageItem(ctx: GameContext, itemId: number): ActionResult {
+  const r = ctx.state.rpg;
+  const item = r.items.find((i) => i.id === itemId);
+  if (!item) return { ok: false, reason: 'Diese Ausrüstung besitzt du nicht.' };
+  if (Object.values(r.equipped).includes(itemId)) return { ok: false, reason: 'Lege sie zuerst ab.' };
+  r.items = r.items.filter((i) => i !== item);
+  grant(ctx, 'runes', salvageValue(ctx, item), 'rpg:salvage');
+  return { ok: true };
+}
+
+// ---- Runen-Fortschritt --------------------------------------------------------
+
+/** Runen for the next level (null at the maximum). */
+export function metaCost(ctx: GameContext, id: string): number | null {
+  const def = ctx.content.rpgMeta.get(id);
+  const level = ctx.state.rpg.meta[id] ?? 0;
+  return level >= def.maxLevel ? null : Math.ceil(def.cost * Math.pow(def.costGrowth, level));
+}
+
+export function buyMeta(ctx: GameContext, id: string): ActionResult {
+  if (!ctx.state.features['rpg']) return { ok: false, reason: 'Das GenLab RPG ist noch nicht freigeschaltet.' };
+  if (!ctx.content.rpgMeta.has(id)) return { ok: false, reason: 'Das gibt es nicht.' };
+  const cost = metaCost(ctx, id);
+  if (cost === null) return { ok: false, reason: 'Schon auf der höchsten Stufe.' };
+  const owned = ctx.state.resources['runes'] ?? D(0);
+  if (owned.lt(cost)) return { ok: false, reason: 'Nicht genug Runen.' };
+  ctx.state.resources['runes'] = owned.sub(cost);
+  ctx.state.rpg.meta[id] = (ctx.state.rpg.meta[id] ?? 0) + 1;
+  refreshTorches(ctx);
+  return { ok: true };
 }
 
 /** Makes the carried loot safe (rest points): it is paid out at once. */
@@ -242,6 +287,7 @@ export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: str
   if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
   if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
   run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, floor));
+  run.battle.charge = Math.min(1, metaEffects(ctx).startCharge);
   return { ok: true };
 }
 
@@ -474,7 +520,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       return { ok: true };
     }
     case 'rest':
-      run.hp = Math.min(rpgMaxHp(ctx, hero, run.upgrades), run.hp + Math.round(rpgMaxHp(ctx, hero, run.upgrades) * ctx.balance.rpg.restHeal));
+      run.hp = Math.min(rpgMaxHp(ctx, hero, run.upgrades), run.hp + Math.round(rpgMaxHp(ctx, hero, run.upgrades) * (ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal)));
       secureLoot(ctx);
       break;
   }

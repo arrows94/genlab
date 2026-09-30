@@ -97,10 +97,10 @@ export const balance: Balance = {
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
     // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {
-      fight: { fixed: { towerTokens: 3 }, chance: { catalyst: 0.08, alleleSamples: 0.05 } },
-      elite: { fixed: { towerTokens: 8 }, chance: { catalyst: 0.35, alleleSamples: 0.25, timeCrystals: 0.1 } },
-      treasure: { fixed: { towerTokens: 6 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
-      boss: { fixed: { towerTokens: 25, catalyst: 1 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
+      fight: { fixed: { towerTokens: 3 }, chance: { catalyst: 0.08, alleleSamples: 0.05, runes: 0.2 } },
+      elite: { fixed: { towerTokens: 8, runes: 2 }, chance: { catalyst: 0.35, alleleSamples: 0.25, timeCrystals: 0.1 } },
+      treasure: { fixed: { towerTokens: 6, runes: 1 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
+      boss: { fixed: { towerTokens: 25, catalyst: 1, runes: 8 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
     },
     // Equipment: chance per room kind (× loot factor, at most 1), rarity by weights – deeper dungeons shift them
     // up (weight × (1 + (loot − 1) × gearRarityShift × rarity order)); rarer pieces multiply their values.
@@ -109,6 +109,8 @@ export const balance: Balance = {
     gearRarityShift: 0.35,
     gearRarityMult: { common: 1, uncommon: 1.35, rare: 1.8, epic: 2.4, legendary: 3.2, mythic: 4.2 },
     maxItems: 40,
+    // Taking equipment apart gives Runen by rarity (also for pieces found while the collection is full).
+    salvage: { common: 2, uncommon: 4, rare: 8, epic: 16, legendary: 32, mythic: 64 },
     // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
     weeklyCap: { timeCrystals: 6, aeonShards: 2 },
   },

@@ -36,6 +36,12 @@ export function techniqueSkill(ctx: GameContext, tech: TechniqueDef): RpgSkillDe
   };
 }
 
+/** The skill of a monster's role (the third skill of monsters without a matching Erbanlage or ability). */
+export function roleSkill(ctx: GameContext, c: Creature): RpgSkillDef {
+  const role = roleOf(ctx, effectiveStats(ctx, c));
+  return ctx.content.rpgSkills.list.find((k) => k.slot === 'third' && k.from?.role === role)!;
+}
+
 /** Third skill: a revealed Erbanlage wins, then the first matching ability, then the role. */
 export function thirdSkill(ctx: GameContext, c: Creature): RpgSkillDef {
   const thirds = ctx.content.rpgSkills.list.filter((k) => k.slot === 'third');
@@ -47,18 +53,20 @@ export function thirdSkill(ctx: GameContext, c: Creature): RpgSkillDef {
     const byAbility = thirds.find((k) => k.from?.ability === a);
     if (byAbility) return byAbility;
   }
-  const role = roleOf(ctx, effectiveStats(ctx, c));
-  return thirds.find((k) => k.from?.role === role)!;
+  return roleSkill(ctx, c);
 }
 
-/** The hero's skills in button order: basic, technique, third, special. */
+/** The hero's skills in button order: basic, technique, third (and the role skill with „Vielseitig“), special. */
 export function rpgSkillsFor(ctx: GameContext, c: Creature): RpgSkillDef[] {
   const skills = ctx.content.rpgSkills.list;
   const tech = techniqueFor(ctx, ctx.content.species.get(c.speciesId).element);
+  const third = thirdSkill(ctx, c);
+  const role = roleSkill(ctx, c);
   return [
     skills.find((k) => k.slot === 'basic')!,
     ...(tech ? [techniqueSkill(ctx, tech)] : []),
-    thirdSkill(ctx, c),
+    third,
+    ...(role.id !== third.id && metaEffects(ctx).roleSkill ? [role] : []),
     skills.find((k) => k.slot === 'special')!,
   ];
 }
@@ -83,6 +91,21 @@ export function upgradePerks(ctx: GameContext, upgrades: readonly string[]): Req
   for (const id of upgrades) {
     if (!ctx.content.rpgUpgrades.has(id)) continue;
     for (const [k, v] of Object.entries(ctx.content.rpgUpgrades.get(id).perks ?? {})) out[k as keyof RpgPerks] += v;
+  }
+  return out;
+}
+
+/** Lasting effects bought with Runen, added up over their levels. */
+export function metaEffects(ctx: GameContext): { stats: Record<'hp' | 'atk' | 'def' | 'spd', number>; torches: number; startCharge: number; restHeal: number; roleSkill: boolean } {
+  const out = { stats: { hp: 0, atk: 0, def: 0, spd: 0 }, torches: 0, startCharge: 0, restHeal: 0, roleSkill: false };
+  for (const [id, level] of Object.entries(ctx.state.rpg.meta)) {
+    if (level <= 0 || !ctx.content.rpgMeta.has(id)) continue;
+    const e = ctx.content.rpgMeta.get(id).effect;
+    for (const [k, v] of Object.entries(e.stats ?? {})) out.stats[k as keyof typeof out.stats] += v * level;
+    out.torches += (e.torches ?? 0) * level;
+    out.startCharge += (e.startCharge ?? 0) * level;
+    out.restHeal += (e.restHeal ?? 0) * level;
+    if (e.roleSkill) out.roleSkill = true;
   }
   return out;
 }
@@ -127,13 +150,14 @@ export function rpgRank(ctx: GameContext, creatureId: number): { rank: number; i
   return { rank, into: 0, need: 0 };
 }
 
-/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × (the run's upgrades + equipment). */
+/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × (the run's upgrades + equipment + Runen progress). */
 export function heroStats(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): { hp: number; atk: number; def: number; spd: number } {
   const s = effectiveStats(ctx, c);
   const up = upgradeStats(ctx, upgrades);
   for (const item of equippedItems(ctx)) {
     for (const [k, v] of Object.entries(itemValues(ctx, item).stats)) up[k as keyof typeof up] += v ?? 0;
   }
+  for (const [k, v] of Object.entries(metaEffects(ctx).stats)) up[k as keyof typeof up] += v;
   const rank = 1 + rpgRank(ctx, c.id).rank * ctx.balance.rpg.rankStats;
   const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * rank * (1 + up[k])));
   return { hp: stat('hp', 1), atk: stat('atk', 1), def: stat('def', 0), spd: stat('spd', 1) };

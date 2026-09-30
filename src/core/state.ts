@@ -431,6 +431,8 @@ export interface RpgState {
   items: RpgItem[];
   equipped: Record<'weapon' | 'armor' | 'charm', number | null>;
   nextItemId: number;
+  /** Lasting progress bought with Runen (`rpgMeta` id → level). */
+  meta: Record<string, number>;
 }
 
 export interface GameState {
@@ -555,7 +557,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1 },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {} },
   };
 }
 

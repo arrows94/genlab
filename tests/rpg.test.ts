@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, equipItem, rollItem, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -685,3 +685,69 @@ describe('GenLab RPG – Ausrüstung', () => {
 function equippedIds(g: ReturnType<typeof makeGame>): number[] {
   return Object.values(g.state.rpg.equipped).filter((v): v is number => v !== null);
 }
+
+describe('GenLab RPG – Runen und Zerlegen', () => {
+  function game() {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    return g;
+  }
+
+  it('taking equipment apart gives Runen, not while it is worn', () => {
+    const g = game();
+    g.state.rpg.items.push({ id: 1, gear: 'fang', rarity: 'epic' }, { id: 2, gear: 'shell', rarity: 'common' });
+    equipItem(g, 'weapon', 1);
+    expect(salvageItem(g, 1).ok).toBe(false);
+    expect(salvageItem(g, 2).ok).toBe(true);
+    expect(g.state.resources['runes']!.toNumber()).toBe(balance.rpg.salvage['common']);
+    expect(g.state.rpg.items.map((i) => i.id)).toEqual([1]);
+  });
+
+  it('pieces found while the collection is full are taken apart', () => {
+    const g = game();
+    for (let i = 0; i < balance.rpg.maxItems; i++) g.state.rpg.items.push({ id: 1000 + i, gear: 'fang', rarity: 'common' });
+    startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
+    const item = { id: 5, gear: 'totem', rarity: 'rare' };
+    g.state.rpg.run!.gear.push(item);
+    leaveRpgRun(g);
+    expect(g.state.rpg.items).toHaveLength(balance.rpg.maxItems);
+    expect(g.state.resources['runes']!.toNumber()).toBe(salvageValue(g, item));
+  });
+
+  it('Runen buy lasting progress with rising cost up to a limit', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1000, atk: 1000, def: 100, spd: 10 };
+    const atk = heroStats(g, c).atk;
+    expect(buyMeta(g, 'fighting').ok).toBe(false);
+    g.state.resources['runes'] = D(10_000);
+    const first = metaCost(g, 'fighting')!;
+    expect(buyMeta(g, 'fighting').ok).toBe(true);
+    expect(metaCost(g, 'fighting')!).toBeGreaterThan(first);
+    expect(heroStats(g, c).atk).toBe(Math.round(atk * 1.04));
+    for (let i = 0; i < 10; i++) buyMeta(g, 'fighting');
+    expect(g.state.rpg.meta['fighting']).toBe(g.content.rpgMeta.get('fighting').maxLevel);
+    expect(metaCost(g, 'fighting')).toBeNull();
+  });
+
+  it('Fackelhalter raises the stock, Vorbereitung charges the special, Vielseitig adds the role skill', () => {
+    const g = game();
+    g.state.resources['runes'] = D(10_000);
+    buyMeta(g, 'torchBag');
+    expect(maxTorches(g)).toBe(balance.rpg.maxTorches + 1);
+    const c = g.state.creatures[0]!;
+    c.abilities = ['tough'];
+    c.latent = null;
+    expect(rpgSkillsFor(g, c)).toHaveLength(4);
+    buyMeta(g, 'versatile');
+    const skills = rpgSkillsFor(g, c);
+    expect(skills).toHaveLength(5);
+    expect(skills[2]!.id).toBe('mend');
+    expect(skills[3]!.from?.role).toBeDefined();
+    buyMeta(g, 'prepared');
+    startRpgRun(g, c.id, 'rootMaze');
+    startRpgBattle(g, 'brawler', 'sproutle', 0);
+    expect(g.state.rpg.run!.battle!.charge).toBeCloseTo(0.25);
+  });
+});

@@ -484,6 +484,23 @@ export function validateContent(data: ContentData): string[] {
     if (Object.keys(gear.stats ?? {}).length + Object.keys(gear.perks ?? {}).length === 0) issues.push(`${w}: mindestens ein Wert oder Effekt`);
   }
   for (const slot of ['weapon', 'armor', 'charm']) if (!data.rpgGear.some((g) => g.slot === slot)) issues.push(`rpgGear: mindestens ein Teil für "${slot}"`);
+  for (const m of data.rpgMeta) {
+    const w = at('rpgMeta', m.id);
+    text(`${w}.name`, m.name);
+    text(`${w}.description`, m.description);
+    num(`${w}.cost`, m.cost, 1);
+    num(`${w}.costGrowth`, m.costGrowth, 1);
+    num(`${w}.maxLevel`, m.maxLevel, 1, 50);
+    const e = m.effect ?? {};
+    for (const [k, v] of Object.entries(e.stats ?? {})) {
+      if (!['hp', 'atk', 'def', 'spd'].includes(k)) issues.push(`${w}.effect.stats: unbekannter Wert "${k}"`);
+      num(`${w}.effect.stats.${k}`, v, 0, 1);
+    }
+    if (e.torches !== undefined) num(`${w}.effect.torches`, e.torches, 1, 5);
+    if (e.startCharge !== undefined) num(`${w}.effect.startCharge`, e.startCharge, 0, 1);
+    if (e.restHeal !== undefined) num(`${w}.effect.restHeal`, e.restHeal, 0, 1);
+    if (Object.keys(e).length === 0) issues.push(`${w}.effect: mindestens ein Effekt`);
+  }
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);

@@ -125,8 +125,10 @@ export interface Balance {
     gearRarityShift: number;
     /** Value multiplier of equipment per rarity. */
     gearRarityMult: Record<string, number>;
-    /** Pieces the player can own; more found ones are lost. */
+    /** Pieces the player can own; more found ones are taken apart. */
     maxItems: number;
+    /** Runen for taking a piece apart, per rarity. */
+    salvage: Record<string, number>;
     /** Most of these per week (paid out) from the dungeon. */
     weeklyCap: ResourceAmounts;
   };

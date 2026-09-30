@@ -1,4 +1,4 @@
-import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgGearDef, RpgSkillDef, RpgUpgradeDef } from '@core/content/types';
+import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgGearDef, RpgMetaDef, RpgSkillDef, RpgUpgradeDef } from '@core/content/types';
 
 /**
  * GenLab RPG: the hero's skills and the dungeon foes. A hero has four skills:
@@ -109,4 +109,20 @@ export const rpgGear: RpgGearDef[] = [
   { id: 'emberStone', name: 'Glutstein', icon: '🔴', slot: 'charm', perks: { specialPower: 0.15 } },
   { id: 'hourglass', name: 'Sanduhr', icon: '⏳', slot: 'charm', perks: { chargePerRound: 0.02 } },
   { id: 'totem', name: 'Heiltotem', icon: '🗿', slot: 'charm', perks: { regen: 0.01 } },
+];
+
+/** Lasting progress between runs, bought with Runen (bosses, elites, taking equipment apart). */
+export const rpgMeta: RpgMetaDef[] = [
+  { id: 'hardened', name: 'Abgehärtet', icon: '🛡️', cost: 20, costGrowth: 1.6, maxLevel: 5, effect: { stats: { hp: 0.04, def: 0.04 } },
+    description: 'Je Stufe +4 % KP und Verteidigung im Dungeon.' },
+  { id: 'fighting', name: 'Kampfgeist', icon: '⚔️', cost: 20, costGrowth: 1.6, maxLevel: 5, effect: { stats: { atk: 0.04 } },
+    description: 'Je Stufe +4 % Angriff im Dungeon.' },
+  { id: 'prepared', name: 'Vorbereitung', icon: '🌟', cost: 40, costGrowth: 2, maxLevel: 2, effect: { startCharge: 0.25 },
+    description: 'Je Stufe startet der Spezialangriff jeden Kampf zu 25 % geladen.' },
+  { id: 'medic', name: 'Feldsanitäter', icon: '🏕️', cost: 30, costGrowth: 1.8, maxLevel: 3, effect: { restHeal: 0.1 },
+    description: 'Je Stufe heilt eine Rast 10 % mehr.' },
+  { id: 'torchBag', name: 'Fackelhalter', icon: '🔥', cost: 60, costGrowth: 2.5, maxLevel: 2, effect: { torches: 1 },
+    description: 'Je Stufe eine Fackel mehr im Vorrat.' },
+  { id: 'versatile', name: 'Vielseitig', icon: '🎴', cost: 150, costGrowth: 1, maxLevel: 1, effect: { roleSkill: true },
+    description: 'Ein Monster, dessen dritte Fähigkeit aus Erbanlage oder Fähigkeit stammt, bekommt seine Rollen-Fähigkeit als vierte dazu.' },
 ];

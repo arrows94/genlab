@@ -788,6 +788,30 @@ export interface RpgGearDef {
   perks?: Omit<RpgPerks, 'cooldown'>;
 }
 
+/** Lasting GenLab RPG progress, bought with Runen between runs. */
+export interface RpgMetaDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  cost: number;
+  costGrowth: number;
+  maxLevel: number;
+  /** Effects per level. */
+  effect: {
+    /** Dungeon stat bonus shares. */
+    stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+    /** More Fackeln in stock. */
+    torches?: number;
+    /** Special charge at the start of every fight. */
+    startCharge?: number;
+    /** Extra share of max HP a rest heals. */
+    restHeal?: number;
+    /** The hero also gets its role skill as a fourth skill (when its third skill comes from elsewhere). */
+    roleSkill?: boolean;
+  };
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -830,6 +854,7 @@ export interface ContentData {
   rpgEvents: RpgEventDef[];
   rpgUpgrades: RpgUpgradeDef[];
   rpgGear: RpgGearDef[];
+  rpgMeta: RpgMetaDef[];
 }
 
 export interface Registry<T extends { id: string }> {

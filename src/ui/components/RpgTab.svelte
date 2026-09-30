@@ -3,7 +3,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
+    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
     rpgCandidates, rpgHero, rpgSkills, startRpgRun, torches, useRpgSkill, xpToNext,
   } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, itemValues, rpgRank, skillBlocker, thirdSkill, effectiveCooldown } from '@core/features/rpgCombat';
@@ -55,7 +55,9 @@
       run: run ? structuredClone(run) : null,
       hero,
       torches: torches(game),
-      maxTorches: game.balance.rpg.maxTorches,
+      maxTorches: maxTorches(game),
+      runes: Math.floor((game.state.resources['runes']?.toNumber() ?? 0)),
+      meta: content.rpgMeta.list.map((m) => ({ m, level: r.meta[m.id] ?? 0, cost: metaCost(game, m.id) })),
       nextIn: next === null ? null : Math.max(0, next - Date.now()),
       dungeons,
       candidates: run ? [] : rpgCandidates(game).slice(0, 40),
@@ -183,18 +185,37 @@
     {#if gearSlot}
       {@const slot = gearSlot}
       {@const list = data.items.filter((i) => gearOf(i).slot === slot).sort((a, b) => rarityOf(b).order - rarityOf(a).order)}
+      {#if data.equipped[slot] !== null}<button class="take-off small" onclick={() => act(equipItem(game, slot, null))}>Ablegen</button>{/if}
       <div class="gear-list">
-        {#if data.equipped[slot] !== null}<button class="small" onclick={() => act(equipItem(game, slot, null))}>Ablegen</button>{/if}
         {#each list as item (item.id)}
-          <button class="gear" class:active={data.equipped[slot] === item.id} style="border-color: {rarityOf(item).color}" onclick={() => act(equipItem(game, slot, item.id))}>
-            <span class="g-name" style="color: {rarityOf(item).color}">{gearOf(item).icon} {gearOf(item).name}</span>
-            <span class="small muted">{rarityOf(item).name} · {itemText(item)}</span>
-          </button>
+          <div class="gear-row">
+            <button class="gear" class:active={data.equipped[slot] === item.id} style="border-color: {rarityOf(item).color}" onclick={() => act(equipItem(game, slot, item.id))}>
+              <span class="g-name" style="color: {rarityOf(item).color}">{gearOf(item).icon} {gearOf(item).name}</span>
+              <span class="small muted">{rarityOf(item).name} · {itemText(item)}</span>
+            </button>
+            {#if data.equipped[slot] !== item.id}
+              <button class="salvage" title="Zerlegen: +{salvageValue(game, item)} 🪬 Runen" onclick={() => act(salvageItem(game, item.id))}>🪬 {salvageValue(game, item)}</button>
+            {/if}
+          </div>
         {:else}
           <p class="small muted">Noch nichts gefunden – Bosse lassen immer etwas fallen, Elite-Gegner und Schätze manchmal.</p>
         {/each}
       </div>
     {/if}
+  </article>
+
+  <article class="panel">
+    <h3>Runen-Wissen <span class="small muted">🪬 {formatNumber(data.runes)} Runen · bleibt für immer</span></h3>
+    <div class="meta">
+      {#each data.meta as x (x.m.id)}
+        <button class="meta-item" disabled={x.cost === null || data.runes < x.cost} onclick={() => act(buyMeta(game, x.m.id))} title={x.m.description}>
+          <span class="c-icon">{x.m.icon}</span>
+          <b>{x.m.name} <span class="small muted">{x.level}/{x.m.maxLevel}</span></b>
+          <span class="small muted">{x.m.description}</span>
+          <span class="small">{x.cost === null ? '✔ Höchste Stufe' : `${formatNumber(x.cost)} 🪬`}</span>
+        </button>
+      {/each}
+    </div>
   </article>
 
   <div class="start-bar">
@@ -329,7 +350,12 @@
   .slot.active, .gear.active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel-2)); }
   .g-name { font-weight: 600; }
   .gear-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.4rem; margin-top: 0.5rem; }
-  .gear { display: grid; text-align: left; gap: 0.1rem; padding: 0.4rem 0.6rem; }
+  .gear-row { display: flex; gap: 0.3rem; }
+  .take-off { margin-top: 0.5rem; padding: 0.3rem 0.7rem; }
+  .gear { flex: 1; display: grid; text-align: left; gap: 0.1rem; padding: 0.4rem 0.6rem; }
+  .salvage { flex: none; padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+  .meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.4rem; }
+  .meta-item { display: grid; justify-items: center; gap: 0.15rem; text-align: center; padding: 0.6rem 0.4rem; }
   .start-bar { position: sticky; bottom: 0.5rem; display: flex; justify-content: center; padding: 0.4rem 0; z-index: 2; }
   .start { min-width: min(100%, 320px); font-size: 1.05rem; }
 
@@ -359,7 +385,7 @@
   .log li:nth-last-child(-n + 3) { opacity: 1; }
 
   /* Skill buttons at the bottom, in thumb reach on phones. */
-  .skills { position: sticky; bottom: 0.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; z-index: 2; padding: 0.3rem; border-radius: var(--radius); background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(4px); }
+  .skills { position: sticky; bottom: 0.4rem; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; z-index: 2; padding: 0.3rem; border-radius: var(--radius); background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(4px); }
   .skill { position: relative; display: grid; justify-items: center; gap: 0.1rem; padding: 0.5rem 0.2rem; min-height: 64px; }
   .skill.special:not(:disabled) { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--panel-2)); }
   .k-icon { font-size: 1.4rem; }
