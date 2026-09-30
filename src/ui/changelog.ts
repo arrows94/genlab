@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 18,
+    date: '2026-09-30',
+    title: 'Gegnergruppen und Boss-Phasen im Turm',
+    items: [
+      { text: 'Ab Etage 12 kämpfst du oft gegen zwei oder drei Gegner zugleich. Sie teilen sich die Stärke der Etage, dein Team greift zuerst den schwächsten in der vorderen Reihe an.', feature: 'tower' },
+      { text: 'Turm-Gegner und Begleiter setzen jetzt selbst die Technik ihres Elements ein – Brand, Heilung, Schild, Frost und mehr. Bosse verlassen sich weiter auf ihre Eigenheiten.', feature: 'tower' },
+      { text: 'Ab Etage 20 bringen Bosse zwei Begleiter mit, die vor ihnen stehen. Ab Etage 30 wechseln Bosse unter 50 % KP in eine zweite Phase mit einer weiteren Eigenheit – die Vorschau verrät vorher, welche.', feature: 'tower' },
+      { text: 'Neue Boss-Eigenheit „Flächenangriff“: Jede dritte Aktion trifft die ganze hintere Reihe.', feature: 'tower' },
+      { text: 'Die Kampf-Wiedergabe zeigt jetzt auch lange Kämpfe bis zum Ende.', feature: 'tower' },
+    ],
+  },
+  {
     id: 17,
     date: '2026-09-30',
     title: 'Aufgeräumte Brutstation',

@@ -7,7 +7,7 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import type { System } from '../systems/types';
-import type { RelicDef, StatusId, TargetingMode, TechniqueDef } from '../content/types';
+import type { BossTraitDef, RelicDef, StatusId, TargetingMode, TechniqueDef } from '../content/types';
 import type { ModifierProvider } from '../providers';
 
 /**
@@ -45,6 +45,10 @@ export interface Fighter {
   thorns?: number;
   /** Acts almost at once in a fight (tower.firstStrike ≥ 1). */
   firstStrike?: boolean;
+  /** Boss of its floor (crown in the arena). */
+  boss?: boolean;
+  /** Second boss trait that wakes below half HP (Phase 2). */
+  phaseTrait?: string;
 }
 
 export type Row = 'front' | 'back';
@@ -100,7 +104,50 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
     elementPower: 1,
     team: false,
     trait,
+    ...(boss ? { boss: true } : {}),
+    technique: techniqueFor(ctx, element)?.id,
   };
+}
+
+/**
+ * Everyone the team meets on a floor – deterministic per floor. Normal floors
+ * from `groupFromFloor` on may bring 2–3 foes that share the floor's strength;
+ * boss floors from `companionsFromFloor` on bring two companions in front of
+ * the boss, and from `phaseFromFloor` on the boss wakes a second trait below
+ * half HP.
+ */
+export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
+  const t = ctx.balance.tower;
+  const main = enemyFor(ctx, floor);
+  const rng = Rng.fromSeed(hashSeed(`tower-group-${floor}`));
+  const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
+  const pickSpecies = () => (sameElement.length ? rng.pick(sameElement) : ctx.content.species.get(main.speciesId));
+  if (main.boss) {
+    const traits = ctx.content.bossTraits.list.filter((b) => b.id !== main.trait);
+    if (floor >= t.phaseFromFloor && main.trait && traits.length) main.phaseTrait = rng.pick(traits).id;
+    if (floor < t.companionsFromFloor) return [main];
+    main.row = 'back';
+    const normalHp = main.maxHp / t.bossHpMult;
+    const normalAtk = main.atk / t.bossAtkMult;
+    const companions = [0, 1].map((): Fighter => {
+      const sp = pickSpecies();
+      const hp = Math.max(1, Math.round(normalHp * t.companionHp));
+      return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk: Math.max(1, Math.round(normalAtk * t.companionAtk)), trait: undefined, phaseTrait: undefined, boss: undefined, row: 'front' };
+    });
+    return [...companions, main];
+  }
+  if (floor < t.groupFromFloor) return [main];
+  // Bigger groups get likelier higher up.
+  const r = rng.next();
+  const late = floor >= t.groupFromFloor * 2.5;
+  const size = r < (late ? 0.3 : 0.5) ? 1 : r < (late ? 0.7 : 0.85) ? 2 : 3;
+  if (size === 1) return [main];
+  const hp = Math.max(1, Math.round((main.maxHp * (t.groupHp[size - 1] ?? 1)) / size));
+  const atk = Math.max(1, Math.round((main.atk * (t.groupAtk[size - 1] ?? 1)) / size));
+  return Array.from({ length: size }, (_, i): Fighter => {
+    const sp = i === 0 ? ctx.content.species.get(main.speciesId) : pickSpecies();
+    return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
+  });
 }
 
 /** Relikt in the team place of this creature, with its level (null if none). */
@@ -320,7 +367,7 @@ export interface FightEvent {
    * shift: the boss changes its element (a = t) · tech: a technique is used (dmg = its hit) ·
    * status: a status lands on t · dot: burn/poison tick (a = t) · reflect: damage thrown back at t.
    */
-  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect';
+  kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect' | 'phase' | 'sweep';
   /** New element after a shift. */
   element?: string;
   /** Technique id (tech events). */
@@ -332,6 +379,8 @@ export interface FightEvent {
   crit?: boolean;
   /** Damage a shield caught. */
   absorbed?: number;
+  /** Boss trait that woke up (phase events). */
+  trait?: string;
 }
 
 /** Snapshot of a fighter for replaying a fight in the UI. */
@@ -343,8 +392,10 @@ export interface FighterSnapshot {
   team: boolean;
   /** Seconds between two actions (Aktionsleiste). */
   interval: number;
-  /** Team row (team only). */
+  /** Row (team; enemies: companions in front of their boss). */
   row?: Row;
+  /** Boss of the floor. */
+  boss?: boolean;
 }
 
 export interface FightResult {
@@ -358,8 +409,9 @@ export interface FightResult {
   events: FightEvent[];
 }
 
-const maxEvents = 90;
-const maxLog = 16;
+// Enough for a long group fight (three foes, five fighters, about 40 s) to replay to the end.
+const maxEvents = 400;
+const maxLog = 24;
 
 /** Seconds between two actions of each fighter: relative to the mean speed of everyone in the fight. */
 export function actionIntervals(ctx: GameContext, fighters: Fighter[]): number[] {
@@ -381,31 +433,42 @@ const HARMFUL: StatusId[] = ['burn', 'poison', 'stun', 'slow'];
 /**
  * Simulates one floor on a time line (Aktionsleiste): every fighter acts when
  * its bar is full, faster ones more often; faster defenders may dodge. Every
- * `techniqueEvery`-th action is the fighter's Element-Technik. Statuses and
- * boss traits tick once per second of fight time. Team synergies apply at the
- * start. Team HP is full at the start of every floor. Deterministic for a
- * given RNG state.
+ * `techniqueEvery`-th action is the fighter's Element-Technik (enemies every
+ * `enemyTechniqueEvery`-th). Statuses and boss traits tick once per second of
+ * fight time; a boss with a `phaseTrait` gains it below half HP. The team
+ * focuses the weakest foe of the front row (companions shield their boss).
+ * Team synergies apply at the start. Team HP is full at the start of every
+ * floor. Deterministic for a given RNG state.
  */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter, rng: Rng, opts: { limitSec?: number } = {}): FightResult {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number } = {}): FightResult {
   const cfg = ctx.balance.tower;
+  const foes = Array.isArray(enemies) ? enemies : [enemies];
   const log: string[] = [];
   const events: FightEvent[] = [];
-  const order = [...team, enemy];
+  const order = [...team, ...foes];
+  const first = team.length;
+  const isFoe = (i: number) => i >= first;
   const intervals = actionIntervals(ctx, order);
-  const fighters: FighterSnapshot[] = order.map((f, i) => ({ name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]!, ...(f.team ? { row: f.row ?? 'front' } : {}) }));
-  const targeting = targetingOf(ctx, enemy);
+  const fighters: FighterSnapshot[] = order.map((f, i) => ({
+    name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]!,
+    ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}),
+  }));
   const note = (line: string) => log.length < maxLog && log.push(line);
   const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
   let dealt = 0;
   const done = (win: boolean, seconds: number): FightResult => ({ win, dealt, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
-  const trait = enemy.trait && ctx.content.bossTraits.has(enemy.trait) ? ctx.content.bossTraits.get(enemy.trait) : null;
+  const traitDef = (id: string | undefined) => (id && ctx.content.bossTraits.has(id) ? ctx.content.bossTraits.get(id) : null);
+  // Boss traits per fighter; a phase trait joins below half HP.
+  const traits = order.map((f) => [traitDef(f.trait)].filter((t): t is BossTraitDef => !!t));
+  const woke = order.map(() => false);
+  const hasTrait = (i: number, kind: BossTraitDef['kind']) => traits[i]!.find((t) => t.kind === kind);
   const elements = ctx.content.elements.list.map((e) => e.id);
-  const boss = order.length - 1;
   const limit = opts.limitSec ?? cfg.maxFightSec;
   const fmt = (sec: number) => `${sec.toFixed(1).replace('.', ',')} s`;
+  const leader = foes.find((f) => f.boss) ?? foes[foes.length - 1]!;
 
   // Synergies: pairs of one element hit harder; a colourful team against the Wandler.
-  for (const syn of teamSynergies(ctx, team.map((f) => f.element), enemy.trait)) {
+  for (const syn of teamSynergies(ctx, team.map((f) => f.element), leader.trait)) {
     if (!syn.active) continue;
     if (syn.kind === 'pair') for (const f of team) if (f.element === syn.elements[0]) f.atk = Math.round(f.atk * (1 + syn.value));
     if (syn.kind === 'diversity') for (const f of team) f.power *= 1 + syn.value;
@@ -417,16 +480,38 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
     const st = statuses[i]!.get(id);
     return st && st.until > at ? st : undefined;
   };
-  const techniques = order.map((f) => (f.technique && (f.team || cfg.enemyTechniques) && ctx.content.techniques.has(f.technique) ? ctx.content.techniques.get(f.technique) : null));
+  const techniques = order.map((f) => (f.technique && (f.team || (!f.boss && cfg.enemyTechniqueEvery > 0)) && ctx.content.techniques.has(f.technique) ? ctx.content.techniques.get(f.technique) : null));
   const actions = order.map(() => 0);
   // Next action time per fighter; everyone starts with an empty bar (Erstschlag: acts right away).
   const next = intervals.map((iv, i) => (order[i]!.firstStrike ? Math.min(iv, 0.05) : iv));
   let tick = 1;
-  let taken = 0;
-  const allies = (f: Fighter) => (f.team ? team : [enemy]).filter((x) => x.hp > 0);
-  const over = () => enemy.hp <= 0 || team.every((t) => t.hp <= 0);
+  // Damage each fighter took since the last tick (Regeneration).
+  const taken = order.map(() => 0);
+  const alive = (list: Fighter[]) => list.filter((x) => x.hp > 0);
+  const side = (f: Fighter) => (f.team ? team : foes);
+  const foesDown = () => foes.every((f) => f.hp <= 0);
+  const teamDown = () => team.every((t) => t.hp <= 0);
+  const over = () => foesDown() || teamDown();
 
-  /** Damage lands on `ti` (after dodging): shield, reflect/thorns. Returns the HP damage. */
+  const hurt = (i: number, dmg: number) => {
+    order[i]!.hp -= dmg;
+    taken[i]! += dmg;
+    if (isFoe(i)) dealt += dmg;
+  };
+
+  /** Phase 2: a boss gets its second trait once it drops below half HP. */
+  const checkPhase = (i: number, at: number) => {
+    const f = order[i]!;
+    if (woke[i] || !f.phaseTrait || f.hp <= 0 || f.hp > f.maxHp * cfg.phaseAt) return;
+    const t = traitDef(f.phaseTrait);
+    woke[i] = true;
+    if (!t) return;
+    traits[i]!.push(t);
+    record({ at, a: i, t: i, dmg: 0, hp: f.hp, m: 1, kind: 'phase', trait: t.id });
+    note(`${fmt(at)} · ${f.name} erwacht: ${t.icon} ${t.name}`);
+  };
+
+  /** Damage lands on `ti` (after dodging): shield, reflect/thorns. */
   const land = (ai: number, ti: number, dmg: number, at: number, extra: Partial<FightEvent>): void => {
     const target = order[ti]!;
     const shield = has(ti, 'shield', at);
@@ -437,22 +522,16 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
       if (shield.value <= 0) statuses[ti]!.delete('shield');
     }
     const hpDmg = dmg - absorbed;
-    target.hp -= hpDmg;
-    if (ti === boss) {
-      taken += hpDmg;
-      dealt += hpDmg;
-    }
+    hurt(ti, hpDmg);
     record({ at, a: ai, t: ti, dmg: hpDmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, order[ai]!.element, target.element), ...(absorbed ? { absorbed } : {}), ...extra });
     // Dornenhaut and Prisma: a share of the damage goes back to the attacker.
     const back = Math.round(dmg * ((target.thorns ?? 0) + (has(ti, 'reflect', at)?.value ?? 0)));
     if (back > 0 && order[ai]!.hp > 0 && target !== order[ai]) {
-      order[ai]!.hp -= back;
-      if (ai === boss) {
-        taken += back;
-        dealt += back;
-      }
+      hurt(ai, back);
       record({ at, a: ti, t: ai, dmg: back, hp: Math.max(0, order[ai]!.hp), m: 1, kind: 'reflect' });
+      checkPhase(ai, at);
     }
+    checkPhase(ti, at);
   };
 
   /** Heals `ti` by `amount` (capped at max HP). */
@@ -478,8 +557,54 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
     record({ at, a: ai, t: ti, dmg: 0, hp: Math.max(0, f.hp), m: 1, kind: 'status', status: id, until: Math.round(until * 100) / 100 });
   };
 
+  /** Whom an attacker hits: the team focuses the weakest foe of the front row, foes follow their targeting. */
+  const targetFor = (ai: number): Fighter => {
+    const att = order[ai]!;
+    if (att.team) {
+      const up = alive(foes);
+      const front = up.filter((f) => f.row !== 'back');
+      return (front.length ? front : up).reduce((a, b) => (b.hp / b.maxHp < a.hp / a.maxHp ? b : a));
+    }
+    const mode = traits[ai]![0]?.targeting ?? 'rows';
+    return pickTarget(ctx, mode, alive(team), rng);
+  };
+
+  /** One hit (or technique hit) from `ai` on `ti`; returns false if it was dodged. */
+  const strike = (ai: number, ti: number, at: number, mult: number, extra: Partial<FightEvent>): boolean => {
+    const att = order[ai]!;
+    const target = order[ti]!;
+    const m = elementMultiplier(ctx, att.element, target.element);
+    const evade = Math.min(0.6, evadeChance(ctx, att, target) + (has(ti, 'evade', at)?.value ?? 0));
+    if (rng.chance(evade)) {
+      record({ at, a: ai, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss', ...(extra.tech ? { tech: extra.tech } : {}) });
+      return false;
+    }
+    const armor = has(ti, 'armor', at);
+    let dmg = damage(ctx, att, armor ? { ...target, def: target.def * (1 + armor.value) } : target, rng);
+    const crit = (att.crit ?? 0) > 0 && rng.chance(att.crit!);
+    if (crit) dmg = Math.round(dmg * cfg.critMult);
+    if (mult !== 1) dmg = Math.max(mult > 0 ? 1 : 0, Math.round(dmg * mult));
+    // Element-Schild: only hits with element advantage get through in full.
+    const shield = hasTrait(ti, 'shield');
+    if (att.team && shield && m <= 1 && dmg > 0) dmg = Math.max(1, Math.round(dmg * shield.value));
+    land(ai, ti, dmg, at, { ...extra, ...(crit ? { crit: true } : {}) });
+    return true;
+  };
+
+  const finish = (at: number): FightResult | null => {
+    if (foesDown()) {
+      log.push(`${foes.length > 1 ? 'Alle Gegner' : leader.name} besiegt nach ${fmt(at)}`);
+      return done(true, at);
+    }
+    if (teamDown()) {
+      log.push(`Team besiegt nach ${fmt(at)}`);
+      return done(false, at);
+    }
+    return null;
+  };
+
   for (;;) {
-    // The next actor: earliest full bar, ties to the faster one, then team before enemy.
+    // The next actor: earliest full bar, ties to the faster one, then team before enemies.
     let who = -1;
     for (let i = 0; i < order.length; i++) {
       if (order[i]!.hp <= 0) continue;
@@ -488,10 +613,13 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
     const now = next[who]!;
     // Boss traits and statuses tick every full second of fight time before this action.
     while (tick <= now && tick <= limit) {
-      if (trait?.kind === 'shift') {
-        enemy.element = elements[(elements.indexOf(enemy.element) + 1) % elements.length]!;
-        record({ at: tick, a: boss, t: boss, dmg: 0, hp: enemy.hp, m: 1, kind: 'shift', element: enemy.element });
-        note(`${fmt(tick)} · ${enemy.name} wechselt zu ${ctx.content.elements.get(enemy.element).name}`);
+      for (let i = first; i < order.length; i++) {
+        const f = order[i]!;
+        if (f.hp > 0 && hasTrait(i, 'shift')) {
+          f.element = elements[(elements.indexOf(f.element) + 1) % elements.length]!;
+          record({ at: tick, a: i, t: i, dmg: 0, hp: f.hp, m: 1, kind: 'shift', element: f.element });
+          note(`${fmt(tick)} · ${f.name} wechselt zu ${ctx.content.elements.get(f.element).name}`);
+        }
       }
       for (let i = 0; i < order.length; i++) {
         const f = order[i]!;
@@ -500,12 +628,9 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
           if (id === 'burn' || id === 'poison') {
             // Damage over time, reduced like a hit by the percentage part of the defence.
             const dmg = Math.max(1, Math.round(st.src * st.value * (cfg.defScale / (cfg.defScale + f.def))));
-            f.hp -= dmg;
-            if (i === boss) {
-              taken += dmg;
-              dealt += dmg;
-            }
+            hurt(i, dmg);
             record({ at: tick, a: i, t: i, dmg, hp: Math.max(0, f.hp), m: 1, kind: 'dot', status: id });
+            checkPhase(i, tick);
           }
           if (id === 'regen') heal(i, i, st.value * f.maxHp, tick);
           if (st.until <= tick) statuses[i]!.delete(id);
@@ -513,26 +638,23 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
       }
       // Regeneration heals a share of the damage taken since the last tick. Scaling with
       // the team's damage (not the boss's max HP) keeps it equally hard on every floor.
-      if (trait?.kind === 'regen' && enemy.hp > 0) {
-        const healed = Math.min(enemy.maxHp - enemy.hp, Math.round(taken * trait.value));
+      for (let i = first; i < order.length; i++) {
+        const f = order[i]!;
+        const regen = hasTrait(i, 'regen');
+        if (!regen || f.hp <= 0) continue;
+        const healed = Math.min(f.maxHp - f.hp, Math.round(taken[i]! * regen.value));
         if (healed > 0) {
-          enemy.hp += healed;
-          record({ at: tick, a: boss, t: boss, dmg: healed, hp: enemy.hp, m: 1, kind: 'heal' });
-          note(`${fmt(tick)} · ${enemy.name} heilt ${healed}`);
+          f.hp += healed;
+          record({ at: tick, a: i, t: i, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
+          note(`${fmt(tick)} · ${f.name} heilt ${healed}`);
         }
       }
-      taken = 0;
+      taken.fill(0);
       if (over()) break;
       tick++;
     }
-    if (enemy.hp <= 0) {
-      log.push(`${enemy.name} besiegt nach ${fmt(tick)}`);
-      return done(true, tick);
-    }
-    if (team.every((t) => t.hp <= 0)) {
-      log.push(`Team besiegt nach ${fmt(tick)}`);
-      return done(false, tick);
-    }
+    const ended = over() ? finish(tick) : null;
+    if (ended) return ended;
     if (now > limit) {
       log.push('Zeit abgelaufen');
       return done(false, limit);
@@ -543,11 +665,25 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
     // Verlangsamt: this turn takes longer.
     next[who] = now + intervals[who]! * (1 + (has(who, 'slow', now)?.value ?? 0));
     actions[who]!++;
-    const tech = techniques[who] && actions[who]! % cfg.techniqueEvery === 0 ? techniques[who]! : null;
 
+    // Flächenangriff: every sweepEvery-th action the boss hits the whole back row (or everyone, if nobody stands back).
+    const sweep = hasTrait(who, 'sweep');
+    if (sweep && actions[who]! % cfg.sweepEvery === 0) {
+      const up = alive(team);
+      const back = up.filter((f) => f.row === 'back');
+      const targets = back.length ? back : up;
+      record({ at: now, a: who, t: order.indexOf(targets[0]!), dmg: 0, hp: targets[0]!.hp, m: 1, kind: 'sweep' });
+      note(`${fmt(now)} · ${att.name}: ${sweep.icon} ${sweep.name}`);
+      for (const tgt of targets) strike(who, order.indexOf(tgt), now, sweep.value, {});
+      const res = finish(now);
+      if (res) return res;
+      continue;
+    }
+
+    const tech = techniques[who] && actions[who]! % (order[who]!.team ? cfg.techniqueEvery : cfg.enemyTechniqueEvery) === 0 ? techniques[who]! : null;
     if (tech && tech.target !== 'enemy') {
       // Support techniques: no dice for dodging.
-      const own = allies(att);
+      const own = alive(side(att));
       const targets = tech.target === 'self' ? [att] : tech.target === 'team' ? own : [own.reduce((a, b) => (b.hp / b.maxHp < a.hp / a.maxHp ? b : a))];
       record({ at: now, a: who, t: order.indexOf(targets[0]!), dmg: 0, hp: Math.max(0, targets[0]!.hp), m: 1, kind: 'tech', tech: tech.id });
       note(`${fmt(now)} · ${att.name}: ${tech.icon} ${tech.name}`);
@@ -560,33 +696,16 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemy: Fighter,
       continue;
     }
 
-    const target = att.team ? enemy : pickTarget(ctx, targeting, team.filter((t) => t.hp > 0), rng);
+    const target = targetFor(who);
     const ti = order.indexOf(target);
-    const m = elementMultiplier(ctx, att.element, target.element);
-    const evade = Math.min(0.6, evadeChance(ctx, att, target) + (has(ti, 'evade', now)?.value ?? 0));
-    if (rng.chance(evade)) {
-      record({ at: now, a: who, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss', ...(tech ? { tech: tech.id } : {}) });
-      note(`${fmt(now)} · ${target.name} weicht ${tech ? `${tech.name} von ` : ''}${att.name} aus`);
-      continue;
+    const hit = strike(who, ti, now, tech ? tech.hit : 1, tech ? { kind: 'tech', tech: tech.id } : {});
+    if (!hit) note(`${fmt(now)} · ${target.name} weicht ${tech ? `${tech.name} von ` : ''}${att.name} aus`);
+    else {
+      if (tech?.status && target.hp > 0) addStatus(who, ti, tech.status.id, tech.status.duration, tech.status.value, now);
+      note(`${fmt(now)} · ${att.name} ${tech ? `${tech.icon} ${tech.name}` : 'trifft'}${att.team && foes.length === 1 ? '' : ` ${target.name}`}`);
     }
-    const armor = has(ti, 'armor', now);
-    let dmg = damage(ctx, att, armor ? { ...target, def: target.def * (1 + armor.value) } : target, rng);
-    const crit = (att.crit ?? 0) > 0 && rng.chance(att.crit!);
-    if (crit) dmg = Math.round(dmg * cfg.critMult);
-    if (tech) dmg = Math.max(tech.hit > 0 ? 1 : 0, Math.round(dmg * tech.hit));
-    // Element-Schild: only hits with element advantage get through in full.
-    if (att.team && trait?.kind === 'shield' && m <= 1 && dmg > 0) dmg = Math.max(1, Math.round(dmg * trait.value));
-    land(who, ti, dmg, now, { ...(tech ? { kind: 'tech' as const, tech: tech.id } : {}), ...(crit ? { crit: true } : {}) });
-    if (tech?.status && target.hp > 0) addStatus(who, ti, tech.status.id, tech.status.duration, tech.status.value, now);
-    note(`${fmt(now)} · ${att.name} ${tech ? `${tech.icon} ${tech.name}` : 'trifft'}${att.team ? '' : ` ${target.name}`} für ${dmg}${crit ? ' (kritisch)' : ''}`);
-    if (enemy.hp <= 0) {
-      log.push(`${enemy.name} besiegt nach ${fmt(now)}`);
-      return done(true, now);
-    }
-    if (team.every((t) => t.hp <= 0)) {
-      log.push(`Team besiegt nach ${fmt(now)}`);
-      return done(false, now);
-    }
+    const res = finish(now);
+    if (res) return res;
   }
 }
 
@@ -692,7 +811,7 @@ export function fightNextFloor(ctx: GameContext): void {
   const team = run.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
-  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemyFor(ctx, floor), ctx.rng);
+  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng);
   tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, at: ctx.state.lastTickAt };
   if (!result.win) {
     ctx.bus.emit('towerFloor', { floor, win: false, rewards: {}, allele: null });
