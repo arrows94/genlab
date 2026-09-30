@@ -140,8 +140,10 @@ export interface TowerState {
   /** Selected team (creature ids). */
   team: number[];
   run: TowerRun | null;
-  /** Highest floor ever cleared. */
+  /** Record: highest floor cleared (sets the checkpoint and the weekly boss; can be lowered in the options). */
   best: number;
+  /** Highest record ever, also after lowering it: milestone bonuses, first-time rewards and conditions follow this. */
+  bestEver: number;
   autoRestart: boolean;
   /** Where the auto-restart begins: like the last run started by hand (checkpoint or floor 1). */
   restartFromCheckpoint: boolean;
@@ -350,7 +352,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

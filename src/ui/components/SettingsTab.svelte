@@ -13,6 +13,7 @@
   import { shareSupported, shareText } from '../platform/share';
   import SaveCompare from './SaveCompare.svelte';
   import SyncPanel from './SyncPanel.svelte';
+  import RescuePanel from './RescuePanel.svelte';
 
   let text = $state('');
   /** Mirrors the save's naming option (game state itself is not reactive). */
@@ -150,6 +151,7 @@
           <button onclick={() => play('test')}>▶ Probe</button>
         </div>
         <p class="small muted">Beim Nachholen der Offline-Zeit und im Hintergrund bleibt es still.</p>
+        <label class="opt check"><input type="checkbox" checked={prefs.uiClicks} onchange={(e) => updatePrefs({ uiClicks: e.currentTarget.checked })} /> leises Klicken bei Knöpfen</label>
       </div>
     {/if}
     <label class="opt check">
@@ -244,6 +246,8 @@
 {/if}
 
 <SyncPanel />
+
+<RescuePanel />
 
 <article class="panel danger-zone">
   <h3>Gefahrenzone</h3>

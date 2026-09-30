@@ -16,6 +16,7 @@
   import { prefs } from '../prefs.svelte';
   import GeneCapsule from './GeneCapsule.svelte';
   import RecyclerChamber from './RecyclerChamber.svelte';
+  import { play } from '../sound';
 
   const recycler = viewState.recycler;
   let results = $state<CapsuleResult[] | null>(null);
@@ -95,7 +96,17 @@
     }
     instant = false;
     phase = 'charge';
-    timers = [setTimeout(() => (phase = 'burst'), 800), setTimeout(() => (phase = 'reveal'), 1250)];
+    play('capsuleRattle');
+    const top = Math.max(...res.results.map((r) => content.rarities.get(r.rarity).order));
+    timers = [
+      setTimeout(() => {
+        phase = 'burst';
+        play('capsuleBurst', top);
+      }, 800),
+      setTimeout(() => (phase = 'reveal'), 1250),
+      // One soft click per card as they flip in (90 ms apart, like the animation).
+      ...res.results.slice(0, 10).map((_, i) => setTimeout(() => play('cardFlip'), 1250 + i * 90)),
+    ];
   }
 
   function clearTimers() {

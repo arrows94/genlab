@@ -13,7 +13,7 @@ import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
-import { silently } from './sound';
+import { isMuted, play, playedRecently, silently } from './sound';
 import { wireSounds } from './soundEvents';
 import { noteActive } from '@core/activity';
 
@@ -72,6 +72,19 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500, log
   const t = { id: ++toastId, text, kind };
   view.toasts = [...view.toasts.slice(-4), t];
   setTimeout(() => (view.toasts = view.toasts.filter((x) => x.id !== t.id)), ms);
+  toastSound(kind);
+}
+
+/**
+ * Toasts get a generic sound only when nothing specific played for their
+ * event (that one runs right after the toast, hence the short delay).
+ */
+function toastSound(kind: Toast['kind']): void {
+  if (isMuted() || kind === 'unlock') return;
+  setTimeout(() => {
+    if (kind === 'error') play('bonk');
+    else if (!playedRecently(250)) play(kind === 'rare' ? 'toastRare' : 'toastInfo');
+  }, 30);
 }
 
 /** The single game instance. Starts fresh; `init()` swaps in the stored save. */

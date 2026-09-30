@@ -30,7 +30,7 @@ export function checkCondition(state: GameState, c: Condition): boolean {
     case 'talent':
       return state.talents?.[c.talent] === true;
     case 'towerFloor':
-      return Math.max(state.tower?.best ?? 0, state.tower?.run?.floor ?? 0) >= c.floor;
+      return Math.max(state.tower?.best ?? 0, state.tower?.bestEver ?? 0, state.tower?.run?.floor ?? 0) >= c.floor;
     case 'anomaly':
       return state.anomaliesCompleted?.[c.anomaly] === true;
     case 'megaProject':
@@ -62,7 +62,7 @@ export function conditionProgress(state: GameState, c: Condition): number | null
     case 'creatureCount':
       return share(state.creatures.length, c.count);
     case 'towerFloor':
-      return share(Math.max(state.tower?.best ?? 0, state.tower?.run?.floor ?? 0), c.floor);
+      return share(Math.max(state.tower?.best ?? 0, state.tower?.bestEver ?? 0, state.tower?.run?.floor ?? 0), c.floor);
     case 'geneLibrary':
       return share(Object.keys(state.geneLibrary ?? {}).length, c.count);
     case 'all':

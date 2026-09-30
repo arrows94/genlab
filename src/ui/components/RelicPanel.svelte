@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { play } from '../sound';
   import { content } from '@content/index';
   import { findCreature } from '@core/creatures';
   import { formatNumber, formatPercent } from '@core/format';
@@ -52,7 +53,7 @@
           <span class="small muted">{r.level > 0 ? `Jetzt ${bonusText(r.def.bonus, r.level)}` : r.def.description}</span>
         </div>
         {#if r.cost}
-          <button class="buy" class:primary={r.affordable} disabled={!r.affordable} onclick={() => act(buyRelic(game, r.def.id))}>
+          <button class="buy" class:primary={r.affordable} disabled={!r.affordable} onclick={() => act(buyRelic(game, r.def.id)) && play('relic')}>
             {r.level > 0 ? 'Stufe +1' : 'Kaufen'} · <span class="num">{formatNumber(r.cost)} 🗼</span>
           </button>
         {:else}

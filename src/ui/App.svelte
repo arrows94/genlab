@@ -6,6 +6,7 @@
   import { game, view, init, openTab } from './store.svelte';
   import { loadPrefs, prefs } from './prefs.svelte';
   import { moodFor, setMusic } from './music';
+  import { play } from './sound';
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import SyncDialog from './components/SyncDialog.svelte';
@@ -71,6 +72,15 @@
 
   loadPrefs();
   void init();
+
+  // Optional quiet click on every button (Optionen → „leises Klicken“).
+  $effect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (prefs.sound && prefs.uiClicks && (e.target as HTMLElement | null)?.closest('button')) play('click');
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  });
 
   // Background music follows the settings and changes its mood with the area.
   $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, moodFor(view.tab)));

@@ -275,7 +275,7 @@ registerProcessHandler(EGG, {
       source: 'hatch',
     });
     recordLineage(ctx, child);
-    ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents });
+    ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
 
     // Twin births (Äon talent): a second child from the same parents, if the stable has room.
     const twinChance = Math.min(1, ctx.mods().apply('breeding.twinChance', 0));
@@ -297,7 +297,7 @@ registerProcessHandler(EGG, {
         family,
         source: 'hatch',
       });
-      ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents });
+      ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
     }
   },
 });

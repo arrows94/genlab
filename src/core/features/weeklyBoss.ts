@@ -6,7 +6,7 @@ import type { Creature } from '../state';
 import type { System } from '../systems/types';
 import { findCreature } from '../creatures';
 import { contractDay } from './contracts';
-import { damage, enemyFor, fighterFor, type Fighter } from './tower';
+import { damage, enemyFor, fighterFor, lowerTowerRecord, type Fighter } from './tower';
 import { voyageDestination } from './voyage';
 import { weekIndex } from './weekly';
 
@@ -75,6 +75,28 @@ export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt
     b.attempts = Math.min(max, b.attempts + perDay);
     b.day = day;
   }
+}
+
+/**
+ * Rebuilds this week's boss from the current record (after lowering it).
+ * The damage keeps its share of the HP, so reward tiers already paid stay paid.
+ */
+export function adaptWeeklyBoss(ctx: GameContext): void {
+  const b = ctx.state.weeklyBoss;
+  if (!ctx.state.features['weeklyBoss'] || b.maxHp <= 0) return;
+  const cfg = ctx.balance.weeklyBoss;
+  const floor = Math.max(cfg.minFloor, ctx.state.tower.best);
+  const maxHp = Math.round(enemyFor(ctx, floor).maxHp * cfg.hpMult);
+  b.damage = Math.round((b.damage / b.maxHp) * maxHp);
+  b.floor = floor;
+  b.maxHp = maxHp;
+}
+
+/** Options → „Turm-Rekord senken“: lowers the record and adapts this week's boss to it. */
+export function lowerRecordAndBoss(ctx: GameContext, floor: number): ActionResult {
+  const result = lowerTowerRecord(ctx, floor);
+  if (result.ok) adaptWeeklyBoss(ctx);
+  return result;
 }
 
 export const weeklyBossSystem: System = {
