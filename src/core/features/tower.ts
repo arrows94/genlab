@@ -351,12 +351,30 @@ export function floorXp(ctx: GameContext, floor: number): number {
   return t.xpPerFloor * floor * (isBossFloor(ctx, floor) ? t.xpBossMult : 1);
 }
 
-/** Entschlossenheit: hours since the record last rose and the bonus they give (hourly steps, capped). */
+/** Entschlossenheit: hours since the record last rose and the bonus built up until the next boss falls. */
 export function resolveInfo(ctx: GameContext): { hours: number; bonus: number } {
+  const tw = ctx.state.tower;
+  const since = tw.recordAt || ctx.state.lastTickAt;
+  return { hours: Math.max(0, Math.floor((ctx.state.lastTickAt - since) / HOUR_MS)), bonus: tw.resolve ?? 0 };
+}
+
+const HOUR_MS = 3_600_000;
+
+/** Adds a share of resolvePerDay for every full hour without a new record (capped). */
+function growResolve(ctx: GameContext): void {
+  const tw = ctx.state.tower;
   const t = ctx.balance.tower;
-  const since = ctx.state.tower.recordAt || ctx.state.lastTickAt;
-  const hours = Math.max(0, Math.floor((ctx.state.lastTickAt - since) / 3_600_000));
-  return { hours, bonus: Math.min(t.resolveCap, (t.resolvePerDay * hours) / 24) };
+  const now = ctx.state.lastTickAt;
+  if (!tw.recordAt) tw.recordAt = now;
+  const from = Math.max(tw.resolveAt || 0, tw.recordAt);
+  const hours = Math.floor((now - from) / HOUR_MS);
+  if (hours <= 0) return;
+  tw.resolveAt = from + hours * HOUR_MS;
+  const next = Math.min(t.resolveCap, (tw.resolve ?? 0) + (t.resolvePerDay * hours) / 24);
+  if (next !== (tw.resolve ?? 0)) {
+    tw.resolve = next;
+    ctx.invalidate();
+  }
 }
 
 /** Kampferfahrung and Entschlossenheit as a bonus on KP and damage of every tower fighter. */
@@ -984,9 +1002,9 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
   const record = floor > towerBestEver(ctx);
   if (floor > tw.best) {
-    // A new record: the Entschlossenheit starts over.
+    // A new record pauses the Entschlossenheit; a new boss record ends it.
     tw.recordAt = ctx.state.lastTickAt;
-    if (tw.resolve) {
+    if (isBossFloor(ctx, floor) && tw.resolve) {
       tw.resolve = 0;
       ctx.invalidate();
     }
@@ -1011,12 +1029,7 @@ export const towerSystem: System = {
     const tw = ctx.state.tower;
     if (!ctx.state.features['tower']) return;
     // Entschlossenheit grows by the hour while the record stands still.
-    if (!tw.recordAt) tw.recordAt = ctx.state.lastTickAt;
-    const resolve = resolveInfo(ctx).bonus;
-    if (resolve !== (tw.resolve ?? 0)) {
-      tw.resolve = resolve;
-      ctx.invalidate();
-    }
+    growResolve(ctx);
     const interval = fightIntervalMs(ctx);
     if (!tw.run) {
       // Auto-restart (tower upgrade) after a defeat, where the last run started (checkpoint or floor 1).

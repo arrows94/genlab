@@ -313,7 +313,10 @@ export interface Balance {
     xpRankStep: number;
     /** Per rank: this share more KP and damage in the tower (and against the weekly boss). */
     xpRankBonus: number;
-    /** Entschlossenheit: while the record does not rise, +resolvePerDay KP and damage per day (hourly steps), at most resolveCap; a new record resets it. */
+    /**
+     * Entschlossenheit: every full hour without a new record adds resolvePerDay / 24 KP and damage (at most
+     * resolveCap); a new record pauses it, a new record on a boss floor resets it.
+     */
     resolvePerDay: number;
     resolveCap: number;
   };

@@ -174,9 +174,13 @@ export interface TowerState {
   } | null;
   /** Kampferfahrung from won floors – belongs to the player, survives every reset. */
   xp: number;
-  /** When the record last rose (lastTickAt; 0 = not yet known) and the Entschlossenheit bonus built up since. */
+  /**
+   * Entschlossenheit: when the record last rose (lastTickAt; 0 = not yet known), the bonus built up so far
+   * and up to when it was counted (full hours without a new record add to it; a new boss record resets it).
+   */
   recordAt: number;
   resolve: number;
+  resolveAt: number;
   /** The fight that ended the latest lost run – for the defeat analysis (kept while later runs climb towards it). */
   lastDefeat: { floor: number; at: number; fighters: FightFighterSnapshot[]; stats: FightStats } | null;
 }
@@ -410,7 +414,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0 },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, resolveAt: 0 },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

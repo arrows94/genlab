@@ -422,7 +422,7 @@ describe('Kampferfahrung', () => {
     expect(vet.power / plain.power).toBeCloseTo(1 + rank.bonus, 5);
   });
 
-  it('Entschlossenheit grows by the hour while the record stands still and resets with a new one', () => {
+  it('Entschlossenheit grows by the hour while the record stands still and ends with the next boss', () => {
     const g = towerGame();
     const t = balance.tower;
     const c = champion(g, 1e6);
@@ -439,11 +439,38 @@ describe('Kampferfahrung', () => {
     g.state.lastTickAt = start + 100 * 24 * 3_600_000;
     g.step(100);
     expect(g.state.tower.resolve).toBe(t.resolveCap);
-    // A new record: back to zero.
+    // A new record pauses it, a new record on a boss floor ends it.
     expect(startRun(g, false).ok).toBe(true);
     fightNextFloor(g);
-    expect(g.state.tower.resolve).toBe(0);
+    expect(g.state.tower.resolve).toBe(t.resolveCap);
     expect(g.state.tower.recordAt).toBe(g.state.lastTickAt);
+    g.step(100);
+    expect(g.state.tower.resolve).toBe(t.resolveCap);
+    g.state.tower.run!.floor = t.bossEvery - 1;
+    fightNextFloor(g);
+    expect(g.state.tower.best).toBe(t.bossEvery);
+    expect(g.state.tower.resolve).toBe(0);
+  });
+
+  it('Entschlossenheit only counts full hours without a new record', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    g.step(100);
+    const start = g.state.lastTickAt;
+    g.state.lastTickAt = start + 5 * 3_600_000 + 1;
+    g.step(100);
+    expect(g.state.tower.resolve).toBeCloseTo((t.resolvePerDay * 5) / 24, 6);
+    // A record resets the hour count, not the bonus.
+    expect(startRun(g, false).ok).toBe(true);
+    fightNextFloor(g);
+    g.state.lastTickAt += 30 * 60_000;
+    g.step(100);
+    expect(g.state.tower.resolve).toBeCloseTo((t.resolvePerDay * 5) / 24, 6);
+    g.state.lastTickAt += 31 * 60_000;
+    g.step(100);
+    expect(g.state.tower.resolve).toBeCloseTo((t.resolvePerDay * 6) / 24, 6);
   });
 
   it('survives inheritance and Äon', () => {

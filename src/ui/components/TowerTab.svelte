@@ -468,7 +468,7 @@
       <span class="xpbar"><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
     </span>
     {#if data.resolve.bonus > 0}
-      <span class="kpi resolve" title="Entschlossenheit: Seit {formatDuration(data.resolve.hours * 3_600_000)} kein neuer Rekord – dein Team beißt sich fest: je Tag +{formatPercent(game.balance.tower.resolvePerDay, 0)} KP und Schaden im Turm, höchstens +{formatPercent(game.balance.tower.resolveCap, 0)}. Ein neuer Rekord setzt sie zurück.">
+      <span class="kpi resolve" title="Entschlossenheit: Dein Team beißt sich fest – jeder Tag ohne neuen Rekord bringt +{formatPercent(game.balance.tower.resolvePerDay, 0)} KP und Schaden im Turm, höchstens +{formatPercent(game.balance.tower.resolveCap, 0)}. {data.resolve.hours > 0 ? `Seit ${formatDuration(data.resolve.hours * 3_600_000)} kein neuer Rekord. ` : ''}Sie bleibt, bis der nächste Boss fällt.">
         <b class="num">💪 +{formatPercent(data.resolve.bonus, 0)}</b><small>Entschlossenheit</small>
       </span>
     {/if}
