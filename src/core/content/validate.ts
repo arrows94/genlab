@@ -338,6 +338,25 @@ export function validateContent(data: ContentData): string[] {
     num(`${w}.value`, b.value, 0, 1);
     if (b.targeting !== undefined && !['rows', 'weakest', 'back'].includes(b.targeting)) issues.push(`${w}.targeting: ungültig "${b.targeting}"`);
   }
+  const statusIds = ['burn', 'poison', 'stun', 'slow', 'shield', 'evade', 'regen', 'armor', 'reflect'];
+  for (const t of data.techniques) {
+    const w = at('techniques', t.id);
+    text(`${w}.name`, t.name);
+    ref(`${w}.element`, 'elements', t.element);
+    if (!['enemy', 'self', 'weakestAlly', 'team'].includes(t.target)) issues.push(`${w}.target: ungültig "${t.target}"`);
+    num(`${w}.hit`, t.hit, 0);
+    if (t.hit > 0 && t.target !== 'enemy') issues.push(`${w}.hit: Schaden nur mit target "enemy"`);
+    if (t.heal !== undefined) num(`${w}.heal`, t.heal, 0, 1);
+    if (t.status) {
+      if (!statusIds.includes(t.status.id)) issues.push(`${w}.status.id: unbekannt "${t.status.id}"`);
+      num(`${w}.status.duration`, t.status.duration, 0);
+      num(`${w}.status.value`, t.status.value, 0);
+    }
+  }
+  for (const e of data.elements) {
+    const n = data.techniques.filter((t) => t.element === e.id).length;
+    if (n !== 1) issues.push(`techniques: Element "${e.id}" braucht genau eine Technik (hat ${n})`);
+  }
   for (const r of data.relics) {
     const w = at('relics', r.id);
     text(`${w}.name`, r.name);

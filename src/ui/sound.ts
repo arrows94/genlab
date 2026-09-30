@@ -269,6 +269,11 @@ const SOUNDS = {
   hitWeak: (s: Synth) => {
     s.noise(0, 0.05, 0.25, 700);
   },
+  /** An Element-Technik: a rising shimmer. */
+  technique: (s: Synth) => {
+    s.noise(0, 0.12, 0.15, 5000);
+    s.slide(72, 84, 0, 0.18, 'triangle', 0.22, 5000);
+  },
   /** Dodged: a whoosh. */
   whoosh: (s: Synth) => s.noise(0, 0.14, 0.2, 3500),
   /** A fighter goes down. */
@@ -347,10 +352,67 @@ const SOUNDS = {
   },
 } satisfies Record<string, Recipe>;
 
+/** A switchable entry in Optionen → „Einzelne Klänge“ (`hum` is the Zerlege-Kammer's hum). */
+export type SoundKey = SoundName | 'hum';
+
+/** Groups and names for switching single sounds off (every sound except the volume sample). */
+export const SOUND_GROUPS: { name: string; sounds: { id: SoundKey; name: string }[] }[] = [
+  { name: 'Allgemein', sounds: [
+    { id: 'collect', name: 'Sammeln' }, { id: 'click', name: 'Klicken bei Knöpfen' }, { id: 'toastInfo', name: 'Hinweis' },
+    { id: 'toastRare', name: 'Seltener Hinweis' }, { id: 'bonk', name: 'Fehler' }, { id: 'research', name: 'Forschung gekauft' },
+    { id: 'researchMax', name: 'Forschung ausgebaut' }, { id: 'unlock', name: 'Neuer Bereich' }, { id: 'achievement', name: 'Erfolg' },
+    { id: 'welcome', name: 'Begrüßung nach einer Pause' },
+  ] },
+  { name: 'Brutstation & Kreaturen', sounds: [
+    { id: 'eggLaid', name: 'Ei gelegt' }, { id: 'hatch', name: 'Schlüpfen' }, { id: 'hatchRare', name: 'Seltenes Schlüpfen' },
+    { id: 'twins', name: 'Zwillinge' }, { id: 'discovery', name: 'Neuer Hybrid' }, { id: 'ritualBell', name: 'Brutritual' },
+    { id: 'infuse', name: 'Infusion' }, { id: 'infuseLevel', name: 'Infusion: Stufe hoch' }, { id: 'breakthrough', name: 'Durchbruch' },
+    { id: 'dynasty', name: 'Dynastie-Stufe' }, { id: 'perfect', name: 'Optimale DNS' }, { id: 'shiny', name: 'Schillernd' },
+  ] },
+  { name: 'Genlabor', sounds: [
+    { id: 'sequenced', name: 'Sequenzierung fertig' }, { id: 'deepSequenced', name: 'Tiefensequenzierung' }, { id: 'catalogued', name: 'Neues Allel' },
+    { id: 'spliceOk', name: 'Splicing gelungen' }, { id: 'spliceFail', name: 'Splicing instabil' },
+  ] },
+  { name: 'Recycler, Markt & Erkundung', sounds: [
+    { id: 'recycled', name: 'Recycelt' }, { id: 'hum', name: 'Brummen der Zerlege-Kammer' }, { id: 'capsuleRattle', name: 'Kapsel rüttelt' },
+    { id: 'capsuleBurst', name: 'Kapsel platzt auf' }, { id: 'cardFlip', name: 'Karten umdrehen' }, { id: 'potion', name: 'Trank' },
+    { id: 'horn', name: 'Erkundung zurück' }, { id: 'wild', name: 'Wilde Kreatur' }, { id: 'tension', name: 'Wochenexpedition wartet' },
+    { id: 'contract', name: 'Gen-Auftrag' }, { id: 'chest', name: 'Tagesbelohnung' },
+  ] },
+  { name: 'Turm', sounds: [
+    { id: 'hit', name: 'Treffer' }, { id: 'hitCrit', name: 'Starker Treffer' }, { id: 'hitWeak', name: 'Resistierter Treffer' },
+    { id: 'whoosh', name: 'Ausweichen' }, { id: 'technique', name: 'Element-Technik' }, { id: 'ko', name: 'K.O.' },
+    { id: 'drum', name: 'Boss-Trommel' }, { id: 'floorClear', name: 'Etage geschafft' }, { id: 'runEnded', name: 'Lauf beendet' },
+    { id: 'milestone', name: 'Meilenstein' }, { id: 'relic', name: 'Relikt gekauft' }, { id: 'bossHit', name: 'Wochen-Boss: Angriff' },
+    { id: 'bossTier', name: 'Wochen-Boss: Belohnungsstufe' },
+  ] },
+  { name: 'Endgame', sounds: [
+    { id: 'prestige', name: 'Vererbung' }, { id: 'aeon', name: 'Äon' }, { id: 'talent', name: 'Talent, Resonanz, Heilung im Turm' },
+    { id: 'construction', name: 'Großprojekt' }, { id: 'anomalyStart', name: 'Anomalie beginnt' }, { id: 'anomalyDone', name: 'Anomalie gemeistert' },
+  ] },
+];
+
+/** Plays a sound for the options list, even if it is switched off (still needs „Töne“). */
+export function preview(name: SoundKey): void {
+  if (name === 'hum') {
+    const stop = startHum(38, true);
+    setTimeout(stop, 1500);
+    return;
+  }
+  const muted = prefs.mutedSounds;
+  prefs.mutedSounds = [];
+  lastPlayed.delete(name);
+  try {
+    play(name, 3);
+  } finally {
+    prefs.mutedSounds = muted;
+  }
+}
+
 /** Minimum time between two plays of the same sound (ms); default below. */
 const LIMITS: Partial<Record<SoundName, number>> = {
   collect: 40, click: 30, toastInfo: 400, toastRare: 600, bonk: 250, research: 120, unlock: 800, achievement: 800,
-  hit: 60, hitCrit: 90, hitWeak: 60, whoosh: 80, cardFlip: 40, recycled: 500, horn: 1500, wild: 1200,
+  hit: 60, hitCrit: 90, technique: 120, hitWeak: 60, whoosh: 80, cardFlip: 40, recycled: 500, horn: 1500, wild: 1200,
   perfect: 1500, shiny: 1500, eggLaid: 700, hatch: 600, hatchRare: 900, twins: 900, discovery: 1500, sequenced: 800, deepSequenced: 1500, catalogued: 400,
 };
 const DEFAULT_GAP_MS = 80;
@@ -439,7 +501,7 @@ function synth(ctx: AudioContext, out: AudioNode): Synth {
 
 /** Whether a sound may play right now (settings, catch-up, background tab, throttle). */
 function allowed(name: SoundName, now: number): boolean {
-  if (!prefs.sound || prefs.volume <= 0 || muted > 0) return false;
+  if (!prefs.sound || prefs.volume <= 0 || muted > 0 || prefs.mutedSounds.includes(name)) return false;
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
   if (now - (lastPlayed.get(name) ?? -Infinity) < (LIMITS[name] ?? DEFAULT_GAP_MS)) return false;
   recent = recent.filter((t) => now - t < BURST_MS);
@@ -478,8 +540,8 @@ export function play(name: SoundName, variant = 0): void {
  * A quiet continuous sound (the Zerlege-Kammer's hum) while a view is open.
  * Returns the stop function; respects the same settings as `play`.
  */
-export function startHum(midi = 38): () => void {
-  if (!prefs.sound || prefs.volume <= 0 || muted > 0) return () => {};
+export function startHum(midi = 38, force = false): () => void {
+  if (!prefs.sound || prefs.volume <= 0 || muted > 0 || (!force && prefs.mutedSounds.includes('hum'))) return () => {};
   try {
     const ctx = audioContext();
     if (!ctx) return () => {};

@@ -162,7 +162,11 @@ export interface TowerState {
     /** Replay data for the arena (missing in older saves). */
     /** `interval` (seconds between actions) and the event times `at` are missing in saves before the Aktionsleiste. */
     fighters?: { name: string; speciesId: string; element: string; maxHp: number; team: boolean; interval?: number; row?: 'front' | 'back' }[];
-    events?: { at?: number; a: number; t: number; dmg: number; hp: number; m: number; kind?: 'miss' | 'heal' | 'shift'; element?: string }[];
+    events?: {
+      at?: number; a: number; t: number; dmg: number; hp: number; m: number;
+      kind?: 'miss' | 'heal' | 'shift' | 'tech' | 'status' | 'dot' | 'reflect';
+      element?: string; tech?: string; status?: 'burn' | 'poison' | 'stun' | 'slow' | 'shield' | 'evade' | 'regen' | 'armor' | 'reflect'; until?: number; crit?: boolean; absorbed?: number;
+    }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
   } | null;
@@ -232,6 +236,7 @@ export interface WeeklyBossState {
   /** Reward tiers already paid out this week. */
   tiers: number;
   attempts: number;
+  /** Last attack: damage and its length (`rounds` = seconds of fight time since the Aktionsleiste). */
   last: { damage: number; rounds: number } | null;
 }
 

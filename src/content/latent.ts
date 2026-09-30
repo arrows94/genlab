@@ -9,8 +9,10 @@ import type { LatentTraitDef } from '@core/content/types';
 export const latentTraits: LatentTraitDef[] = [
   { id: 'titanBlood', name: 'Titanenblut', weight: 3, scope: 'self', description: '+25 % KP und Verteidigung.',
     modifiers: [{ target: 'stat.hp', op: 'pct', value: 0.25 }, { target: 'stat.def', op: 'pct', value: 0.25 }] },
-  { id: 'hunter', name: 'Jägerinstinkt', weight: 3, scope: 'self', description: '+25 % Angriff, +10 % Tempo.',
-    modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.25 }, { target: 'stat.spd', op: 'pct', value: 0.1 }] },
+  { id: 'hunter', name: 'Jägerinstinkt', weight: 3, scope: 'self', description: '+25 % Angriff, +10 % Tempo, im Turm 15 % kritische Treffer.',
+    modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.25 }, { target: 'stat.spd', op: 'pct', value: 0.1 }, { target: 'tower.crit', op: 'add', value: 0.15 }] },
+  { id: 'thornSkin', name: 'Dornenhaut', weight: 2, scope: 'self', description: '+10 % Verteidigung; im Turm gehen 30 % des erlittenen Schadens an den Angreifer zurück.',
+    modifiers: [{ target: 'stat.def', op: 'pct', value: 0.1 }, { target: 'tower.thorns', op: 'add', value: 0.3 }] },
   { id: 'goldNose', name: 'Goldnase', weight: 3, scope: 'job', description: '+40 % Gold bei der Arbeit.',
     modifiers: [{ target: 'production.gold', op: 'pct', value: 0.4 }] },
   { id: 'harvester', name: 'Erntesegen', weight: 3, scope: 'job', description: '+40 % Nahrung bei der Arbeit.',

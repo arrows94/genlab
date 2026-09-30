@@ -496,6 +496,36 @@ export interface BossTraitDef {
 
 export type TargetingMode = 'rows' | 'weakest' | 'back';
 
+/** Fight status (Zustand) a technique can put on a fighter; see `simulateFight`. */
+export type StatusId = 'burn' | 'poison' | 'stun' | 'slow' | 'shield' | 'evade' | 'regen' | 'armor' | 'reflect';
+
+/**
+ * Element-Technik: every fighter of the element uses it instead of every
+ * `balance.tower.techniqueEvery`-th normal attack.
+ */
+export interface TechniqueDef {
+  id: string;
+  element: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** enemy: the attacked foe · self · weakestAlly: team member with the lowest HP share · team: every living ally. */
+  target: 'enemy' | 'self' | 'weakestAlly' | 'team';
+  /** Damage as a multiple of a normal hit (enemy target only; 0 = no hit). */
+  hit: number;
+  /** Heals this share of the target's max HP. */
+  heal?: number;
+  /** Removes harmful statuses (burn, poison, stun, slow) from the targets. */
+  cleanse?: boolean;
+  /**
+   * Status on the target(s). value: burn/poison share of the user's ANG per second ·
+   * stun: extra delay in own action intervals · slow: +share on the action interval ·
+   * shield: share of the holder's max HP absorbed · evade: extra dodge chance ·
+   * regen: share of max HP healed per second · armor: +share VER · reflect: share of damage taken sent back.
+   */
+  status?: { id: StatusId; duration: number; value: number };
+}
+
 /**
  * Relikt: bought and levelled with Turm-Marken, owned by the player (never
  * reset) and put into a place of the tower team. It boosts whoever stands
@@ -645,6 +675,7 @@ export interface ContentData {
   researchThemes: ResearchThemeDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
+  techniques: TechniqueDef[];
   nameLists: NameListDef[];
 }
 

@@ -38,7 +38,7 @@
   function attack() {
     if (act(attackWeeklyBoss(game))) {
       const b = game.state.weeklyBoss;
-      toast(bossDefeated(game) ? 'Der Wochen-Titan ist besiegt!' : `${formatNumber(b.last?.damage ?? 0)} Schaden in ${b.last?.rounds ?? 0} Runden.`, bossDefeated(game) ? 'rare' : 'info');
+      toast(bossDefeated(game) ? 'Der Wochen-Titan ist besiegt!' : `${formatNumber(b.last?.damage ?? 0)} Schaden in ${formatNumber(b.last?.rounds ?? 0, { decimals: 1 })} s Kampfzeit.`, bossDefeated(game) ? 'rare' : 'info');
     }
   }
 </script>
@@ -61,7 +61,7 @@
       </div>
       <div class="facts small">
         <span class="num">{formatNumber(data.b.damage)} / {formatNumber(data.b.maxHp)} ({formatPercent(data.share, 1)})</span>
-        {#if data.b.last}<span class="muted">Letzter Angriff: {formatNumber(data.b.last.damage)} in {data.b.last.rounds} Runden</span>{/if}
+        {#if data.b.last}<span class="muted">Letzter Angriff: {formatNumber(data.b.last.damage)} in {formatNumber(data.b.last.rounds, { decimals: 1 })} s Kampfzeit</span>{/if}
       </div>
       <div class="rewards">
         {#each data.tiers as t, i (i)}

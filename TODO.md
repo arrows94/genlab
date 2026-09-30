@@ -288,6 +288,8 @@ Ziel: Jede wichtige Aktion hört sich an, ohne zu nerven.
 - [ ] Alle Klänge einmal mit echten Ohren durchhören (Lautstärke untereinander, nervt etwas auf Dauer?) –
       bisher nur fehlerfrei im Browser abgespielt
 
+- [x] Einzelne Klänge und ganze Gruppen abschaltbar (Optionen → Töne → „Einzelne Klänge“, mit Probe je Klang)
+
 ## Schritt 5 – Musik (optional, später)
 
 - [x] Ruhige Hintergrundmusik, live mit Web Audio erzeugt (`ui/music.ts`: Pad, Bass, Zupfer, Hall), standardmäßig
@@ -314,7 +316,7 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
       ab +25 % bringen alle vier Werte 94–100 %. Test: „speed wins fights“ in `tests/towerMechanics.test.ts`
 - [ ] Äon-Bot (12 Tage) vorher/nachher: Turm-Rekord Tag 8 42 → 36, ab Tag 9 43 → 39 (Boss auf Etage 40 hält).
       Der Bot wählt sein Team nur nach Gesamtstärke, nicht nach Tempo – Bot-Teamwahl mit Tempo, dann neu messen
-- [ ] Wochen-Boss (`weeklyBoss.ts`) läuft noch rundenbasiert – auf die Aktionsleiste umstellen (siehe Schritt 4)
+- [x] Wochen-Boss (`weeklyBoss.ts`) läuft auf der Aktionsleiste (mit Schritt 3)
 
 ## Schritt 2 – Verteidigung und Rollen
 
@@ -334,18 +336,25 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Zielwahl je Boss-Eigenheit (`targeting` in `bossTraits`): Wandler jagt den Schwächsten, Regeneration greift
       bevorzugt die hintere Reihe an; die Vorschau nennt die Zielwahl des Gegners
 - [ ] Test-Bot stellt Reihen und Rollen auf (heute alle vorne, also gleichmäßig verteilte Treffer)
-- [ ] „Trifft alle Hinteren“ (Flächenangriff) kommt mit den Techniken in Schritt 3
+- [ ] „Trifft alle Hinteren“ (Flächenangriff) kommt mit den Gegner-Techniken in Schritt 4
 
 ## Schritt 3 – Elemente und Fähigkeiten im Kampf
 
-- [ ] Element-Techniken: Jede Kreatur hat nach n Aktionen eine Spezialaktion ihres Elements, z. B.
+- [x] Element-Techniken (`content/techniques.ts`, jede 4. Aktion): Brand, Quellwasser (Heilung), Steinwall (Schild),
+      Windhauch (Ausweichen), Schock (Betäubung), Blütenregen (Team-Regeneration), Frost (Verlangsamen),
+      Hinterhalt (220 %), Läuterung (Reinigen + Heilung), Panzerung, Giftbiss, Prisma (Rückstrahlung).
+      Ursprüngliche Idee: Jede Kreatur hat nach n Aktionen eine Spezialaktion ihres Elements, z. B.
       Feuer Brand (Schaden über Zeit), Wasser Heilung fürs Team, Erde Schild, Luft Ausweichen, Elektro Betäubung,
       Natur Regeneration, Eis Verlangsamen (senkt Tempo des Ziels), Schatten kritischer Treffer, Licht Reinigen,
       Metall Panzer, Gift Vergiftung, Kristall Rückstrahlung
-- [ ] Zustände mit Symbolen in der Arena: Brand, Gift, Betäubt, Verlangsamt, Schild
-- [ ] Bestehende Fähigkeiten (`abilities.ts`) bekommen Kampfwirkungen, wo es passt (z. B. „Flink“ → erste Aktion sofort)
-- [ ] Team-Synergien: zwei gleiche Elemente +x %, drei verschiedene Elemente Bonus gegen Wandler
-- [ ] Genetik einbinden: seltene Allele und Erbanlagen können Kampf-Eigenschaften geben (z. B. „Dornenhaut“)
+- [x] Zustände mit Symbolen in der Arena: Brand, Gift, Betäubt, Verlangsamt, Schild, Ausweichen, Regeneration,
+      Panzer, Rückstrahlung; ticken jede Sekunde Kampfzeit
+- [x] Kampf-Eigenschaften als Modifikatoren (`tower.crit`, `tower.thorns`, `tower.firstStrike`): „Flink“ handelt
+      sofort. Eine neue Fähigkeit „Stachelig“ wurde verworfen – jede neue Fähigkeit verschiebt die Würfe beim Brüten und
+      damit den Test-Bot (erste Vererbung 108 statt ≤ 100 min)
+- [x] Team-Synergien: zwei gleiche Elemente +10 % Angriff, drei verschiedene Elemente +25 % Schaden gegen den Wandler
+- [x] Genetik: Titanenkraft (Kᵗ) +10 % kritische Treffer, Blitzschnell (Tᵇ) Erstschlag, Diamanthaut (Pᵈ) 10 %
+      Rückschaden; Erbanlagen Jägerinstinkt (+15 % kritisch) und neu Dornenhaut (30 % Rückschaden)
 
 ## Schritt 4 – Gegner und Turm
 
@@ -353,13 +362,14 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [ ] Gegner-Techniken je Element, damit Element-Wahl auch bei normalen Etagen zählt
 - [ ] Turm-Kurve neu einstellen (heute ×1,11 je Etage): Wachstum der Team-Stärke über Vererbung/Äon messen und die
       Stillstands-Phasen des Test-Bots beseitigen; Test-Bot stellt Reihen und Rollen sinnvoll auf
-- [ ] Wochen-Boss nutzt dieselbe Kampf-Logik (heute eigene Reihenfolge in `weeklyBoss.ts`)
+- [x] Wochen-Boss nutzt dieselbe Kampf-Logik (`simulateFight` mit eigenem Zeitlimit `weeklyBoss.fightSec`, zählt
+      `dealt`; die Boss-Eigenheit seiner Etage gilt dort nicht)
 
 ## Schritt 5 – Darstellung
 
 - [x] Arena: Aktionsleisten unter den Kämpfern, Zugfolge, Kampfuhr mit Zeitlimit-Balken, Zahlen nach Art
       (sehr effektiv, resistiert, ausgewichen, Heilung, Elementwechsel), Treffer-Funken, Boden in Perspektive
-- [ ] Technik-Namen einblenden, Zustands-Symbole (mit Schritt 3)
+- [x] Technik-Namen einblenden, Zustands-Symbole, kritische Treffer, Brand/Gift-Schaden, Rückschaden, Schild
 - [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
       nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
 - [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen), Tempo-Regler für die Wiedergabe (1×/2×/überspringen)
@@ -367,6 +377,6 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 
 ## Leitplanken
 
-- [ ] Kämpfe bleiben deterministisch (Seed pro Kampf) und offline schnell berechenbar – Simulation ohne Grafik
-- [ ] Alte Spielstände: Aufstellung (Reihen) hat einen Standard, nichts muss neu eingestellt werden
-- [ ] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen
+- [x] Kämpfe bleiben deterministisch (Spiel-RNG im Spielstand) und offline schnell berechenbar – Simulation ohne Grafik
+- [x] Alte Spielstände: Aufstellung (Reihen) hat einen Standard (alle vorne), nichts muss neu eingestellt werden
+- [x] Umstieg mit dem Test-Bot absichern (`GENLAB_AEON=1`): Turm-Fortschritt vorher/nachher vergleichen (je Schritt)

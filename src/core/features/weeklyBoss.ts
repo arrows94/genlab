@@ -6,7 +6,7 @@ import type { Creature } from '../state';
 import type { System } from '../systems/types';
 import { findCreature } from '../creatures';
 import { contractDay } from './contracts';
-import { damage, enemyFor, fighterFor, lowerTowerRecord, type Fighter } from './tower';
+import { enemyFor, fighterFor, lowerTowerRecord, simulateFight, type Fighter } from './tower';
 import { voyageDestination } from './voyage';
 import { weekIndex } from './weekly';
 
@@ -115,7 +115,7 @@ export function bossDefeated(ctx: GameContext): boolean {
   return b.maxHp > 0 && b.damage >= b.maxHp;
 }
 
-/** One attempt: the tower team fights for `rounds` rounds; all damage counts. */
+/** One attempt: the tower team fights for `fightSec` seconds of fight time; all damage counts. */
 export function attackWeeklyBoss(ctx: GameContext): ActionResult {
   if (!ctx.state.features['weeklyBoss']) return { ok: false, reason: 'Der Wochen-Boss ist noch nicht erschienen.' };
   refreshWeeklyBoss(ctx);
@@ -125,24 +125,13 @@ export function attackWeeklyBoss(ctx: GameContext): ActionResult {
   const members = team(ctx);
   if (members.length === 0) return { ok: false, reason: 'Stelle zuerst ein Turm-Team zusammen.' };
 
+  // The same fight as in the tower (techniques, rows, statuses); the titan cannot fall,
+  // only the damage counts. Its floor's boss trait does not apply.
   const fighters = members.map((c) => fighterFor(ctx, c));
-  const boss = bossFighter(ctx);
-  const order = [...fighters, boss].sort((x, y) => y.spd - x.spd);
-  let dealt = 0;
-  let rounds = 0;
-  for (let round = 1; round <= ctx.balance.weeklyBoss.rounds && fighters.some((f) => f.hp > 0); round++) {
-    rounds = round;
-    for (const f of order) {
-      if (f.hp <= 0) continue;
-      if (f.team) dealt += damage(ctx, f, boss, ctx.rng);
-      else {
-        const alive = fighters.filter((x) => x.hp > 0);
-        if (alive.length === 0) break;
-        const target = ctx.rng.pick(alive);
-        target.hp -= damage(ctx, f, target, ctx.rng);
-      }
-    }
-  }
+  const boss = { ...bossFighter(ctx), trait: undefined };
+  const fight = simulateFight(ctx, fighters, boss, ctx.rng, { limitSec: ctx.balance.weeklyBoss.fightSec });
+  const dealt = fight.dealt;
+  const rounds = fight.seconds;
   const counted = Math.min(dealt, b.maxHp - b.damage);
   b.damage += counted;
   b.attempts--;

@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Fighter } from '@core/features/tower';
@@ -64,7 +64,9 @@ describe('boss traits', () => {
     const team = [fighterFor(g, champion(g, 5000))];
     const { result } = fight(g, 'regenerator', team);
     const heal = result.events.find((e) => e.kind === 'heal')!;
-    const taken = result.events.filter((e) => e.a === 0 && !e.kind && e.at <= heal.at && e.at > heal.at - 1).reduce((n, e) => n + e.dmg, 0);
+    // Everything that hurt the boss (index 1) in the second before: hits, techniques, burn, thorns.
+    const hurts = (e: (typeof result.events)[number]) => e.t === 1 && (!e.kind || e.kind === 'tech' || e.kind === 'dot' || e.kind === 'reflect');
+    const taken = result.events.filter((e) => hurts(e) && e.at <= heal.at && e.at > heal.at - 1).reduce((n, e) => n + e.dmg, 0);
     expect(heal.dmg).toBe(Math.round(taken * content.bossTraits.get('regenerator').value));
   });
 
@@ -207,6 +209,79 @@ describe('rows, roles and defence', () => {
     const g = towerGame();
     for (const t of content.bossTraits.list) expect(targetingOf(g, { ...unit({ team: false }), trait: t.id })).toBe(t.targeting ?? 'rows');
     expect(targetingOf(g, unit({ team: false }))).toBe('rows');
+  });
+});
+
+describe('Element-Techniken, Zustände, Synergien', () => {
+  const unit = (over: Partial<Fighter> = {}): Fighter => ({
+    name: 'x', speciesId: 'emberpup', element: 'fire', hp: 1e6, maxHp: 1e6, atk: 100, def: 0, spd: 10, power: 1, elementPower: 1, team: true, ...over,
+  });
+  const foe = (over: Partial<Fighter> = {}) => unit({ name: 'foe', team: false, element: 'metal', hp: 1e7, maxHp: 1e7, atk: 1, ...over });
+  const every = balance.tower.techniqueEvery;
+
+  it('every n-th action is the technique of the element', () => {
+    const g = towerGame();
+    const r = simulateFight(g, [unit({ technique: 'blaze' })], foe(), Rng.fromSeed(1));
+    const mine = r.events.filter((e) => e.a === 0 && (!e.kind || e.kind === 'tech'));
+    expect(mine[every - 1]!.kind).toBe('tech');
+    expect(mine[every - 1]!.tech).toBe('blaze');
+    expect(mine.slice(0, every - 1).every((e) => !e.kind)).toBe(true);
+    // Brand: burn ticks hurt the foe afterwards.
+    expect(r.events.some((e) => e.kind === 'status' && e.status === 'burn' && e.t === 1)).toBe(true);
+    expect(r.events.some((e) => e.kind === 'dot' && e.status === 'burn' && e.t === 1 && e.dmg > 0)).toBe(true);
+  });
+
+  it('support techniques heal, shield and cleanse the team', () => {
+    const g = towerGame();
+    const hurt = unit({ name: 'hurt', hp: 500, maxHp: 1000, element: 'earth' });
+    const r = simulateFight(g, [unit({ technique: 'spring', element: 'water' }), hurt], foe(), Rng.fromSeed(2));
+    expect(r.events.some((e) => e.kind === 'heal' && e.t === 1 && e.dmg === 250)).toBe(true);
+    const s2 = simulateFight(g, [unit({ technique: 'bulwark', element: 'earth' })], foe({ atk: 1e4 }), Rng.fromSeed(3));
+    expect(s2.events.some((e) => e.kind === 'status' && e.status === 'shield')).toBe(true);
+    expect(s2.events.some((e) => (e.absorbed ?? 0) > 0)).toBe(true);
+  });
+
+  it('stun delays the next action, slow stretches it', () => {
+    const g = towerGame();
+    const acts = (tech: string) => {
+      const r = simulateFight(g, [unit({ technique: tech, element: 'electric', spd: 10 })], foe({ spd: 10, atk: 1 }), Rng.fromSeed(4));
+      return r.events.filter((e) => e.a === 1 && (!e.kind || e.kind === 'miss')).length;
+    };
+    const plain = simulateFight(g, [unit({ spd: 10 })], foe({ spd: 10, atk: 1 }), Rng.fromSeed(4)).events.filter((e) => e.a === 1 && (!e.kind || e.kind === 'miss')).length;
+    expect(acts('shock')).toBeLessThan(plain);
+    expect(acts('frost')).toBeLessThan(plain);
+  });
+
+  it('crit, thorns and first strike come from modifiers', () => {
+    const g = towerGame();
+    const c = champion(g, 100);
+    c.latent = 'hunter';
+    c.deepSequenced = true;
+    g.invalidate();
+    expect(fighterFor(g, c).crit).toBeCloseTo(0.15);
+    c.latent = 'thornSkin';
+    g.invalidate();
+    expect(fighterFor(g, c).thorns).toBeGreaterThanOrEqual(0.3);
+    const r = simulateFight(g, [unit({ thorns: 0.5 })], foe({ atk: 1000 }), Rng.fromSeed(5));
+    expect(r.events.some((e) => e.kind === 'reflect' && e.t === 1 && e.dmg > 0)).toBe(true);
+    const first = simulateFight(g, [unit({ spd: 1, firstStrike: true })], foe({ spd: 100 }), Rng.fromSeed(6));
+    expect(first.events[0]!.a).toBe(0);
+    const crit = simulateFight(g, [unit({ crit: 1 })], foe(), Rng.fromSeed(7));
+    expect(crit.events.find((e) => e.a === 0 && !e.kind)!.crit).toBe(true);
+  });
+
+  it('synergies: pairs hit harder, a colourful team beats the Wandler', () => {
+    const g = towerGame();
+    expect(teamSynergies(g, ['fire', 'fire', 'water'])).toEqual([expect.objectContaining({ kind: 'pair', elements: ['fire'], active: true })]);
+    const div = teamSynergies(g, ['fire', 'water', 'earth'], 'shifter');
+    expect(div).toEqual([expect.objectContaining({ kind: 'diversity', active: true })]);
+    expect(teamSynergies(g, ['fire', 'water', 'earth'])[0]!.active).toBe(false);
+    const first = (els: string[]) => simulateFight(g, els.map((e) => unit({ element: e })), foe({ element: 'metal' }), Rng.fromSeed(8)).events.find((e) => e.a === 0 && !e.kind)!.dmg;
+    expect(first(['water', 'water'])).toBeGreaterThan(first(['water', 'earth']));
+  });
+
+  it('every element has exactly one technique', () => {
+    for (const e of content.elements.list) expect(content.techniques.list.filter((t) => t.element === e.id)).toHaveLength(1);
   });
 });
 

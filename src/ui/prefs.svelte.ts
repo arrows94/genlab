@@ -13,6 +13,8 @@ export const prefs = $state({
   sound: true,
   /** Effect volume 0…1. */
   volume: 0.7,
+  /** Single sounds switched off in the options (sound names, see SOUND_GROUPS). */
+  mutedSounds: [] as string[],
   /** Very quiet click on buttons and tabs (off by default). */
   uiClicks: false,
   /** Background music (off by default). */

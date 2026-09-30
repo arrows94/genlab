@@ -56,8 +56,8 @@ export interface Balance {
     /** Boss HP = enemy HP × this. Calibrated with a team that just holds its record: ~2.5–3.5 % per attempt, so a week (21 attempts) reaches 50–75 % and a growing team 100 %. */
     hpMult: number;
     atkMult: number;
-    /** Rounds per attempt (the boss never dies inside one attempt). */
-    rounds: number;
+    /** Seconds of fight time per attack (the boss never dies inside one attack). */
+    fightSec: number;
     attemptsPerDay: number;
     maxAttempts: number;
     /** Rewards when the total damage reaches `at` × boss HP (in order). */
@@ -240,6 +240,16 @@ export interface Balance {
     defRatio: number;
     /** Chance that an enemy attack goes to the front row (when both rows are occupied). */
     frontShare: number;
+    /** Every n-th action of a fighter is its Element-Technik. */
+    techniqueEvery: number;
+    /** Tower enemies use techniques too (Kampfsystem Schritt 4). */
+    enemyTechniques: boolean;
+    /** Damage multiple of a critical hit. */
+    critMult: number;
+    /** Two or more team members of one element: +share ANG for them. */
+    pairBonus: number;
+    /** Three or more different elements: +share damage against the Wandler. */
+    diversityBonus: number;
     enemyBase: Record<string, number>;
     /** Enemy stats × growth^(floor − 1). */
     enemyGrowth: number;
