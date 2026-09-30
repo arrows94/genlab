@@ -54,13 +54,20 @@ export interface SyncHost {
   notify(text: string, kind?: 'info' | 'error'): void;
 }
 
-export const sync = $state({
-  link: null as SyncLink | null,
-  busy: false,
+class SyncView {
+  link = $state<SyncLink | null>(null);
+  busy = $state(false);
   /** Last error ('' = fine), shown in the options. */
-  error: '',
-  conflict: null as SyncConflict | null,
-});
+  error = $state('');
+  /**
+   * Raw, not deep state: the conflict carries a whole save, and a deeply
+   * reactive copy would turn the adopted game state into Svelte proxies
+   * (slow, and `structuredClone` fails on them – e.g. the Keimprobe of a ritual).
+   */
+  conflict = $state.raw<SyncConflict | null>(null);
+}
+
+export const sync = new SyncView();
 
 const linkStore = createStorage('genlab.sync.v1');
 let host: SyncHost | null = null;

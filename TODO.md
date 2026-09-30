@@ -73,6 +73,11 @@ einheitliche Kopfzeilen, Äon-Tab. Die visuelle Überarbeitung ist damit abgesch
       Unterreiter als zweite Zeile, auf dem Handy fünf feste Knöpfe unten ohne Scrollen. Ein Bereich mit nur einem
       Reiter zeigt diesen direkt (frühes Spiel wie vorher), jeder Bereich merkt sich den letzten Reiter
       (`viewState.nav`), Zähler werden am Bereich summiert, neu freigeschaltete Reiter bekommen einen Zähler
+- [x] Reiter zeigen laufende Arbeit als sich füllende Leiste (`core/tabActivity.ts`): der Vorgang, der als Nächstes
+      fertig wird; ein Turm-Lauf schimmert endlos. Fertige Ritual-Eier zählen als Neuigkeit (Zähler), nicht als Arbeit
+- [x] Fehler behoben: Nach Import oder übernommenem Cloud-Spielstand war der ganze Spielstand ein Svelte-Proxy
+      (`$state` im Import-Dialog und in `sync.conflict`) – `structuredClone` der Keimprobe warf, das Brutritual
+      startete ohne Meldung nicht. Jetzt `$state.raw`
 
 # TODO – Endgame
 

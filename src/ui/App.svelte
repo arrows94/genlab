@@ -2,6 +2,8 @@
   import { untrack, type Component } from 'svelte';
   import { affordableUpgradeCount, unlockedTabs } from '@core/queries';
   import { readyRitualEggs } from '@core/features/breeding';
+  import { tabActivity, type TabActivity } from '@core/tabActivity';
+  import { formatDuration } from '@core/format';
   import { fulfillableCount } from '@core/features/contracts';
   import { dailyAvailable } from '@core/features/daily';
   import { game, view, init, openTab } from './store.svelte';
@@ -102,6 +104,19 @@
     const voyage = game.state.voyage.pending ? 1 : 0;
     return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0), breeding: (view.unseen.breeding ?? 0) + readyRitualEggs(game).length, tower: (view.unseen.tower ?? 0) + (game.state.features['weeklyBoss'] && game.state.tower.team.length > 0 && game.state.weeklyBoss.damage < game.state.weeklyBoss.maxHp ? game.state.weeklyBoss.attempts : 0) };
   });
+  /** Work running in each tab (filling bar under the tab). */
+  const activity = $derived.by(() => {
+    view.frame;
+    return tabActivity(game);
+  });
+  /** An area shows the task of its tabs that finishes next; endless work (tower) only if nothing else runs. */
+  function groupActivity(g: { tabs: string[] }): TabActivity | undefined {
+    const list = g.tabs.map((t) => activity[t]).filter((a): a is TabActivity => !!a);
+    const finite = list.filter((a) => !a.loop);
+    return (finite.length ? finite : list).sort((a, b) => a.remainingMs - b.remainingMs)[0];
+  }
+  const activityTitle = (a: TabActivity | undefined) =>
+    !a ? undefined : a.loop ? 'Läuft gerade' : `${a.count === 1 ? 'Läuft gerade' : `${a.count} Vorgänge laufen`} – fertig in ${formatDuration(a.remainingMs)}`;
   const groupBadge = (g: { tabs: string[] }) => g.tabs.reduce((sum, t) => sum + (badges[t] ?? 0), 0);
   const Current = $derived(TABS[tabs.includes(view.tab) ? view.tab : 'lab']!.component);
 
@@ -133,6 +148,10 @@
   });
 </script>
 
+{#snippet workBar(a: TabActivity)}
+  <span class="work" class:loop={a.loop} aria-hidden="true"><span style="width: {a.loop ? 100 : Math.max(4, a.progress * 100)}%"></span></span>
+{/snippet}
+
 {#if !view.ready}
   <div class="splash">
     <DnaHelix pairs={14} width={200} height={44} />
@@ -155,20 +174,24 @@
   <nav aria-label="Bereiche">
     {#each groups as g (g.id)}
       {@const count = groupBadge(g)}
-      <button class:active={activeGroup.id === g.id} aria-current={activeGroup.id === g.id ? 'page' : undefined} onclick={() => openGroup(g)}>
+      {@const work = groupActivity(g)}
+      <button class:active={activeGroup.id === g.id} aria-current={activeGroup.id === g.id ? 'page' : undefined} title={activityTitle(work)} onclick={() => openGroup(g)}>
         <span class="icon">{g.icon}</span>
         <span class="label">{g.label}</span>
         {#if count}<span class="badge num">{count}</span>{/if}
+        {#if work}{@render workBar(work)}{/if}
       </button>
     {/each}
   </nav>
   {#if activeGroup.tabs.length > 1}
     <div class="subtabs" role="tablist" aria-label={activeGroup.label} bind:this={navEl}>
       {#each activeGroup.tabs as t (t)}
-        <button role="tab" aria-selected={view.tab === t} class:active={view.tab === t} onclick={() => openTab(t)}>
+        {@const work = activity[t]}
+        <button role="tab" aria-selected={view.tab === t} class:active={view.tab === t} title={activityTitle(work)} onclick={() => openTab(t)}>
           <span class="icon">{TABS[t]!.icon}</span>
           <span>{TABS[t]!.label}</span>
           {#if badges[t]}<span class="dot num">{badges[t]}</span>{/if}
+          {#if work}{@render workBar(work)}{/if}
         </button>
       {/each}
     </div>
@@ -235,6 +258,14 @@
   .subtabs button:hover { color: var(--text); }
   .subtabs button.active { color: var(--text); border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }
   .dot { min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; border-radius: 999px; background: var(--violet); color: #fff; font-size: 0.65rem; display: grid; place-items: center; }
+
+  /* Running work: a thin bar along the bottom edge of the tab, filling up until the next task is done. */
+  .subtabs button { position: relative; }
+  .work { position: absolute; left: 12%; right: 12%; bottom: 3px; height: 3px; border-radius: 99px; background: #ffffff14; overflow: hidden; pointer-events: none; }
+  .subtabs .work { bottom: 1px; height: 2px; }
+  .work span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width 0.2s linear; }
+  .work.loop span { background: linear-gradient(90deg, transparent, var(--teal), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: work-sweep 1.6s linear infinite; }
+  @keyframes work-sweep { from { background-position: -100% 0; } to { background-position: 200% 0; } }
 
   .page { animation: fade-in 0.2s ease-out; }
 
