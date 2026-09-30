@@ -60,6 +60,9 @@ export const balance: Balance = {
     maxTorches: 3,
     // A defeat keeps this share of the carried loot (secured loot is always safe).
     defeatKeep: 0.5,
+    // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
+    secondsPerRound: 2,
+    techniqueCooldown: 3,
   },
   timeCrystals: {
     skipHours: 4,

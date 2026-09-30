@@ -630,8 +630,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Schritt 2 – Rundenkampf
 
 - [ ] Ablauf: Spieler wählt eine Fähigkeit, dann handelt der Gegner; Tempo (TMP) bestimmt, wer zuerst zieht
-- [ ] Drei Fähigkeiten aus dem Monster abgeleitet: Grundangriff, Element-Technik (wie im Turm, `content/techniques.ts`),
+- [x] Drei Fähigkeiten aus dem Monster abgeleitet: Grundangriff, Element-Technik (wie im Turm, `content/techniques.ts`),
       eine dritte aus Fähigkeiten oder Erbanlagen (Schutz, Heilung, Gift …); mit Abklingzeit in Runden
+      (`content/rpg.ts`, `features/rpgCombat.ts`: aufgedeckte Erbanlage vor Fähigkeit vor Rolle)
 - [ ] Eine stärkere Fähigkeit (Spezialangriff), lädt sich über Treffer und Runden auf
 - [ ] Werte aus den Zuchtwerten (KP, ANG, VER, TMP), Element-Vorteil wie im Turm – gute Zucht zahlt sich aus
 - [ ] Gegner zeigen ihren nächsten Zug an (Angriff, Aufladen, Schild), damit jede Wahl zählt

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { finishRpgRun, leaveRpgRun, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, secureLoot, startRpgRun, torches } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
+import { rpgSkillsFor, thirdSkill } from '@core/features/rpgCombat';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
 import { deserialize, serialize } from '@core/save';
@@ -137,5 +138,33 @@ describe('GenLab RPG – Lauf', () => {
     expect(performPrestige(g, 'inheritance').ok).toBe(true);
     expect(g.state.rpg.run).toBeNull();
     expect(g.state.resources['towerTokens']!.toNumber()).toBe(5);
+  });
+});
+
+describe('GenLab RPG – Fähigkeiten', () => {
+  it('derives four skills from the monster: basic, element technique, third, special', () => {
+    const g = makeGame();
+    const c = g.state.creatures[0]!; // Glutwelpe (fire)
+    const skills = rpgSkillsFor(g, c);
+    expect(skills.map((k) => k.slot)).toEqual(['basic', 'technique', 'third', 'special']);
+    expect(skills[1]!.id).toBe('blaze');
+    // 3 tower seconds of burn → 2 rounds, the per-second share doubles per round.
+    expect(skills[1]!.status).toEqual({ id: 'burn', rounds: 2, value: 0.5 });
+    expect(skills[1]!.cooldown).toBe(balance.rpg.techniqueCooldown);
+  });
+
+  it('third skill: revealed Erbanlage before ability before role', () => {
+    const g = makeGame();
+    const c = g.state.creatures[0]!;
+    c.abilities = [];
+    c.latent = null;
+    expect(thirdSkill(g, c).from?.role).toBeDefined();
+    c.abilities = ['diligent', 'tough'];
+    expect(thirdSkill(g, c).id).toBe('mend');
+    c.latent = 'hunter';
+    c.deepSequenced = false;
+    expect(thirdSkill(g, c).id).toBe('mend'); // hidden Erbanlage does not count
+    c.deepSequenced = true;
+    expect(thirdSkill(g, c).id).toBe('hunt');
   });
 });

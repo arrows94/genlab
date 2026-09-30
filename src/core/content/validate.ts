@@ -369,6 +369,55 @@ export function validateContent(data: ContentData): string[] {
     }
     if (Object.keys(r.bonus).length === 0) issues.push(`${w}.bonus: mindestens ein Wert`);
   }
+  const skillSlots = { basic: 0, special: 0 } as Record<string, number>;
+  const thirdRoles = new Set<string>();
+  for (const k of data.rpgSkills) {
+    const w = at('rpgSkills', k.id);
+    text(`${w}.name`, k.name);
+    text(`${w}.description`, k.description);
+    if (!['basic', 'third', 'special'].includes(k.slot)) issues.push(`${w}.slot: ungültig "${k.slot}"`);
+    else skillSlots[k.slot] = (skillSlots[k.slot] ?? 0) + 1;
+    if (!['enemy', 'self'].includes(k.target)) issues.push(`${w}.target: ungültig "${k.target}"`);
+    num(`${w}.hit`, k.hit, 0);
+    if (k.hit > 0 && k.target !== 'enemy') issues.push(`${w}.hit: Schaden nur mit target "enemy"`);
+    if (k.hits !== undefined) num(`${w}.hits`, k.hits, 1, 10);
+    if (k.heal !== undefined) num(`${w}.heal`, k.heal, 0, 1);
+    num(`${w}.cooldown`, k.cooldown, 0, 20);
+    if (k.status) {
+      if (!statusIds.includes(k.status.id)) issues.push(`${w}.status.id: unbekannt "${k.status.id}"`);
+      num(`${w}.status.rounds`, k.status.rounds, 1, 20);
+      num(`${w}.status.value`, k.status.value, 0);
+    }
+    if (k.slot === 'third') {
+      const from = k.from ?? {};
+      const n = [from.latent, from.ability, from.role].filter((v) => v !== undefined).length;
+      if (n !== 1) issues.push(`${w}.from: genau eine Quelle (latent, ability oder role)`);
+      ref(`${w}.from.latent`, 'latentTraits', from.latent);
+      ref(`${w}.from.ability`, 'abilities', from.ability);
+      if (from.role !== undefined) {
+        if (!['tank', 'attacker', 'fast'].includes(from.role)) issues.push(`${w}.from.role: ungültig "${from.role}"`);
+        else thirdRoles.add(from.role);
+      }
+    } else if (k.from) issues.push(`${w}.from: nur für die dritte Fähigkeit`);
+  }
+  if (skillSlots['basic'] !== 1) issues.push('rpgSkills: genau ein Grundangriff (slot "basic")');
+  if (skillSlots['special'] !== 1) issues.push('rpgSkills: genau ein Spezialangriff (slot "special")');
+  for (const role of ['tank', 'attacker', 'fast']) if (!thirdRoles.has(role)) issues.push(`rpgSkills: dritte Fähigkeit für die Rolle "${role}" fehlt`);
+  const intents = ['attack', 'charge', 'heavy', 'guard', 'heal', 'tech'];
+  for (const e of data.rpgEnemies) {
+    const w = at('rpgEnemies', e.id);
+    text(`${w}.name`, e.name);
+    if (!['normal', 'elite', 'boss'].includes(e.kind)) issues.push(`${w}.kind: ungültig "${e.kind}"`);
+    if (!Array.isArray(e.pattern) || e.pattern.length === 0) issues.push(`${w}.pattern: mindestens ein Zug`);
+    (e.pattern ?? []).forEach((m, i) => {
+      if (!intents.includes(m)) issues.push(`${w}.pattern[${i}]: unbekannter Zug "${m}"`);
+      if (m === 'charge' && e.pattern[(i + 1) % e.pattern.length] !== 'heavy') issues.push(`${w}.pattern[${i}]: auf „charge“ muss „heavy“ folgen`);
+    });
+    for (const k of ['hp', 'atk', 'def', 'spd'] as const) num(`${w}.${k}`, e[k], 0.1, 20);
+  }
+  for (const kind of ['normal', 'elite', 'boss']) {
+    if (!data.rpgEnemies.some((e) => e.kind === kind)) issues.push(`rpgEnemies: mindestens ein Gegner der Art "${kind}"`);
+  }
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);

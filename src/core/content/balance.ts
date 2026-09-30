@@ -70,6 +70,10 @@ export interface Balance {
     maxTorches: number;
     /** Share of the carried (not yet secured) loot kept after a defeat. */
     defeatKeep: number;
+    /** Tower status durations (seconds) per dungeon round; burn, poison and regen values scale with it. */
+    secondsPerRound: number;
+    /** Rounds before the element technique can be used again. */
+    techniqueCooldown: number;
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */

@@ -642,6 +642,57 @@ export interface VoyageDecisionDef {
   options: [VoyageOptionDef, VoyageOptionDef];
 }
 
+/** GenLab RPG: where a skill sits on the hero. Element techniques are derived from `techniques`. */
+export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special';
+
+/** A turn-based skill of the GenLab RPG hero. */
+export interface RpgSkillDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** In content only basic, third and special (techniques come from `techniques`). */
+  slot: RpgSkillSlot;
+  /** enemy: hits the foe (statuses land on it) · self: acts on the hero. */
+  target: 'enemy' | 'self';
+  /** Damage as a multiple of a normal hit (0 = none). */
+  hit: number;
+  /** Number of hits (default 1), each rolled on its own. */
+  hits?: number;
+  /** Heals this share of the hero's max HP. */
+  heal?: number;
+  /** Removes harmful statuses (burn, poison, stun, slow) from the hero. */
+  cleanse?: boolean;
+  /**
+   * Status in rounds. value: burn/poison share of the user's ANG per round · stun: skips the next turn ·
+   * slow: acts last · shield: share of max HP absorbed · evade: dodge chance · regen: share of max HP per round ·
+   * armor: +share VER · reflect: share of damage taken sent back.
+   */
+  status?: { id: StatusId; rounds: number; value: number };
+  /** Rounds before the skill can be used again (0 = every round). */
+  cooldown: number;
+  /** Third skill: who gets it – an Erbanlage (after deep sequencing), an ability, or a role as fallback. */
+  from?: { latent?: string; ability?: string; role?: 'tank' | 'attacker' | 'fast' };
+}
+
+/** What a dungeon foe does next; shown to the player before they choose. */
+export type RpgIntent = 'attack' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
+
+/** A kind of dungeon foe; species and element come from the dungeon. */
+export interface RpgEnemyDef {
+  id: string;
+  /** Prefix to the species name, e.g. „Wilder“. */
+  name: string;
+  kind: 'normal' | 'elite' | 'boss';
+  /** Moves in order, repeated. */
+  pattern: RpgIntent[];
+  /** Multipliers on the dungeon strength. */
+  hp: number;
+  atk: number;
+  def: number;
+  spd: number;
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -678,6 +729,8 @@ export interface ContentData {
   relics: RelicDef[];
   techniques: TechniqueDef[];
   nameLists: NameListDef[];
+  rpgSkills: RpgSkillDef[];
+  rpgEnemies: RpgEnemyDef[];
 }
 
 export interface Registry<T extends { id: string }> {
