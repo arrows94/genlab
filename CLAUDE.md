@@ -56,6 +56,7 @@ Three layers with strict import direction `ui → core ← content` (aliases `@u
   
   When adding a field to `viewState`, give it a default and make sure `load()` merges that section.
 - Tabs are registered in `TABS` in `ui/App.svelte` and map to `FeatureDef.tab`. The tab bar shows areas (`GROUPS` in `App.svelte`) with the tabs as a second row; add a new tab to an area there (a tab in no area gets an area of its own). The last tab per area lives in `viewState.nav`. The filling bar on a tab comes from `core/tabActivity.ts` (`PROCESS_TABS`: add new process kinds there).
+- GenLab RPG runs take over the whole app: `view.world` in the store switches `App.svelte` to `RpgWorld.svelte` (no tabs, no resource bar, lab toasts only go to the inbox, `setSoundScope` mutes lab sounds). `Portal.svelte` plays the transition; the switch waits until the portal covers the screen (`view.portal`).
 - Never put a whole `GameState` (import, sync download) into deep `$state`: it would be adopted as Svelte proxies (slow, `structuredClone` fails). Use `$state.raw`.
 - Styling: global tokens in `ui/styles.css` (`--teal`, `--gold`, `--violet`, `--panel`, `--line` …), component-scoped CSS otherwise. Respect the `.reduce-motion` class for animations. Layouts must also work at phone width, where the tab bar moves to the bottom.
 - Platform glue: `ui/platform/` (storage, notifications, PWA, native). Mobile uses Capacitor Preferences instead of `localStorage` for saves.
