@@ -6,7 +6,7 @@ import { createEmptyState, type GameState } from './state';
  * `MIGRATIONS[oldVersion]` (old → old+1) whenever the state shape changes in
  * a way `mergeDefaults` cannot fix on its own (renames, restructures).
  */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -66,7 +66,45 @@ export const MIGRATIONS: Record<number, Migration> = {
     ...s,
     creatures: ((s.creatures as Record<string, unknown>[] | undefined) ?? []).map((c) => ({ epithet: null, ...c })),
   }),
+  // v9 → v10: finer tower floors – every former floor n is now floor 3n (a run started at s now starts at 3(s − 1) + 1).
+  9: (s) => migrateTowerFloors(s),
 };
+
+type Plain = Record<string, unknown>;
+const triple = (v: unknown) => (typeof v === 'number' ? v * 3 : v);
+const tripleStart = (v: unknown) => (typeof v === 'number' ? 3 * (v - 1) + 1 : v);
+
+function migrateTowerFloors(s: Plain): Plain {
+  const tower = s.tower as Plain | undefined;
+  const out: Plain = { ...s };
+  if (tower) {
+    const run = tower.run as Plain | null | undefined;
+    const entries = (list: unknown) => (Array.isArray(list) ? list.map((e: Plain) => ({ ...e, floor: triple(e.floor), ...('startFloor' in e ? { startFloor: tripleStart(e.startFloor) } : {}) })) : list);
+    const fight = (f: unknown) => (f && typeof f === 'object' ? { ...(f as Plain), floor: triple((f as Plain).floor) } : f);
+    out.tower = {
+      ...tower,
+      best: triple(tower.best),
+      bestEver: triple(tower.bestEver),
+      run: run ? { ...run, floor: triple(run.floor), startFloor: tripleStart(run.startFloor) } : run,
+      leaderboard: entries(tower.leaderboard),
+      history: entries(tower.history),
+      lastResult: fight(tower.lastResult),
+      lastDefeat: fight(tower.lastDefeat),
+    };
+  }
+  const boss = s.weeklyBoss as Plain | undefined;
+  if (boss) out.weeklyBoss = { ...boss, floor: triple(boss.floor) };
+  const stats = s.statistics as Plain | undefined;
+  if (stats && typeof stats['record.towerFloor'] === 'number') out.statistics = { ...stats, 'record.towerFloor': triple(stats['record.towerFloor']) };
+  const milestones = s.milestones as Plain | undefined;
+  if (milestones) {
+    out.milestones = Object.fromEntries(Object.entries(milestones).map(([k, v]) => {
+      const m = /^tower:(\d+)$/.exec(k);
+      return [m ? `tower:${Number(m[1]) * 3}` : k, v];
+    }));
+  }
+  return out;
+}
 
 export class SaveError extends Error {
   override name = 'SaveError';

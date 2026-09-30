@@ -266,15 +266,25 @@ export interface Balance {
     /** Three or more different elements: +share damage against the Wandler. */
     diversityBonus: number;
     enemyBase: Record<string, number>;
-    /** Enemy stats × growth^(floor − 1). */
+    /** Enemy stats × growth^(floor − subFloors). */
     enemyGrowth: number;
+    /**
+     * Small floors per former floor (3): enemy stats × growth^(floor − subFloors), and floor 3n rolls the same
+     * enemy, element and boss trait as the former floor n.
+     */
+    subFloors: number;
     bossEvery: number;
     bossHpMult: number;
     bossAtkMult: number;
+    /** Wächter: every n-th floor (not a boss floor) one stronger enemy alone – no checkpoint, no trait. */
+    guardEvery: number;
+    guardHpMult: number;
+    guardAtkMult: number;
     strongMult: number;
     weakMult: number;
     /** Damage = atk × mult × defScale / (defScale + def). */
     defScale: number;
+    /** Turm-Marken of floor f: tokensPerFloor × (1 + tokenGrowthPerFloor × (f − 1)), paid as whole numbers (running sum). */
     tokensPerFloor: number;
     tokenGrowthPerFloor: number;
     catalystEvery: number;

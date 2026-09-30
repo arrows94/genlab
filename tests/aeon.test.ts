@@ -21,12 +21,12 @@ const print = (reports: DayReport[]) => {
   }
 };
 
-/** A game just before its first Äon: three inheritances, tower floor 20, a strong stable. */
+/** A game just before its first Äon: three inheritances, tower floor 60, a strong stable. */
 function lateGame() {
   const g = makeGame(77);
   for (const f of ['farm', 'research', 'breeding', 'mine', 'expedition', 'biolab', 'sequencing', 'market', 'inheritance', 'tower', 'weekly', 'infiniteResearch', 'grandResearch']) unlockFeature(g, f);
   g.state.prestige.inheritance = { count: 3 };
-  g.state.tower.best = 20;
+  g.state.tower.best = 60;
   g.state.resources.heritage = D(900);
   for (const [r, v] of Object.entries({ food: 1e9, gold: 2e9, essence: 3e8, catalyst: 150, fragments: 2000, towerTokens: 400 })) g.state.resources[r] = D(v);
   const species = ['emberpup', 'bubbloon', 'pebblit', 'zephyrix', 'voltmouse', 'sproutle', 'frostling', 'umbrat', 'lumifly', 'ferrox'];
@@ -50,7 +50,7 @@ describe('endgame bot', () => {
     const paid = g.state.megaProjects.observatory?.paid ?? {};
     expect(Object.keys(paid).length > 0 || (g.state.megaProjects.observatory?.stage ?? 0) > 0 || g.state.processes.some((p) => p.kind === 'megaProject')).toBe(true);
     // A tower run is going (it keeps going through the Äon, the record stays).
-    expect(g.state.tower.best).toBeGreaterThanOrEqual(20);
+    expect(g.state.tower.best).toBeGreaterThanOrEqual(60);
     // Spare Turm-Marken went into relics, which sit in the team places.
     expect(Object.values(g.state.relics).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
     expect(g.state.tower.relicSlots.some((r) => r !== null)).toBe(true);

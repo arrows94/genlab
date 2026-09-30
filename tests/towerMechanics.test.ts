@@ -37,7 +37,7 @@ describe('boss traits', () => {
   });
 
   const fight = (g: ReturnType<typeof towerGame>, trait: string | undefined, team: Fighter[]) => {
-    const enemy = { ...enemyFor(g, 40), trait, hp: 1e9, maxHp: 1e9 };
+    const enemy = { ...enemyFor(g, 120), trait, hp: 1e9, maxHp: 1e9 };
     enemy.element = neutralFor(g, team[0]!.element);
     return { enemy, result: simulateFight(g, team.map((f) => ({ ...f })), enemy, Rng.fromSeed(7)) };
   };
@@ -72,7 +72,7 @@ describe('boss traits', () => {
 
   it('a regenerating boss is no wall: twice the power of its plain version is enough', () => {
     const g = towerGame();
-    const boss = enemyFor(g, 40);
+    const boss = enemyFor(g, 120);
     expect(boss.trait).toBe('regenerator');
     const wins = (power: number, trait: string | undefined) => {
       const team = ['emberpup', 'bubbloon', 'voltmouse'].map((s) => fighterFor(g, champion(g, power, s)));
@@ -125,7 +125,7 @@ describe('Aktionsleiste', () => {
 
   it('speed wins fights: +50 % Tempo helps about as much as +50 % Angriff', () => {
     const g = towerGame();
-    const enemy = enemyFor(g, 25);
+    const enemy = enemyFor(g, 75);
     const team = (boost: Partial<Record<'atk' | 'spd', number>>) =>
       ['fire', 'water', 'earth'].map((e) => unit(Math.round(16 * (boost.spd ?? 1)), { element: e, hp: 200, maxHp: 200, atk: Math.round(70 * (boost.atk ?? 1)), def: 33 }));
     const wins = (boost: Partial<Record<'atk' | 'spd', number>>) => {

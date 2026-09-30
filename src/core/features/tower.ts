@@ -47,6 +47,8 @@ export interface Fighter {
   firstStrike?: boolean;
   /** Boss of its floor (crown in the arena). */
   boss?: boolean;
+  /** Wächter of its floor (a stronger single enemy between the bosses). */
+  guard?: boolean;
   /** Second boss trait that wakes below half HP (Phase 2). */
   phaseTrait?: string;
 }
@@ -79,25 +81,52 @@ export function teamSize(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.tower', ctx.balance.tower.baseTeamSize));
 }
 
-/** Enemy for a floor – deterministic per floor, independent of the game RNG. */
-export function enemyFor(ctx: GameContext, floor: number): Fighter {
+/**
+ * Seed key of a floor: floor 3n keeps the key of the former floor n (same enemy, element, boss trait and
+ * group as before the finer floors), the small floors in between get keys of their own.
+ */
+function floorSeed(ctx: GameContext, floor: number): string {
+  const per = ctx.balance.tower.subFloors;
+  return floor % per === 0 ? String(floor / per) : `${floor}/${per}`;
+}
+
+/** Boss floor: every `bossEvery`-th. */
+export function isBossFloor(ctx: GameContext, floor: number): boolean {
+  return floor % ctx.balance.tower.bossEvery === 0;
+}
+
+/** Wächter floor: every `guardEvery`-th that is not a boss floor. */
+export function isGuardFloor(ctx: GameContext, floor: number): boolean {
+  const every = ctx.balance.tower.guardEvery;
+  return every > 0 && floor % every === 0 && !isBossFloor(ctx, floor);
+}
+
+/**
+ * Enemy for a floor – deterministic per floor, independent of the game RNG.
+ * `plain` leaves out the boss and Wächter multipliers and the trait (the
+ * weekly titan follows the floor's normal strength).
+ */
+export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolean } = {}): Fighter {
   const t = ctx.balance.tower;
-  const rng = Rng.fromSeed(hashSeed(`tower-${floor}`));
+  const rng = Rng.fromSeed(hashSeed(`tower-${floorSeed(ctx, floor)}`));
   const element = rng.pick(ctx.content.elements.list).id;
-  const scale = Math.pow(t.enemyGrowth, floor - 1);
-  const boss = floor % t.bossEvery === 0;
-  const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * (boss ? t.bossHpMult : 1));
+  const scale = Math.pow(t.enemyGrowth, floor - t.subFloors);
+  const boss = !opts.plain && isBossFloor(ctx, floor);
+  const guard = !opts.plain && isGuardFloor(ctx, floor);
+  const hpMult = boss ? t.bossHpMult : guard ? t.guardHpMult : 1;
+  const atkMult = boss ? t.bossAtkMult : guard ? t.guardAtkMult : 1;
+  const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * hpMult);
   const names = ctx.content.species.list.filter((s) => s.element === element);
   const species = rng.pick(names.length ? names : ctx.content.species.list);
   const traits = ctx.content.bossTraits.list;
   const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
   return {
-    name: `${boss ? 'Boss: ' : ''}${species.name}`,
+    name: `${boss ? 'Boss: ' : guard ? 'Wächter: ' : ''}${species.name}`,
     speciesId: species.id,
     element,
     hp,
     maxHp: hp,
-    atk: Math.round((t.enemyBase['atk'] ?? 8) * scale * (boss ? t.bossAtkMult : 1)),
+    atk: Math.round((t.enemyBase['atk'] ?? 8) * scale * atkMult),
     def: Math.round((t.enemyBase['def'] ?? 5) * scale),
     spd: Math.round((t.enemyBase['spd'] ?? 5) * Math.sqrt(scale)),
     power: 1,
@@ -105,12 +134,14 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
     team: false,
     trait,
     ...(boss ? { boss: true } : {}),
+    ...(guard ? { guard: true } : {}),
     technique: techniqueFor(ctx, element)?.id,
   };
 }
 
 /**
- * Everyone the team meets on a floor – deterministic per floor. Normal floors
+ * Everyone the team meets on a floor – deterministic per floor. A Wächter
+ * stands alone. Normal floors
  * from `groupFromFloor` on may bring 2–3 foes that share the floor's strength;
  * boss floors from `companionsFromFloor` on bring two companions in front of
  * the boss, and from `phaseFromFloor` on the boss wakes a second trait below
@@ -119,7 +150,7 @@ export function enemyFor(ctx: GameContext, floor: number): Fighter {
 export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
   const t = ctx.balance.tower;
   const main = enemyFor(ctx, floor);
-  const rng = Rng.fromSeed(hashSeed(`tower-group-${floor}`));
+  const rng = Rng.fromSeed(hashSeed(`tower-group-${floorSeed(ctx, floor)}`));
   const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
   const pickSpecies = () => (sameElement.length ? rng.pick(sameElement) : ctx.content.species.get(main.speciesId));
   if (main.boss) {
@@ -136,7 +167,7 @@ export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
     });
     return [...companions, main];
   }
-  if (floor < t.groupFromFloor) return [main];
+  if (main.guard || floor < t.groupFromFloor) return [main];
   // Bigger groups get likelier higher up.
   const r = rng.next();
   const late = floor >= t.groupFromFloor * 2.5;
@@ -396,6 +427,8 @@ export interface FighterSnapshot {
   row?: Row;
   /** Boss of the floor. */
   boss?: boolean;
+  /** Wächter of the floor. */
+  guard?: boolean;
 }
 
 export interface FightResult {
@@ -442,7 +475,7 @@ const HARMFUL: StatusId[] = ['burn', 'poison', 'stun', 'slow'];
  * Team synergies apply at the start. Team HP is full at the start of every
  * floor. Deterministic for a given RNG state.
  */
-export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number } = {}): FightResult {
+export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighter | Fighter[], rng: Rng, opts: { limitSec?: number; replay?: boolean } = {}): FightResult {
   const cfg = ctx.balance.tower;
   const foes = Array.isArray(enemies) ? enemies : [enemies];
   const log: string[] = [];
@@ -453,10 +486,12 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const intervals = actionIntervals(ctx, order);
   const fighters: FighterSnapshot[] = order.map((f, i) => ({
     name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i]!,
-    ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}),
+    ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}), ...(f.guard ? { guard: true } : {}),
   }));
-  const note = (line: string) => log.length < maxLog && log.push(line);
-  const record = (e: FightEvent) => events.length < MAX_FIGHT_EVENTS && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
+  // Without replay (fights nobody watches, e.g. offline) the events and the protocol stay empty; the outcome is the same.
+  const replay = opts.replay ?? true;
+  const note = (line: string) => replay && log.length < maxLog && log.push(line);
+  const record = (e: FightEvent) => replay && events.length < MAX_FIGHT_EVENTS && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
   let dealt = 0;
   const zeros = () => order.map(() => 0);
   const stats: FightStats = {
@@ -795,18 +830,30 @@ function missingRareAlleles(ctx: GameContext): { locus: string; allele: string }
   return activeLoci(ctx).flatMap((l) => l.alleles.filter((a) => a.weight <= 10 && !libraryHas(ctx, l.id, a.id)).map((a) => ({ locus: l.id, allele: a.id })));
 }
 
+/**
+ * Turm-Marken for clearing a floor. The amount per floor may be a fraction
+ * (tokensPerFloor × (1 + growth × (floor − 1))); paying the step of the
+ * rounded running sum gives whole numbers that add up to exactly that.
+ */
+export function floorTokens(ctx: GameContext, floor: number): Decimal {
+  const t = ctx.balance.tower;
+  const total = (f: number) => (f <= 0 ? 0 : Math.round(t.tokensPerFloor * (f + (t.tokenGrowthPerFloor * f * (f - 1)) / 2)));
+  return D(Math.max(0, total(floor) - total(floor - 1)));
+}
+
 /** Side-effect-free preview of what clearing a floor pays. */
-export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; checkpoint: boolean; milestone: boolean } {
+export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Decimal; catalyst: number; allele: boolean; boss: boolean; guard: boolean; checkpoint: boolean; milestone: boolean } {
   const t = ctx.balance.tower;
   const alleleFloor = floor % t.alleleEvery === 0;
   const allele = alleleFloor && missingRareAlleles(ctx).length > 0;
-  let tokens = D(t.tokensPerFloor * (1 + t.tokenGrowthPerFloor * (floor - 1))).floor();
+  let tokens = floorTokens(ctx, floor);
   if (alleleFloor && !allele) tokens = tokens.mul(2);
   return {
     tokens,
     catalyst: floor % t.catalystEvery === 0 ? 1 + Math.floor(floor / (t.catalystEvery * 5)) : 0,
     allele,
-    boss: floor % t.bossEvery === 0,
+    boss: isBossFloor(ctx, floor),
+    guard: isGuardFloor(ctx, floor),
     checkpoint: floor % t.checkpointEvery === 0,
     milestone: floor % t.milestoneEvery === 0,
   };
@@ -815,7 +862,7 @@ export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Deci
 function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null } {
   const t = ctx.balance.tower;
   const rewards: Record<string, Decimal> = {};
-  rewards['towerTokens'] = D(t.tokensPerFloor * (1 + t.tokenGrowthPerFloor * (floor - 1))).floor();
+  rewards['towerTokens'] = floorTokens(ctx, floor);
   if (floor % t.catalystEvery === 0) rewards['catalyst'] = D(1 + Math.floor(floor / (t.catalystEvery * 5)));
   let allele: { locus: string; allele: string } | null = null;
   if (floor % t.alleleEvery === 0) {
@@ -829,15 +876,15 @@ function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string
   return { rewards, allele };
 }
 
-/** Fights the next floor of the running tower run. */
-export function fightNextFloor(ctx: GameContext): void {
+/** Fights the next floor of the running tower run (`replay`: keep the events for the arena). */
+export function fightNextFloor(ctx: GameContext, replay = true): void {
   const tw = ctx.state.tower;
   const run = tw.run;
   if (!run) return;
   const team = run.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
-  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng);
+  const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng, { replay });
   tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
     tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
@@ -875,7 +922,8 @@ export const towerSystem: System = {
     tw.run.elapsedMs += dtMs;
     while (tw.run && tw.run.elapsedMs >= interval) {
       tw.run.elapsedMs -= interval;
-      fightNextFloor(ctx);
+      // A long step (offline) fights many floors at once: only the last one is replayed in the arena.
+      fightNextFloor(ctx, tw.run.elapsedMs < interval);
     }
   },
 };

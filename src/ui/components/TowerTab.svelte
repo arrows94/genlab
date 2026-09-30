@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
@@ -92,13 +92,14 @@
     // Events are capped – make the end state match the outcome.
     fighters.forEach((f, i) => {
       if (lr.win && !f.team) hp[i] = 0;
-      if (!lr.win && f.team && lr.log.at(-1) !== 'Zeit abgelaufen') hp[i] = 0;
+      if (!lr.win && f.team && !(lr.stats?.timeout ?? lr.log.at(-1) === 'Zeit abgelaufen')) hp[i] = 0;
     });
     return { hp, elements };
   }
 
-  /** Seconds the fight lasted (from the log line, else the last event). */
+  /** Seconds the fight lasted (from the fight stats or the log line, else the last event). */
   function fightSeconds(lr: LastResult, events: ReplayEvent[]): number {
+    if (lr.stats) return lr.stats.seconds;
     const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
     if (m) return Number(m[1]!.replace(',', '.'));
     if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
@@ -178,7 +179,7 @@
     banner = null;
     popups = [];
     marks = {};
-    if (lr.floor % game.balance.tower.bossEvery === 0) play('drum');
+    if (isBossFloor(game, lr.floor)) play('drum');
     if (prefs.reduceMotion || viewState.tower.replaySpeed === 0) return finish(lr, key, seconds);
     // One fixed time scale for every fight (short fights stay short, long ones long);
     // only fights that would outlast the pause until the next floor are sped up.
@@ -293,7 +294,10 @@
       current,
       nextFloor,
       enemy,
-      boss: nextFloor % game.balance.tower.bossEvery === 0,
+      boss: isBossFloor(game, nextFloor),
+      guard: enemy.guard === true,
+      // The column shows only a few floors around the team – the next boss may be far above.
+      bossIn: game.balance.tower.bossEvery - (nextFloor % game.balance.tower.bossEvery || game.balance.tower.bossEvery),
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
       targeting: targetingOf(game, enemy),
       group,
@@ -415,7 +419,7 @@
     style="--el: {el(u.element).color}"
   >
     <div class="art">
-      {#if !u.team && (u.boss ?? (foeUnits.length === 1 && arena.floor % game.balance.tower.bossEvery === 0))}<span class="crown">👑</span>{/if}
+      {#if !u.team && (u.boss ?? (foeUnits.length === 1 && isBossFloor(game, arena.floor)))}<span class="crown">👑</span>{/if}
       <span class="platform" aria-hidden="true"></span>
       <CreatureSvg appearance={look(u)} shape={species.shape} tier={species.tier} size={big ? 104 : 60} shiny={u.creature?.shiny ?? false} />
       {#each sparks.filter((p) => p.t === i) as p (p.id)}<span class="spark" style="--sc: {p.color}" aria-hidden="true"></span>{/each}
@@ -464,10 +468,11 @@
     <div class="roof"></div>
     {#if data.aboveBest}<div class="floor ghost"><span class="small muted">⋮ Rekord {data.tw.best}</span></div>{/if}
     {#each data.floors as fl (fl.f)}
-      <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:best={fl.best}>
+      <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:guard={fl.guard} class:best={fl.best}>
         <span class="fnum num">{fl.f}</span>
         <span class="icons">
           {#if fl.boss}<span title="Boss{fl.trait ? `: ${fl.trait.name}` : ''}">👑</span>{/if}
+          {#if fl.guard}<span title="Wächter: ein stärkerer Gegner allein">🛡️</span>{/if}
           {#if fl.trait}<span title="{fl.trait.name}: {fl.trait.description}">{fl.trait.icon}</span>{/if}
           {#if fl.milestone}<span title="Meilenstein">🏅</span>{/if}
           {#if fl.checkpoint}<span title="Checkpoint">🚩</span>{/if}
@@ -488,12 +493,13 @@
       </div>
     {/each}
     <div class="base"></div>
+    {#if !data.boss}<p class="bossin small muted" title="Boss-Etagen alle {game.balance.tower.bossEvery} Etagen, mit Checkpoint">👑 Boss in {data.bossIn} {data.bossIn === 1 ? 'Etage' : 'Etagen'}</p>{/if}
   </aside>
 
   <!-- Arena -->
   <section class="arena panel" style="--foe: {el(data.enemy.element).color}">
     <div class="arena-head">
-      <span class="floor-tag" class:boss={arena.floor % game.balance.tower.bossEvery === 0}>Etage <b class="num">{arena.floor}</b></span>
+      <span class="floor-tag" class:boss={isBossFloor(game, arena.floor)}>Etage <b class="num">{arena.floor}</b></span>
       <span class="small muted">
         {#if arena.mode === 'fight'}
           {replay && !replay.done ? 'Kampf läuft …' : data.tw.lastResult?.win ? 'Gewonnen' : 'Verloren'}
@@ -591,6 +597,9 @@
       </div>
       {#if data.trait}
         <p class="trait small"><b>{data.trait.icon} {data.trait.name}:</b> {data.trait.description}</p>
+      {/if}
+      {#if data.guard}
+        <p class="trait small guard">🛡️ <b>Wächter:</b> ein stärkerer Gegner allein – etwa so stark wie drei Etagen weiter oben. Kein Checkpoint.</p>
       {/if}
       {#if data.phase && content.bossTraits.has(data.phase)}
         {@const ph = content.bossTraits.get(data.phase)}
@@ -848,6 +857,9 @@
   .floor.ghost { background: none; border-style: dashed; justify-content: center; }
   .floor.cleared { color: var(--text); background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--teal) 10%, var(--bg-2)) 0 18px, var(--panel-2) 18px 20px); }
   .floor.boss { border-color: color-mix(in srgb, var(--danger) 60%, var(--line)); }
+  .floor.guard { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+  .bossin { margin: 0.35rem 0 0; text-align: center; }
+  .trait.guard { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .floor.next { border: 2px solid var(--gold); color: var(--text); animation: glow 1.6s ease-in-out infinite; }
   .floor.best::after { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; border-top: 2px dashed var(--gold); }
   .fnum { font-weight: 700; min-width: 1.8rem; }

@@ -8,16 +8,15 @@ import { NOW, balance, content, makeGame } from './helpers';
 
 const DAY = 86_400_000;
 
-/** KP of a floor's normal enemy (a boss floor without its boss multiplier) – what the titan is built from. */
+/** KP of a floor's normal enemy (without boss or Wächter multipliers) – what the titan is built from. */
 function normalHp(g: ReturnType<typeof makeGame>, floor: number): number {
-  const e = enemyFor(g, floor);
-  return e.boss ? Math.round(e.maxHp / balance.tower.bossHpMult) : e.maxHp;
+  return enemyFor(g, floor, { plain: true }).maxHp;
 }
 
 function bossGame() {
   const g = makeGame();
   unlockFeature(g, 'tower');
-  g.state.tower.best = 20;
+  g.state.tower.best = 60;
   unlockFeature(g, 'weeklyBoss');
   expect(setTeam(g, [g.state.creatures[0]!.id]).ok).toBe(true);
   refreshWeeklyBoss(g, NOW);
@@ -25,8 +24,8 @@ function bossGame() {
 }
 
 describe('Wochen-Boss', () => {
-  it('appears at tower floor 10', () => {
-    expect(content.features.get('weeklyBoss').condition).toEqual({ type: 'towerFloor', floor: 10 });
+  it('appears at its minimum tower floor', () => {
+    expect(content.features.get('weeklyBoss').condition).toEqual({ type: 'towerFloor', floor: balance.weeklyBoss.minFloor });
     const g = makeGame();
     expect(attackWeeklyBoss(g).ok).toBe(false);
   });
@@ -36,8 +35,8 @@ describe('Wochen-Boss', () => {
     const b = g.state.weeklyBoss;
     expect(b.element).toBe(voyageDestination(g, NOW).element);
     expect(content.species.get(b.species).element).toBe(b.element);
-    expect(b.floor).toBe(20);
-    expect(b.maxHp).toBe(Math.round(normalHp(g, 20) * balance.weeklyBoss.hpMult));
+    expect(b.floor).toBe(60);
+    expect(b.maxHp).toBe(Math.round(normalHp(g, 60) * balance.weeklyBoss.hpMult));
     expect(b.attempts).toBe(balance.weeklyBoss.attemptsPerDay);
   });
 
@@ -49,16 +48,18 @@ describe('Wochen-Boss', () => {
       refreshWeeklyBoss(g, NOW);
       return g.state.weeklyBoss.maxHp;
     };
-    const [a, b, c] = [hpAt(39), hpAt(40), hpAt(41)];
+    const [a, b, c] = [hpAt(119), hpAt(120), hpAt(121)];
     expect(b).toBeGreaterThan(a);
     expect(c).toBeGreaterThan(b);
     expect(b / a).toBeCloseTo(balance.tower.enemyGrowth, 1);
-    g.state.tower.best = 40;
+    g.state.tower.best = 120;
     g.state.weeklyBoss.week = -1;
     refreshWeeklyBoss(g, NOW);
     const titan = bossFighter(g);
     expect(titan.technique).toBeUndefined();
-    expect(titan.atk).toBe(Math.round(Math.round(enemyFor(g, 40).atk / balance.tower.bossAtkMult) * balance.weeklyBoss.atkMult));
+    expect(titan.atk).toBe(Math.round(enemyFor(g, 120, { plain: true }).atk * balance.weeklyBoss.atkMult));
+    // A Wächter record does not make it jump either.
+    expect(hpAt(balance.tower.guardEvery * 4) / hpAt(balance.tower.guardEvery * 4 - 1)).toBeCloseTo(balance.tower.enemyGrowth, 1);
   });
 
   it('reminds of unused attacks before a reset', () => {
@@ -151,19 +152,20 @@ describe('Turm-Rekord senken (Hilfe für festgefahrene Spielstände)', () => {
 
   it('only lowers, never during a run, and pays first-time rewards only once', () => {
     const g = bossGame();
-    g.state.tower.best = 60;
-    expect(lowerRecordAndBoss(g, 60).ok).toBe(false);
+    const m = balance.tower.milestoneEvery;
+    g.state.tower.best = m + 10;
+    expect(lowerRecordAndBoss(g, m + 10).ok).toBe(false);
     expect(lowerRecordAndBoss(g, -1).ok).toBe(false);
-    expect(lowerRecordAndBoss(g, 49).ok).toBe(true);
-    // Clearing floor 50 again is no new record: no second milestone shards.
-    g.state.tower.run = { floor: 49, team: g.state.tower.team, elapsedMs: 0, startFloor: 50 };
+    expect(lowerRecordAndBoss(g, m - 1).ok).toBe(true);
+    // Clearing the milestone floor again is no new record: no second milestone shards.
+    g.state.tower.run = { floor: m - 1, team: g.state.tower.team, elapsedMs: 0, startFloor: m };
     expect(lowerRecordAndBoss(g, 10).ok).toBe(false);
     const c = g.state.creatures[0]!;
     c.stats = { hp: 1e9, atk: 1e9, def: 1e9, spd: 1e9 };
     g.invalidate();
     const shards = g.state.resources.aeonShards?.toNumber() ?? 0;
     fightNextFloor(g);
-    expect(g.state.tower.best).toBe(50);
+    expect(g.state.tower.best).toBe(m);
     expect(g.state.resources.aeonShards?.toNumber() ?? 0).toBe(shards);
   });
 

@@ -117,6 +117,36 @@ describe('real migrations', () => {
     expect(state.creatures[0]!.boosts).toEqual({});
     expect(state.creatures[0]!.boostUses).toBe(0);
   });
+
+  it('v9 → v10 turns every former tower floor n into floor 3n', () => {
+    const g = makeGame();
+    const raw = JSON.parse(serialize(g.state));
+    raw.saveVersion = 9;
+    Object.assign(raw.state.tower, {
+      best: 39,
+      bestEver: 52,
+      run: { floor: 34, team: [], elapsedMs: 1200, startFloor: 31 },
+      leaderboard: [{ floor: 39, team: ['emberpup'], at: 5 }],
+      history: [{ floor: 38, startFloor: 31, team: ['emberpup'], at: 6 }, { floor: 12, team: [], at: 1 }],
+      lastResult: { floor: 35, win: false, log: [] },
+      lastDefeat: null,
+    });
+    raw.state.weeklyBoss.floor = 39;
+    raw.state.weeklyBoss.maxHp = 123456;
+    raw.state.statistics['record.towerFloor'] = 52;
+    raw.state.milestones = { 'tower:25': { activeMs: 1, simMs: 2 }, 'feature:tower': { activeMs: 3, simMs: 4 } };
+    const { state } = deserialize(JSON.stringify(raw));
+    const t = state.tower;
+    expect([t.best, t.bestEver, t.run?.floor, t.run?.startFloor]).toEqual([117, 156, 102, 91]);
+    expect(t.leaderboard[0]!.floor).toBe(117);
+    expect(t.history.map((h) => [h.floor, h.startFloor])).toEqual([[114, 91], [36, undefined]]);
+    expect(t.lastResult?.floor).toBe(105);
+    expect(t.lastDefeat).toBeNull();
+    expect(state.weeklyBoss.floor).toBe(117);
+    expect(state.weeklyBoss.maxHp).toBe(123456);
+    expect(state.statistics['record.towerFloor']).toBe(156);
+    expect(Object.keys(state.milestones).sort()).toEqual(['feature:tower', 'tower:75']);
+  });
 });
 
 describe('async save storage', () => {

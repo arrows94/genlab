@@ -27,16 +27,12 @@ function bossSpecies(ctx: GameContext, element: string): string {
 }
 
 /**
- * The normal enemy of a floor, without the boss multipliers: the titan follows
- * the record smoothly (a record on a boss floor would otherwise make it jump
- * ×bossHpMult and drop again one floor later).
+ * The normal enemy of a floor, without boss or Wächter multipliers: the titan
+ * follows the record smoothly (a record on a boss floor would otherwise make it
+ * jump ×bossHpMult and drop again one floor later).
  */
 function titanBase(ctx: GameContext, floor: number): Fighter {
-  const base = enemyFor(ctx, floor);
-  if (!base.boss) return base;
-  const t = ctx.balance.tower;
-  const hp = Math.round(base.maxHp / t.bossHpMult);
-  return { ...base, hp, maxHp: hp, atk: Math.round(base.atk / t.bossAtkMult), boss: undefined };
+  return enemyFor(ctx, floor, { plain: true });
 }
 
 /**

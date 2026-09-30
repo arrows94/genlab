@@ -39,7 +39,7 @@ export const balance: Balance = {
     baseSlots: 1,
   },
   weeklyBoss: {
-    minFloor: 10,
+    minFloor: 30,
     hpMult: 25,
     atkMult: 1.5,
     // Seconds of fight time per attack (same fight as in the tower).
@@ -57,7 +57,7 @@ export const balance: Balance = {
   timeCrystals: {
     skipHours: 4,
     longProjectHours: 1,
-    towerEvery: 25,
+    towerEvery: 75,
   },
   daily: {
     rewards: [
@@ -177,13 +177,14 @@ export const balance: Balance = {
     idleSec: 120,
     sessionGapSec: 300,
     maxTickSec: 5,
-    towerMilestones: [10, 25, 50, 75, 100, 150, 200],
+    towerMilestones: [30, 75, 150, 225, 300, 450, 600],
   },
   automation: {
     intervalSec: 5,
   },
   tower: {
-    fightIntervalSec: 8,
+    // Three small floors per former floor: 4 s each (in former floors 1.5× as long as the old 8 s; see TODO.md).
+    fightIntervalSec: 4,
     baseTeamSize: 3,
     // Aktionsleiste: a fighter acts every (average speed / own speed)^speedExponent seconds of fight time.
     speedExponent: 0.8,
@@ -199,15 +200,15 @@ export const balance: Balance = {
     techniqueEvery: 5,
     enemyTechniqueEvery: 7,
     // Enemy groups: from groupFromFloor on up to three foes share the floor's strength (hp/atk × groupHp/groupAtk[n − 1]).
-    groupFromFloor: 12,
+    groupFromFloor: 36,
     groupHp: [1, 1.1, 1.2],
     groupAtk: [1, 1, 1.05],
     // Boss floors from companionsFromFloor on bring two companions (share of a normal enemy of the floor), standing in front.
-    companionsFromFloor: 20,
+    companionsFromFloor: 60,
     companionHp: 0.35,
     companionAtk: 0.4,
     // From phaseFromFloor on bosses gain a second trait below phaseAt of their HP.
-    phaseFromFloor: 30,
+    phaseFromFloor: 90,
     phaseAt: 0.5,
     // Flächenangriff: every n-th action of such a boss.
     sweepEvery: 3,
@@ -217,22 +218,29 @@ export const balance: Balance = {
     pairBonus: 0.08,
     diversityBonus: 0.25,
     enemyBase: { hp: 60, atk: 9, def: 5, spd: 6 },
-    enemyGrowth: 1.11,
-    bossEvery: 10,
+    // ×1.11 per former floor, spread over three small ones.
+    enemyGrowth: Math.cbrt(1.11),
+    subFloors: 3,
+    bossEvery: 30,
     bossHpMult: 2.2,
     bossAtkMult: 1.3,
+    // About one former floor stronger (×1.23 KP × ANG).
+    guardEvery: 10,
+    guardHpMult: 1.12,
+    guardAtkMult: 1.1,
     strongMult: 1.5,
     weakMult: 0.7,
     defScale: 50,
-    tokensPerFloor: 2,
-    tokenGrowthPerFloor: 0.1,
-    catalystEvery: 10,
-    alleleEvery: 25,
+    // Half of a former floor per small floor: with 4 s instead of 8 s the same Turm-Marken per hour.
+    tokensPerFloor: 1,
+    tokenGrowthPerFloor: 0.1 / 3,
+    catalystEvery: 30,
+    alleleEvery: 75,
     leaderboardSize: 3,
     historySize: 10,
-    checkpointEvery: 10,
-    bossTraitFromFloor: 20,
-    milestoneEvery: 50,
+    checkpointEvery: 30,
+    bossTraitFromFloor: 60,
+    milestoneEvery: 150,
     milestoneShards: 3,
     milestoneModifiers: [
       { target: 'tower.damage', op: 'pct', value: 0.15 },
