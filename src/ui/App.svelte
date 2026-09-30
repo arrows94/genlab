@@ -37,6 +37,8 @@
   import CreatureDetail from './components/CreatureDetail.svelte';
   import TowerTab from './components/TowerTab.svelte';
   import RpgTab from './components/RpgTab.svelte';
+  import RpgWorld from './components/RpgWorld.svelte';
+  import Portal from './components/Portal.svelte';
   import AeonTab from './components/AeonTab.svelte';
   import AnomaliesTab from './components/AnomaliesTab.svelte';
   import WeeklyBanner from './components/WeeklyBanner.svelte';
@@ -135,7 +137,7 @@
   });
 
   // Background music follows the settings and changes its mood with the area.
-  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, moodFor(view.tab)));
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, view.world !== 'off' ? 'isekai' : moodFor(view.tab)));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
@@ -146,7 +148,8 @@
   $effect(() => document.documentElement.style.setProperty('--header-h', `${headerH}px`));
   /** Height of the tab bar; on phones it is docked at the bottom and toasts and page padding stay clear of it. */
   let dockH = $state(0);
-  $effect(() => document.documentElement.style.setProperty('--dock-h', `${dockH}px`));
+  // In the other world there is no tab bar.
+  $effect(() => document.documentElement.style.setProperty('--dock-h', `${view.world === 'off' ? dockH : 0}px`));
   $effect(() => {
     view.tab;
     navEl?.querySelector('button.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
@@ -162,6 +165,9 @@
     <DnaHelix pairs={14} width={200} height={44} />
     <p>Genlab lädt …</p>
   </div>
+{:else if view.world !== 'off'}
+  <!-- GenLab RPG: the monster is in another world – nothing of the lab is visible until the run is over. -->
+  <RpgWorld />
 {:else}
 <div class="app">
   <header class:stuck bind:offsetHeight={headerH}>
@@ -217,10 +223,11 @@
 {#if view.applyUpdate}<UpdateBanner />{/if}
 {/if}
 <Toasts />
-{#if view.ready}<Celebration />{/if}
+{#if view.ready && view.world === 'off'}<Celebration />{/if}
 <NotificationCenter />
 <SyncDialog />
 <ConfirmDialog />
+<Portal />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 
 <style>

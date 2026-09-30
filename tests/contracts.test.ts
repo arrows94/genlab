@@ -164,6 +164,14 @@ describe('delivering', () => {
     expect(requirementStatus(g, c, { kind: 'topLoci', count: 1, homozygous: true })).toBe('met');
   });
 
+  it('brings a Fackel per contract once the GenLab RPG is open', () => {
+    const g = contractGame();
+    const offer = g.state.contracts.offers[0]!;
+    expect(contractReward(g, offer)['torches']).toBeUndefined();
+    unlockFeature(g, 'rpg');
+    expect(contractReward(g, offer)['torches']!.toNumber()).toBe(balance.rpg.contractTorches);
+  });
+
   it('hands the creature over for the rewards', () => {
     const g = contractGame();
     unlockFeature(g, 'biolab');

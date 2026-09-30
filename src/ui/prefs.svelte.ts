@@ -25,6 +25,8 @@ export const prefs = $state({
   musicVolume: 0.5,
   /** Reminders while the game is in the background (needs the system permission). */
   notifications: false,
+  /** Debug tools in the options (switched on with `?debug=1` in the address, off with `?debug=0`). */
+  debug: false,
 });
 
 function apply(): void {
@@ -41,6 +43,9 @@ export function loadPrefs(): void {
   }
   if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches && !localStorage.getItem(KEY)) prefs.reduceMotion = true;
   apply();
+  // `?debug=1` / `?debug=0` in the address switches the debug tools on or off for this device.
+  const flag = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('debug') : null;
+  if (flag === '1' || flag === '0') updatePrefs({ debug: flag === '1' });
 }
 
 export function updatePrefs(patch: Partial<typeof prefs>): void {

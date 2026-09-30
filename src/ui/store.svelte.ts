@@ -13,7 +13,7 @@ import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
 import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
-import { isMuted, play, playedRecently, silently } from './sound';
+import { isMuted, play, playedRecently, setSoundScope, silently } from './sound';
 import { wireSounds } from './soundEvents';
 import { noteActive } from '@core/activity';
 
@@ -58,7 +58,58 @@ export const view = $state({
   /** Big full-screen moments waiting to be shown, oldest first (optimal DNA, first shiny creature). */
   celebrations: [] as { key: number; kind: 'perfect' | 'shiny'; creatureId: number; species: string }[],
   returns: [] as { id: number; missionId: string; creatureId: number; rewards: [string, string][]; wildSpecies: string | null }[],
+  /**
+   * GenLab RPG, the other world: 'run' while a run lasts, 'result' after it until the player goes back to the lab.
+   * Meanwhile the app shows only the other world, and news from the lab go quietly into the notification center.
+   */
+  world: 'off' as 'off' | 'run' | 'result',
+  /** Portal animation between the lab and the other world (`mid`: the screen is covered, the switch may happen). */
+  portal: null as { dir: 'in' | 'out'; creatureId: number; key: number; mid: boolean } | null,
 });
+
+let portalKey = 0;
+
+/**
+ * Plays the portal: 'in' pulls the monster from the lab into the other world, 'out' brings it back. The switch
+ * of the screen waits for the moment the portal covers everything (`portalCovered`).
+ */
+export function startPortal(dir: 'in' | 'out', creatureId: number): void {
+  view.portal = { dir, creatureId, key: ++portalKey, mid: false };
+}
+
+/** The portal covers the screen: now the app switches between the lab and the other world. */
+export function portalCovered(): void {
+  if (!view.portal) return;
+  view.portal = { ...view.portal, mid: true };
+  if (view.portal.dir === 'out') leaveWorld();
+  else refresh();
+}
+
+export function portalDone(): void {
+  view.portal = null;
+}
+
+/** Sounds of the other world (fights, level-ups, UI) – everything else waits in the lab. */
+const WORLD_SOUNDS = ['hit', 'hitCrit', 'hitWeak', 'whoosh', 'technique', 'ko', 'floorClear', 'milestone', 'runEnded', 'talent', 'click', 'bonk', 'portal'] as const;
+
+/** Follows the game: a running RPG run pulls the app into the other world; its end leaves the result screen. */
+function syncWorld(): void {
+  const running = game.state.rpg.run !== null;
+  // A portal on its way in keeps the lab on screen until it covers everything.
+  if (running && view.world === 'off' && view.portal?.dir === 'in' && !view.portal.mid) return;
+  const next = running ? 'run' : view.world === 'run' ? 'result' : view.world;
+  if (next === view.world) return;
+  view.world = next;
+  setSoundScope(next === 'off' ? null : WORLD_SOUNDS);
+}
+
+/** „Zurück ins Labor“ after a run. */
+export function leaveWorld(): void {
+  if (game.state.rpg.run) return;
+  view.world = 'off';
+  setSoundScope(null);
+  refresh();
+}
 
 let listId = 0;
 
@@ -69,6 +120,8 @@ let toastId = 0;
  */
 export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500, log = true): void {
   if (log) record(text, kind);
+  // In the other world only direct feedback to a click shows; news from the lab wait in the notification center.
+  if (log && view.world !== 'off') return;
   const t = { id: ++toastId, text, kind };
   view.toasts = [...view.toasts.slice(-4), t];
   setTimeout(() => (view.toasts = view.toasts.filter((x) => x.id !== t.id)), ms);
@@ -226,6 +279,7 @@ export function openTab(tab: string): void {
 }
 
 export function refresh(): void {
+  syncWorld();
   view.frame++;
   view.slowFrame++;
 }
@@ -400,6 +454,7 @@ function startLoop(): void {
     if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
     if (t - lastRender >= 100) {
       lastRender = t;
+      syncWorld();
       view.frame++;
     }
     if (t - lastSlow >= 250) {

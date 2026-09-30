@@ -5,6 +5,7 @@
   import type { GameState } from '@core/state';
   import { exportText, readImport, applyImport, hardReset, save, toast, view, game, ask, act } from '../store.svelte';
   import { setNameStyle } from '@core/actions';
+  import { DEBUG_RESETS, debugReset, type DebugResetDef } from '@core/debug';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { play } from '../sound';
   import { CHANGELOG, formatReleaseDate } from '../changelog';
@@ -115,6 +116,11 @@
       toast('Benachrichtigungen sind blockiert – bitte in den System- bzw. Browser-Einstellungen erlauben.', 'error', 6000);
     }
   }
+  async function runDebug(r: DebugResetDef) {
+    if (!(await ask(`${r.name}? ${r.description}`, { ok: 'Ausführen', danger: true }))) return;
+    if (act(debugReset(game, r.id))) toast(`🛠️ ${r.name} – erledigt.`, 'info', 3500, false);
+  }
+  const debugGroups = [...new Set(DEBUG_RESETS.map((r) => r.group))];
   async function doReset() {
     if ((await ask('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden.', { ok: 'Löschen', danger: true })) && (await ask('Ganz sicher? Exportiere vorher ein Backup!', { ok: 'Endgültig löschen', danger: true }))) hardReset();
   }
@@ -188,6 +194,22 @@
         </select>
       </label>
       <p class="small muted">{nameStyle === 'classic' ? 'Zum Beispiel „Glussling“ aus Glutwelpe × Sprössling.' : 'Zum Beispiel „Wuselbert Funkenstein“ – Kinder mischen meist die Rufnamen der Eltern.'} Gilt für diesen Spielstand und neuen Nachwuchs; vorhandene Namen bleiben. Beinamen gibt es in beiden Varianten.</p>
+    </article>
+  {/if}
+
+  {#if prefs.debug}
+    <article class="panel debug">
+      <h3>🛠️ Debug-Werkzeuge</h3>
+      <p class="small muted">Zum Testen: setzt einzelne Spielmechaniken zurück. Verändert den Spielstand – vorher am besten exportieren.</p>
+      {#each debugGroups as group (group)}
+        <h4>{group}</h4>
+        <div class="debug-list">
+          {#each DEBUG_RESETS.filter((r) => r.group === group) as r (r.id)}
+            <button title={r.description} onclick={() => runDebug(r)}>{r.name}</button>
+          {/each}
+        </div>
+      {/each}
+      <button class="small debug-off" onclick={() => updatePrefs({ debug: false })}>Debug-Werkzeuge ausblenden</button>
     </article>
   {/if}
 
@@ -285,4 +307,9 @@
   .dialog h3 { margin-top: 0; }
   .warn { color: var(--danger); margin: 0 0 0.5rem; font-size: 0.9rem; }
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+  .debug { border-color: #b58b3a; }
+  .debug h4 { margin: 0.6rem 0 0.3rem; font-size: 0.85rem; color: var(--muted); }
+  .debug-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .debug-list button { font-size: 0.85rem; padding: 0.35rem 0.6rem; }
+  .debug-off { margin-top: 0.7rem; }
 </style>

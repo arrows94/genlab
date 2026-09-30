@@ -3,10 +3,7 @@
   import { canAfford, toCost } from '@core/costs';
   import { effectiveStats, findCreature } from '@core/creatures';
   import { campSlots, campsUsed, missionRewardFactor } from '@core/features/expedition';
-  import {
-    optionRewards, pendingDecision, resolveVoyage, revealedEvents, runningVoyage, startVoyage, voyageDestination, voyageDurationMs,
-    type VoyageData,
-  } from '@core/features/voyage';
+  import { optionRewards, pendingDecision, resolveVoyage, revealedEvents, runningVoyage, startVoyage, type VoyageData, voyageBonus, voyageDestination, voyageDurationMs } from '@core/features/voyage';
   import { activeMutation, nextWeekStart } from '@core/features/weekly';
   import { expressedAppearance } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
@@ -175,6 +172,9 @@
       {/each}
       <span class="small muted">{data.chosen.length > 0 ? `mit diesem Team (×${formatNumber(data.factor, { decimals: 2 })})` : 'pro Teammitglied'}</span>
     </div>
+    {#if Object.keys(voyageBonus(game)).length > 0}
+      <p class="small muted">Dazu immer: {#each Object.entries(voyageBonus(game)) as [res, amount] (res)}<span class="bonus">+{amount} {content.resources.get(res).icon}</span>{/each}</p>
+    {/if}
     <div class="natives">
       {#each data.dest.species as id (id)}
         {@const s = content.species.get(id)}
@@ -247,4 +247,5 @@
   .tile.on { border-color: var(--el); box-shadow: 0 0 10px color-mix(in srgb, var(--el) 45%, transparent); }
   .tname { font-size: 0.68rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .go { width: 100%; }
+  .bonus + .bonus { margin-left: 0.35rem; }
 </style>

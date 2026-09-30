@@ -37,6 +37,8 @@ export interface Balance {
     /** Events on the way (one per day, spread over the voyage). */
     events: number;
     cost: ResourceAmounts;
+    /** Fixed loot on top of the destination's (resources of locked features are left out). */
+    bonus: ResourceAmounts;
   };
   deepSequencing: {
     hours: number;
@@ -71,13 +73,15 @@ export interface Balance {
     /** Fackeln with every Tagesbelohnung once the RPG is unlocked, and on the calendar's last day. */
     dailyTorches: number;
     dailyTorchesLast: number;
+    /** Fackeln per fulfilled Gen-Auftrag once the RPG is unlocked. */
+    contractTorches: number;
     /** Share of the carried (not yet secured) loot kept after a defeat. */
     defeatKeep: number;
     /** Tower status durations (seconds) per dungeon round; burn, poison and regen values scale with it. */
     secondsPerRound: number;
     /** Rounds before the element technique can be used again. */
     techniqueCooldown: number;
-    /** Foe stats = tower enemy of the floor × these (a duel of one hero, not a team). */
+    /** Foe stats = its species' base stats × level growth × these (a duel of one hero, not a team). */
     enemyMult: { hp: number; atk: number; def: number; spd: number };
     /** Damage of a charged heavy blow as a multiple of a normal hit. */
     heavyMult: number;
@@ -98,25 +102,24 @@ export interface Balance {
     choices: [number, number];
     /** Weights of the room kinds offered (the boss comes on its own at the end). */
     roomWeights: Record<'fight' | 'elite' | 'treasure' | 'rest' | 'event', number>;
-    /** XP per won fight (the boss ends the run). */
-    xp: { fight: number; elite: number };
+    /** XP per won fight; it stays with the monster (its level in the other world). */
+    xp: { fight: number; elite: number; boss: number };
+    /** A foe's XP × this per level above 1. */
+    xpFoeGrowth: number;
     /** XP from level n to n+1: xpBase × xpGrowth^(n − 1). */
     xpBase: number;
     xpGrowth: number;
+    maxLevel: number;
+    /** Each level above 1 adds this share of the species' base stats. */
+    statsPerLevel: number;
+    /** Strength of a species tier in the other world (base stats are scaled to a common yardstick first). */
+    tierMult: Record<string, number>;
     /** Share of max HP healed on a level-up. */
     levelHeal: number;
-    /** Upgrades offered per level-up. */
+    /** Upgrades offered per level-up (they only last for the run). */
     upgradeChoices: number;
-    /** Erfahrungsrang XP for beating a boss (on top of the fights' XP). */
-    rankXpBoss: number;
-    /** XP from rank n to n+1: rankXpBase × rankXpGrowth^n. */
-    rankXpBase: number;
-    rankXpGrowth: number;
-    maxRank: number;
-    /** Dungeon stat bonus per rank (0.02 = +2 %). */
-    rankStats: number;
-    /** Every n-th rank gives one upgrade to choose at the start of a run. */
-    rankUpgradeEvery: number;
+    /** A won elite fight offers upgrades too. */
+    eliteUpgrade: boolean;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /**

@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 24,
+    date: '2026-09-30',
+    title: 'Durch das Portal',
+    items: [
+      { text: 'Das GenLab RPG ist jetzt eine Reise in eine andere Welt: Ein Strudel zieht dein Monster durch ein Portal – und solange der Lauf dauert, siehst du nur noch diese Welt aus Stein, Fackellicht und Pergament, mit eigener Musik. Nachrichten aus dem Labor warten so lange im Nachrichten-Center.', feature: 'rpg' },
+      { text: 'Dort beginnt jedes Monster bei Stufe 1: Zucht, Seltenheit, Infusion und Tränke zählen in der anderen Welt nicht, nur die Art (Hybride und mythische Formen sind etwas stärker). Die Stufe dort behält dein Monster – die bisher gesammelte Erfahrung zählt mit.', feature: 'rpg' },
+      { text: 'Gegner haben jetzt Stufen, jeder Dungeon zeigt seinen Stufenbereich. Eine Gabe für den Lauf gibt es bei jedem Aufstieg und nach jedem Elite-Kampf; oben zeigt ein Pfad deinen Weg bis zum Boss. Über das Menü (☰) kannst du den Ton schalten oder aufgeben.', feature: 'rpg' },
+      { text: 'Mehr Fackeln: Jeder erfüllte Gen-Auftrag bringt eine, die Wochenexpedition drei.', feature: 'rpg' },
+      { text: 'Die Wochenexpedition bringt jetzt zusätzlich zwei Zeitkristalle mit nach Hause.', feature: 'voyage' },
+    ],
+  },
+  {
     id: 23,
     date: '2026-09-30',
     title: 'Ein neues Abenteuer',

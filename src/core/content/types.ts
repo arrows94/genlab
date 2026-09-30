@@ -704,10 +704,10 @@ export interface RpgDungeonDef {
   description: string;
   /** Foes come from species of these elements. */
   elements: string[];
-  /** Strength of the first room on the tower scale (enemy of this floor). */
-  floor: number;
-  /** Strength added per room. */
-  floorsPerRoom: number;
+  /** Level of the foes in the first room (the level a monster should have). */
+  level: number;
+  /** Levels the foes gain per room. */
+  levelsPerRoom: number;
   /** Rooms before the boss. */
   rooms: number;
   /** Loot multiplier (deeper dungeons pay more). */

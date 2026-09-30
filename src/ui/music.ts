@@ -10,7 +10,7 @@ import { audioContext } from './sound';
  * effect in App.svelte whenever the settings or the tab change.
  */
 
-export type Mood = 'lab' | 'breeding' | 'genetics' | 'tower' | 'aeon';
+export type Mood = 'lab' | 'breeding' | 'genetics' | 'tower' | 'aeon' | 'isekai';
 
 interface MoodDef {
   /** Chords as MIDI notes; the first note is the root. */
@@ -42,6 +42,8 @@ const MOODS: Record<Mood, MoodDef> = {
   tower: { chords: [[50, 57, 62, 65, 69], [46, 53, 58, 62, 65], [48, 55, 60, 64, 67], [45, 52, 57, 61, 64]], chordSec: 4, plucks: 6, pulse: 0.5, bright: 1300, pluck: 'square' },
   // Äon: floating lydian colours, long chords, bell-like plucks. Fmaj7#11 – Cmaj9 – Em7 – Dsus2.
   aeon: { chords: [[53, 60, 64, 67, 71], [48, 55, 59, 62, 64], [52, 59, 62, 67, 71], [50, 57, 62, 64, 69]], chordSec: 10, plucks: 4, pulse: 0, bright: 700, pluck: 'sine' },
+  // The other world (GenLab RPG): dark and old, a phrygian step in the shadows, sparse low plucks. Dm – Eb – Dm – C.
+  isekai: { chords: [[50, 57, 62, 65, 69], [51, 58, 63, 67, 70], [50, 57, 62, 65, 69], [48, 55, 60, 64, 67]], chordSec: 7, plucks: 3, pulse: 0, bright: 520, pluck: 'triangle', pluckOctave: 12 },
 };
 
 const LOOKAHEAD_SEC = 1.2;

@@ -597,9 +597,9 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 # TODO – GenLab RPG (ein Monster, aktiver Dungeon)
 
 Ein einzelnes Monster zieht allein in einen Dungeon oder auf Erkundung. Anders als der Rest des Spiels wird hier
-aktiv und rundenbasiert gespielt: drei Fähigkeiten und eine stärkere Fähigkeit. Optisch wie Genlab (dieselben
-Kreaturen, Farben und Zustands-Symbole), aber als eigener, klar abgetrennter Bereich „GenLab RPG“. Roguelite: Stufen
-gelten nur im Lauf, die Belohnungen (Zeitkristalle, wertvolle Gegenstände, Ausrüstung) bleiben.
+aktiv und rundenbasiert gespielt: drei Fähigkeiten und eine stärkere Fähigkeit. Isekai: Das Monster wird in eine
+andere Welt gezogen, fängt dort bei Stufe 1 an und wird nur dort stärker; während des Laufs ist vom Labor nichts zu
+sehen. Die Belohnungen (Zeitkristalle, wertvolle Gegenstände, Ausrüstung) kommen mit zurück.
 Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → Ideen) ab.
 
 ## Vor dem Start klären
@@ -607,13 +607,43 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Freischaltung: ab Turm-Etage 20 (nach dem Bot schafft ein Turm-Monster dann das Wurzellabyrinth; liegt
       zwischen Turm und Wochen-Boss). `towerFloor` zählt auch den Rekord aller Zeiten – nach einem Äon ist das RPG
       sofort wieder da
-- [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
-      wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
-      Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
-  - [x] Festgelegt: Alle Dungeon-Erfahrung zählt (Boss extra), Rang n braucht `rankXpBase × rankXpGrowth^n`,
-        höchstens Rang 10; je Rang +2 % auf alle Dungeon-Werte, jeder 3. Rang eine Verbesserung zum Start.
-        Der Rang hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
+- [x] Stufen: ~~Mischform (Variante C)~~ → **Isekai** (umgebaut nach Rückmeldung): In der anderen Welt beginnt jedes
+      Monster bei Stufe 1 mit den Grundwerten seiner Art – Seltenheit, Genom, Infusion und Tränke zählen dort nicht.
+      Die Stufe bleibt dem Monster (die Erfahrung liegt in `rpg.ranks`), je Stufe +12 % der Grundwerte. Die Wahl aus
+      3 Verbesserungen (bei jedem Aufstieg und nach Elite-Kämpfen) gilt nur für den Lauf. Die Art bestimmt Werte,
+      Element und Technik; eine aufgedeckte Erbanlage oder Fähigkeit weiter die dritte Fähigkeit.
+  - [x] Die Stufe hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
+  - [ ] Idee zum Überlegen: Die Stufe hängt an der **Art** statt an der einzelnen Kreatur – dann übersteht sie jeden
+        Neustart, und ein neuer Glutwelpe knüpft an den alten an. Frage: Lohnt sich dann noch ein zweites Monster
+        derselben Art, und wird der Dex zum „Helden-Buch“?
 - [x] Gilt die Ausrüstung auch im Turm? Festgelegt: nein – sie wirkt nur im Dungeon, die Turm-Kurve bleibt unberührt
+
+## Isekai-Umbau (die andere Welt)
+
+- [x] Schritt 1: Stufe-1-Werte aus der Art, dauerhafte Stufe je Monster (`rpgLevel`), Verbesserungen nur im Lauf
+- [x] Schritt 2: eigene Gegner-Skala nach Dungeon-Stufe statt Turm-Etage, Bot auf Stufe-L-Helden, neu abstimmen
+      (Arten auf gemeinsamem Maßstab, Hybride +15 %, Mythisch +50 %)
+- [x] Schritt 3: Während eines Laufs zeigt die App nur die andere Welt (keine Reiter, keine Ressourcenleiste, Meldungen
+      still ins Nachrichten-Center), kleines Menü mit Ton und „Aufgeben“
+      (`RpgWorld.svelte`, `view.world` im Store; Klänge aus dem Labor schweigen dort, Erfolgs-Momente und
+      Offline-Bericht warten bis zur Rückkehr; „Aufgeben“ im Kampf zählt als Niederlage)
+- [x] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
+      Bewegung: Überblendung
+      (`Portal.svelte`; der Bildschirm wechselt erst, wenn der Strudel alles bedeckt – `view.portal`, `portalCovered`)
+- [x] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt
+      Knopfliste, neue Kampfszene
+      (Steinwände mit flackerndem Fackelschein in der Farbe des Dungeons, Pergament-Karten, Serifenschrift, Wege als
+      Tore, Gaben als Runensteine, Pfad aus `run.path` mit Boss-Krone; das Labor-Menü für das RPG bleibt im Labor-Stil)
+- [x] Schritt 6: eigene Musikstimmung und Portal-Klang (Stimmung `isekai` in `ui/music.ts`: dunkles, modales Moll;
+      Klang `portal` hinein und rückwärts heraus, einzeln abschaltbar)
+- [x] Schritt 7: Versionshinweis, Doku, PR
+
+## Debug
+
+- [x] Debug-Werkzeuge in den Optionen (`?debug=1`, `core/debug.ts`): alle Vorgänge fertig, Tagesbelohnung und
+      Gen-Aufträge neu, Wochen-Boss neu; RPG: Lauf beenden, +10 Fackeln, Dungeons öffnen oder löschen, Stufen,
+      Ausrüstung, Runen-Wissen und Wochen-Deckel zurücksetzen
+- [ ] Bei Bedarf weitere: Turm, Äon/Talente, Anomalien, Zucht
 
 ## Schritt 1 – Grundlage und Spam-Schutz
 
@@ -625,7 +655,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       Turm-Meilensteinen; Zahlen in `balance.ts`
   - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
   - [x] Tagesbelohnung: +1 Fackel, am letzten Kalendertag +2 (`balance.rpg.dailyTorches`), auch über den Vorrat hinaus
-  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
+  - [x] Gen-Aufträge: +1 Fackel je Auftrag (`balance.rpg.contractTorches`); Wochenexpedition: +3 Fackeln und
+        +2 Zeitkristalle zur Beute (`balance.voyage.bonus`)
+  - [ ] Weitere Quellen (Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
 - [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
       (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
 - [x] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt
@@ -651,7 +683,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       passiver Effekt) – so wird jeder Lauf anders
       (`rpgUpgrades`: Werte, Fokus/Kraftspeicher für den Spezialangriff, Lebensraub, Kritisch, Zweite Luft, Drill)
 - [x] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung
-      (`rpgDungeons`: Stärke auf der Turm-Skala je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
+      (`rpgDungeons`: Gegnerstufe je Raum, Beute-Faktor; Sieg über den Boss öffnet den nächsten)
 - [x] Niederlage beendet den Lauf, gesicherte Beute bleibt
 
 ## Schritt 4 – Belohnungen und Ausrüstung
@@ -665,12 +697,15 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       (Runen 🪬 aus Elite, Boss und zerlegter Ausrüstung; `rpgMeta`: Werte, Vorladen, Rast, Fackelhalter, Vielseitig)
 - [x] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,
       Einfluss auf Idle-Wirtschaft und Äon-Splitter
-      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`; der Held ist
-      ein Mitglied eines gemischten Turm-Teams, das Etage F gerade hält. Stand: Wurzellabyrinth ab F20–30,
-      Glutgrotten ~F60, Flutgewölbe ~F100–120, Sturmspitze ~F120–150, Schattengruft ~F160–180, Kristallkern ~F200+
-      – ohne Rang, Ausrüstung und Runen-Wissen. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter
-      begrenzt der Wochen-Deckel)
-  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil (etwa ×1,5 Stärke) – mehr Streuung?
+      (`tests/rpgBot.ts`, Tabelle mit `GENLAB_RPG=1 npx vitest run tests/rpgBot.test.ts --silent=false`)
+  - [x] Nach dem Isekai-Umbau: Held = Monster einer Art und Stufe, dazu eine Fortschritts-Simulation (neues Monster
+        ab Stufe 1, neuester Dungeon, nach zwei frühen Niederlagen zurück in den vorigen). Stand (ohne Ausrüstung und
+        Runen): Glutwelpe schafft alle Dungeons in 45–70 Läufen (Stufe ~50), Zephyrix in 120–165, Magmaulwurf
+        (Hybrid) in 20–47; die Stufe beim Sieg liegt nahe der Boss-Stufe (Glutgrotten 17, Flutgewölbe 24, Sturmspitze
+        32, Schattengruft ~42). Der Kieselkauz hängt im Flutgewölbe am Element-Nachteil – dort nimmt man ein anderes
+        Monster. 60–800 Turm-Marken je Fackel; Zeitkristalle und Äon-Splitter begrenzt der Wochen-Deckel
+  - [ ] Im Kristallkern steigt ein Monster sehr schnell (Gegner Stufe 56+ geben viel Erfahrung) – beobachten
+  - [ ] Übergang von „schafft es nie“ zu „schafft es immer“ ist noch steil – mehr Streuung?
 
 ## Schritt 5 – Darstellung
 

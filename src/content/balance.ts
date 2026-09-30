@@ -26,6 +26,8 @@ export const balance: Balance = {
     maxTeam: 3,
     events: 6,
     cost: { food: 20000, gold: 5000 },
+    // Brought home on top of the destination's loot (resources of locked features stay out).
+    bonus: { timeCrystals: 2, torches: 3 },
   },
   deepSequencing: {
     hours: 8,
@@ -61,13 +63,15 @@ export const balance: Balance = {
     // Every Tagesbelohnung brings Fackeln too (the last, big day of the calendar more); may go beyond the stock.
     dailyTorches: 1,
     dailyTorchesLast: 2,
+    // Every fulfilled Gen-Auftrag brings a Fackel too.
+    contractTorches: 1,
     // A defeat keeps this share of the carried loot (secured loot is always safe).
     defeatKeep: 0.5,
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
     secondsPerRound: 2,
     techniqueCooldown: 3,
-    // Foes: the tower enemy of the dungeon's floor, adjusted for a duel of one hero.
-    enemyMult: { hp: 0.35, atk: 0.3, def: 0.25, spd: 1 },
+    // Foes: base stats of their species, grown by their level like the hero, × these (a duel of one hero).
+    enemyMult: { hp: 0.75, atk: 0.6, def: 0.9, spd: 1 },
     // Foe moves: heavy blow after charging, shield against this round's hits, healing.
     heavyMult: 2.2,
     guardShare: 0.3,
@@ -83,21 +87,22 @@ export const balance: Balance = {
     // Dungeon: after each room 2–3 ways, drawn by these weights.
     choices: [2, 3],
     roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
-    // Run levels: XP per won fight, XP for level n → n+1 = xpBase × xpGrowth^(n − 1); a level-up heals a little.
-    xp: { fight: 10, elite: 25 },
+    // Isekai: in the other world every monster starts at level 1 with its species' base stats – breeding does not
+    // count there. The level stays with the monster: XP per won fight, level n → n+1 needs xpBase × xpGrowth^(n − 1);
+    // each level adds statsPerLevel of the base stats and heals a little. Every level-up (and every won elite fight)
+    // offers upgradeChoices upgrades that only last for the run.
+    xp: { fight: 10, elite: 25, boss: 40 },
+    // XP of a foe grows with its level (× xpFoeGrowth per level), so deeper dungeons keep the levels coming.
+    xpFoeGrowth: 1.17,
     xpBase: 20,
-    xpGrowth: 1.4,
+    xpGrowth: 1.25,
+    maxLevel: 60,
+    statsPerLevel: 0.12,
+    // The species shapes a monster there (quick, tough …) on a common yardstick; hybrids and mythic forms are stronger.
+    tierMult: { base: 1, hybrid: 1.15, rareHybrid: 1.3, mythic: 1.5 },
     levelHeal: 0.15,
     upgradeChoices: 3,
-    // Erfahrungsrang (lasting, per monster): all dungeon XP counts, the boss adds rankXpBoss. Rank n needs
-    // rankXpBase × rankXpGrowth^(n − 1) more; each rank +rankStats on all dungeon stats, every rankUpgradeEvery-th
-    // rank one upgrade to choose at the start of a run.
-    rankXpBoss: 40,
-    rankXpBase: 60,
-    rankXpGrowth: 1.6,
-    maxRank: 10,
-    rankStats: 0.02,
-    rankUpgradeEvery: 3,
+    eliteUpgrade: true,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
