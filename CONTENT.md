@@ -256,7 +256,7 @@ Dauer, Teamgröße, Ereigniszahl und Kosten stehen in `balance.voyage`.
 - Gegner je Etage kommen aus `enemiesFor` (`features/tower.ts`), fest pro Etage. Ab `groupFromFloor` können normale Etagen 2–3 Gegner bringen, die sich KP und Angriff teilen (Summe × `groupHp`/`groupAtk` je Gruppengröße). Ab `companionsFromFloor` stehen zwei Begleiter (`companionHp`/`companionAtk` × Werte eines normalen Gegners) vorne, der Boss hinten; ab `phaseFromFloor` bekommt der Boss unter `phaseAt` KP eine zweite Eigenheit. Gegner setzen ihre Element-Technik jede `enemyTechniqueEvery`-te Aktion ein (0 = nie). Das Team greift immer den Gegner der vorderen Reihe mit dem kleinsten KP-Anteil an.
 - Relikte (`relics`): `cost` in Turm-Marken für Stufe 1, jede Stufe × `costGrowth`; `bonus` pro Stufe auf `hp`, `atk`, `def`, `spd` oder `element` (Element-Vorteil). Sie gehören dem Spieler und wirken auf die Kreatur im Turm-Platz, in dem sie stecken – im Turm und gegen den Wochen-Boss.
 
-## GenLab RPG (Vorschau)
+## GenLab RPG
 
 `src/content/rpg.ts` – alles für den rundenbasierten Dungeon (Regeln in `core/features/rpg.ts` und `rpgCombat.ts`, Zahlen in `balance.rpg`):
 

@@ -68,6 +68,9 @@ export interface Balance {
     torchHours: number;
     /** Fackeln stored at most by refilling (rewards may go beyond). */
     maxTorches: number;
+    /** Fackeln with every Tagesbelohnung once the RPG is unlocked, and on the calendar's last day. */
+    dailyTorches: number;
+    dailyTorchesLast: number;
     /** Share of the carried (not yet secured) loot kept after a defeat. */
     defeatKeep: number;
     /** Tower status durations (seconds) per dungeon round; burn, poison and regen values scale with it. */

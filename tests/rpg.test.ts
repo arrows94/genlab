@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
 import { deserialize, serialize } from '@core/save';
-import { unlockFeature } from '@core/systems/unlocks';
+import { checkUnlocks, unlockFeature } from '@core/systems/unlocks';
+import { claimDaily, dailyReward } from '@core/features/daily';
 import { D } from '@core/num';
 import { NOW, balance, makeGame } from './helpers';
 
@@ -20,9 +21,8 @@ function rpgGame() {
 }
 
 describe('GenLab RPG – Fackeln', () => {
-  it('stays apart from the normal game: no condition unlocks it', () => {
+  it('is locked (no Fackeln) before its tower floor', () => {
     const g = makeGame();
-    expect(g.content.features.get('rpg').condition).toBeUndefined();
     refreshTorches(g, NOW);
     expect(torches(g)).toBe(0);
     expect(nextTorchAt(g)).toBeNull();
@@ -586,22 +586,52 @@ describe('GenLab RPG – Beute', () => {
   });
 });
 
-describe('GenLab RPG – Vorschau', () => {
-  it('is switched on and off by hand, not while a run is going', () => {
+describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
+  it('opens at tower floor 20 and comes back at once after an Äon (the record stays)', () => {
     const g = makeGame();
-    expect(setRpgPreview(g, true).ok).toBe(true);
+    expect(g.content.features.get('rpg').condition).toEqual({ type: 'towerFloor', floor: 20 });
+    unlockFeature(g, 'tower');
+    g.state.tower.best = 19;
+    checkUnlocks(g);
+    expect(g.state.features['rpg']).toBeFalsy();
+    g.state.tower.best = 20;
+    checkUnlocks(g);
     expect(g.state.features['rpg']).toBe(true);
+    refreshTorches(g, NOW);
     expect(torches(g)).toBe(balance.rpg.maxTorches);
+    // An Äon clears the features; the tower record ever brings the RPG back, the stock is not filled twice.
+    startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
+    leaveRpgRun(g);
+    g.state.features = {};
+    g.state.tower.best = 0;
+    g.state.tower.bestEver = 20;
+    checkUnlocks(g);
+    refreshTorches(g, NOW);
+    expect(g.state.features['rpg']).toBe(true);
+    expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
+  });
+
+  it('candidates are the free monsters, strongest first', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
     expect(rpgCandidates(g).map((c) => c.id)).toEqual([g.state.creatures[0]!.id]);
     startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     expect(rpgCandidates(g)).toEqual([]);
-    expect(setRpgPreview(g, false).ok).toBe(false);
-    leaveRpgRun(g);
-    expect(setRpgPreview(g, false).ok).toBe(true);
-    expect(g.state.features['rpg']).toBe(false);
-    // Switching on again does not refill the stock a second time.
-    setRpgPreview(g, true);
-    expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
+  });
+
+  it('every Tagesbelohnung brings a Fackel once the RPG is open, the last calendar day more', () => {
+    const g = makeGame();
+    unlockFeature(g, 'daily');
+    expect(dailyReward(g, 0).amounts['torches']).toBeUndefined();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const last = balance.daily.rewards.length - 1;
+    expect(dailyReward(g, 0).amounts['torches']!.toNumber()).toBe(balance.rpg.dailyTorches);
+    expect(dailyReward(g, last).amounts['torches']!.toNumber()).toBe(balance.rpg.dailyTorchesLast);
+    // Beyond the refill stock.
+    expect(claimDaily(g, NOW).ok).toBe(true);
+    expect(torches(g)).toBe(balance.rpg.maxTorches + balance.rpg.dailyTorches);
   });
 });
 

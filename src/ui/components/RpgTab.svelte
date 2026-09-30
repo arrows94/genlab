@@ -13,7 +13,7 @@
   import CreatureSvg from './CreatureSvg.svelte';
 
   /**
-   * GenLab RPG (preview): pick a dungeon and a monster, then play room by room.
+   * GenLab RPG: pick a dungeon and a monster, then play room by room.
    * All rules live in core/features/rpg.ts; this view only shows state and calls actions.
    */
   const STATUS_ICON: Record<RpgStatus['id'], string> = {
@@ -105,7 +105,7 @@
 </script>
 
 <header class="tab-head">
-  <h2>🔥 GenLab RPG <span class="beta">Vorschau</span></h2>
+  <h2>🔥 GenLab RPG</h2>
   <span class="torch-count" title="Jeder Lauf kostet eine Fackel. Alle {game.balance.rpg.torchHours} Stunden kommt eine neue dazu, bis {data.maxTorches} im Vorrat.">
     🔥 <b class="num">{data.torches}/{data.maxTorches}</b>
     {#if data.nextIn !== null}<span class="muted small">· nächste in {formatDuration(data.nextIn)}</span>{/if}
@@ -337,7 +337,6 @@
 {/if}
 
 <style>
-  .beta { font-size: 0.7rem; vertical-align: middle; padding: 0.1rem 0.45rem; border-radius: 99px; border: 1px solid var(--violet); color: var(--violet); }
   .torch-count { font-size: 0.95rem; }
   .small { font-size: 0.8rem; }
   h3 { margin: 0 0 0.5rem; }

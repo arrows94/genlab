@@ -604,10 +604,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Vor dem Start klären
 
-- [ ] Freischaltung: ab wann? (Vorschlag: nach der ersten Vererbung oder ab Turm-Etage X)
-  - Stand: noch Vorschau ohne Bedingung, unter Optionen einschaltbar (`setRpgPreview`). Nach dem Bot passt
-    „Turm-Etage 20“ (`{ type: 'towerFloor', floor: 20 }`) – dann schafft ein Turm-Monster das Wurzellabyrinth.
-    Achtung: Das Äon setzt Features zurück, die Bedingung muss danach wieder greifen.
+- [x] Freischaltung: ab Turm-Etage 20 (nach dem Bot schafft ein Turm-Monster dann das Wurzellabyrinth; liegt
+      zwischen Turm und Wochen-Boss). `towerFloor` zählt auch den Rekord aller Zeiten – nach einem Äon ist das RPG
+      sofort wieder da
 - [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
       wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
       Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
@@ -625,7 +624,8 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       (Muster wie `weeklyBoss.attemptsPerDay` / `maxAttempts`); weitere aus Gen-Aufträgen, Wochen-Boss und
       Turm-Meilensteinen; Zahlen in `balance.ts`
   - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
-  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst wenn das RPG ins normale Spiel kommt
+  - [x] Tagesbelohnung: +1 Fackel, am letzten Kalendertag +2 (`balance.rpg.dailyTorches`), auch über den Vorrat hinaus
+  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
 - [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
       (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
 - [x] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt

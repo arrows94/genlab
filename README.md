@@ -42,7 +42,7 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 
 ## Spielen
 
-Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern, teilen und auf einem anderen Gerät wieder einspielen.
+Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → GenLab RPG → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern, teilen und auf einem anderen Gerät wieder einspielen.
 
 ## Architektur
 
@@ -69,7 +69,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Prestige | `core/prestige.ts` | Reset-Umfang ist reine Daten (`PrestigeLayerDef.resets`). |
 | Spielsysteme | `core/features/` | Brutstation, Erkundung, Markt, Sequenzierung, Splicing, Zuchtplaner – registrieren ihre Zeitprozesse selbst. |
 | Turm-Relikte & Meilensteine | `core/features/tower.ts`, `content/endgame.ts` (`relics`, `bossTraits`) | Relikte für Turm-Marken stecken in den Plätzen des Turm-Teams (bleiben über jeden Neustart). Bosse ab Etage 60 haben Eigenheiten (Element-Schild, Wandler, Regeneration – heilt einen Teil des erlittenen Schadens). Alle 150 Etagen ein Meilenstein mit dauerhaftem Bonus und Äon-Splittern. |
-| GenLab RPG (Vorschau) | `core/features/rpg.ts`, `rpgCombat.ts`, `content/rpg.ts`, `balance.rpg` | Ein Monster allein im Dungeon, rundenbasiert und aktiv gespielt: Fackeln als Eintritt (nach echter Uhr), Wegwahl zwischen Räumen, angekündigte Gegnerzüge, Stufen und Verbesserungen nur im Lauf, Erfahrungsrang je Monster, Ausrüstung und Runen-Wissen dauerhaft. Noch ohne Freischaltbedingung – unter Optionen → Vorschau einschaltbar. |
+| GenLab RPG | `core/features/rpg.ts`, `rpgCombat.ts`, `content/rpg.ts`, `balance.rpg` | Ein Monster allein im Dungeon, rundenbasiert und aktiv gespielt: Fackeln als Eintritt (nach echter Uhr), Wegwahl zwischen Räumen, angekündigte Gegnerzüge, Stufen und Verbesserungen nur im Lauf, Erfahrungsrang je Monster, Ausrüstung und Runen-Wissen dauerhaft. Ab Turm-Etage 20; die Tagesbelohnung bringt zusätzlich Fackeln. |
 | Wochen-Boss | `core/features/weeklyBoss.ts`, `balance.weeklyBoss` | Ein Titan pro Woche im Turm (Element wie Wochenexpedition und Wochen-Mutation, Stärke nach Turm-Rekord); Angriffe mit dem Turm-Team, Schaden sammelt sich, Belohnungen in Stufen. |
 | Großforschung | `core/features/grandResearch.ts`, `content/grandResearch.ts` | Eigener Forschungsplatz mit Projekten über Stunden bis Tage (Nester, Camps, Sequenzierer, Offline-Zeit, Produktion …); Stufen bleiben über jeden Reset, laufende Projekte forschen weiter. |
 | Großprojekte | `core/features/megaProjects.ts`, `content/megaProjects.ts` | Bauwerke über Tage: Jede Bauphase wird über mehrere Besuche bezahlt (Einzahlungen gehen bei keinem Neustart verloren) und baut danach nach echter Uhrzeit. Das Äon-Observatorium öffnet die Talentstufen 4 und 5 und (ab der dritten Bauphase) die Äon-Resonanz. |

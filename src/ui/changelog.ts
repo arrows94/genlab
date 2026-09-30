@@ -27,11 +27,12 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: 23,
     date: '2026-09-30',
-    title: 'Vorschau: GenLab RPG',
+    title: 'Ein neues Abenteuer',
     items: [
-      { text: 'Neu zum Ausprobieren: das GenLab RPG. Unter Optionen → Vorschau schaltest du es ein. Es ist noch in Arbeit und läuft abseits vom normalen Spiel – Zahlen können sich noch ändern.' },
-      { text: 'Ein einzelnes Monster zieht allein durch einen Dungeon – rundenbasiert: Du wählst eine von vier Fähigkeiten, dann handeln Monster und Gegner nach Tempo. Der Gegner kündigt seinen nächsten Zug an (Angriff, Aufladen, Deckung …), der Spezialangriff lädt sich über Treffer und Runden auf.', feature: 'rpg' },
+      { text: 'Tief im Genom-Turm wartet ein neues Abenteuer auf deine stärksten Monster – erreiche Etage 20.', feature: 'tower' },
+      { text: 'Neu unter „Abenteuer“: das GenLab RPG. Ein einzelnes Monster zieht allein durch einen Dungeon – rundenbasiert: Du wählst eine von vier Fähigkeiten, dann handeln Monster und Gegner nach Tempo. Der Gegner kündigt seinen nächsten Zug an (Angriff, Aufladen, Deckung …), der Spezialangriff lädt sich über Treffer und Runden auf.', feature: 'rpg' },
       { text: 'Nach jedem Raum wählst du den Weg: Kampf, Elite, Schatz, Rast oder Ereignis, am Ende wartet der Boss. Beute ist erst an einer Rast oder beim Verlassen sicher – wer fällt, behält nur einen Teil. Jeder Lauf kostet eine Fackel 🔥; alle 6 Stunden kommt eine neue, bis zu drei im Vorrat.', feature: 'rpg' },
+      { text: 'Die Tagesbelohnung bringt jetzt zusätzlich eine Fackel, am großen siebten Tag des Kalenders zwei – auch über den Vorrat von drei hinaus.', feature: 'rpg' },
       { text: 'Stufen gelten nur im Lauf, bei jedem Aufstieg wählst du eine von drei Verbesserungen. Dauerhaft bleiben der Erfahrungsrang deines Monsters, gefundene Ausrüstung (Waffe, Panzer, Talisman – passt jedem Monster) und Runen-Wissen 🪬.', feature: 'rpg' },
     ],
   },

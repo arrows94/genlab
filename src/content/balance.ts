@@ -58,6 +58,9 @@ export const balance: Balance = {
     // Fackeln: one per run; they come back by the real clock, a small stock saves up for a day off.
     torchHours: 6,
     maxTorches: 3,
+    // Every Tagesbelohnung brings Fackeln too (the last, big day of the calendar more); may go beyond the stock.
+    dailyTorches: 1,
+    dailyTorchesLast: 2,
     // A defeat keeps this share of the carried loot (secured loot is always safe).
     defeatKeep: 0.5,
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.

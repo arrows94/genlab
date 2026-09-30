@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { setRpgPreview } from '@core/features/rpg';
+import { refreshTorches } from '@core/features/rpg';
+import { unlockFeature } from '@core/systems/unlocks';
 import { makeGame } from './helpers';
 import { makeHero, playRun, towerMember } from './rpgBot';
 
@@ -12,7 +13,8 @@ const table = env.GENLAB_RPG === '1';
 
 function measure(floor: number, dungeon: string, runs: number) {
   const g = makeGame(11);
-  setRpgPreview(g, true);
+  unlockFeature(g, 'rpg');
+  refreshTorches(g);
   for (const d of g.content.rpgDungeons.list) g.state.rpg.cleared[d.id] = 1;
   const hero = makeHero(g, towerMember(g, floor));
   let cleared = 0;

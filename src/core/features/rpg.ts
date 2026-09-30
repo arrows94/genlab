@@ -1,6 +1,5 @@
 import { D } from '../num';
 import { creaturePower, findCreature } from '../creatures';
-import { unlockFeature } from '../systems/unlocks';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -549,20 +548,7 @@ export function chooseEventOption(ctx: GameContext, index: number): ActionResult
   return { ok: true };
 }
 
-// ---- Vorschau und Anzeige ---------------------------------------------------
-
-/** The RPG is still a preview apart from the normal game: switched on and off by hand (options). */
-export function setRpgPreview(ctx: GameContext, on: boolean): ActionResult {
-  if (on) {
-    if (!ctx.state.features['rpg']) unlockFeature(ctx, 'rpg');
-    refreshTorches(ctx);
-    return { ok: true };
-  }
-  if (ctx.state.rpg.run) return { ok: false, reason: 'Beende zuerst den laufenden Lauf.' };
-  ctx.state.features['rpg'] = false;
-  ctx.invalidate();
-  return { ok: true };
-}
+// ---- Anzeige -------------------------------------------------------------------
 
 /** Monsters that could enter the dungeon now, strongest first. */
 export function rpgCandidates(ctx: GameContext): Creature[] {
