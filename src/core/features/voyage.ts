@@ -47,6 +47,16 @@ export function voyageDestination(ctx: GameContext, nowMs = ctx.state.lastTickAt
   return pool[hashSeed(`voyage-${week}`) % pool.length]!;
 }
 
+/** Fixed loot every voyage brings home (Zeitkristalle, Fackeln …), only of resources the player already has. */
+export function voyageBonus(ctx: GameContext): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [res, amount] of Object.entries(ctx.balance.voyage.bonus)) {
+    const feature = ctx.content.resources.has(res) ? ctx.content.resources.get(res).feature : undefined;
+    if (amount > 0 && (!feature || ctx.state.features[feature])) out[res] = amount;
+  }
+  return out;
+}
+
 export function runningVoyage(ctx: GameContext): Process | undefined {
   return ctx.state.processes.find((p) => p.kind === VOYAGE);
 }
@@ -108,6 +118,7 @@ registerProcessHandler(VOYAGE, {
     const factor = team.reduce((sum, c) => sum + missionRewardFactor(ctx, c), 0) * Math.max(0, 1 + lootPct);
     const loot: Record<string, Decimal> = {};
     for (const [res, [min, max]] of Object.entries(dest.rewards)) loot[res] = D(Math.floor(ctx.rng.range(min, max) * factor));
+    for (const [res, amount] of Object.entries(voyageBonus(ctx))) loot[res] = (loot[res] ?? D(0)).add(amount);
     for (const e of events) {
       for (const [res, amount] of Object.entries(e.effect.resources ?? {})) loot[res] = (loot[res] ?? D(0)).add(amount);
       if (e.effect.hint && ctx.state.features['hybrids']) revealHint(ctx);

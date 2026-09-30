@@ -5,16 +5,7 @@ import { startMission } from '@core/features/expedition';
 import { startDeepSequencing } from '@core/features/deepSequencing';
 import { revealGenome } from '@core/features/sequencing';
 import { performPrestige, resetImpactText } from '@core/prestige';
-import {
-  optionRewards,
-  pendingDecision,
-  resolveVoyage,
-  revealedEvents,
-  runningVoyage,
-  startVoyage,
-  voyageDestination,
-  voyageDurationMs,
-} from '@core/features/voyage';
+import { optionRewards, pendingDecision, resolveVoyage, revealedEvents, runningVoyage, startVoyage, voyageDestination, voyageDurationMs, voyageBonus } from '@core/features/voyage';
 import { mutationForWeek, weekIndex } from '@core/features/weekly';
 import { plannedNotices } from '@core/notices';
 import { deserialize, serialize } from '@core/save';
@@ -89,6 +80,21 @@ describe('Wochenexpedition', () => {
     g.simulateOffline(2.5 * DAY);
     expect(revealedEvents(g, p).map((e) => e.day)).toEqual([1, 2]);
     expect(new Set((p.data as { events: string[] }).events).size).toBe(balance.voyage.events);
+  });
+
+  it('brings Zeitkristalle and (with the GenLab RPG) Fackeln home on top of the loot', () => {
+    const plain = returned('injured', 3).g;
+    expect(plain.state.voyage.pending!.loot['torches']).toBeUndefined();
+    const g = voyageGame(3);
+    unlockFeature(g, 'contracts');
+    unlockFeature(g, 'rpg');
+    expect(voyageBonus(g)).toEqual(balance.voyage.bonus);
+    const team = g.state.creatures.slice(1, 3).map((c) => c.id);
+    expect(startVoyage(g, team).ok).toBe(true);
+    g.simulateOffline(voyageDurationMs(g) + 1000);
+    const loot = g.state.voyage.pending!.loot;
+    expect(loot['timeCrystals']!.toNumber()).toBeGreaterThanOrEqual(balance.voyage.bonus['timeCrystals']!);
+    expect(loot['torches']!.toNumber()).toBe(balance.voyage.bonus['torches']);
   });
 
   it('comes back by the real clock and waits for a decision', () => {

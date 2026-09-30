@@ -648,7 +648,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       Turm-Meilensteinen; Zahlen in `balance.ts`
   - [x] Ressource `torches`, Nachfüllen nach echter Uhr (`balance.rpg`), Vorrat beim Freischalten voll
   - [x] Tagesbelohnung: +1 Fackel, am letzten Kalendertag +2 (`balance.rpg.dailyTorches`), auch über den Vorrat hinaus
-  - [ ] Weitere Quellen (Gen-Aufträge, Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
+  - [x] Gen-Aufträge: +1 Fackel je Auftrag (`balance.rpg.contractTorches`); Wochenexpedition: +3 Fackeln und
+        +2 Zeitkristalle zur Beute (`balance.voyage.bonus`)
+  - [ ] Weitere Quellen (Wochen-Boss, Turm-Meilensteine) – erst nach Rückmeldungen zur Fackel-Menge
 - [x] Zusätzlich: Beute ist erst beim Verlassen oder an Rastpunkten gesichert; wer stirbt, behält nur einen Teil
       (`balance.rpg.defeatKeep`; eine Vererbung beendet den Lauf wie ein Verlassen)
 - [x] Wertvollste Beute (Zeitkristalle, Äon-Splitter) mit Wochen-Deckel, damit das Idle-Spiel nicht davon abhängt

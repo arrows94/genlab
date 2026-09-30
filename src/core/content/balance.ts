@@ -37,6 +37,8 @@ export interface Balance {
     /** Events on the way (one per day, spread over the voyage). */
     events: number;
     cost: ResourceAmounts;
+    /** Fixed loot on top of the destination's (resources of locked features are left out). */
+    bonus: ResourceAmounts;
   };
   deepSequencing: {
     hours: number;
@@ -71,6 +73,8 @@ export interface Balance {
     /** Fackeln with every Tagesbelohnung once the RPG is unlocked, and on the calendar's last day. */
     dailyTorches: number;
     dailyTorchesLast: number;
+    /** Fackeln per fulfilled Gen-Auftrag once the RPG is unlocked. */
+    contractTorches: number;
     /** Share of the carried (not yet secured) loot kept after a defeat. */
     defeatKeep: number;
     /** Tower status durations (seconds) per dungeon round; burn, poison and regen values scale with it. */

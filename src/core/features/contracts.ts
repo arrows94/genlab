@@ -1,4 +1,4 @@
-import type { Decimal } from '../num';
+import { D, type Decimal } from '../num';
 import { checkCondition } from '../conditions';
 import { findCreature, removeCreature } from '../creatures';
 import { activeLoci, catalogueSamples, expressLocus, libraryHas } from '../genetics';
@@ -276,9 +276,11 @@ export function fulfillableCount(ctx: GameContext): number {
 
 // ---------------------------------------------------------------- rewards
 
-/** Resource rewards at the current production (shown live on the card). */
+/** Resource rewards at the current production (shown live on the card), plus Fackeln once the GenLab RPG is open. */
 export function contractReward(ctx: GameContext, offer: ContractOffer): Record<string, Decimal> {
-  return rewardAmounts(ctx, ctx.content.contracts.get(offer.template).reward, 'contracts.reward');
+  const out = rewardAmounts(ctx, ctx.content.contracts.get(offer.template).reward, 'contracts.reward');
+  if (ctx.state.features['rpg'] && ctx.balance.rpg.contractTorches > 0) out['torches'] = (out['torches'] ?? D(0)).add(ctx.balance.rpg.contractTorches);
+  return out;
 }
 
 /** Hands a matching creature over: it leaves, the rewards arrive. */

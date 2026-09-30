@@ -26,6 +26,8 @@ export const balance: Balance = {
     maxTeam: 3,
     events: 6,
     cost: { food: 20000, gold: 5000 },
+    // Brought home on top of the destination's loot (resources of locked features stay out).
+    bonus: { timeCrystals: 2, torches: 3 },
   },
   deepSequencing: {
     hours: 8,
@@ -61,6 +63,8 @@ export const balance: Balance = {
     // Every Tagesbelohnung brings Fackeln too (the last, big day of the calendar more); may go beyond the stock.
     dailyTorches: 1,
     dailyTorchesLast: 2,
+    // Every fulfilled Gen-Auftrag brings a Fackel too.
+    contractTorches: 1,
     // A defeat keeps this share of the carried loot (secured loot is always safe).
     defeatKeep: 0.5,
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
