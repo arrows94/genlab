@@ -415,8 +415,13 @@ Ziel: Jeder Wert und jede Team-Entscheidung zählt, Kämpfe sehen lebendiger aus
 - [x] Wiedergabe mit fester Zeitskala (0,7 s je Sekunde Kampfzeit; nur Kämpfe, die länger als die Pause bis zur
       nächsten Etage wären, laufen schneller), Tempo-Leisten mit Sekunden bis zum nächsten Zug
 - [x] Tempo-Regler für die Wiedergabe (1×/2×/überspringen) in der Kopfzeile der Arena, gemerkt in `viewState.tower`
-- [ ] Kampfprotokoll lesbarer (Icons statt Textzeilen)
-- [ ] Nach einer Niederlage: kurze Auswertung („Gegner war zu schnell“, „Element-Schild – Vorteil fehlt“) mit Tipp
+- [x] Kampfprotokoll lesbarer (Icons statt Textzeilen): aus den Wiedergabe-Ereignissen (`fightProtocol` in
+      `features/towerReport.ts`), Namen in Elementfarbe, Rand nach gut/schlecht fürs Team, Filter „Nur Wichtiges“
+- [x] Nach einer Niederlage: kurze Auswertung mit Tipp (`analyzeDefeat`): Die Simulation zählt je Kämpfer Schaden,
+      Heilung, Treffer mit Vor-/Nachteil, Ausweicher und Ausfallzeit (`FightStats`, ohne zusätzliche Würfe). Gründe:
+      Zeit abgelaufen, knapp, deutlich zu schwach, Element-Schild, Heilung der Gegner, Element-Nachteil, Wandler,
+      Tempo, früh gefallenes Teammitglied – die drei stärksten werden gezeigt. Die letzte Niederlage bleibt im
+      Spielstand (`tower.lastDefeat`), bis ein späterer Lauf an ihrer Etage vorbeikommt
 
 ## Leitplanken
 

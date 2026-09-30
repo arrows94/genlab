@@ -8,6 +8,7 @@
   import {
     actionIntervals, enemiesFor, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
+  import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
@@ -370,23 +371,32 @@
     weakest: 'Jagt immer das Teammitglied mit den wenigsten KP – Reihen schützen nicht.',
   } as const;
   /** Status symbols in the arena. */
-  const STATUS: Record<string, { icon: string; name: string; harmful: boolean }> = {
-    burn: { icon: '🔥', name: 'Brand', harmful: true },
-    poison: { icon: '☠️', name: 'Gift', harmful: true },
-    stun: { icon: '⚡', name: 'Betäubt', harmful: true },
-    slow: { icon: '❄️', name: 'Verlangsamt', harmful: true },
-    shield: { icon: '🪨', name: 'Schild', harmful: false },
-    evade: { icon: '🌬️', name: 'Ausweichen', harmful: false },
-    regen: { icon: '🌿', name: 'Regeneration', harmful: false },
-    armor: { icon: '🛡️', name: 'Panzer', harmful: false },
-    reflect: { icon: '💎', name: 'Rückstrahlung', harmful: false },
-  };
+  const STATUS: Record<string, { icon: string; name: string; harmful: boolean }> = STATUS_INFO;
+
+  /** Why the latest run was lost (until a later run gets past that floor). */
+  const defeat = $derived.by(() => {
+    view.slowFrame;
+    return currentDefeat(game);
+  });
+  let logOpen = $state(false);
+  /** Icon protocol of the last fight – built only while the protocol is open. */
+  const protocol = $derived.by(() => {
+    view.slowFrame;
+    const lr = game.state.tower.lastResult;
+    if (!logOpen || !lr?.fighters?.length) return [];
+    const all = fightProtocol(game, lr);
+    return viewState.tower.logImportant ? all.filter((p) => p.important) : all;
+  });
   /** Statuses of a fighter still running at the replay clock. */
   const activeMarks = (i: number) => (arena.mode === 'fight' ? Object.entries(marks[i] ?? {}).filter(([, until]) => until > arena.clock).map(([id]) => STATUS[id]).filter((x) => !!x) : []);
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
 </script>
+
+{#snippet who(f: { name: string; element: string; team: boolean } | undefined)}
+  {#if f}<span class="who" class:foe={!f.team} style="--el: {el(f.element).color}" title="{f.team ? 'Team' : 'Gegner'}: {f.name}">{f.name}</span>{/if}
+{/snippet}
 
 {#snippet unit(u: Unit, i: number, big: boolean)}
   {@const species = content.species.get(u.speciesId)}
@@ -626,10 +636,64 @@
       {/if}
     </div>
 
+    {#if defeat}
+      <details class="defeat" bind:open={viewState.tower.defeatOpen}>
+        <summary>
+          <b>Warum verloren?</b>
+          <span class="small muted">Etage {defeat.floor} · {defeat.timeout ? 'Zeit abgelaufen' : `Team besiegt nach ${formatNumber(defeat.seconds, { decimals: 1 })} s`}</span>
+        </summary>
+        <div class="foehp" title="KP der Gegner am Ende des Kampfes">
+          <span class="small muted">Gegner-KP übrig</span>
+          <div class="bar"><div style="width: {defeat.foeHpLeft * 100}%"></div></div>
+          <b class="num small">{formatPercent(defeat.foeHpLeft, 0)}</b>
+        </div>
+        <ul class="reasons">
+          {#each defeat.reasons as r (r.id)}
+            <li>
+              <span class="ricon">{r.icon}</span>
+              <div>
+                <b>{r.title}</b>
+                <p class="small">{r.text}</p>
+                <p class="small tip">💡 {r.tip}</p>
+              </div>
+            </li>
+          {/each}
+        </ul>
+        <div class="members">
+          {#each defeat.members as m (m.index)}
+            <span class="member" class:down={m.downAt >= 0} style="--el: {el(m.element).color}">
+              <span class="mname" title={m.name}>{m.name}</span>
+              <span class="num small" title="Ausgeteilter Schaden">⚔ {formatNumber(m.dealt)}</span>
+              <span class="num small muted" title="Eingesteckter Schaden">🩸 {formatNumber(m.taken)}</span>
+              <span class="small muted">{m.downAt >= 0 ? `💀 ${formatNumber(m.downAt, { decimals: 1 })} s` : 'hielt durch'}</span>
+            </span>
+          {/each}
+        </div>
+      </details>
+    {/if}
+
     {#if data.tw.lastResult}
-      <details class="log">
-        <summary class="small muted">Kampfprotokoll · Etage {data.tw.lastResult.floor} {data.tw.lastResult.win ? '✅' : '❌'}</summary>
-        <ul>{#each data.tw.lastResult.log as line, i (i)}<li>{line}</li>{/each}</ul>
+      {@const lr = data.tw.lastResult}
+      <details class="log" bind:open={logOpen}>
+        <summary class="small muted">Kampfprotokoll · Etage {lr.floor} {lr.win ? '✅' : '❌'}</summary>
+        {#if logOpen}
+          {#if lr.fighters?.length}
+            <label class="small muted only"><input type="checkbox" bind:checked={viewState.tower.logImportant} /> Nur Wichtiges</label>
+            <ol class="proto">
+              {#each protocol as p, k (k)}
+                <li class={p.tone}>
+                  <span class="at num">{formatNumber(p.at, { decimals: 1 })} s</span>
+                  {#if p.a >= 0}{@render who(lr.fighters?.[p.a])}{/if}
+                  <span class="pic">{p.icon}</span>
+                  {#if p.t >= 0}{@render who(lr.fighters?.[p.t])}{/if}
+                  <span class="ptx">{p.text}</span>
+                </li>
+              {/each}
+            </ol>
+          {:else}
+            <ul class="oldlog">{#each lr.log as line, i (i)}<li>{line}</li>{/each}</ul>
+          {/if}
+        {/if}
       </details>
     {/if}
   </section>
@@ -929,7 +993,38 @@
   .go { background: linear-gradient(90deg, var(--petrol), var(--violet)); }
   .auto { margin-left: auto; }
   .log { margin-top: 0.5rem; }
-  .log ul { list-style: none; padding: 0; margin: 0.3rem 0 0; font-size: 0.75rem; font-family: var(--mono); color: var(--muted); }
+  .log summary, .defeat summary { cursor: pointer; }
+  .oldlog { list-style: none; padding: 0; margin: 0.3rem 0 0; font-size: 0.75rem; font-family: var(--mono); color: var(--muted); }
+  .only { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0.35rem 0; }
+  .proto { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; max-height: 18rem; overflow-y: auto; font-size: 0.75rem; }
+  .proto li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding: 0.1rem 0.4rem; border-radius: 6px; border-left: 3px solid var(--line); background: var(--bg-2); }
+  .proto li.good { border-left-color: var(--teal); }
+  .proto li.bad { border-left-color: var(--danger); }
+  .at { min-width: 3.1rem; color: var(--muted); font-family: var(--mono); }
+  .pic { width: 1.3rem; text-align: center; }
+  .who {
+    max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 0.4rem; border-radius: 99px;
+    border: 1px solid var(--el); background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--text);
+  }
+  /* Foes stand out even when they share species and element with the team. */
+  .who.foe { border-style: dashed; background: color-mix(in srgb, var(--danger) 26%, transparent); }
+
+  .defeat {
+    margin-top: 0.6rem; padding: 0.45rem 0.6rem; border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--danger) 50%, var(--line)); background: color-mix(in srgb, var(--danger) 7%, var(--bg-2));
+  }
+  .foehp { display: flex; align-items: center; gap: 0.5rem; margin: 0.45rem 0 0.2rem; }
+  .foehp .bar { flex: 1; height: 7px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .foehp .bar div { height: 100%; background: var(--danger); }
+  .reasons { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.45rem; }
+  .reasons li { display: flex; gap: 0.5rem; align-items: flex-start; }
+  .reasons p { margin: 0.1rem 0 0; }
+  .ricon { width: 1.6rem; font-size: 1.2rem; line-height: 1.3; text-align: center; }
+  .tip { color: var(--teal); }
+  .members { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+  .member { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem; padding: 0.1rem 0.5rem; border-radius: 8px; border: 1px solid var(--el); background: var(--bg-2); font-size: 0.78rem; }
+  .member.down { opacity: 0.75; }
+  .mname { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 
   /* Team */
   .team-panel { margin-top: 0.75rem; }

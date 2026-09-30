@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 21,
+    date: '2026-09-30',
+    title: 'Warum verloren? – Auswertung im Turm',
+    items: [
+      { text: 'Nach einer Niederlage im Turm zeigt die Arena „Warum verloren?“: wie viel KP den Gegnern noch blieb, die wichtigsten Gründe – etwa „Gegner war zu schnell“, „Element-Nachteil“ oder „Element-Schild – Vorteil fehlt“ – und zu jedem Grund einen Tipp. Dazu siehst du, wie viel Schaden jedes Teammitglied ausgeteilt und eingesteckt hat und wann es fiel. Die Auswertung bleibt stehen, bis ein späterer Lauf an dieser Etage vorbeikommt.', feature: 'tower' },
+      { text: 'Das Kampfprotokoll ist neu: statt Textzeilen eine Liste mit Symbolen, Namen in Elementfarbe und farbigem Rand für gute und schlechte Momente. „Nur Wichtiges“ zeigt Techniken, kritische Treffer, besiegte Kämpfer und Boss-Momente; ausgeschaltet siehst du jeden Treffer.', feature: 'tower' },
+    ],
+  },
+  {
     id: 20,
     date: '2026-09-30',
     title: 'Aufgeräumte Reiter und Ritual-Eier zum Selbstöffnen',

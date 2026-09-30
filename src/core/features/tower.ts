@@ -5,7 +5,7 @@ import { activeLoci, catalogueGenome, libraryHas } from '../genetics';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature } from '../state';
+import type { Creature, FightStats } from '../state';
 import type { System } from '../systems/types';
 import type { BossTraitDef, RelicDef, StatusId, TargetingMode, TechniqueDef } from '../content/types';
 import type { ModifierProvider } from '../providers';
@@ -407,10 +407,12 @@ export interface FightResult {
   log: string[];
   fighters: FighterSnapshot[];
   events: FightEvent[];
+  /** Totals per fighter (for the defeat analysis). */
+  stats: FightStats;
 }
 
 // Enough for a long group fight (three foes, five fighters, about 40 s) to replay to the end.
-const maxEvents = 400;
+export const MAX_FIGHT_EVENTS = 400;
 const maxLog = 24;
 
 /** Seconds between two actions of each fighter: relative to the mean speed of everyone in the fight. */
@@ -454,9 +456,18 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}),
   }));
   const note = (line: string) => log.length < maxLog && log.push(line);
-  const record = (e: FightEvent) => events.length < maxEvents && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
+  const record = (e: FightEvent) => events.length < MAX_FIGHT_EVENTS && events.push({ ...e, at: Math.round(e.at * 100) / 100 });
   let dealt = 0;
-  const done = (win: boolean, seconds: number): FightResult => ({ win, dealt, seconds: Math.round(seconds * 10) / 10, log, fighters, events });
+  const zeros = () => order.map(() => 0);
+  const stats: FightStats = {
+    dealt: zeros(), taken: zeros(), healed: zeros(), hits: zeros(), strong: zeros(), weak: zeros(), missed: zeros(), dodged: zeros(),
+    hpLeft: zeros(), downAt: order.map(() => -1), shielded: 0, timeout: false, seconds: 0,
+  };
+  const done = (win: boolean, seconds: number, timeout = false): FightResult => {
+    const secs = Math.round(seconds * 10) / 10;
+    Object.assign(stats, { hpLeft: order.map((f) => Math.max(0, f.hp)), timeout, seconds: secs });
+    return { win, dealt, seconds: secs, log, fighters, events, stats };
+  };
   const traitDef = (id: string | undefined) => (id && ctx.content.bossTraits.has(id) ? ctx.content.bossTraits.get(id) : null);
   // Boss traits per fighter; a phase trait joins below half HP.
   const traits = order.map((f) => [traitDef(f.trait)].filter((t): t is BossTraitDef => !!t));
@@ -474,8 +485,8 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (syn.kind === 'diversity') for (const f of team) f.power *= 1 + syn.value;
   }
 
-  // Status per fighter: until when, strength, and the source's attack for damage over time.
-  const statuses = order.map(() => new Map<StatusId, { until: number; value: number; src: number }>());
+  // Status per fighter: until when, strength, the source's attack for damage over time and who put it on.
+  const statuses = order.map(() => new Map<StatusId, { until: number; value: number; src: number; by: number }>());
   const has = (i: number, id: StatusId, at: number) => {
     const st = statuses[i]!.get(id);
     return st && st.until > at ? st : undefined;
@@ -493,10 +504,14 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const teamDown = () => team.every((t) => t.hp <= 0);
   const over = () => foesDown() || teamDown();
 
-  const hurt = (i: number, dmg: number) => {
+  const hurt = (i: number, dmg: number, by: number, at: number) => {
+    const wasUp = order[i]!.hp > 0;
     order[i]!.hp -= dmg;
     taken[i]! += dmg;
     if (isFoe(i)) dealt += dmg;
+    stats.taken[i]! += dmg;
+    stats.dealt[by]! += dmg;
+    if (wasUp && order[i]!.hp <= 0) stats.downAt[i] = Math.round(at * 100) / 100;
   };
 
   /** Phase 2: a boss gets its second trait once it drops below half HP. */
@@ -522,12 +537,12 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
       if (shield.value <= 0) statuses[ti]!.delete('shield');
     }
     const hpDmg = dmg - absorbed;
-    hurt(ti, hpDmg);
+    hurt(ti, hpDmg, ai, at);
     record({ at, a: ai, t: ti, dmg: hpDmg, hp: Math.max(0, target.hp), m: elementMultiplier(ctx, order[ai]!.element, target.element), ...(absorbed ? { absorbed } : {}), ...extra });
     // Dornenhaut and Prisma: a share of the damage goes back to the attacker.
     const back = Math.round(dmg * ((target.thorns ?? 0) + (has(ti, 'reflect', at)?.value ?? 0)));
     if (back > 0 && order[ai]!.hp > 0 && target !== order[ai]) {
-      hurt(ai, back);
+      hurt(ai, back, ti, at);
       record({ at, a: ti, t: ai, dmg: back, hp: Math.max(0, order[ai]!.hp), m: 1, kind: 'reflect' });
       checkPhase(ai, at);
     }
@@ -540,6 +555,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const healed = Math.min(f.maxHp - f.hp, Math.round(amount));
     if (healed <= 0 || f.hp <= 0) return;
     f.hp += healed;
+    stats.healed[ti]! += healed;
     record({ at, a: ai, t: ti, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
   };
 
@@ -553,7 +569,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
       until = next[ti]!;
     }
     if (id === 'shield') v = Math.round(value * f.maxHp);
-    statuses[ti]!.set(id, { until, value: v, src: order[ai]!.atk * order[ai]!.power });
+    statuses[ti]!.set(id, { until, value: v, src: order[ai]!.atk * order[ai]!.power, by: ai });
     record({ at, a: ai, t: ti, dmg: 0, hp: Math.max(0, f.hp), m: 1, kind: 'status', status: id, until: Math.round(until * 100) / 100 });
   };
 
@@ -576,6 +592,8 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     const m = elementMultiplier(ctx, att.element, target.element);
     const evade = Math.min(0.6, evadeChance(ctx, att, target) + (has(ti, 'evade', at)?.value ?? 0));
     if (rng.chance(evade)) {
+      stats.missed[ai]!++;
+      stats.dodged[ti]!++;
       record({ at, a: ai, t: ti, dmg: 0, hp: target.hp, m, kind: 'miss', ...(extra.tech ? { tech: extra.tech } : {}) });
       return false;
     }
@@ -586,7 +604,14 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (mult !== 1) dmg = Math.max(mult > 0 ? 1 : 0, Math.round(dmg * mult));
     // Element-Schild: only hits with element advantage get through in full.
     const shield = hasTrait(ti, 'shield');
-    if (att.team && shield && m <= 1 && dmg > 0) dmg = Math.max(1, Math.round(dmg * shield.value));
+    if (att.team && shield && m <= 1 && dmg > 0) {
+      const kept = Math.max(1, Math.round(dmg * shield.value));
+      stats.shielded += dmg - kept;
+      dmg = kept;
+    }
+    stats.hits[ai]!++;
+    if (m > 1) stats.strong[ai]!++;
+    if (m < 1) stats.weak[ai]!++;
     land(ai, ti, dmg, at, { ...extra, ...(crit ? { crit: true } : {}) });
     return true;
   };
@@ -628,7 +653,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
           if (id === 'burn' || id === 'poison') {
             // Damage over time, reduced like a hit by the percentage part of the defence.
             const dmg = Math.max(1, Math.round(st.src * st.value * (cfg.defScale / (cfg.defScale + f.def))));
-            hurt(i, dmg);
+            hurt(i, dmg, st.by, tick);
             record({ at: tick, a: i, t: i, dmg, hp: Math.max(0, f.hp), m: 1, kind: 'dot', status: id });
             checkPhase(i, tick);
           }
@@ -645,6 +670,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
         const healed = Math.min(f.maxHp - f.hp, Math.round(taken[i]! * regen.value));
         if (healed > 0) {
           f.hp += healed;
+          stats.healed[i]! += healed;
           record({ at: tick, a: i, t: i, dmg: healed, hp: f.hp, m: 1, kind: 'heal' });
           note(`${fmt(tick)} · ${f.name} heilt ${healed}`);
         }
@@ -657,7 +683,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
     if (ended) return ended;
     if (now > limit) {
       log.push('Zeit abgelaufen');
-      return done(false, limit);
+      return done(false, limit, true);
     }
     // Burn or poison may have finished the actor off during the ticks.
     if (order[who]!.hp <= 0) continue;
@@ -812,8 +838,9 @@ export function fightNextFloor(ctx: GameContext): void {
   if (team.length === 0) return endRun(ctx);
   const floor = run.floor + 1;
   const result = simulateFight(ctx, team.map((c) => fighterFor(ctx, c)), enemiesFor(ctx, floor), ctx.rng);
-  tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, at: ctx.state.lastTickAt };
+  tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
+    tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
     ctx.bus.emit('towerFloor', { floor, win: false, rewards: {}, allele: null });
     endRun(ctx);
     return;
