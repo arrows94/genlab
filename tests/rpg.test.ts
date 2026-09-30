@@ -356,6 +356,7 @@ describe('GenLab RPG – Dungeon', () => {
     expect(enterRoom(g, 0).ok).toBe(true);
     expect(r.battle).not.toBeNull();
     expect(r.depth).toBe(1);
+    expect(r.path).toEqual(['fight']);
     expect(enterRoom(g, 0).ok).toBe(false); // finish the room first
     expect(leaveRpgRun(g).ok).toBe(false); // no fleeing mid-fight
     expect(g.content.rpgDungeons.get('rootMaze').elements).toContain(r.battle!.foe.element);

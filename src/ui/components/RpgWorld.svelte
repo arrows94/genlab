@@ -11,8 +11,9 @@
 
   /**
    * The other world (Isekai): while a GenLab RPG run lasts, the app shows only this – no tabs, no resources,
-   * no news from the lab. After the run the result stays until the player goes back to the lab.
-   * All rules live in core/features/rpg.ts; this view only shows state and calls actions.
+   * no news from the lab. Its own look: dark stone, torchlight and parchment. After the run the result stays
+   * until the player goes back to the lab. All rules live in core/features/rpg.ts; this view only shows state
+   * and calls actions.
    */
   let menuOpen = $state(false);
 
@@ -21,11 +22,16 @@
     const r = game.state.rpg;
     const run = r.run;
     const hero = rpgHero(game);
+    const dungeonId = run?.dungeon ?? r.lastResult?.dungeon ?? null;
+    const dungeon = dungeonId && content.rpgDungeons.has(dungeonId) ? content.rpgDungeons.get(dungeonId) : null;
     // Game state is mutated in place: hand the view copies, so every change reaches the template.
     return {
       lastResult: r.lastResult ? structuredClone(r.lastResult) : null,
       run: run ? structuredClone(run) : null,
       hero,
+      dungeon,
+      /** The dungeon's colour lights the other world. */
+      realm: dungeon ? content.elements.get(dungeon.elements[0]!).color : '#9b6bff',
       skills: run ? rpgSkills(game) : [],
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
@@ -59,191 +65,263 @@
   }
 </script>
 
-<div class="world">
+<div class="world" style="--realm: {data.realm}">
+  <div class="torch left" aria-hidden="true"></div>
+  <div class="torch right" aria-hidden="true"></div>
+
   <header class="world-bar">
-    <span class="realm">🌀 Die andere Welt{data.run ? ` · ${content.rpgDungeons.get(data.run.dungeon).icon} ${content.rpgDungeons.get(data.run.dungeon).name}` : ''}</span>
+    <div class="realm">
+      <span class="realm-sub">Die andere Welt</span>
+      <span class="realm-name">{data.dungeon ? `${data.dungeon.icon} ${data.dungeon.name}` : '🌀'}</span>
+    </div>
     <div class="menu">
-      <button class="menu-btn" aria-label="Menü" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>☰</button>
+      <button class="iron menu-btn" aria-label="Menü" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>☰</button>
       {#if menuOpen}
         <div class="menu-pop" role="menu">
-          <button role="menuitem" onclick={() => updatePrefs({ sound: !prefs.sound })}>{prefs.sound ? '🔊 Ton aus' : '🔈 Ton an'}</button>
-          {#if data.run}<button role="menuitem" class="danger" onclick={giveUp}>🏳️ Aufgeben</button>{/if}
+          <button class="iron" role="menuitem" onclick={() => updatePrefs({ sound: !prefs.sound })}>{prefs.sound ? '🔊 Ton aus' : '🔈 Ton an'}</button>
+          {#if data.run}<button class="iron danger" role="menuitem" onclick={giveUp}>🏳️ Aufgeben</button>{/if}
         </div>
       {/if}
     </div>
   </header>
 
-{#if data.run && data.hero}
+{#if data.run && data.hero && data.dungeon}
   {@const run = data.run}
-  {@const d = content.rpgDungeons.get(run.dungeon)}
+  {@const d = data.dungeon}
   {@const sp = content.species.get(data.hero.speciesId)}
-  <div class="run">
-    <article class="panel hero-bar">
-      <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={56} shiny={data.hero.shiny} />
-      <div class="hb-body">
-        <div class="hb-title"><b>{data.hero.name}</b> <span class="small muted">Stufe {data.heroLevel?.level ?? 1} · {d.icon} {d.name} · Raum {run.depth}/{d.rooms + 1}</span></div>
-        <div class="bar hp" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
-        <div class="bar xp" title="Erfahrung bis zur nächsten Stufe"><div style="width: {data.heroLevel && data.heroLevel.need > 0 ? pct(data.heroLevel.into, data.heroLevel.need) : '100%'}"></div></div>
-        {#if run.upgrades.length > 0}
-          <div class="ups">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
-        {/if}
-        <div class="loot small">
-          {#each lootList(run.loot) as l (l.name)}<span class="chip carried" title="Getragen – bei einer Niederlage geht ein Teil verloren">{l.icon} {formatNumber(l.amount)}</span>{/each}
-          {#each lootList(run.secured) as l (l.name)}<span class="chip safe" title="Gesichert">🔒 {l.icon} {formatNumber(l.amount)}</span>{/each}
-          {#each run.gear as item (item.id)}<span class="chip carried" style="border-color: {rarityOf(item).color}" title="Getragen – bei einer Niederlage verloren · {itemText(game, item)}">{gearOf(item).icon} {gearOf(item).name}</span>{/each}
-          {#each run.securedGear as item (item.id)}<span class="chip safe" title="Gesichert · {itemText(game, item)}">🔒 {gearOf(item).icon} {gearOf(item).name}</span>{/each}
-        </div>
+  {@const path = run.path ?? []}
+  <section class="parchment hero-plate">
+    <div class="portrait"><CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={58} shiny={data.hero.shiny} /></div>
+    <div class="hp-body">
+      <div class="hero-title"><b>{data.hero.name}</b> <span class="lvl">Stufe {data.heroLevel?.level ?? 1}</span></div>
+      <div class="bar blood" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
+      <div class="bar xp" title="Erfahrung bis zur nächsten Stufe"><div style="width: {data.heroLevel && data.heroLevel.need > 0 ? pct(data.heroLevel.into, data.heroLevel.need) : '100%'}"></div></div>
+      {#if run.upgrades.length > 0}
+        <div class="ups" title="Verbesserungen dieses Laufs">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
+      {/if}
+      <div class="pouch">
+        {#each lootList(run.loot) as l (l.name)}<span class="tag" title="Getragen – bei einer Niederlage geht ein Teil verloren">{l.icon} {formatNumber(l.amount)}</span>{/each}
+        {#each lootList(run.secured) as l (l.name)}<span class="tag safe" title="Gesichert">🔒 {l.icon} {formatNumber(l.amount)}</span>{/each}
+        {#each run.gear as item (item.id)}<span class="tag" style="border-color: {rarityOf(item).color}" title="Getragen – bei einer Niederlage verloren · {itemText(game, item)}">{gearOf(item).icon} {gearOf(item).name}</span>{/each}
+        {#each run.securedGear as item (item.id)}<span class="tag safe" title="Gesichert · {itemText(game, item)}">🔒 {gearOf(item).icon} {gearOf(item).name}</span>{/each}
       </div>
-    </article>
+    </div>
+  </section>
 
-    {#if run.battle}
-      {@const b = run.battle}
-      {@const intent = INTENT_INFO[foeIntent(game, b.foe)]}
-      {@const fl = speciesLook(b.foe)}
-      {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
-      {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
-      <article class="panel arena" style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
-        <div class="fighter">
-          {#key b.round}
-            <div class="fx" class:hurt={heroHits.length > 0}>
-              <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={84} shiny={data.hero.shiny} />
-              {#each heroHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
-            </div>
-          {/key}
-          <div class="bar hp small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
-          <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
-        </div>
-        <div class="round small muted">Runde {b.round}</div>
-        <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
-          <span class="intent" title={intent.hint}>{intent.icon} {intent.name}</span>
-          {#key b.round}
-            <div class="fx" class:hurt={foeHits.length > 0}>
-              <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 84 : 100} />
-              {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
-            </div>
-          {/key}
-          <span class="small f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
-          <div class="bar hp foe-hp small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
-          <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
-        </div>
-      </article>
-      <ul class="log small">{#each b.log as line, i (i)}<li>{line}</li>{/each}</ul>
-      <div class="skills">
-        {#each data.skills as k (k.id)}
-          {@const blocked = skillBlocker(b, k)}
-          {@const cd = b.cooldowns[k.id] ?? 0}
-          <button class="skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
-            <span class="k-icon">{k.icon}</span>
-            <span class="k-name">{k.name}</span>
-            {#if k.slot === 'special'}
-              <span class="charge"><span style="width: {pct(b.charge, 1)}"></span></span>
-            {:else if cd > 0}
-              <span class="cd num">{cd}</span>
-            {/if}
+  <ol class="trail" aria-label="Weg durch den Dungeon: Raum {run.depth} von {d.rooms + 1}">
+    {#each Array.from({ length: d.rooms + 1 }, (_, i) => i) as i (i)}
+      {@const kind = path[i]}
+      {@const here = i === run.depth - 1 && (!!run.battle || !!run.event)}
+      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} title={kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
+        {kind ? ROOM_INFO[kind].icon : i === d.rooms ? '👑' : ''}
+      </li>
+    {/each}
+  </ol>
+
+  {#if run.battle}
+    {@const b = run.battle}
+    {@const intent = INTENT_INFO[foeIntent(game, b.foe)]}
+    {@const fl = speciesLook(b.foe)}
+    {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
+    {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
+    <section class="arena" style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
+      <span class="round">Runde {b.round}</span>
+      <div class="fighter">
+        {#key b.round}
+          <div class="fx" class:hurt={heroHits.length > 0}>
+            <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={88} shiny={data.hero.shiny} />
+            {#each heroHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
+          </div>
+        {/key}
+        <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
+        <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
+      </div>
+      <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
+        <span class="intent" title={intent.hint}>{intent.icon} {intent.name}</span>
+        {#key b.round}
+          <div class="fx" class:hurt={foeHits.length > 0}>
+            <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 88 : 104} />
+            {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
+          </div>
+        {/key}
+        <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
+        <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
+        <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
+      </div>
+    </section>
+    <ol class="parchment chronicle">{#each b.log as line, i (i)}<li>{line}</li>{/each}</ol>
+    <div class="skills">
+      {#each data.skills as k (k.id)}
+        {@const blocked = skillBlocker(b, k)}
+        {@const cd = b.cooldowns[k.id] ?? 0}
+        <button class="iron skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
+          <span class="k-icon">{k.icon}</span>
+          <span class="k-name">{k.name}</span>
+          {#if k.slot === 'special'}
+            <span class="charge"><span style="width: {pct(b.charge, 1)}"></span></span>
+          {:else if cd > 0}
+            <span class="cd num">{cd}</span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  {:else if run.offer.length > 0}
+    <section class="parchment scroll">
+      <h2>⬆️ Eine Gabe für diesen Lauf{run.pendingLevels > 0 ? ` (noch ${run.pendingLevels} weitere)` : ''}</h2>
+      <div class="choices">
+        {#each run.offer as id, i (id)}
+          {@const u = content.rpgUpgrades.get(id)}
+          <button class="rune" onclick={() => act(chooseUpgrade(game, i))}>
+            <span class="c-icon">{u.icon}</span><b>{u.name}</b><span class="c-text">{u.description}</span>
           </button>
         {/each}
       </div>
-    {:else if run.offer.length > 0}
-      <article class="panel">
-        <h3>⬆️ Wähle eine Verbesserung für diesen Lauf{run.pendingLevels > 0 ? ` (noch ${run.pendingLevels} weitere)` : ''}</h3>
-        <div class="choices">
-          {#each run.offer as id, i (id)}
-            {@const u = content.rpgUpgrades.get(id)}
-            <button class="choice" onclick={() => act(chooseUpgrade(game, i))}>
-              <span class="c-icon">{u.icon}</span><b>{u.name}</b><span class="small muted">{u.description}</span>
-            </button>
-          {/each}
-        </div>
-      </article>
-    {:else if run.event}
-      {@const ev = content.rpgEvents.get(run.event)}
-      <article class="panel event">
-        <h3>{ev.icon} {ev.name}</h3>
-        <p>{ev.text}</p>
-        <div class="choices">
-          {#each ev.options as o, i (i)}
-            <button class="choice" onclick={() => act(chooseEventOption(game, i))}>
-              <b>{o.label}</b>{#if o.chance !== undefined && o.chance < 1}<span class="small muted">Chance {Math.round(o.chance * 100)} %</span>{/if}
-            </button>
-          {/each}
-        </div>
-      </article>
-    {:else}
-      {#if run.eventResult}<p class="panel small event-result">{run.eventResult}</p>{/if}
-      <article class="panel">
-        <h3>Wohin als Nächstes?</h3>
-        <div class="choices">
-          {#each run.choices as kind, i (kind)}
-            {@const info = ROOM_INFO[kind]}
-            <button class="choice room" class:boss={kind === 'boss'} onclick={() => act(enterRoom(game, i))}>
-              <span class="c-icon">{info.icon}</span><b>{info.name}</b><span class="small muted">{info.hint}</span>
-            </button>
-          {/each}
-        </div>
-      </article>
-      <div class="leave-bar"><button onclick={leave}>🚪 Dungeon verlassen (Beute mitnehmen)</button></div>
-    {/if}
-  </div>
+    </section>
+  {:else if run.event}
+    {@const ev = content.rpgEvents.get(run.event)}
+    <section class="parchment scroll">
+      <h2>{ev.icon} {ev.name}</h2>
+      <p class="tale">{ev.text}</p>
+      <div class="choices">
+        {#each ev.options as o, i (i)}
+          <button class="iron option" onclick={() => act(chooseEventOption(game, i))}>
+            <b>{o.label}</b>{#if o.chance !== undefined && o.chance < 1}<span class="c-text">Chance {Math.round(o.chance * 100)} %</span>{/if}
+          </button>
+        {/each}
+      </div>
+    </section>
+  {:else}
+    {#if run.eventResult}<p class="parchment tale told">{run.eventResult}</p>{/if}
+    <h2 class="fork">{run.choices.includes('boss') ? 'Vor dir liegt der letzte Raum …' : 'Der Weg teilt sich'}</h2>
+    <div class="doors">
+      {#each run.choices as kind, i (kind)}
+        {@const info = ROOM_INFO[kind]}
+        <button class="door" class:boss={kind === 'boss'} onclick={() => act(enterRoom(game, i))}>
+          <span class="c-icon">{info.icon}</span><b>{info.name}</b><span class="c-text">{info.hint}</span>
+        </button>
+      {/each}
+    </div>
+    <div class="leave-bar"><button class="iron" onclick={leave}>🚪 Dungeon verlassen (Beute mitnehmen)</button></div>
+  {/if}
 {:else if data.lastResult}
   {@const res = data.lastResult}
-  <article class="panel result" class:won={res.cleared} class:lost={!res.win}>
+  <section class="parchment scroll result" class:won={res.cleared} class:lost={!res.win}>
     <h2>{res.cleared ? '👑 Dungeon geschafft!' : res.win ? '🚪 Lauf beendet' : '💀 Niederlage'}</h2>
-    <p class="small">
+    <p class="tale">
       {content.rpgDungeons.get(res.dungeon).name} · Raum {res.depth} · Stufe {res.startLevel !== undefined && res.startLevel < res.level ? `${res.startLevel} → ${res.level}` : res.level}
       {#if !res.win}· Nur gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.{/if}
     </p>
-    <div class="loot">
-      {#each lootList(res.loot) as l (l.name)}<span class="chip">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="muted small">Keine Beute.</span>{/each}
-      {#each res.gear as item (item.id)}<span class="chip" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
+    <div class="pouch">
+      {#each lootList(res.loot) as l (l.name)}<span class="tag">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="c-text">Keine Beute.</span>{/each}
+      {#each res.gear as item (item.id)}<span class="tag" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
     </div>
-    <button class="primary back" disabled={!!view.portal} onclick={() => goBack(res.creatureId)}>🧬 Zurück ins Labor</button>
-  </article>
+    <button class="iron back" disabled={!!view.portal} onclick={() => goBack(res.creatureId)}>🧬 Zurück ins Labor</button>
+  </section>
 {:else}
-  <article class="panel result">
-    <p>Das Portal ist still.</p>
-    <button class="primary back" onclick={leaveWorld}>🧬 Zurück ins Labor</button>
-  </article>
+  <section class="parchment scroll result">
+    <p class="tale">Das Portal ist still.</p>
+    <button class="iron back" onclick={leaveWorld}>🧬 Zurück ins Labor</button>
+  </section>
 {/if}
 </div>
 
 <style>
-  /* The other world fills the screen; its own look follows in a later step. */
-  .world { max-width: 900px; margin: 0 auto; padding: calc(0.6rem + env(safe-area-inset-top)) 1rem calc(1.5rem + env(safe-area-inset-bottom)); min-height: 100vh; }
-  .world-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.8rem; }
-  .realm { font-weight: 700; letter-spacing: 0.03em; }
-  .menu { position: relative; }
-  .menu-btn { padding: 0.35rem 0.7rem; }
-  .menu-pop { position: absolute; right: 0; top: calc(100% + 0.3rem); z-index: 20; display: grid; gap: 0.3rem; min-width: 11rem; padding: 0.4rem; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); box-shadow: 0 8px 20px #0008; }
-  .menu-pop button { text-align: left; }
-  .small { font-size: 0.8rem; }
-  h2, h3 { margin: 0 0 0.5rem; }
-  .panel { margin-bottom: 0.8rem; }
-  .result { display: grid; gap: 0.6rem; justify-items: start; }
-  .result.won { border-color: var(--gold); }
-  .result.lost { border-color: var(--danger); }
-  .back { font-size: 1.05rem; }
-  .loot { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-  .chip { padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--line); background: var(--bg-2); white-space: nowrap; }
-  .chip.safe { border-color: var(--teal); }
-  .leave-bar { display: flex; justify-content: center; padding: 0.4rem 0; }
-  .hero-bar { display: flex; gap: 0.7rem; align-items: center; }
-  .hb-body { flex: 1; display: grid; gap: 0.3rem; min-width: 0; }
-  .bar { position: relative; height: 14px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; }
-  .bar > div { height: 100%; transition: width 0.3s; }
-  .bar span { position: absolute; inset: 0; font-size: 0.7rem; line-height: 12px; text-align: center; }
-  .bar.hp > div { background: linear-gradient(90deg, #2e9d5b, #8fd16a); }
-  .bar.foe-hp > div { background: linear-gradient(90deg, #b3372f, #ff8a50); }
-  .bar.xp { height: 6px; }
-  .bar.xp > div { background: var(--violet); }
-  .ups { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  /* The other world: dark stone, torchlight, parchment – far from the lab's glass and teal. */
+  .world {
+    --parch: #ecdcb8; --parch-2: #dcc394; --parch-edge: #b8955c; --ink: #2d1e10; --ink-soft: #6a5236;
+    --ember: #ff9a3c; --blood: #a3262a; --iron: #2b2420; --iron-2: #43372e; --brass: #c4965a; --glow: #ffcf7a;
+    position: relative; isolation: isolate; max-width: 860px; margin: 0 auto;
+    padding: calc(0.6rem + env(safe-area-inset-top)) 1rem calc(1.5rem + env(safe-area-inset-bottom)); min-height: 100vh;
+    font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: var(--parch);
+  }
+  /* Stone walls and the dungeon's own light, fixed behind everything. */
+  .world::before {
+    content: ''; position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--realm) 22%, transparent), transparent 55%),
+      radial-gradient(ellipse at 50% 120%, #000c, transparent 60%),
+      repeating-linear-gradient(0deg, #ffffff05 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(90deg, #00000030 0 2px, transparent 2px 92px),
+      #110c09;
+  }
+  .world::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; box-shadow: inset 0 0 18vmax #000e; }
+  .torch { position: fixed; top: -10vh; width: 60vmin; height: 60vmin; z-index: -1; pointer-events: none; border-radius: 50%;
+    background: radial-gradient(circle, #ff9a3c40, #ff6a0015 45%, transparent 70%); animation: flicker 3.2s ease-in-out infinite alternate; }
+  .torch.left { left: -20vmin; }
+  .torch.right { right: -20vmin; animation-delay: -1.3s; }
+  @keyframes flicker { 0% { opacity: 0.75; scale: 1; } 30% { opacity: 1; scale: 1.04; } 55% { opacity: 0.8; } 80% { opacity: 0.95; scale: 0.98; } 100% { opacity: 0.85; } }
 
-  .arena { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 0.5rem; background: linear-gradient(90deg, color-mix(in srgb, var(--hero) 12%, var(--panel)), var(--panel), color-mix(in srgb, var(--foe) 14%, var(--panel))); }
+  h2 { margin: 0 0 0.6rem; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.02em; }
+
+  .world-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.9rem; }
+  .realm { display: grid; line-height: 1.15; }
+  .realm-sub { font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--brass); }
+  .realm-name { font-size: 1.25rem; font-weight: 700; color: var(--glow); text-shadow: 0 0 14px #ff9a3c66; }
+
+  /* Iron and brass buttons (scoped: only this world). */
+  .iron {
+    font-family: inherit; color: var(--parch); border: 1px solid var(--brass); border-radius: 6px;
+    background: linear-gradient(180deg, var(--iron-2), var(--iron)); box-shadow: inset 0 1px 0 #ffffff14, 0 2px 6px #000a;
+  }
+  .iron:hover:not(:disabled) { border-color: var(--glow); }
+  .iron.danger { color: #ffb3a8; border-color: #b0453a; }
+  .menu { position: relative; }
+  .menu-btn { padding: 0.35rem 0.75rem; }
+  .menu-pop { position: absolute; right: 0; top: calc(100% + 0.35rem); z-index: 20; display: grid; gap: 0.35rem; min-width: 11rem; padding: 0.45rem; border-radius: 8px; background: #1c1511; border: 1px solid var(--brass); box-shadow: 0 10px 24px #000c; }
+  .menu-pop button { text-align: left; }
+
+  /* Parchment: warm paper with dark ink and a burnt edge. */
+  .parchment {
+    color: var(--ink); border-radius: 6px; border: 1px solid var(--parch-edge);
+    background: radial-gradient(ellipse at 50% 40%, #f4e7c9 0%, var(--parch) 45%, var(--parch-2) 85%, #c9a86f 100%);
+    box-shadow: inset 0 0 26px #8a6a3a66, 0 8px 22px #000b;
+  }
+  .hero-plate { display: flex; gap: 0.8rem; align-items: center; padding: 0.7rem 0.9rem; margin-bottom: 0.7rem; }
+  .portrait { flex: none; display: grid; place-items: center; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, #fff6 0%, transparent 70%); border: 2px solid var(--parch-edge); }
+  .hp-body { flex: 1; display: grid; gap: 0.3rem; min-width: 0; }
+  .hero-title { font-size: 1.05rem; }
+  .lvl { font-size: 0.85rem; color: var(--ink-soft); }
+  .ups { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  .pouch { display: flex; flex-wrap: wrap; gap: 0.3rem; font-size: 0.8rem; }
+  .tag { padding: 0.05rem 0.45rem; border-radius: 4px; border: 1px solid var(--parch-edge); background: #fff5; white-space: nowrap; }
+  .tag.safe { border-color: #3f7d54; }
+  .c-text { font-size: 0.8rem; opacity: 0.85; }
+
+  .bar { position: relative; height: 14px; border-radius: 3px; background: #2a1b12; border: 1px solid #5a3f25; overflow: hidden; }
+  .bar > div { height: 100%; transition: width 0.3s; }
+  .bar span { position: absolute; inset: 0; font-size: 0.68rem; line-height: 12px; text-align: center; color: #fff; text-shadow: 0 1px 1px #000; font-family: var(--mono); }
+  .bar.blood > div { background: linear-gradient(180deg, #d0453d, var(--blood)); }
+  .bar.foe-bar > div { background: linear-gradient(180deg, #8b5cc4, #4b2d7a); }
+  .bar.xp { height: 5px; }
+  .bar.xp > div { background: linear-gradient(90deg, #b8860b, var(--glow)); }
+
+  /* The way through the dungeon: rooms behind, the room now, the boss at the end. */
+  .trail { list-style: none; display: flex; align-items: center; gap: 0; margin: 0 0 0.8rem; padding: 0 0.2rem; overflow-x: auto; scrollbar-width: none; }
+  .trail li { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem; border: 1px dashed #6a5236; color: var(--parch); opacity: 0.55; }
+  .trail li + li { margin-left: 14px; position: relative; }
+  .trail li + li::before { content: ''; position: absolute; right: 100%; top: 50%; width: 14px; border-top: 2px dotted #6a5236; }
+  .trail li.done { border-style: solid; border-color: var(--brass); background: #3a2a1c; opacity: 1; }
+  .trail li.here { border: 2px solid var(--glow); background: #5a3a1a; opacity: 1; box-shadow: 0 0 10px #ff9a3c99; }
+  .trail li.boss { border-color: #b0453a; opacity: 0.9; }
+
+  /* The fight: two fighters on a torchlit stone floor. */
+  .arena {
+    position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 0.5rem; padding: 1.6rem 0.6rem 0.8rem; margin-bottom: 0.7rem;
+    border-radius: 8px; border: 1px solid #4a3828;
+    background:
+      radial-gradient(ellipse at 22% 80%, color-mix(in srgb, var(--hero) 22%, transparent), transparent 45%),
+      radial-gradient(ellipse at 78% 80%, color-mix(in srgb, var(--foe) 26%, transparent), transparent 45%),
+      linear-gradient(180deg, #1a130e 0%, #1a130e 62%, #2a1f16 62%, #150f0b 100%);
+    box-shadow: inset 0 0 40px #000c;
+  }
+  .round { position: absolute; top: 0.45rem; left: 50%; translate: -50% 0; font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--brass); }
   .fighter { display: grid; justify-items: center; gap: 0.25rem; min-width: 0; }
   .fighter.foe :global(svg) { transform: scaleX(-1); }
-  .fighter.elite :global(svg) { filter: drop-shadow(0 0 6px var(--danger)); }
-  .fighter.boss :global(svg) { filter: drop-shadow(0 0 10px var(--gold)); }
-  .small-bar { width: 100%; max-width: 160px; }
+  .fighter.elite :global(svg) { filter: drop-shadow(0 0 8px #d9483b); }
+  .fighter.boss :global(svg) { filter: drop-shadow(0 0 12px var(--glow)); }
   .fx { position: relative; display: grid; justify-items: center; }
+  /* A shadow under each fighter, like standing in torchlight. */
+  .fx::after { content: ''; width: 70%; height: 10px; margin-top: -6px; border-radius: 50%; background: radial-gradient(ellipse, #000a, transparent 70%); }
   .fx.hurt { animation: hurt 0.35s ease-out; }
   @keyframes hurt {
     0%, 100% { transform: translateX(0); filter: none; }
@@ -251,36 +329,61 @@
     45% { transform: translateX(5px); }
     70% { transform: translateX(-3px); }
   }
-  .dmg-float { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-weight: 800; color: #ffb4a8; text-shadow: 0 1px 2px #000; pointer-events: none;
+  .dmg-float { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); font-weight: 800; color: #ffd0c4; text-shadow: 0 1px 3px #000, 0 0 6px #a3262a; pointer-events: none;
     animation: float-up 0.9s ease-out forwards; animation-delay: calc(var(--i) * 0.12s); }
-  .dmg-float.crit { color: var(--gold); font-size: 1.15rem; }
-  @keyframes float-up { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -28px; } }
-  .f-name { text-align: center; }
-  .round { align-self: center; }
-  .intent { padding: 0.15rem 0.5rem; border-radius: 99px; border: 1px solid var(--foe); background: var(--bg-2); font-size: 0.8rem; white-space: nowrap; }
+  .dmg-float.crit { color: var(--glow); font-size: 1.2rem; }
+  @keyframes float-up { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -30px; } }
+  .small-bar { width: 100%; max-width: 170px; }
+  .f-name { text-align: center; font-size: 0.85rem; color: var(--parch); }
+  .intent { margin-bottom: 0.5rem; padding: 0.15rem 0.6rem; border-radius: 4px; font-size: 0.8rem; white-space: nowrap; color: var(--ink); border: 1px solid var(--parch-edge); background: linear-gradient(180deg, #f4e7c9, var(--parch-2)); box-shadow: 0 2px 6px #000a; }
   .statuses { display: flex; gap: 0.25rem; min-height: 1.1rem; font-size: 0.8rem; }
-  .log { list-style: none; margin: 0 0 0.6rem; padding: 0.4rem 0.6rem; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--line); min-height: 5.5rem; }
-  .log li { opacity: 0.6; }
-  .log li:nth-last-child(-n + 3) { opacity: 1; }
 
-  /* Skill buttons at the bottom, in thumb reach on phones. */
-  .skills { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; z-index: 2; padding: 0.3rem; border-radius: var(--radius); background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(4px); }
-  .skill { position: relative; display: grid; justify-items: center; gap: 0.1rem; padding: 0.5rem 0.2rem; min-height: 64px; }
-  .skill.special:not(:disabled) { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--panel-2)); }
+  .chronicle { list-style: none; margin: 0 0 0.7rem; padding: 0.5rem 0.8rem; min-height: 6rem; font-size: 0.82rem; font-style: italic; }
+  .chronicle li { opacity: 0.55; }
+  .chronicle li:nth-last-child(-n + 3) { opacity: 1; }
+
+  /* Skill plates at the bottom, in thumb reach on phones. */
+  .skills { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); z-index: 2; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; padding: 0.35rem; border-radius: 8px; background: #0e0a08e6; border: 1px solid #3a2c20; }
+  .skill { position: relative; display: grid; justify-items: center; gap: 0.1rem; padding: 0.5rem 0.2rem; min-height: 66px; }
+  .skill.special:not(:disabled) { border-color: var(--glow); background: linear-gradient(180deg, #6b4a1c, #3a2710); box-shadow: 0 0 12px #ff9a3c66, inset 0 1px 0 #ffffff22; }
   .k-icon { font-size: 1.4rem; }
   .k-name { font-size: 0.75rem; line-height: 1.1; text-align: center; }
-  .cd { position: absolute; top: 0.2rem; right: 0.35rem; font-size: 0.75rem; color: var(--gold); }
-  .charge { width: 80%; height: 4px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .charge span { display: block; height: 100%; background: var(--gold); }
+  .cd { position: absolute; top: 0.2rem; right: 0.35rem; font-size: 0.75rem; color: var(--glow); }
+  .charge { width: 80%; height: 4px; border-radius: 2px; background: #000a; overflow: hidden; }
+  .charge span { display: block; height: 100%; background: linear-gradient(90deg, #b8860b, var(--glow)); }
 
+  .scroll { padding: 0.9rem 1rem; margin-bottom: 0.8rem; }
+  .tale { margin: 0 0 0.7rem; line-height: 1.45; }
+  .tale.told { padding: 0.6rem 0.9rem; font-style: italic; margin-bottom: 0.8rem; }
   .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem; }
-  .choice { display: grid; justify-items: center; gap: 0.2rem; text-align: center; padding: 0.8rem 0.5rem; }
-  .choice.boss { border-color: var(--gold); }
+  /* A gift of this run: a rune stone. */
+  .rune { display: grid; justify-items: center; gap: 0.2rem; text-align: center; padding: 0.8rem 0.5rem; font-family: inherit; color: var(--parch); border-radius: 10px; border: 1px solid var(--brass); background: radial-gradient(circle at 50% 30%, #4b3a2c, #231a14); box-shadow: 0 4px 10px #0009; }
+  .rune:hover { border-color: var(--glow); box-shadow: 0 0 14px #ff9a3c55; }
+  .option { display: grid; justify-items: center; gap: 0.15rem; padding: 0.7rem 0.5rem; }
   .c-icon { font-size: 1.8rem; }
-  .event-result { font-style: italic; }
+
+  /* The ways ahead: arched doors in the wall. */
+  .fork { text-align: center; color: var(--glow); text-shadow: 0 0 12px #ff9a3c55; }
+  .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 220px)); justify-content: center; gap: 0.7rem; margin-bottom: 0.8rem; }
+  .door {
+    display: grid; justify-items: center; align-content: end; gap: 0.25rem; min-height: 170px; padding: 1.8rem 0.6rem 0.9rem; text-align: center; font-family: inherit; color: var(--parch);
+    border-radius: 999px 999px 8px 8px; border: 2px solid #5a4330;
+    background: radial-gradient(ellipse at 50% 30%, #0006, transparent 60%), repeating-linear-gradient(90deg, #3a2a1d 0 18px, #33251a 18px 20px), #2d2016;
+    box-shadow: inset 0 0 24px #000c, 0 6px 14px #000b;
+  }
+  .door:hover { border-color: var(--brass); box-shadow: inset 0 0 24px #000c, 0 0 16px #ff9a3c44; }
+  .door.boss { border-color: #9a3a30; box-shadow: inset 0 0 24px #000c, 0 0 18px #d9483b66; }
+  .door b { font-size: 1.05rem; color: var(--glow); }
+  .leave-bar { display: flex; justify-content: center; padding: 0.4rem 0; }
+  .leave-bar button, .back { padding: 0.55rem 1rem; }
+
+  .result { display: grid; gap: 0.6rem; justify-items: start; }
+  .result.won { border-color: #b8860b; box-shadow: inset 0 0 26px #8a6a3a66, 0 0 24px #ffcf7a55; }
+  .result.lost { border-color: #8a2d26; }
+  .back { font-size: 1.05rem; }
 
   @media (max-width: 520px) {
-    .arena { grid-template-columns: 1fr 1fr; }
-    .round { display: none; }
+    .door { min-height: 140px; }
+    .realm-name { font-size: 1.1rem; }
   }
 </style>

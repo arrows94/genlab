@@ -630,8 +630,10 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Schritt 4: Portal-Animation – das Monster wird in einen Strudel gesogen; Rückweg nach dem Lauf; reduzierte
       Bewegung: Überblendung
       (`Portal.svelte`; der Bildschirm wechselt erst, wenn der Strudel alles bedeckt – `view.portal`, `portalCovered`)
-- [ ] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt
+- [x] Schritt 5: eigenes Design der anderen Welt – dunkle Fantasy, Pergament und Fackellicht, Raumpfad statt
       Knopfliste, neue Kampfszene
+      (Steinwände mit flackerndem Fackelschein in der Farbe des Dungeons, Pergament-Karten, Serifenschrift, Wege als
+      Tore, Gaben als Runensteine, Pfad aus `run.path` mit Boss-Krone; das Labor-Menü für das RPG bleibt im Labor-Stil)
 - [ ] Schritt 6: eigene Musikstimmung und Portal-Klang
 - [ ] Schritt 7: Versionshinweis, Doku, PR
 

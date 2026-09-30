@@ -391,6 +391,8 @@ export interface RpgRun {
   pendingLevels: number;
   /** Rooms cleared so far. */
   depth: number;
+  /** The rooms entered, in order (missing in runs started before it existed). */
+  path?: RpgRoomKind[];
   /** Loot carried but not yet safe: lost in part on a defeat. */
   loot: Record<string, number>;
   /** Loot already made safe this run (paid out at the moment it was secured). */

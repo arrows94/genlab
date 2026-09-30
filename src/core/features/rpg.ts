@@ -134,7 +134,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
   r.run = {
-    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), startLevel: rpgLevel(ctx, c.id).level, upgrades: [], offer: [], pendingLevels: 0, depth: 0,
+    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), startLevel: rpgLevel(ctx, c.id).level, upgrades: [], offer: [], pendingLevels: 0, depth: 0, path: [],
     loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
@@ -520,6 +520,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
   run.choices = [];
   run.depth++;
   run.room = kind;
+  (run.path ??= []).push(kind);
   run.eventResult = null;
   const hero = rpgHero(ctx)!;
   switch (kind) {
