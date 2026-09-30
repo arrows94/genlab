@@ -87,11 +87,26 @@ export function upgradePerks(ctx: GameContext, upgrades: readonly string[]): Req
   return out;
 }
 
-/** The hero's stats in the dungeon: bred stats × the run's upgrades. */
+/** Erfahrungsrang of a creature from its collected dungeon XP: rank, XP into it and needed for the next. */
+export function rpgRank(ctx: GameContext, creatureId: number): { rank: number; into: number; need: number } {
+  const cfg = ctx.balance.rpg;
+  let xp = ctx.state.rpg.ranks[String(creatureId)] ?? 0;
+  let rank = 0;
+  while (rank < cfg.maxRank) {
+    const need = Math.round(cfg.rankXpBase * Math.pow(cfg.rankXpGrowth, rank));
+    if (xp < need) return { rank, into: xp, need };
+    xp -= need;
+    rank++;
+  }
+  return { rank, into: 0, need: 0 };
+}
+
+/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × the run's upgrades. */
 export function heroStats(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): { hp: number; atk: number; def: number; spd: number } {
   const s = effectiveStats(ctx, c);
   const up = upgradeStats(ctx, upgrades);
-  const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * (1 + up[k])));
+  const rank = 1 + rpgRank(ctx, c.id).rank * ctx.balance.rpg.rankStats;
+  const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * rank * (1 + up[k])));
   return { hp: stat('hp', 1), atk: stat('atk', 1), def: stat('def', 0), spd: stat('spd', 1) };
 }
 

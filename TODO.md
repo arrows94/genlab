@@ -608,8 +608,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 - [x] Stufen: Mischform (Variante C) – die Lauf-Stufe startet jedes Mal bei 1 (Roguelite), dazu ein langsam
       wachsender dauerhafter „Erfahrungsrang“ je Monster mit kleinem Startbonus (z. B. +1 Verbesserung zu Beginn).
       Verworfen: A (nur im Lauf, ohne Bindung ans Monster), B (dauerhafte Stufen – Fragen bei Verkauf und Vererbung)
-  - [ ] Offen: Wie schnell wächst der Rang, was bringt er je Stufe, und was passiert mit ihm beim Verkaufen,
-        Recyceln oder bei der Vererbung (Vorschlag: Rang hängt an der Kreatur und geht mit ihr verloren)?
+  - [x] Festgelegt: Alle Dungeon-Erfahrung zählt (Boss extra), Rang n braucht `rankXpBase × rankXpGrowth^n`,
+        höchstens Rang 10; je Rang +2 % auf alle Dungeon-Werte, jeder 3. Rang eine Verbesserung zum Start.
+        Der Rang hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
 - [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
       Turm-Kurve)
 

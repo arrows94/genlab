@@ -83,6 +83,15 @@ export const balance: Balance = {
     xpGrowth: 1.4,
     levelHeal: 0.15,
     upgradeChoices: 3,
+    // Erfahrungsrang (lasting, per monster): all dungeon XP counts, the boss adds rankXpBoss. Rank n needs
+    // rankXpBase × rankXpGrowth^(n − 1) more; each rank +rankStats on all dungeon stats, every rankUpgradeEvery-th
+    // rank one upgrade to choose at the start of a run.
+    rankXpBoss: 40,
+    rankXpBase: 60,
+    rankXpGrowth: 1.6,
+    maxRank: 10,
+    rankStats: 0.02,
+    rankUpgradeEvery: 3,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room (× the dungeon's loot factor).

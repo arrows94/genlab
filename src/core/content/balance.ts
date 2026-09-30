@@ -101,6 +101,16 @@ export interface Balance {
     levelHeal: number;
     /** Upgrades offered per level-up. */
     upgradeChoices: number;
+    /** Erfahrungsrang XP for beating a boss (on top of the fights' XP). */
+    rankXpBoss: number;
+    /** XP from rank n to n+1: rankXpBase × rankXpGrowth^n. */
+    rankXpBase: number;
+    rankXpGrowth: number;
+    maxRank: number;
+    /** Dungeon stat bonus per rank (0.02 = +2 %). */
+    rankStats: number;
+    /** Every n-th rank gives one upgrade to choose at the start of a run. */
+    rankUpgradeEvery: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /** Loot per room kind, multiplied by the dungeon's `loot`. */

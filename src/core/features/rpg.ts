@@ -7,7 +7,7 @@ import type { Creature, RpgRun } from '../state';
 import type { RpgEventOutcome, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
-import { heroCombatant, heroStats, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker, upgradePerks } from './rpgCombat';
+import { heroCombatant, heroStats, makeFoe, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker, upgradePerks } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -90,6 +90,17 @@ export function rpgStartBlocker(ctx: GameContext, c: Creature): string | null {
   return null;
 }
 
+/** The Erfahrungsrang goes with its creature: ranks of creatures that are gone are dropped. */
+function pruneRanks(ctx: GameContext): void {
+  const ids = new Set(ctx.state.creatures.map((c) => String(c.id)));
+  for (const id of Object.keys(ctx.state.rpg.ranks)) if (!ids.has(id)) delete ctx.state.rpg.ranks[id];
+}
+
+function addRankXp(ctx: GameContext, creatureId: number, amount: number): void {
+  const key = String(creatureId);
+  ctx.state.rpg.ranks[key] = (ctx.state.rpg.ranks[key] ?? 0) + amount;
+}
+
 /** A dungeon is open once the one before it was cleared. */
 export function dungeonUnlocked(ctx: GameContext, dungeonId: string): boolean {
   if (!ctx.content.rpgDungeons.has(dungeonId)) return false;
@@ -118,7 +129,14 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
     loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
+  pruneRanks(ctx);
   offerRooms(ctx, r.run);
+  // Erfahrungsrang: every rankUpgradeEvery-th rank one upgrade to choose right away.
+  const starts = Math.floor(rpgRank(ctx, c.id).rank / ctx.balance.rpg.rankUpgradeEvery);
+  if (starts > 0) {
+    r.run.pendingLevels = starts - 1;
+    offerUpgrades(ctx, r.run);
+  }
   return { ok: true };
 }
 
@@ -161,6 +179,7 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
   r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, level: run.level, loot: total, at: ctx.state.lastTickAt };
   r.run = null;
+  pruneRanks(ctx);
   ctx.invalidate();
 }
 
@@ -211,6 +230,7 @@ function winBattle(ctx: GameContext, run: RpgRun): void {
   run.battle = null;
   addLoot(run.loot, roomLoot(ctx, run, kind));
   if (kind === 'boss') {
+    addRankXp(ctx, run.creatureId, ctx.balance.rpg.rankXpBoss);
     finishRpgRun(ctx, true, true);
     return;
   }
@@ -231,6 +251,7 @@ export function gainXp(ctx: GameContext, run: RpgRun, amount: number): void {
   const hero = findCreature(ctx, run.creatureId);
   if (!hero) return;
   run.xp += amount;
+  addRankXp(ctx, run.creatureId, amount);
   while (run.xp >= xpToNext(ctx, run.level)) {
     run.xp -= xpToNext(ctx, run.level);
     run.level++;

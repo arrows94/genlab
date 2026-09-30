@@ -410,6 +410,8 @@ export interface RpgState {
   cleared: Record<string, number>;
   /** Deepest room reached per dungeon. */
   best: Record<string, number>;
+  /** Erfahrungsrang: dungeon XP collected per creature id – it goes with the creature. */
+  ranks: Record<string, number>;
 }
 
 export interface GameState {
@@ -534,7 +536,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {} },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {} },
   };
 }
 

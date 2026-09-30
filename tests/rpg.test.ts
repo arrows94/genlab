@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chooseEventOption, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
@@ -485,5 +485,52 @@ describe('GenLab RPG – Stufen und Verbesserungen', () => {
     enterRoom(g, 0);
     for (let i = 0; i < 100 && r.battle; i++) useRpgSkill(g, 'strike');
     expect(r.xp + (r.level > 1 ? xpToNext(g, 1) : 0)).toBe(balance.rpg.xp.fight);
+  });
+});
+
+describe('GenLab RPG – Erfahrungsrang', () => {
+  function game() {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    g.state.resources['torches'] = D(50);
+    return g;
+  }
+
+  it('grows with all dungeon XP and gives a small stat bonus', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    c.stats = { ...c.stats, atk: 1000 };
+    expect(rpgRank(g, c.id).rank).toBe(0);
+    const base = heroStats(g, c).atk;
+    startRpgRun(g, c.id, 'rootMaze');
+    gainXp(g, g.state.rpg.run!, balance.rpg.rankXpBase);
+    expect(rpgRank(g, c.id).rank).toBe(1);
+    expect(heroStats(g, c).atk).toBe(Math.round(base * (1 + balance.rpg.rankStats)));
+  });
+
+  it('every few ranks give an upgrade to choose at the start', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    let xp = 0;
+    for (let r = 0; r < balance.rpg.rankUpgradeEvery; r++) xp += Math.round(balance.rpg.rankXpBase * Math.pow(balance.rpg.rankXpGrowth, r));
+    g.state.rpg.ranks[String(c.id)] = xp;
+    expect(rpgRank(g, c.id).rank).toBe(balance.rpg.rankUpgradeEvery);
+    startRpgRun(g, c.id, 'rootMaze');
+    const r = g.state.rpg.run!;
+    expect(r.offer).toHaveLength(balance.rpg.upgradeChoices);
+    expect(r.pendingLevels).toBe(0);
+    expect(r.level).toBe(1);
+  });
+
+  it('stops at the highest rank and goes with the creature', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    g.state.rpg.ranks[String(c.id)] = 1e12;
+    expect(rpgRank(g, c.id)).toEqual({ rank: balance.rpg.maxRank, into: 0, need: 0 });
+    g.state.rpg.ranks['999999'] = 500;
+    startRpgRun(g, c.id, 'rootMaze');
+    expect(g.state.rpg.ranks['999999']).toBeUndefined();
+    expect(g.state.rpg.ranks[String(c.id)]).toBe(1e12);
   });
 });
