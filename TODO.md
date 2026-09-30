@@ -640,10 +640,10 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 
 ## Schritt 3 – Dungeon und Roguelite
 
-- [ ] Dungeon aus Räumen: Kampf, Elite, Schatz, Rast (heilen, Beute sichern), Ereignis, Boss am Ende;
+- [x] Dungeon aus Räumen: Kampf, Elite, Schatz, Rast (heilen, Beute sichern), Ereignis, Boss am Ende;
       nach jedem Raum Wahl aus 2–3 Wegen
   - [x] Kampf, Elite, Schatz, Rast, Boss; Wegwahl nach `balance.rpg.roomWeights`
-  - [ ] Ereignisse
+  - [x] Ereignisse (`rpgEvents`: kurze Szene, zwei Entscheidungen, riskante mit Fehlschlag)
 - [ ] Erfahrung aus Kämpfen; bei jedem Stufenaufstieg Wahl aus 3 Verbesserungen (Werte, stärkere Fähigkeit,
       passiver Effekt) – so wird jeder Lauf anders
 - [x] Mehrere Dungeons mit Element-Thema, nacheinander freigeschaltet; Tiefe = Schwierigkeit und Belohnung

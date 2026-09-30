@@ -357,8 +357,12 @@ export interface RpgRun {
   dungeon: string;
   /** Rooms offered next (pick one); empty while inside a room. */
   choices: RpgRoomKind[];
-  /** The room the hero is in (a fight not yet won), null between rooms. */
+  /** The room the hero is in (a fight not yet won, an event not yet decided), null between rooms. */
   room: RpgRoomKind | null;
+  /** Event waiting for the player's choice (`rpgEvents` id). */
+  event: string | null;
+  /** Result text of the last event choice (until the next room). */
+  eventResult: string | null;
   /** Current HP (they carry over from room to room). */
   hp: number;
   /** Run level (starts at 1 every run) and experience towards the next one. */

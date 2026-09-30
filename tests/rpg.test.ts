@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dungeonUnlocked, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { chooseEventOption, dungeonUnlocked, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { foeIntent, heroActsFirst, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -355,6 +355,41 @@ describe('GenLab RPG – Dungeon', () => {
     expect(g.state.resources['towerTokens']!.toNumber()).toBe(roomLoot(g, r, 'treasure')['towerTokens']);
   });
 
+  it('an event waits for a choice, then its outcome happens and the ways open', () => {
+    const { g, c } = run();
+    const r = g.state.rpg.run!;
+    r.choices = ['event'];
+    expect(enterRoom(g, 0).ok).toBe(true);
+    expect(r.event).not.toBeNull();
+    expect(r.choices).toEqual([]);
+    expect(enterRoom(g, 0).ok).toBe(false);
+    r.event = 'shrine';
+    r.hp = 1;
+    expect(chooseEventOption(g, 2).ok).toBe(false);
+    expect(chooseEventOption(g, 0).ok).toBe(true);
+    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * 0.3));
+    expect(r.eventResult).toBe(g.content.rpgEvents.get('shrine').options[0].result);
+    expect(r.event).toBeNull();
+    expect(r.choices.length).toBeGreaterThan(0);
+    expect(chooseEventOption(g, 0).ok).toBe(false);
+  });
+
+  it('event damage never kills; a risky choice can fail', () => {
+    const { g } = run(3);
+    const r = g.state.rpg.run!;
+    const outcomes = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      r.choices = ['event'];
+      enterRoom(g, 0);
+      r.event = 'chest';
+      r.hp = 1;
+      chooseEventOption(g, 0);
+      expect(r.hp).toBeGreaterThanOrEqual(1);
+      outcomes.add(r.eventResult!);
+    }
+    expect(outcomes.size).toBe(2);
+  });
+
   it('after the last room only the boss waits; beating it clears the dungeon', () => {
     const { g, c } = run();
     const rooms = g.content.rpgDungeons.get('rootMaze').rooms;
@@ -363,6 +398,7 @@ describe('GenLab RPG – Dungeon', () => {
       expect(r.choices).not.toContain('boss');
       enterRoom(g, 0);
       winFight(g);
+      if (r.event) chooseEventOption(g, 1);
     }
     expect(g.state.rpg.run!.choices).toEqual(['boss']);
     enterRoom(g, 0);

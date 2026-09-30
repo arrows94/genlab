@@ -1,4 +1,4 @@
-import type { RpgDungeonDef, RpgEnemyDef, RpgSkillDef } from '@core/content/types';
+import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgSkillDef } from '@core/content/types';
 
 /**
  * GenLab RPG: the hero's skills and the dungeon foes. A hero has four skills:
@@ -53,4 +53,33 @@ export const rpgDungeons: RpgDungeonDef[] = [
     description: 'Giftige Nebel und Schatten, die sich bewegen, wenn niemand hinsieht.' },
   { id: 'crystalCore', name: 'Kristallkern', icon: '💠', elements: ['crystal', 'light', 'metal'], floor: 120, floorsPerRoom: 4, rooms: 12, loot: 9, requires: 'shadowCrypt',
     description: 'Das funkelnde Herz der Welt. Nur die stärksten Monster kommen bis zum Grund.' },
+];
+
+/** Event rooms: a short scene, two choices. */
+export const rpgEvents: RpgEventDef[] = [
+  { id: 'shrine', name: 'Verlassener Schrein', icon: '⛩️', weight: 3,
+    text: 'Ein moosbewachsener Schrein. In der Schale liegen alte Opfergaben.',
+    options: [
+      { label: 'Beten', hp: 0.3, result: 'Eine warme Kraft durchströmt dein Monster.' },
+      { label: 'Opfergaben nehmen', loot: 1.5, hp: -0.15, result: 'Die Gaben gehören jetzt dir – aber der Schrein grollt.' },
+    ] },
+  { id: 'chest', name: 'Verdächtige Truhe', icon: '🧰', weight: 3,
+    text: 'Eine Truhe mitten im Gang – fast zu einladend.',
+    options: [
+      { label: 'Öffnen', chance: 0.6, loot: 2, result: 'Sie ist randvoll!',
+        fail: { hp: -0.25, result: 'Eine Falle! Spitze Stacheln schnellen hervor.' } },
+      { label: 'Liegen lassen', result: 'Sicher ist sicher. Du gehst weiter.' },
+    ] },
+  { id: 'spring', name: 'Klare Quelle', icon: '⛲', weight: 2,
+    text: 'Klares Wasser sprudelt aus dem Fels. Ein ruhiger Ort.',
+    options: [
+      { label: 'Trinken', hp: 0.5, result: 'Das Wasser heilt alle Schrammen.' },
+      { label: 'Beute verstecken', secure: true, hp: 0.15, result: 'Hinter dem Wasserfall ist deine Beute sicher.' },
+    ] },
+  { id: 'rubble', name: 'Eingestürzter Gang', icon: '🪨', weight: 2,
+    text: 'Geröll versperrt einen Seitengang. Dahinter glitzert etwas.',
+    options: [
+      { label: 'Freigraben', hp: -0.1, loot: 1, result: 'Mühsam, aber es hat sich gelohnt.' },
+      { label: 'Weitergehen', result: 'Das Glitzern bleibt, wo es ist.' },
+    ] },
 ];

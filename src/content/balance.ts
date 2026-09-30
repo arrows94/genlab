@@ -74,9 +74,9 @@ export const balance: Balance = {
     chargePerHit: 0.1,
     chargeWhenHit: 0.15,
     logSize: 8,
-    // Dungeon: after each room 2–3 ways, drawn by these weights (events follow later).
+    // Dungeon: after each room 2–3 ways, drawn by these weights.
     choices: [2, 3],
-    roomWeights: { fight: 50, elite: 12, treasure: 12, rest: 12, event: 0 },
+    roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room (× the dungeon's loot factor).

@@ -1,5 +1,5 @@
 import { isValidTarget, type ModifierDef } from '../modifiers';
-import type { Condition, ContentData, ContentDB, Registry, ResourceAmounts } from './types';
+import type { Condition, ContentData, ContentDB, Registry, ResourceAmounts, RpgEventOutcome } from './types';
 
 export class ContentValidationError extends Error {
   constructor(public readonly issues: string[]) {
@@ -432,6 +432,25 @@ export function validateContent(data: ContentData): string[] {
     num(`${w}.rooms`, d.rooms, 1, 50);
     num(`${w}.loot`, d.loot, 0);
     ref(`${w}.requires`, 'rpgDungeons', d.requires);
+  }
+  for (const ev of data.rpgEvents) {
+    const w = at('rpgEvents', ev.id);
+    text(`${w}.name`, ev.name);
+    text(`${w}.text`, ev.text);
+    num(`${w}.weight`, ev.weight, 0);
+    if (!Array.isArray(ev.options) || ev.options.length !== 2) issues.push(`${w}.options: genau zwei Wahlmöglichkeiten`);
+    const outcome = (where: string, o: RpgEventOutcome) => {
+      text(`${where}.result`, o.result);
+      if (o.hp !== undefined) num(`${where}.hp`, o.hp, -1, 1);
+      if (o.loot !== undefined) num(`${where}.loot`, o.loot, 0, 10);
+    };
+    (ev.options ?? []).forEach((o, i) => {
+      text(`${w}.options[${i}].label`, o.label);
+      outcome(`${w}.options[${i}]`, o);
+      if (o.chance !== undefined) num(`${w}.options[${i}].chance`, o.chance, 0, 1);
+      if ((o.chance ?? 1) < 1 && !o.fail) issues.push(`${w}.options[${i}].fail: fehlt bei chance < 1`);
+      if (o.fail) outcome(`${w}.options[${i}].fail`, o.fail);
+    });
   }
   for (const r of data.resonances) {
     const w = at('resonances', r.id);

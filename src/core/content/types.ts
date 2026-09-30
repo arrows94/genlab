@@ -716,6 +716,35 @@ export interface RpgDungeonDef {
   requires?: string;
 }
 
+/** What an event choice does to the run. */
+export interface RpgEventOutcome {
+  /** Text shown afterwards. */
+  result: string;
+  /** HP change as a share of max HP (negative = damage, never below 1 HP). */
+  hp?: number;
+  /** Extra loot: this many times a treasure room's loot. */
+  loot?: number;
+  /** Secures the carried loot like a rest. */
+  secure?: boolean;
+}
+
+export interface RpgEventOption extends RpgEventOutcome {
+  label: string;
+  /** Chance that it works (default 1); otherwise `fail` happens. */
+  chance?: number;
+  fail?: RpgEventOutcome;
+}
+
+/** An event room: a short scene with two choices. */
+export interface RpgEventDef {
+  id: string;
+  name: string;
+  icon: string;
+  text: string;
+  weight: number;
+  options: [RpgEventOption, RpgEventOption];
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -755,6 +784,7 @@ export interface ContentData {
   rpgSkills: RpgSkillDef[];
   rpgEnemies: RpgEnemyDef[];
   rpgDungeons: RpgDungeonDef[];
+  rpgEvents: RpgEventDef[];
 }
 
 export interface Registry<T extends { id: string }> {

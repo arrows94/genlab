@@ -4,7 +4,7 @@ import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature, RpgRun } from '../state';
-import type { RpgRoomKind, RpgSkillDef } from '../content/types';
+import type { RpgEventOutcome, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { heroCombatant, makeFoe, newBattle, playRound, rpgSkillsFor, skillBlocker } from './rpgCombat';
@@ -114,7 +114,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   c.job = { kind: 'rpg', target: 'run' };
   ctx.invalidate();
   r.run = {
-    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0,
+    creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, depth: 0,
     loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
@@ -277,12 +277,13 @@ function foeSpecies(ctx: GameContext, run: RpgRun, boss: boolean): string {
 export function enterRoom(ctx: GameContext, index: number): ActionResult {
   const run = ctx.state.rpg.run;
   if (!run) return { ok: false, reason: 'Es läuft kein Lauf.' };
-  if (run.battle || run.room) return { ok: false, reason: 'Erst diesen Raum abschließen.' };
+  if (run.battle || run.event) return { ok: false, reason: 'Erst diesen Raum abschließen.' };
   const kind = run.choices[index];
   if (!kind) return { ok: false, reason: 'Diesen Weg gibt es nicht.' };
   run.choices = [];
   run.depth++;
   run.room = kind;
+  run.eventResult = null;
   const hero = rpgHero(ctx)!;
   switch (kind) {
     case 'fight':
@@ -295,12 +296,34 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
     case 'treasure':
       addLoot(run.loot, roomLoot(ctx, run, 'treasure'));
       break;
+    case 'event': {
+      const events = ctx.content.rpgEvents.list;
+      run.event = ctx.rng.weighted(Object.fromEntries(events.map((e) => [e.id, e.weight])));
+      return { ok: true };
+    }
     case 'rest':
-    case 'event':
       run.hp = Math.min(rpgMaxHp(ctx, hero), run.hp + Math.round(rpgMaxHp(ctx, hero) * ctx.balance.rpg.restHeal));
       secureLoot(ctx);
       break;
   }
+  roomDone(ctx, run);
+  return { ok: true };
+}
+
+/** The player decides an event: the option's outcome (or its failure) happens, then the ways ahead open. */
+export function chooseEventOption(ctx: GameContext, index: number): ActionResult {
+  const run = ctx.state.rpg.run;
+  if (!run?.event) return { ok: false, reason: 'Gerade wartet kein Ereignis.' };
+  const option = ctx.content.rpgEvents.get(run.event).options[index];
+  if (!option) return { ok: false, reason: 'Diese Wahl gibt es nicht.' };
+  const works = option.chance === undefined || ctx.rng.chance(option.chance);
+  const outcome: RpgEventOutcome = works ? option : option.fail!;
+  const maxHp = rpgMaxHp(ctx, rpgHero(ctx)!);
+  if (outcome.hp) run.hp = Math.min(maxHp, Math.max(1, run.hp + Math.round(maxHp * outcome.hp)));
+  if (outcome.loot) addLoot(run.loot, roomLoot(ctx, run, 'treasure'), outcome.loot);
+  if (outcome.secure) secureLoot(ctx);
+  run.event = null;
+  run.eventResult = outcome.result;
   roomDone(ctx, run);
   return { ok: true };
 }
