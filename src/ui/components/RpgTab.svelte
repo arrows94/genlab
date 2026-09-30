@@ -1,13 +1,14 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
-  import { formatDuration, formatNumber } from '@core/format';
+  import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import {
-    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, leaveRpgRun, nextTorchAt,
+    ALLELE_SAMPLES, INTENT_INFO, ROOM_INFO, chooseEventOption, chooseUpgrade, dungeonUnlocked, enterRoom, equipItem, leaveRpgRun, nextTorchAt,
     rpgCandidates, rpgHero, rpgSkills, startRpgRun, torches, useRpgSkill, xpToNext,
   } from '@core/features/rpg';
-  import { foeIntent, heroStats, rpgRank, skillBlocker, thirdSkill, upgradePerks, effectiveCooldown } from '@core/features/rpgCombat';
-  import type { RpgCombatant, RpgStatus } from '@core/state';
+  import { foeIntent, heroPerks, heroStats, itemValues, rpgRank, skillBlocker, thirdSkill, effectiveCooldown } from '@core/features/rpgCombat';
+  import type { RpgGearSlot } from '@core/content/types';
+  import type { RpgCombatant, RpgItem, RpgStatus } from '@core/state';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
 
@@ -22,7 +23,23 @@
     burn: 'Brand', poison: 'Gift', stun: 'Betäubt', slow: 'Verlangsamt', shield: 'Schild', evade: 'Ausweichen', regen: 'Regeneration', armor: 'Panzerung', reflect: 'Rückstrahlung',
   };
 
+  const SLOTS: { id: RpgGearSlot; name: string }[] = [{ id: 'weapon', name: 'Waffe' }, { id: 'armor', name: 'Panzer' }, { id: 'charm', name: 'Talisman' }];
+  const VALUE_NAME: Record<string, string> = {
+    hp: 'KP', atk: 'ANG', def: 'VER', spd: 'TMP', specialPower: 'Spezialangriff', chargePerRound: 'Aufladen je Runde', lifesteal: 'Lebensraub', crit: 'Krit-Chance', regen: 'KP je Runde',
+  };
+  /** „+12 % ANG · 4 % Krit-Chance“ */
+  function itemText(item: RpgItem): string {
+    const v = itemValues(game, item);
+    return [
+      ...Object.entries(v.stats).map(([k, x]) => `+${formatPercent(x ?? 0, 0)} ${VALUE_NAME[k]}`),
+      ...Object.entries(v.perks).map(([k, x]) => `${k === 'specialPower' ? '+' : ''}${formatPercent(x ?? 0, 1)} ${VALUE_NAME[k]}`),
+    ].join(' · ');
+  }
+  const rarityOf = (item: RpgItem) => content.rarities.get(item.rarity);
+  const gearOf = (item: RpgItem) => content.rpgGear.get(item.gear);
+
   let pickedId: number | null = $state(null);
+  let gearSlot: RpgGearSlot | null = $state(null);
   let pickedDungeon: string | null = $state(null);
 
   const data = $derived.by(() => {
@@ -43,8 +60,10 @@
       dungeons,
       candidates: run ? [] : rpgCandidates(game).slice(0, 40),
       skills: run ? rpgSkills(game) : [],
-      perks: run ? upgradePerks(game, run.upgrades) : null,
+      perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
+      items: [...r.items],
+      equipped: { ...r.equipped },
     };
   });
 
@@ -102,6 +121,7 @@
       </p>
       <div class="loot">
         {#each lootList(res.loot) as l (l.name)}<span class="chip">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="muted small">Keine Beute.</span>{/each}
+        {#each res.gear as item (item.id)}<span class="chip" style="border-color: {rarityOf(item).color}" title={itemText(item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
       </div>
     </article>
   {/if}
@@ -144,6 +164,39 @@
     {/if}
   </article>
 
+  <article class="panel">
+    <h3>Ausrüstung <span class="small muted">{data.items.length}/{game.balance.rpg.maxItems} · passt jedem Monster, wirkt nur im Dungeon</span></h3>
+    <div class="slots">
+      {#each SLOTS as slot (slot.id)}
+        {@const worn = data.items.find((i) => i.id === data.equipped[slot.id])}
+        <button class="slot" class:active={gearSlot === slot.id} onclick={() => (gearSlot = gearSlot === slot.id ? null : slot.id)}>
+          <span class="small muted">{slot.name}</span>
+          {#if worn}
+            <span class="g-name" style="color: {rarityOf(worn).color}">{gearOf(worn).icon} {gearOf(worn).name}</span>
+            <span class="small">{itemText(worn)}</span>
+          {:else}
+            <span class="muted">– leer –</span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+    {#if gearSlot}
+      {@const slot = gearSlot}
+      {@const list = data.items.filter((i) => gearOf(i).slot === slot).sort((a, b) => rarityOf(b).order - rarityOf(a).order)}
+      <div class="gear-list">
+        {#if data.equipped[slot] !== null}<button class="small" onclick={() => act(equipItem(game, slot, null))}>Ablegen</button>{/if}
+        {#each list as item (item.id)}
+          <button class="gear" class:active={data.equipped[slot] === item.id} style="border-color: {rarityOf(item).color}" onclick={() => act(equipItem(game, slot, item.id))}>
+            <span class="g-name" style="color: {rarityOf(item).color}">{gearOf(item).icon} {gearOf(item).name}</span>
+            <span class="small muted">{rarityOf(item).name} · {itemText(item)}</span>
+          </button>
+        {:else}
+          <p class="small muted">Noch nichts gefunden – Bosse lassen immer etwas fallen, Elite-Gegner und Schätze manchmal.</p>
+        {/each}
+      </div>
+    {/if}
+  </article>
+
   <div class="start-bar">
     <button class="primary start" disabled={!picked || data.torches < 1} onclick={start}>
       {picked ? `${picked.name} schicken` : 'Monster wählen'} · 1 🔥
@@ -166,6 +219,8 @@
         <div class="loot small">
           {#each lootList(run.loot) as l (l.name)}<span class="chip carried" title="Getragen – bei einer Niederlage geht ein Teil verloren">{l.icon} {formatNumber(l.amount)}</span>{/each}
           {#each lootList(run.secured) as l (l.name)}<span class="chip safe" title="Gesichert">🔒 {l.icon} {formatNumber(l.amount)}</span>{/each}
+          {#each run.gear as item (item.id)}<span class="chip carried" style="border-color: {rarityOf(item).color}" title="Getragen – bei einer Niederlage verloren · {itemText(item)}">{gearOf(item).icon} {gearOf(item).name}</span>{/each}
+          {#each run.securedGear as item (item.id)}<span class="chip safe" title="Gesichert · {itemText(item)}">🔒 {gearOf(item).icon} {gearOf(item).name}</span>{/each}
         </div>
       </div>
     </article>
@@ -269,6 +324,12 @@
   .p-body { display: grid; min-width: 0; }
   .p-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rank { color: var(--gold); font-size: 0.8rem; }
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+  .slot { display: grid; justify-items: center; gap: 0.1rem; text-align: center; padding: 0.5rem 0.3rem; }
+  .slot.active, .gear.active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel-2)); }
+  .g-name { font-weight: 600; }
+  .gear-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.4rem; margin-top: 0.5rem; }
+  .gear { display: grid; text-align: left; gap: 0.1rem; padding: 0.4rem 0.6rem; }
   .start-bar { position: sticky; bottom: 0.5rem; display: flex; justify-content: center; padding: 0.4rem 0; z-index: 2; }
   .start { min-width: min(100%, 320px); font-size: 1.05rem; }
 

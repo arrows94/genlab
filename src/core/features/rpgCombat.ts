@@ -1,5 +1,5 @@
 import type { GameContext } from '../context';
-import type { Creature, RpgBattle, RpgCombatant, RpgFoe, RpgStatus } from '../state';
+import type { Creature, RpgBattle, RpgCombatant, RpgFoe, RpgItem, RpgStatus } from '../state';
 import type { RpgIntent, RpgPerks, RpgSkillDef, StatusId, TechniqueDef } from '../content/types';
 import { effectiveStats } from '../creatures';
 import { damage, elementMultiplier, evadeChance, roleOf, techniqueFor, type Fighter } from './tower';
@@ -87,6 +87,32 @@ export function upgradePerks(ctx: GameContext, upgrades: readonly string[]): Req
   return out;
 }
 
+/** Values of a piece of equipment: the common values × its rarity. */
+export function itemValues(ctx: GameContext, item: RpgItem): { stats: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>; perks: RpgPerks } {
+  const def = ctx.content.rpgGear.get(item.gear);
+  const mult = ctx.balance.rpg.gearRarityMult[item.rarity] ?? 1;
+  const scale = <T extends Record<string, number | undefined>>(o: T | undefined) =>
+    Object.fromEntries(Object.entries(o ?? {}).map(([k, v]) => [k, (v ?? 0) * mult])) as T;
+  return { stats: scale(def.stats), perks: scale(def.perks) };
+}
+
+/** Equipment worn right now (by whichever monster goes into the dungeon). */
+export function equippedItems(ctx: GameContext): RpgItem[] {
+  const r = ctx.state.rpg;
+  return Object.values(r.equipped)
+    .map((id) => r.items.find((i) => i.id === id))
+    .filter((i): i is RpgItem => !!i && ctx.content.rpgGear.has(i.gear));
+}
+
+/** Passive effects of the hero in the dungeon: the run's upgrades plus the equipment. */
+export function heroPerks(ctx: GameContext, upgrades: readonly string[]): Required<RpgPerks> {
+  const out = upgradePerks(ctx, upgrades);
+  for (const item of equippedItems(ctx)) {
+    for (const [k, v] of Object.entries(itemValues(ctx, item).perks)) out[k as keyof RpgPerks] += v ?? 0;
+  }
+  return out;
+}
+
 /** Erfahrungsrang of a creature from its collected dungeon XP: rank, XP into it and needed for the next. */
 export function rpgRank(ctx: GameContext, creatureId: number): { rank: number; into: number; need: number } {
   const cfg = ctx.balance.rpg;
@@ -101,10 +127,13 @@ export function rpgRank(ctx: GameContext, creatureId: number): { rank: number; i
   return { rank, into: 0, need: 0 };
 }
 
-/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × the run's upgrades. */
+/** The hero's stats in the dungeon: bred stats × Erfahrungsrang × (the run's upgrades + equipment). */
 export function heroStats(ctx: GameContext, c: Creature, upgrades: readonly string[] = []): { hp: number; atk: number; def: number; spd: number } {
   const s = effectiveStats(ctx, c);
   const up = upgradeStats(ctx, upgrades);
+  for (const item of equippedItems(ctx)) {
+    for (const [k, v] of Object.entries(itemValues(ctx, item).stats)) up[k as keyof typeof up] += v ?? 0;
+  }
   const rank = 1 + rpgRank(ctx, c.id).rank * ctx.balance.rpg.rankStats;
   const stat = (k: 'hp' | 'atk' | 'def' | 'spd', min: number) => Math.max(min, Math.round((s[k] ?? 0) * rank * (1 + up[k])));
   return { hp: stat('hp', 1), atk: stat('atk', 1), def: stat('def', 0), spd: stat('spd', 1) };

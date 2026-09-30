@@ -4,13 +4,13 @@ import { unlockFeature } from '../systems/unlocks';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature, RpgRun } from '../state';
-import type { RpgEventOutcome, RpgIntent, RpgRoomKind, RpgSkillDef } from '../content/types';
+import type { Creature, RpgItem, RpgRun } from '../state';
+import type { RpgEventOutcome, RpgGearSlot, RpgIntent, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { heroCombatant, heroStats, makeFoe, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker, upgradePerks } from './rpgCombat';
+import { heroCombatant, heroPerks, heroStats, makeFoe, newBattle, playRound, rpgRank, rpgSkillsFor, skillBlocker } from './rpgCombat';
 
 /**
  * GenLab RPG: a single monster goes into a dungeon alone. Unlike the rest of
@@ -129,7 +129,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   ctx.invalidate();
   r.run = {
     creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), level: 1, xp: 0, upgrades: [], offer: [], pendingLevels: 0, depth: 0,
-    loot: {}, secured: {}, startedAt: ctx.state.lastTickAt, battle: null,
+    loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null,
   };
   r.runs++;
   pruneRanks(ctx);
@@ -181,6 +181,14 @@ function payOut(ctx: GameContext, loot: Record<string, number>): void {
   }
 }
 
+/** Puts found equipment into the player's collection (while there is room). Returns what fit. */
+function keepGear(ctx: GameContext, items: RpgItem[]): RpgItem[] {
+  const r = ctx.state.rpg;
+  const fit = items.slice(0, Math.max(0, ctx.balance.rpg.maxItems - r.items.length));
+  r.items.push(...fit);
+  return fit;
+}
+
 /** Makes the carried loot safe (rest points): it is paid out at once. */
 export function secureLoot(ctx: GameContext): void {
   const run = ctx.state.rpg.run;
@@ -188,6 +196,8 @@ export function secureLoot(ctx: GameContext): void {
   payOut(ctx, run.loot);
   addLoot(run.secured, run.loot);
   run.loot = {};
+  run.securedGear.push(...keepGear(ctx, run.gear));
+  run.gear = [];
 }
 
 /**
@@ -203,11 +213,13 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   payOut(ctx, kept);
   const total: Record<string, number> = { ...run.secured };
   addLoot(total, kept);
+  // Carried equipment only comes home when the hero walks out.
+  const gear = [...run.securedGear, ...(win ? keepGear(ctx, run.gear) : [])];
   const c = findCreature(ctx, run.creatureId);
   if (c?.job?.kind === 'rpg') c.job = null;
   r.best[run.dungeon] = Math.max(r.best[run.dungeon] ?? 0, run.depth);
   if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
-  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, level: run.level, loot: total, at: ctx.state.lastTickAt };
+  r.lastResult = { win, dungeon: run.dungeon, cleared, depth: run.depth, level: run.level, loot: total, gear, at: ctx.state.lastTickAt };
   r.run = null;
   pruneRanks(ctx);
   ctx.invalidate();
@@ -248,7 +260,7 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
   const blocker = skillBlocker(battle, skill);
   if (blocker) return { ok: false, reason: blocker };
-  const outcome = playRound(ctx, battle, skill, upgradePerks(ctx, run.upgrades));
+  const outcome = playRound(ctx, battle, skill, heroPerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
   if (outcome === 'lose') finishRpgRun(ctx, false);
   else if (outcome === 'win') winBattle(ctx, run);
@@ -362,6 +374,37 @@ function rollLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'trea
     const v = Math.min(amount, weeklyRoom(ctx, res));
     if (v > 0) run.loot[res] = (run.loot[res] ?? 0) + v;
   }
+  const gearChance = Math.min(1, (ctx.balance.rpg.gearChance[kind] ?? 0) * ctx.content.rpgDungeons.get(run.dungeon).loot * times);
+  if (ctx.rng.chance(gearChance)) run.gear.push(rollItem(ctx, run.dungeon));
+}
+
+/** A new piece of equipment from a dungeon: deeper dungeons give rarer pieces more often. */
+export function rollItem(ctx: GameContext, dungeonId: string): RpgItem {
+  const cfg = ctx.balance.rpg;
+  const loot = ctx.content.rpgDungeons.get(dungeonId).loot;
+  const weights: Record<string, number> = {};
+  for (const [rarity, w] of Object.entries(cfg.gearRarityWeights)) {
+    const order = ctx.content.rarities.has(rarity) ? ctx.content.rarities.get(rarity).order : 0;
+    weights[rarity] = w * (1 + (loot - 1) * cfg.gearRarityShift * order);
+  }
+  const gear = ctx.rng.pick(ctx.content.rpgGear.list).id;
+  return { id: ctx.state.rpg.nextItemId++, gear, rarity: ctx.rng.weighted(weights) };
+}
+
+// ---- Ausrüstung ---------------------------------------------------------------
+
+/** Wears a piece in its slot (or takes the slot off with null). Not during a run. */
+export function equipItem(ctx: GameContext, slot: RpgGearSlot, itemId: number | null): ActionResult {
+  const r = ctx.state.rpg;
+  if (!ctx.state.features['rpg']) return { ok: false, reason: 'Das GenLab RPG ist noch nicht freigeschaltet.' };
+  if (r.run) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
+  if (itemId !== null) {
+    const item = r.items.find((i) => i.id === itemId);
+    if (!item) return { ok: false, reason: 'Diese Ausrüstung besitzt du nicht.' };
+    if (ctx.content.rpgGear.get(item.gear).slot !== slot) return { ok: false, reason: 'Das passt nicht in diesen Platz.' };
+  }
+  r.equipped[slot] = itemId;
+  return { ok: true };
 }
 
 /** Offers the next ways: 2–3 different rooms, or the boss after the last room. */

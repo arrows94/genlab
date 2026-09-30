@@ -1,4 +1,4 @@
-import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgSkillDef, RpgUpgradeDef } from '@core/content/types';
+import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgGearDef, RpgSkillDef, RpgUpgradeDef } from '@core/content/types';
 
 /**
  * GenLab RPG: the hero's skills and the dungeon foes. A hero has four skills:
@@ -96,4 +96,17 @@ export const rpgUpgrades: RpgUpgradeDef[] = [
   { id: 'keen', name: 'Scharfer Blick', icon: '👁️', weight: 5, max: 3, perks: { crit: 0.1 }, description: '10 % Chance auf kritische Treffer.' },
   { id: 'secondWind', name: 'Zweite Luft', icon: '🌬️', weight: 4, max: 2, perks: { regen: 0.03 }, description: 'Heilt am Ende jeder Runde 3 % der KP.' },
   { id: 'drill', name: 'Drill', icon: '⏱️', weight: 3, max: 1, perks: { cooldown: 1 }, description: 'Element-Technik und dritte Fähigkeit sind eine Runde früher wieder bereit.' },
+];
+
+/** Equipment: values of a common piece, rarer ones are stronger. One weapon, armour and talisman at a time. */
+export const rpgGear: RpgGearDef[] = [
+  { id: 'fang', name: 'Reißzahn', icon: '🦷', slot: 'weapon', stats: { atk: 0.1 } },
+  { id: 'claw', name: 'Klingenkralle', icon: '🗡️', slot: 'weapon', stats: { atk: 0.06 }, perks: { crit: 0.04 } },
+  { id: 'thornWhip', name: 'Dornenpeitsche', icon: '🌿', slot: 'weapon', stats: { atk: 0.06 }, perks: { lifesteal: 0.04 } },
+  { id: 'shell', name: 'Panzerschale', icon: '🐚', slot: 'armor', stats: { def: 0.12, hp: 0.04 } },
+  { id: 'mossCoat', name: 'Moosmantel', icon: '🧥', slot: 'armor', stats: { hp: 0.12 } },
+  { id: 'feather', name: 'Federkleid', icon: '🪶', slot: 'armor', stats: { spd: 0.1, def: 0.04 } },
+  { id: 'emberStone', name: 'Glutstein', icon: '🔴', slot: 'charm', perks: { specialPower: 0.15 } },
+  { id: 'hourglass', name: 'Sanduhr', icon: '⏳', slot: 'charm', perks: { chargePerRound: 0.02 } },
+  { id: 'totem', name: 'Heiltotem', icon: '🗿', slot: 'charm', perks: { regen: 0.01 } },
 ];

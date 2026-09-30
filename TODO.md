@@ -611,8 +611,7 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
   - [x] Festgelegt: Alle Dungeon-Erfahrung zählt (Boss extra), Rang n braucht `rankXpBase × rankXpGrowth^n`,
         höchstens Rang 10; je Rang +2 % auf alle Dungeon-Werte, jeder 3. Rang eine Verbesserung zum Start.
         Der Rang hängt an der Kreatur und geht mit ihr verloren (Verkauf, Recycling, Vererbung)
-- [ ] Gilt die Ausrüstung auch im Turm? (Vorschlag: nein oder stark abgeschwächt, sonst verschiebt sie die
-      Turm-Kurve)
+- [x] Gilt die Ausrüstung auch im Turm? Festgelegt: nein – sie wirkt nur im Dungeon, die Turm-Kurve bleibt unberührt
 
 ## Schritt 1 – Grundlage und Spam-Schutz
 
@@ -655,8 +654,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
 ## Schritt 4 – Belohnungen und Ausrüstung
 
 - [x] Beute: Zeitkristalle, Katalysator, Genproben mit seltenen Allelen, Turm-Marken, selten Äon-Splitter
-- [ ] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
+- [x] Ausrüstung (Waffe, Panzer, Talisman) mit Seltenheiten; gehört dem Spieler (wie Relikte), übersteht Vererbung
       und Äon, kann jedem Monster angelegt werden
+      (`rpgGear`; getragene Funde gehen bei einer Niederlage verloren, Bosse lassen immer ein Teil fallen)
 - [ ] Dauerhafter Fortschritt zwischen Läufen aus einer eigenen RPG-Währung (z. B. Startbonus, vierte Fähigkeit,
       mehr Fackeln)
 - [ ] Balancing mit einem Test-Bot (einfache Strategie: stärkster verfügbarer Zug): Beute pro Fackel,

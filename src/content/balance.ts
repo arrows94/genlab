@@ -102,6 +102,13 @@ export const balance: Balance = {
       treasure: { fixed: { towerTokens: 6 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
       boss: { fixed: { towerTokens: 25, catalyst: 1 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
     },
+    // Equipment: chance per room kind (× loot factor, at most 1), rarity by weights – deeper dungeons shift them
+    // up (weight × (1 + (loot − 1) × gearRarityShift × rarity order)); rarer pieces multiply their values.
+    gearChance: { fight: 0.04, elite: 0.3, treasure: 0.15, boss: 1 },
+    gearRarityWeights: { common: 60, uncommon: 26, rare: 10, epic: 3.5, legendary: 0.5, mythic: 0 },
+    gearRarityShift: 0.35,
+    gearRarityMult: { common: 1, uncommon: 1.35, rare: 1.8, epic: 2.4, legendary: 3.2, mythic: 4.2 },
+    maxItems: 40,
     // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
     weeklyCap: { timeCrystals: 6, aeonShards: 2 },
   },

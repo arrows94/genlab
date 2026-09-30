@@ -775,6 +775,19 @@ export interface RpgUpgradeDef {
   perks?: RpgPerks;
 }
 
+export type RpgGearSlot = 'weapon' | 'armor' | 'charm';
+
+/** Equipment of the GenLab RPG: belongs to the player, fits every monster, only works in the dungeon. */
+export interface RpgGearDef {
+  id: string;
+  name: string;
+  icon: string;
+  slot: RpgGearSlot;
+  /** Values of a common piece; rarer pieces multiply them (`balance.rpg.gearRarityMult`). */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  perks?: Omit<RpgPerks, 'cooldown'>;
+}
+
 export interface ContentData {
   resources: ResourceDef[];
   stats: StatDef[];
@@ -816,6 +829,7 @@ export interface ContentData {
   rpgDungeons: RpgDungeonDef[];
   rpgEvents: RpgEventDef[];
   rpgUpgrades: RpgUpgradeDef[];
+  rpgGear: RpgGearDef[];
 }
 
 export interface Registry<T extends { id: string }> {

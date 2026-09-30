@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, equipItem, rollItem, rpgCandidates, setRpgPreview, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomFloor, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
-import { effectiveCooldown, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
+import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgRank, upgradePerks, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
 import { createCreature } from '@core/creatures';
 import { performPrestige } from '@core/prestige';
@@ -603,3 +603,85 @@ describe('GenLab RPG – Vorschau', () => {
     expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
   });
 });
+
+describe('GenLab RPG – Ausrüstung', () => {
+  function game() {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    g.state.resources['torches'] = D(50);
+    return g;
+  }
+
+  it('deeper dungeons give rarer pieces more often; rarity multiplies the values', () => {
+    const g = game();
+    const rare = (dungeon: string) => {
+      let n = 0;
+      for (let i = 0; i < 400; i++) if (g.content.rarities.get(rollItem(g, dungeon).rarity).order >= 2) n++;
+      return n;
+    };
+    expect(rare('crystalCore')).toBeGreaterThan(rare('rootMaze'));
+    const common = itemValues(g, { id: 1, gear: 'fang', rarity: 'common' }).stats.atk!;
+    const epic = itemValues(g, { id: 2, gear: 'fang', rarity: 'epic' }).stats.atk!;
+    expect(epic).toBeCloseTo(common * balance.rpg.gearRarityMult['epic']!);
+  });
+
+  it('worn equipment helps every monster in the dungeon, only one piece per slot', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1000, atk: 1000, def: 100, spd: 10 };
+    const base = heroStats(g, c).atk;
+    g.state.rpg.items.push({ id: 7, gear: 'fang', rarity: 'common' }, { id: 8, gear: 'claw', rarity: 'rare' }, { id: 9, gear: 'totem', rarity: 'common' });
+    expect(equipItem(g, 'armor', 7).ok).toBe(false);
+    expect(equipItem(g, 'weapon', 99).ok).toBe(false);
+    expect(equipItem(g, 'weapon', 7).ok).toBe(true);
+    expect(heroStats(g, c).atk).toBe(Math.round(base * 1.1));
+    expect(equipItem(g, 'weapon', 8).ok).toBe(true);
+    expect(heroPerks(g, []).crit).toBeCloseTo(0.04 * balance.rpg.gearRarityMult['rare']!);
+    equipItem(g, 'charm', 9);
+    expect(heroPerks(g, []).regen).toBeCloseTo(0.01);
+    startRpgRun(g, c.id, 'rootMaze');
+    expect(equipItem(g, 'weapon', null).ok).toBe(false);
+  });
+
+  it('found equipment is carried: safe at a rest or on the way out, lost on a defeat', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    startRpgRun(g, c.id, 'rootMaze');
+    const r = g.state.rpg.run!;
+    r.gear.push({ id: 101, gear: 'fang', rarity: 'common' });
+    secureLoot(g);
+    expect(g.state.rpg.items.map((i) => i.id)).toEqual([101]);
+    r.gear.push({ id: 102, gear: 'shell', rarity: 'rare' });
+    finishRpgRun(g, false);
+    expect(g.state.rpg.items.map((i) => i.id)).toEqual([101]);
+    expect(g.state.rpg.lastResult!.gear.map((i) => i.id)).toEqual([101]);
+    startRpgRun(g, c.id, 'rootMaze');
+    g.state.rpg.run!.gear.push({ id: 103, gear: 'totem', rarity: 'epic' });
+    leaveRpgRun(g);
+    expect(g.state.rpg.items.map((i) => i.id)).toEqual([101, 103]);
+  });
+
+  it('bosses always drop a piece; equipment survives a prestige', () => {
+    const g = game();
+    const c = g.state.creatures[0]!;
+    c.stats = { hp: 1e6, atk: 1e5, def: 1e4, spd: 100 };
+    startRpgRun(g, c.id, 'rootMaze');
+    const r = g.state.rpg.run!;
+    r.depth = g.content.rpgDungeons.get('rootMaze').rooms;
+    r.choices = ['boss'];
+    enterRoom(g, 0);
+    for (let i = 0; i < 100 && g.state.rpg.run?.battle; i++) useRpgSkill(g, 'strike');
+    expect(g.state.rpg.items.length).toBe(1);
+    equipItem(g, g.content.rpgGear.get(g.state.rpg.items[0]!.gear).slot, g.state.rpg.items[0]!.id);
+    unlockFeature(g, 'inheritance');
+    g.state.earned['gold'] = D(1e9);
+    performPrestige(g, 'inheritance');
+    expect(g.state.rpg.items.length).toBe(1);
+    expect(equippedIds(g)).toEqual([g.state.rpg.items[0]!.id]);
+  });
+});
+
+function equippedIds(g: ReturnType<typeof makeGame>): number[] {
+  return Object.values(g.state.rpg.equipped).filter((v): v is number => v !== null);
+}

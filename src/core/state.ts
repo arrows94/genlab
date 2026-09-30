@@ -380,9 +380,20 @@ export interface RpgRun {
   loot: Record<string, number>;
   /** Loot already made safe this run (paid out at the moment it was secured). */
   secured: Record<string, number>;
+  /** Equipment found and still carried (lost on a defeat), and equipment already made safe this run. */
+  gear: RpgItem[];
+  securedGear: RpgItem[];
   /** Wall clock of the start. */
   startedAt: number;
   battle: RpgBattle | null;
+}
+
+/** A piece of equipment the player owns. */
+export interface RpgItem {
+  id: number;
+  /** `rpgGear` id. */
+  gear: string;
+  rarity: string;
 }
 
 /** How the last run ended, for the summary. */
@@ -395,6 +406,8 @@ export interface RpgResult {
   level: number;
   /** Everything the run paid out (secured, kept after a defeat or brought home). */
   loot: Record<string, number>;
+  /** Equipment the run brought home. */
+  gear: RpgItem[];
   at: number;
 }
 
@@ -414,6 +427,10 @@ export interface RpgState {
   ranks: Record<string, number>;
   /** Capped loot paid out this week (`balance.rpg.weeklyCap`). */
   weekly: { week: number; got: Record<string, number> };
+  /** Equipment owned (survives every reset) and what is worn – by whichever monster goes in. */
+  items: RpgItem[];
+  equipped: Record<'weapon' | 'armor' | 'charm', number | null>;
+  nextItemId: number;
 }
 
 export interface GameState {
@@ -538,7 +555,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} } },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1 },
   };
 }
 

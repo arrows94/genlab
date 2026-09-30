@@ -118,6 +118,15 @@ export interface Balance {
      * probability × the dungeon's `loot` (at most 1). Key `alleleSamples` catalogues missing alleles.
      */
     loot: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', { fixed: ResourceAmounts; chance?: Record<string, number> }>>;
+    /** Chance of a piece of equipment per room kind (× the dungeon's loot, at most 1). */
+    gearChance: Partial<Record<'fight' | 'elite' | 'treasure' | 'boss', number>>;
+    /** Rarity weights of found equipment; deeper dungeons raise rarer ones by `gearRarityShift` × order × (loot − 1). */
+    gearRarityWeights: Record<string, number>;
+    gearRarityShift: number;
+    /** Value multiplier of equipment per rarity. */
+    gearRarityMult: Record<string, number>;
+    /** Pieces the player can own; more found ones are lost. */
+    maxItems: number;
     /** Most of these per week (paid out) from the dungeon. */
     weeklyCap: ResourceAmounts;
   };

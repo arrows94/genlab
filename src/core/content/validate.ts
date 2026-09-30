@@ -469,6 +469,21 @@ export function validateContent(data: ContentData): string[] {
     if (Object.keys(u.stats ?? {}).length + Object.keys(u.perks ?? {}).length === 0) issues.push(`${w}: mindestens ein Wert oder Effekt`);
   }
   if (data.rpgUpgrades.filter((u) => u.max === undefined).length < 3) issues.push('rpgUpgrades: mindestens drei ohne Obergrenze (immer genug Auswahl)');
+  for (const gear of data.rpgGear) {
+    const w = at('rpgGear', gear.id);
+    text(`${w}.name`, gear.name);
+    if (!['weapon', 'armor', 'charm'].includes(gear.slot)) issues.push(`${w}.slot: ungültig "${gear.slot}"`);
+    for (const [k, v] of Object.entries(gear.stats ?? {})) {
+      if (!['hp', 'atk', 'def', 'spd'].includes(k)) issues.push(`${w}.stats: unbekannter Wert "${k}"`);
+      num(`${w}.stats.${k}`, v, 0, 2);
+    }
+    for (const [k, v] of Object.entries(gear.perks ?? {})) {
+      if (!['specialPower', 'chargePerRound', 'lifesteal', 'crit', 'regen'].includes(k)) issues.push(`${w}.perks: unbekannter Effekt "${k}"`);
+      num(`${w}.perks.${k}`, v, 0, 1);
+    }
+    if (Object.keys(gear.stats ?? {}).length + Object.keys(gear.perks ?? {}).length === 0) issues.push(`${w}: mindestens ein Wert oder Effekt`);
+  }
+  for (const slot of ['weapon', 'armor', 'charm']) if (!data.rpgGear.some((g) => g.slot === slot)) issues.push(`rpgGear: mindestens ein Teil für "${slot}"`);
   for (const r of data.resonances) {
     const w = at('resonances', r.id);
     text(`${w}.name`, r.name);
