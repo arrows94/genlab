@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 25,
+    date: '2026-09-30',
+    title: 'Trommeln im Dunkel',
+    items: [
+      { text: 'Kämpfe in der anderen Welt haben jetzt eigene Musik: Kriegstrommeln, ein galoppierender Bass und ein Hornmotiv. Beim Erkunden grollen die Trommeln nur in der Ferne.', feature: 'rpg' },
+    ],
+  },
+  {
     id: 24,
     date: '2026-09-30',
     title: 'Durch das Portal',
