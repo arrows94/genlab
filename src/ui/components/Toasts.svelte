@@ -9,17 +9,18 @@
   }
 </script>
 
-<div class="toasts" aria-live="polite">
+<div class="toasts" class:world={view.world !== 'off'} aria-live="polite">
   {#each view.toasts as t (t.id)}
     <button class="toast {t.kind}" onclick={open} title="Alle Nachrichten anzeigen">{t.text}</button>
   {/each}
 </div>
 
 <style>
+  /* Bottom right, away from the centred page and its send and start buttons. */
   .toasts {
-    position: fixed; z-index: 20; left: 50%; transform: translateX(-50%);
+    position: fixed; z-index: 20; right: max(1rem, env(safe-area-inset-right));
     bottom: calc(1rem + env(safe-area-inset-bottom)); display: grid; gap: 0.4rem;
-    width: min(92vw, 420px); pointer-events: none;
+    width: min(92vw, 360px); pointer-events: none;
   }
   .toast {
     pointer-events: auto; text-align: left; width: 100%;
@@ -29,9 +30,11 @@
   .unlock { border-left-color: var(--violet); }
   .rare { border-left-color: var(--gold); }
   .error { border-left-color: var(--danger); }
-  @media (max-width: 640px) {
-    /* Above the tab bar docked at the bottom (area buttons and sub-tabs). */
-    .toasts { bottom: calc(var(--dock-h, 5rem) + 0.5rem); }
-  }
+  /* Phones: the newest message shows in the header instead (App.svelte), nothing floats over the page. */
+  @media (max-width: 640px) { .toasts:not(.world) { display: none; } }
+  /* The other world has no header and its skills sit at the bottom; only direct click feedback shows here. */
+  .toasts.world { right: auto; left: 50%; transform: translateX(-50%); bottom: auto; top: calc(0.5rem + env(safe-area-inset-top)); }
+  .world .toast { animation-name: drop; }
   @keyframes in { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes drop { from { opacity: 0; transform: translateY(-8px); } }
 </style>

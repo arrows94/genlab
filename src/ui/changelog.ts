@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 26,
+    date: '2026-10-01',
+    title: 'Freie Sicht',
+    items: [
+      { text: 'Benachrichtigungen verdecken nichts mehr: Auf dem Handy erscheint die neueste kurz oben in der Kopfzeile (antippen zeigt alle), am Computer stehen sie unten rechts – höchstens drei auf einmal.' },
+    ],
+  },
+  {
     id: 25,
     date: '2026-09-30',
     title: 'Trommeln im Dunkel',

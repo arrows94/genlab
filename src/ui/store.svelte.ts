@@ -123,7 +123,8 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ms = 3500, log
   // In the other world only direct feedback to a click shows; news from the lab wait in the notification center.
   if (log && view.world !== 'off') return;
   const t = { id: ++toastId, text, kind };
-  view.toasts = [...view.toasts.slice(-4), t];
+  // At most three at once, so they never bury the page.
+  view.toasts = [...view.toasts.slice(-2), t];
   setTimeout(() => (view.toasts = view.toasts.filter((x) => x.id !== t.id)), ms);
   toastSound(kind);
 }
