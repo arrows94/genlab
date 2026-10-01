@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { content } from '@content/index';
   import { formatDuration } from '@core/format';
   import { expressedAppearance } from '@core/genetics';
@@ -10,7 +11,7 @@
 
   /**
    * „Dein Labor holt auf“: shown while a long absence is computed in slices, and before that
-   * while the game waits for the cloud save (`view.syncWait`). A few of the player's own
+   * while the game holds for a new version or the cloud save (`view.waitFor`). A few of the player's own
    * creatures carry DNA to the lab and data back to the archive. It stays at least
    * `MIN_SHOW_MS`, so a quick catch-up does not just flash; a quick download never shows it.
    */
@@ -45,15 +46,24 @@
 
   const lines = $derived(LINES.filter((l) => !l.feature || game.state.features[l.feature]));
 
+  // Quick checks never show the screen; installing a new version does at once (the page reloads).
   // The sync conflict dialog must stay visible: the game waits for the player there.
   let waitShown = $state(false);
   $effect(() => {
-    waitShown = false;
-    if (!view.syncWait || sync.conflict) return;
+    const wait = view.waitFor;
+    if (!wait || sync.conflict) return void (waitShown = false);
+    if (wait === 'install') return void (waitShown = true);
+    // From one wait to the next the screen stays.
+    if (untrack(() => waitShown)) return;
     const timer = setTimeout(() => (waitShown = true), WAIT_DELAY_MS);
     return () => clearTimeout(timer);
   });
   const waiting = $derived(!view.catchUp && waitShown);
+  const WAIT_TEXT = {
+    update: '🔄 Suche nach einer neuen Version …',
+    install: '✨ Neue Version wird eingespielt …',
+    sync: '☁️ Abgleich mit deinen anderen Geräten …',
+  };
   const active = $derived(view.catchUp ?? (waitShown ? { done: 0, requestedMs: 0 } : null));
 
   $effect(() => {
@@ -89,8 +99,10 @@
   <div class="catchup" class:leaving role="status" aria-live="polite" ontransitionend={() => leaving && (open = false)}>
     <div class="card">
       <h2>Dein Labor holt auf …</h2>
-      {#if waiting}
+      {#if waiting && view.waitFor === 'sync'}
         <p class="muted">Erst schauen deine Kreaturen nach, ob ein anderes Gerät schon weiter ist.</p>
+      {:else if waiting}
+        <p class="muted">Erst holt sich dein Labor die neueste Version.</p>
       {:else}
         <p class="muted">Du warst {formatDuration(requestedMs)} weg – deine Kreaturen bringen alles auf den neuesten Stand.</p>
       {/if}
@@ -127,7 +139,7 @@
       <DnaHelix progress={done} width={240} height={36} />
       {#if waiting}
         <div class="bar waiting" role="progressbar" aria-busy="true"><div class="fill"></div></div>
-        <p class="line"><span>☁️ Abgleich mit deinen anderen Geräten …</span></p>
+        <p class="line">{#key view.waitFor}<span>{WAIT_TEXT[view.waitFor ?? 'sync']}</span>{/key}</p>
       {:else}
         <div class="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(done * 100)}>
           <div class="fill" style:width="{done * 100}%"></div>

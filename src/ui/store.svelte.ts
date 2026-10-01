@@ -6,7 +6,7 @@ import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
 import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
-import { registerPwa } from './platform/pwa';
+import { lookForUpdate, registerPwa } from './platform/pwa';
 import { closeNews, initNews, news } from './news.svelte';
 import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
@@ -39,8 +39,11 @@ export const view = $state({
   offline: null as OfflineReport | null,
   /** A long absence being computed in slices (the „Labor holt auf“ screen); null otherwise. */
   catchUp: null as { done: number; requestedMs: number } | null,
-  /** Waiting for the cloud save before a long absence is caught up (the game holds meanwhile). */
-  syncWait: false,
+  /**
+   * Before a long absence is caught up the game holds (see `beforeCatchUp`): looking for a new
+   * version, installing it (the page reloads), or waiting for the cloud save.
+   */
+  waitFor: null as 'update' | 'install' | 'sync' | null,
   /** Unseen results per tab (badge), cleared when the tab is opened. */
   unseen: {} as Record<string, number>,
   /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
@@ -318,9 +321,15 @@ export function act(result: ActionResult): boolean {
 export function save(): void {
   // Never overwrite the stored save with the placeholder state before loading finished, nor with
   // a half caught-up one: closing the app meanwhile keeps the last save, the next start catches up again.
-  if (!view.ready || game.catchingUp) return;
-  saveInbox();
+  // While the game holds before a catch-up nothing is played either (a save would count as play for the sync).
+  if (!view.ready || game.catchingUp || view.waitFor) return;
   notePlay();
+  writeSave();
+}
+
+/** Writes the current state (and the notification center) to storage. */
+function writeSave(): void {
+  saveInbox();
   storage.save(serialize(game.state)).then(
     () => (view.lastSaved = Date.now()),
     (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
@@ -360,8 +369,9 @@ export function hardReset(): void {
 
 /** Going to the background: save, upload to the other devices and plan reminders for the time away. */
 function toBackground(): void {
-  // Mid catch-up nothing was played; the stored save and the cloud stay as they are.
-  if (game.catchingUp) return;
+  // Mid catch-up (or holding before one, also while reloading into a new version) nothing was
+  // played; the stored save and the cloud stay as they are.
+  if (game.catchingUp || view.waitFor) return;
   save();
   syncOnHide();
   if (prefs.notifications) scheduleNotices(plannedNotices(game, Date.now()));
@@ -371,8 +381,11 @@ function toBackground(): void {
 function toForeground(): void {
   cancelNotices();
   const pull = syncOnShow();
-  // A long absence is caught up only once, on the save that wins: wait briefly for the cloud one.
-  if (pull && longGap()) holdFor(pull);
+  if (!longGap()) return;
+  void beforeCatchUp(pull, lookForUpdate(START_TIMEOUT_MS)).then(() => {
+    advance(FIRST_SLICE_MS);
+    refresh();
+  });
 }
 
 /** So much time passed that the next step is a catch-up. */
@@ -380,19 +393,48 @@ function longGap(): boolean {
   return game.catchingUp === null && Date.now() - game.state.lastTickAt > balance.sim.catchUpThresholdMs;
 }
 
+/** Input since the app came to the foreground: a new version then waits for the banner instead of reloading. */
+let touched = false;
+/** A page reload after a few seconds at most, should the new version not take over. */
+const UPDATE_GRACE_MS = 8000;
 let holdId = 0;
-/** Holds the game (see `advance`) until the download is done, at most `START_TIMEOUT_MS`. A later answer is still adopted. */
-function holdFor(pull: Promise<unknown>): void {
+
+/**
+ * Before a long absence is caught up: take a waiting new version (the page reloads into it)
+ * and the newest save of all devices, so the catch-up runs once, in the newest version, on
+ * the save that wins. The game holds meanwhile (`view.waitFor`, see `advance`); both
+ * downloads run side by side and are waited for `START_TIMEOUT_MS` at most. A later cloud
+ * save is still adopted, it then replaces the catch-up.
+ */
+async function beforeCatchUp(pull: Promise<unknown> | null, update: Promise<(() => void) | null>): Promise<void> {
   const id = ++holdId;
-  view.syncWait = true;
-  const release = () => {
-    if (id !== holdId || !view.syncWait) return;
-    view.syncWait = false;
-    advance(FIRST_SLICE_MS);
-    refresh();
-  };
-  void pull.finally(release);
-  setTimeout(release, START_TIMEOUT_MS);
+  const deadline = Date.now() + START_TIMEOUT_MS;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
+  touched = false;
+  view.waitFor = 'update';
+  const apply = await update.catch(() => null);
+  if (id !== holdId) return;
+  if (apply && !touched && autoUpdateAllowed()) {
+    view.waitFor = 'install';
+    apply();
+    await sleep(UPDATE_GRACE_MS);
+    if (id !== holdId) return;
+  }
+  view.waitFor = 'sync';
+  if (pull) await Promise.race([pull, sleep(deadline - Date.now())]);
+  if (id === holdId) view.waitFor = null;
+}
+
+/** At most one automatic reload into a new version per minute, so a broken update cannot loop. */
+function autoUpdateAllowed(): boolean {
+  try {
+    const key = 'genlab.autoUpdateAt';
+    if (Date.now() - Number(sessionStorage.getItem(key) ?? 0) < 60_000) return false;
+    sessionStorage.setItem(key, String(Date.now()));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Device sync hooks into the game (see sync.svelte.ts). */
@@ -403,7 +445,8 @@ const syncHost = {
     game.loadState(state);
     // The catch-up report of the replaced save no longer applies; the loop reports the new one.
     view.offline = null;
-    save();
+    // Also while the game holds for the download: the stored save must match the adopted revision.
+    writeSave();
     refresh();
   },
   notify: (text: string, kind: 'info' | 'error' = 'info') => toast(text, kind, kind === 'error' ? 6000 : 3500),
@@ -422,7 +465,7 @@ const FIRST_SLICE_MS = 150;
 /** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent and run in slices. */
 function advance(budgetMs = SLICE_MS): void {
   // A long absence waits for the cloud save, or for the player to pick a save in a sync conflict.
-  if (view.syncWait || (sync.conflict && longGap())) return;
+  if (view.waitFor || (sync.conflict && longGap())) return;
   const quiet = game.catchingUp !== null || Date.now() - game.state.lastTickAt > 5000;
   const run = () => game.update(Date.now(), budgetMs);
   const report = quiet ? silently(run) : run();
@@ -436,20 +479,20 @@ export async function init(): Promise<void> {
   if (started) return;
   started = true;
   loadInbox();
+  for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, () => (touched = true), { capture: true, passive: true });
+  // Look for a new version at once: after a long absence it is installed before anything is synced or caught up.
+  const update = registerPwa((apply) => (view.applyUpdate = apply), START_TIMEOUT_MS).catch(() => null);
   const hadSave = await loadSave();
   view.ready = true;
   // Before the loop starts, so the game continues on the newest save of all devices.
-  view.syncWait = longGap();
-  await initSync(syncHost);
-  view.syncWait = false;
+  const synced = initSync(syncHost);
+  if (longGap()) await beforeCatchUp(synced, update);
+  await synced;
   initNews(hadSave, (f) => game.state.features[f] === true);
   refresh();
   startLoop();
   // Leftovers from the last session (the app was closed while notices were pending).
   cancelNotices();
-  void registerPwa((apply) => (view.applyUpdate = apply)).catch(() => {
-    /* offline cache is optional */
-  });
   void setupNative({
     save: toBackground,
     resume: () => {
