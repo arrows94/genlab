@@ -12,7 +12,7 @@ import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
 import { prefs } from './prefs.svelte';
 import { inbox, loadInbox, record, saveInbox, type NoticeKind } from './inbox.svelte';
-import { initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
+import { START_TIMEOUT_MS, initSync, notePlay, resolveConflict, sync, syncOnHide, syncOnShow, unlinkLocal } from './sync.svelte';
 import { isMuted, play, playedRecently, setSoundScope, silently } from './sound';
 import { wireSounds } from './soundEvents';
 import { noteActive } from '@core/activity';
@@ -39,6 +39,8 @@ export const view = $state({
   offline: null as OfflineReport | null,
   /** A long absence being computed in slices (the „Labor holt auf“ screen); null otherwise. */
   catchUp: null as { done: number; requestedMs: number } | null,
+  /** Waiting for the cloud save before a long absence is caught up (the game holds meanwhile). */
+  syncWait: false,
   /** Unseen results per tab (badge), cleared when the tab is opened. */
   unseen: {} as Record<string, number>,
   /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
@@ -368,7 +370,29 @@ function toBackground(): void {
 /** Back in the foreground: the reminders are no longer needed; fetch what other devices did. */
 function toForeground(): void {
   cancelNotices();
-  syncOnShow();
+  const pull = syncOnShow();
+  // A long absence is caught up only once, on the save that wins: wait briefly for the cloud one.
+  if (pull && longGap()) holdFor(pull);
+}
+
+/** So much time passed that the next step is a catch-up. */
+function longGap(): boolean {
+  return game.catchingUp === null && Date.now() - game.state.lastTickAt > balance.sim.catchUpThresholdMs;
+}
+
+let holdId = 0;
+/** Holds the game (see `advance`) until the download is done, at most `START_TIMEOUT_MS`. A later answer is still adopted. */
+function holdFor(pull: Promise<unknown>): void {
+  const id = ++holdId;
+  view.syncWait = true;
+  const release = () => {
+    if (id !== holdId || !view.syncWait) return;
+    view.syncWait = false;
+    advance(FIRST_SLICE_MS);
+    refresh();
+  };
+  void pull.finally(release);
+  setTimeout(release, START_TIMEOUT_MS);
 }
 
 /** Device sync hooks into the game (see sync.svelte.ts). */
@@ -397,6 +421,8 @@ const FIRST_SLICE_MS = 150;
 
 /** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent and run in slices. */
 function advance(budgetMs = SLICE_MS): void {
+  // A long absence waits for the cloud save, or for the player to pick a save in a sync conflict.
+  if (view.syncWait || (sync.conflict && longGap())) return;
   const quiet = game.catchingUp !== null || Date.now() - game.state.lastTickAt > 5000;
   const run = () => game.update(Date.now(), budgetMs);
   const report = quiet ? silently(run) : run();
@@ -413,7 +439,9 @@ export async function init(): Promise<void> {
   const hadSave = await loadSave();
   view.ready = true;
   // Before the loop starts, so the game continues on the newest save of all devices.
+  view.syncWait = longGap();
   await initSync(syncHost);
+  view.syncWait = false;
   initNews(hadSave, (f) => game.state.features[f] === true);
   refresh();
   startLoop();

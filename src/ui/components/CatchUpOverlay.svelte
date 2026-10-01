@@ -4,15 +4,18 @@
   import { expressedAppearance } from '@core/genetics';
   import type { Creature } from '@core/state';
   import { game, view } from '../store.svelte';
+  import { sync } from '../sync.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaHelix from './DnaHelix.svelte';
 
   /**
-   * „Dein Labor holt auf“: shown while a long absence is computed in slices. A few of the
-   * player's own creatures carry DNA to the lab and data back to the archive. It stays at
-   * least `MIN_SHOW_MS`, so a quick catch-up does not just flash.
+   * „Dein Labor holt auf“: shown while a long absence is computed in slices, and before that
+   * while the game waits for the cloud save (`view.syncWait`). A few of the player's own
+   * creatures carry DNA to the lab and data back to the archive. It stays at least
+   * `MIN_SHOW_MS`, so a quick catch-up does not just flash; a quick download never shows it.
    */
   const MIN_SHOW_MS = 1200;
+  const WAIT_DELAY_MS = 300;
   const LINES: { text: string; feature?: string }[] = [
     { text: 'Gene werden sortiert …' },
     { text: 'Futter wird geerntet …' },
@@ -42,12 +45,23 @@
 
   const lines = $derived(LINES.filter((l) => !l.feature || game.state.features[l.feature]));
 
+  // The sync conflict dialog must stay visible: the game waits for the player there.
+  let waitShown = $state(false);
   $effect(() => {
-    const c = view.catchUp;
+    waitShown = false;
+    if (!view.syncWait || sync.conflict) return;
+    const timer = setTimeout(() => (waitShown = true), WAIT_DELAY_MS);
+    return () => clearTimeout(timer);
+  });
+  const waiting = $derived(!view.catchUp && waitShown);
+  const active = $derived(view.catchUp ?? (waitShown ? { done: 0, requestedMs: 0 } : null));
+
+  $effect(() => {
+    const c = active;
     if (c) {
+      leaving = false;
       if (!open) {
         open = true;
-        leaving = false;
         shownAt = performance.now();
         crew = pickCrew();
         line = 0;
@@ -75,7 +89,11 @@
   <div class="catchup" class:leaving role="status" aria-live="polite" ontransitionend={() => leaving && (open = false)}>
     <div class="card">
       <h2>Dein Labor holt auf …</h2>
-      <p class="muted">Du warst {formatDuration(requestedMs)} weg – deine Kreaturen bringen alles auf den neuesten Stand.</p>
+      {#if waiting}
+        <p class="muted">Erst schauen deine Kreaturen nach, ob ein anderes Gerät schon weiter ist.</p>
+      {:else}
+        <p class="muted">Du warst {formatDuration(requestedMs)} weg – deine Kreaturen bringen alles auf den neuesten Stand.</p>
+      {/if}
 
       <div class="scene" aria-hidden="true">
         <div class="terminal left">
@@ -107,10 +125,15 @@
       </div>
 
       <DnaHelix progress={done} width={240} height={36} />
-      <div class="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(done * 100)}>
-        <div class="fill" style:width="{done * 100}%"></div>
-      </div>
-      <p class="line">{#key line}<span>{lines[line % Math.max(1, lines.length)]?.text}</span>{/key}<span class="num pct">{Math.floor(done * 100)} %</span></p>
+      {#if waiting}
+        <div class="bar waiting" role="progressbar" aria-busy="true"><div class="fill"></div></div>
+        <p class="line"><span>☁️ Abgleich mit deinen anderen Geräten …</span></p>
+      {:else}
+        <div class="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(done * 100)}>
+          <div class="fill" style:width="{done * 100}%"></div>
+        </div>
+        <p class="line">{#key line}<span>{lines[line % Math.max(1, lines.length)]?.text}</span>{/key}<span class="num pct">{Math.floor(done * 100)} %</span></p>
+      {/if}
     </div>
   </div>
 {/if}
@@ -179,6 +202,8 @@
 
   .bar { width: min(320px, 100%); height: 8px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
   .fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); transition: width 0.2s linear; }
+  .bar.waiting .fill { width: 35%; animation: sweep 1.3s ease-in-out infinite alternate; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
   .line { margin: 0; display: flex; gap: 0.6rem; align-items: baseline; font-size: 0.9rem; min-height: 1.4em; }
   .line span:first-child { animation: fade 0.4s ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
@@ -191,6 +216,7 @@
   :global(.reduce-motion) .catchup *, :global(.reduce-motion) .catchup { animation: none !important; }
   :global(.reduce-motion) .base, :global(.reduce-motion) .packet.data { display: none; }
   :global(.reduce-motion) .packet.dna { opacity: 1; }
+  :global(.reduce-motion) .bar.waiting .fill { width: 100%; opacity: 0.5; }
   :global(.reduce-motion) .walk:nth-child(2) { transform: translateX(calc(50% - var(--s) / 2)); }
   :global(.reduce-motion) .walk:nth-child(3) { transform: translateX(calc(100% - var(--s))); }
 </style>

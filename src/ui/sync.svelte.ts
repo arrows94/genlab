@@ -17,8 +17,11 @@ import { SYNC_URL, SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyn
  * uploads at once, so this only bounds the loss after a crash; longer = fewer server writes.
  */
 const PUSH_EVERY_MS = 5 * 60_000;
-/** How long the start waits for the cloud save before playing the local one. */
-const START_TIMEOUT_MS = 4000;
+/**
+ * How long the start waits for the cloud save before playing the local one. Coming back to the
+ * app after a long absence waits as long before catching up (see the store).
+ */
+export const START_TIMEOUT_MS = 4000;
 
 export interface SyncLink {
   code: string;
@@ -293,14 +296,14 @@ export function syncOnHide(): void {
 }
 
 let lastShow = 0;
-/** The app is back: fetch what other devices did meanwhile. */
-export function syncOnShow(): void {
+/** The app is back: fetch what other devices did meanwhile. Returns the download, or null if none started. */
+export function syncOnShow(): Promise<unknown> | null {
   snoozed = false;
   hideHandled = false;
   // Native apps report both `resume` and `visibilitychange`.
-  if (!sync.link || Date.now() - lastShow < 2000) return;
+  if (!sync.link || Date.now() - lastShow < 2000) return null;
   lastShow = Date.now();
-  void serial(() => attempt(() => doPull(), false));
+  return serial(() => attempt(() => doPull(), false));
 }
 
 /** Forget the link without asking the server (e.g. before a hard reset). */
