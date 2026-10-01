@@ -32,7 +32,7 @@ Rekord-Bonus (Ziele wachsen mit dem Produktionsbonus), Dynastien (`lineage`, `dy
 
 - [ ] Gen-Aufträge: kosmetische Muster als Belohnung (braucht neue Muster im Kreaturen-SVG)
 - [ ] Weitere Splitter-Quellen bei Bedarf (siehe „Ideen“ und Genom-Keller)
-- [ ] Turm-Stillstand im Äon-Bot (8–13 Tage ohne Fortschritt) – wird unter „Turm: Stillstand abbauen“ bearbeitet
+- [ ] Turm-Stillstand im Äon-Bot (jetzt 4–8 Tage) – siehe „Turm: Stillstand abbauen“ → Offen
 - [ ] Test-Bot: klügere Anomalie-Wahl (einzelne Anomalie eine Stufe höher statt immer alle zusammen), damit der
       Äon-Lauf nicht mit zwölfstündigen Fehlversuchen Vererbungen verliert
 - [ ] Dynastien-Balancing: Ohne gezielte Zucht erreicht der Bot Tiefe 11 und 9 Stufen (+9 % Produktion) bis Tag 23,
@@ -88,34 +88,30 @@ Erledigt:
 - **Schritt 1 – Etagen ×3** (Etage 3n = alte Etage n, Kampfpause 4 s, Migration `SAVE_VERSION` 9 → 10, Wächter
   alle 10 Etagen, drei kleine Etagen teilen Element und Gruppengröße, Offline-Kämpfe ohne Wiedergabe-Daten)
 - **Schritt 2 – Boss-Mauer abflachen**: Boss kostet jetzt Ø 3,7 frühere Etagen statt 9,9 (Schild ohne Vorteil 5,4–7,0),
-  Mauer-Test `tests/towerCurve.test.ts` (`GENLAB_CURVE=1`). Äon-Bot: Seed 2024 Etage 198 statt 149
+  Mauer-Test `tests/towerCurve.test.ts` (`GENLAB_CURVE=1`)
+- **Schritt 3 – Kampferfahrung** 🎖 (`tower.xp`, je Etage proportional zur Höhe, Boss ×10; Rang n → n + 1 kostet
+  100 × (1 + 9n), je Rang +2 % KP und Schaden, Modifier-Ziel `tower.hp`, `towerVeteranProvider`) und
+  **Entschlossenheit** 💪 (+15 % je Tag ohne neuen Rekord, höchstens +60 %), Anzeige in der Kopfzeile und in
+  „Warum verloren?“
+- **Rückzug beim Auto-Neustart** (`tower.retreat`, `restartCheckpoint`): Verliert ein Lauf gleich die erste Etage,
+  beginnt der nächste Auto-Neustart einen Checkpoint tiefer; eine geschaffte Checkpoint-Etage holt ihn wieder hoch,
+  ein Start von Hand versucht den echten Checkpoint. Befund vorher (Äon-Bot, Seed 2024): Nach jeder Vererbung verlor
+  das Team am Checkpoint sofort – an Stillstands-Tagen bis zu 17 000 Läufe ohne einen Sieg und ohne Erfahrung,
+  Rang 34 an Tag 28. Nachher: jeden Tag 13 000–40 000 gewonnene Etagen, Rang 61 an Tag 28
+- **Wochen-Titan nachgestellt**: ANG ×0,5 statt ×1,5, KP ×15 statt ×25. Vorher warf er ein Team in 7–8 s um, der
+  Schaden je Angriff fiel zwischen Titan-Etage 120 und 175 auf ein 85stel (gleiches Team); mit ×0,5 hält ein Team
+  nahe am Rekord fast die ganzen 30 s durch, der Abfall ist halb so steil. Äon-Bot je Woche ab Woche 2:
+  Seed 2024 100 / 100 / 81 % (vorher 100 / 51 / 5 %), Seed 7 92 % (74 %), Seed 99 100 % (36 %)
 
-Der Stillstand bleibt trotzdem: Fortschritt gibt es nur am Höhepunkt eines Durchlaufs, nach jeder Vererbung fängt der
-Stall von vorn an (Seed 7: 149 ab Tag 4; Seed 2024: 174 an Tag 10–18, 198 ab Tag 19). Dafür ist Schritt 3 da.
+## Offen
 
-## Reste aus Schritt 1 und 2
-
+- [ ] Stillstände sind kürzer, aber nicht weg (Ziel: höchstens etwa 3 Tage). Äon-Bot mit Rückzug und neuem Titan:
+      Seed 2024 (28 Tage) 135 an Tag 8–12, 171 an Tag 20–27 (8 Tage); Seed 7 (10 Tage) 149 ab Tag 4 (vorher 143 an
+      Tag 10), Seed 99 172 ab Tag 6 (vorher 153). Befund an der Mauer (Bot-Team bei Rekord 172, Rang 58): Etage 173
+      braucht Faktor 1,15, Etage 175 (ein Wasser-Gegner gegen ein Erde/Feuer-Team) 1,98, Boss 180 2,21 – die Mauern
+      sind jetzt vor allem Element-Spitzen, weil der Bot-Stall fast nur aus einer oder zwei Arten besteht. Möglich:
+      Bot-Zucht vielfältiger (näher am echten Spieler), Entschlossenheit höher deckeln, oder „Veteranen“-Talent
 - [ ] Auf dem Handy nachmessen, wie lange das Laden nach 12 h mit Dauerkampf (Auto-Neustart) dauert
-- [ ] Wochen-Boss nachstellen: Der Titan folgt dem jetzt höheren Rekord – ab Woche 2 schafft der Bot nur noch 0–11 %
-      (einmal 47 %), vorher meist 100 %. `weeklyBoss.hpMult` (25) oder die Etage des Titans (z. B. Rekord minus einige
-      Etagen) mit dem Äon-Bot neu einstellen
-
-## Schritt 3 – Kampferfahrung (Turm-Stärke, die jede Vererbung und jedes Äon übersteht)
-
-Jeder Sieg im Turm bringt Erfahrung, sie gehört dem Spieler (wie Relikte) und macht jedes künftige Turm-Team stärker.
-Wer an einer Mauer hängt und mit Auto-Neustart weiterkämpft, kommt dadurch langsam, aber sicher weiter.
-
-- [ ] Erfahrung: 1 je gewonnene Etage, 10 je Boss (Startwerte); auch offline. Sie übersteht Vererbung und Äon
-      (`tower.xp` im Spielstand, neue Felder mit Standardwert – keine Migration)
-- [ ] Ränge: Rang n → n + 1 kostet 100 × 1,15ⁿ Erfahrung (Startwerte). Je Rang +2 % KP und +2 % Schaden im Turm und
-      gegen den Wochen-Boss. Grober Takt im Stillstand (etwa 900 Etagen pro Stunde mit 4 s): Rang ~20 nach einem Tag,
-      ~30 nach drei, ~40 nach zwölf – die Kosten wachsen schneller als die Erfahrung, Zucht bleibt der Hauptweg
-- [ ] Neues Modifier-Ziel `tower.hp` (in `fighterFor` wie `tower.damage`); die Kampferfahrung als eigener
-      `ModifierProvider`
-- [ ] Kalibrieren mit dem Äon-Bot (28 Tage): Stillstände zusammen mit Schritt 2 höchstens etwa 3 Tage; an Tag 28 macht
-      die Kampferfahrung höchstens etwa ein Drittel der Turm-Stärke aus
-- [ ] Anzeige: Rang, Balken bis zum nächsten Rang und aktuelle Wirkung in der Kopfzeile des Turms; in „Warum
-      verloren?“ ein Hinweis, dass Weiterkämpfen Erfahrung bringt
 - [ ] Optional: Äon-Talent „Veteranen“ (+50 % Erfahrung) oder ein Resonanz-Knoten, damit auch das Äon den Turm
       spürbar beschleunigt
 
