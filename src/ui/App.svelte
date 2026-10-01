@@ -9,6 +9,7 @@
   import { game, view, init, openTab } from './store.svelte';
   import { loadPrefs, prefs } from './prefs.svelte';
   import { viewState } from './viewState.svelte';
+  import { openInbox } from './inbox.svelte';
   import { moodFor, setMusic } from './music';
   import { play } from './sound';
   import ResourceBar from './components/ResourceBar.svelte';
@@ -152,6 +153,12 @@
   $effect(() => document.documentElement.style.setProperty('--header-h', `${headerH}px`));
   /** Height of the tab bar; on phones it is docked at the bottom and the page padding stays clear of it. */
   let dockH = $state(0);
+  /** On phones the newest message shows in the header instead of the title, so it covers nothing. */
+  const ticker = $derived(view.toasts.at(-1));
+  function openNews() {
+    view.toasts = [];
+    openInbox(true);
+  }
   // In the other world there is no tab bar.
   $effect(() => document.documentElement.style.setProperty('--dock-h', `${view.world === 'off' ? dockH : 0}px`));
   $effect(() => {
@@ -177,7 +184,10 @@
   <header class:stuck bind:offsetHeight={headerH}>
     <div class="brand">
       <DnaHelix pairs={8} width={70} height={28} />
-      <h1>Genlab</h1>
+      <h1 class:hide={ticker}>Genlab</h1>
+      {#if ticker}
+        {#key ticker.id}<button class="ticker {ticker.kind}" onclick={openNews} title="Alle Nachrichten anzeigen">{ticker.text}</button>{/key}
+      {/if}
       <MusicToggle />
       <NotificationBell />
     </div>
@@ -255,6 +265,7 @@
     margin: 0; font-size: 1.5rem; letter-spacing: 0.08em;
     background: linear-gradient(90deg, var(--teal), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
+  .ticker { display: none; }
   nav { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
   nav button { position: relative; display: flex; gap: 0.35rem; align-items: center; }
   nav button.active { border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }
@@ -288,6 +299,7 @@
   /* Wider content is cut off here instead of widening the page (phones would then scroll sideways). */
   main { overflow-x: clip; }
   .page { animation: fade-in 0.2s ease-out; }
+  @keyframes ticker-in { from { opacity: 0; transform: translateY(-4px); } }
 
   /* Portrait phones: bottom tab bar */
   @media (max-width: 640px) {
@@ -297,6 +309,16 @@
     .brand :global(svg) { display: none; }
     .brand :global(.music) { margin-left: auto; }
     h1 { font-size: 1.2rem; }
+    h1.hide { display: none; }
+    .ticker {
+      display: block; flex: 1; min-width: 0; height: 1.8rem; padding: 0 0.55rem; margin: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.85rem; line-height: 1.7rem;
+      background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--teal); border-radius: 8px;
+      animation: ticker-in 0.25s ease-out;
+    }
+    .ticker.unlock { border-left-color: var(--violet); }
+    .ticker.rare { border-left-color: var(--gold); }
+    .ticker.error { border-left-color: var(--danger); }
     /* Bottom dock: the sub-tabs of the area sit right above the area buttons, in thumb reach. */
     .tabbar {
       position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 0.35rem;

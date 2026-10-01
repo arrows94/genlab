@@ -30,12 +30,9 @@
   .unlock { border-left-color: var(--violet); }
   .rare { border-left-color: var(--gold); }
   .error { border-left-color: var(--danger); }
-  @media (max-width: 640px) {
-    /* Phones: the buttons sit at the bottom in thumb reach, so the messages drop in right below the header. */
-    .toasts { right: auto; left: 50%; transform: translateX(-50%); bottom: auto; top: calc(var(--header-h, 4rem) + 0.4rem); }
-    .toast { animation-name: drop; padding: 0.45rem 0.7rem; font-size: 0.9rem; }
-  }
-  /* The other world has no header: its skills sit at the bottom. */
+  /* Phones: the newest message shows in the header instead (App.svelte), nothing floats over the page. */
+  @media (max-width: 640px) { .toasts:not(.world) { display: none; } }
+  /* The other world has no header and its skills sit at the bottom; only direct click feedback shows here. */
   .toasts.world { right: auto; left: 50%; transform: translateX(-50%); bottom: auto; top: calc(0.5rem + env(safe-area-inset-top)); }
   .world .toast { animation-name: drop; }
   @keyframes in { from { opacity: 0; transform: translateY(8px); } }
