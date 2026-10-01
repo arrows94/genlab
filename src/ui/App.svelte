@@ -21,6 +21,7 @@
   import NotificationCenter from './components/NotificationCenter.svelte';
   import MusicToggle from './components/MusicToggle.svelte';
   import OfflineModal from './components/OfflineModal.svelte';
+  import CatchUpOverlay from './components/CatchUpOverlay.svelte';
   import DnaHelix from './components/DnaHelix.svelte';
   import LabTab from './components/LabTab.svelte';
   import FacilitiesTab from './components/FacilitiesTab.svelte';
@@ -241,6 +242,7 @@
 <NotificationCenter />
 <SyncDialog />
 <ConfirmDialog />
+<CatchUpOverlay />
 <Portal />
 <svelte:window onscroll={() => (stuck = window.scrollY > 4)} />
 

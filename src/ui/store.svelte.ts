@@ -37,6 +37,8 @@ export const view = $state({
   tab: 'lab',
   toasts: [] as Toast[],
   offline: null as OfflineReport | null,
+  /** A long absence being computed in slices (the „Labor holt auf“ screen); null otherwise. */
+  catchUp: null as { done: number; requestedMs: number } | null,
   /** Unseen results per tab (badge), cleared when the tab is opened. */
   unseen: {} as Record<string, number>,
   /** Suppresses per-creature dex toasts while a capsule result screen shows them anyway. */
@@ -312,8 +314,9 @@ export function act(result: ActionResult): boolean {
 }
 
 export function save(): void {
-  // Never overwrite the stored save with the placeholder state before loading finished.
-  if (!view.ready) return;
+  // Never overwrite the stored save with the placeholder state before loading finished, nor with
+  // a half caught-up one: closing the app meanwhile keeps the last save, the next start catches up again.
+  if (!view.ready || game.catchingUp) return;
   saveInbox();
   notePlay();
   storage.save(serialize(game.state)).then(
@@ -355,6 +358,8 @@ export function hardReset(): void {
 
 /** Going to the background: save, upload to the other devices and plan reminders for the time away. */
 function toBackground(): void {
+  // Mid catch-up nothing was played; the stored save and the cloud stay as they are.
+  if (game.catchingUp) return;
   save();
   syncOnHide();
   if (prefs.notifications) scheduleNotices(plannedNotices(game, Date.now()));
@@ -378,12 +383,25 @@ const syncHost = {
     refresh();
   },
   notify: (text: string, kind: 'info' | 'error' = 'info') => toast(text, kind, kind === 'error' ? 6000 : 3500),
+  busy: () => game.catchingUp !== null,
 };
 
-/** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent. */
-function advance() {
-  const quiet = Date.now() - game.state.lastTickAt > 5000;
-  return quiet ? silently(() => game.update(Date.now())) : game.update(Date.now());
+/**
+ * Computing time per call while a long absence is caught up. The „Labor holt auf“ screen
+ * animates with CSS (smooth even while the page computes), so a slice can be long; only the
+ * progress bar follows the slices. The first call may take longer, so short absences finish
+ * at once without showing that screen.
+ */
+const SLICE_MS = 50;
+const FIRST_SLICE_MS = 150;
+
+/** Advances the game to now; long catch-ups (offline, sleeping tab) stay silent and run in slices. */
+function advance(budgetMs = SLICE_MS): void {
+  const quiet = game.catchingUp !== null || Date.now() - game.state.lastTickAt > 5000;
+  const run = () => game.update(Date.now(), budgetMs);
+  const report = quiet ? silently(run) : run();
+  view.catchUp = game.catchingUp;
+  if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
 }
 
 let started = false;
@@ -408,8 +426,7 @@ export async function init(): Promise<void> {
     save: toBackground,
     resume: () => {
       toForeground();
-      const r = advance();
-      if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
+      advance(FIRST_SLICE_MS);
       refresh();
     },
     // Close the topmost dialog; false = nothing open (app gets minimised).
@@ -445,14 +462,14 @@ function trackActivity(): void {
 }
 
 function startLoop(): void {
-  const report = advance();
-  if (report && report.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = report;
+  advance(FIRST_SLICE_MS);
 
   let lastRender = 0;
   let lastSlow = 0;
   const loop = (t: number) => {
-    const r = advance();
-    if (r && r.simulatedMs / 1000 >= balance.offline.summaryMinSec) view.offline = r;
+    advance();
+    // Meanwhile the app under the catch-up screen waits; every frame goes to computing.
+    if (game.catchingUp) return void requestAnimationFrame(loop);
     if (t - lastRender >= 100) {
       lastRender = t;
       syncWorld();
@@ -467,7 +484,7 @@ function startLoop(): void {
   requestAnimationFrame(loop);
 
   // Background tabs throttle rAF; a slow interval keeps the sim alive.
-  setInterval(advance, 1000);
+  setInterval(() => advance(), 1000);
   trackActivity();
   setInterval(save, balance.sim.autosaveSec * 1000);
   // Mobile apps are suspended without `beforeunload`; hiding is the reliable moment to save.
@@ -475,7 +492,7 @@ function startLoop(): void {
     if (document.visibilityState === 'hidden') toBackground();
     else {
       toForeground();
-      advance();
+      advance(FIRST_SLICE_MS);
     }
   });
   window.addEventListener('beforeunload', save);

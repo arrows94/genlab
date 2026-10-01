@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkCondition, dexCounts } from '@core/conditions';
 import { createCreature } from '@core/creatures';
+import { serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import { content, makeGame } from './helpers';
 
@@ -46,5 +47,43 @@ describe('offline catch-up', () => {
     const ms = performance.now() - start;
     expect(report.simulatedMs).toBe(report.capMs);
     expect(ms).toBeLessThan(3000);
+  });
+
+  it('gives the same result in slices as in one go', () => {
+    const whole = makeGame(9);
+    const sliced = makeGame(9);
+    const now = whole.state.lastTickAt + 20 * HOUR;
+    const expected = whole.update(now);
+
+    let report = sliced.update(now, 0);
+    expect(report).toBeNull();
+    let last = sliced.catchingUp!.done;
+    expect(sliced.catchingUp!.requestedMs).toBe(20 * HOUR);
+    let calls = 1;
+    while (!report) {
+      report = sliced.update(now + calls * 1000, 0);
+      if (!report) {
+        expect(sliced.catchingUp!.done).toBeGreaterThan(last);
+        last = sliced.catchingUp!.done;
+      }
+      calls++;
+    }
+    expect(sliced.catchingUp).toBeNull();
+    expect(report).toEqual(expected);
+    expect(serialize(sliced.state, 0)).toBe(serialize(whole.state, 0));
+    // The time the slices took is simulated afterwards like any other gap.
+    const t = sliced.state.simTimeMs;
+    sliced.update(now + 3000);
+    expect(sliced.state.simTimeMs).toBe(t + 3000);
+  });
+
+  it('drops an unfinished catch-up when the state is replaced', () => {
+    const g = makeGame(3);
+    const other = makeGame(4).state;
+    g.update(g.state.lastTickAt + 10 * HOUR, 0);
+    expect(g.catchingUp).not.toBeNull();
+    g.loadState(other);
+    expect(g.catchingUp).toBeNull();
+    expect(g.update(other.lastTickAt + 1000)).toBeNull();
   });
 });

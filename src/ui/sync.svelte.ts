@@ -52,6 +52,8 @@ export interface SyncHost {
   /** Replaces the running game with a downloaded state and saves it. */
   adopt(state: GameState): void;
   notify(text: string, kind?: 'info' | 'error'): void;
+  /** True while the game is half caught up: nothing may be uploaded until it is done. */
+  busy(): boolean;
 }
 
 class SyncView {
@@ -212,7 +214,7 @@ async function finishPush(link: SyncLink, result: PutResult, editsAtStart: numbe
 
 async function doPush(force: boolean): Promise<void> {
   const link = sync.link;
-  if (!link || sync.conflict || snoozed || (!link.dirty && !force)) return;
+  if (!link || sync.conflict || snoozed || (!link.dirty && !force) || host!.busy()) return;
   const at = edits;
   const client = await clientFor(link.code);
   await finishPush(link, await client.put(await host!.exportText(), meta(link)), at);
@@ -222,7 +224,7 @@ async function doPush(force: boolean): Promise<void> {
 async function prepare(): Promise<void> {
   prepareTimer = null;
   const link = sync.link;
-  if (!link) return;
+  if (!link || host!.busy()) return;
   try {
     const at = edits;
     const baseRev = link.rev;
