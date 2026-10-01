@@ -2,7 +2,37 @@ import { D } from './num';
 import type { Condition } from './content/types';
 import type { GameState } from './state';
 
-export function checkCondition(state: GameState, c: Condition): boolean {
+/**
+ * Dex entries counted per `species:rarity` filter: `"emberpup:rare"` (0/1), `"emberpup:"`
+ * (any rarity), `":rare"` (any species) and `":"` (all). Unlocks are checked every step,
+ * also offline, so the counts are kept per dex object. The dex only ever gains entries
+ * (a reset replaces the whole object), so its size tells when they are out of date.
+ */
+export type DexCounts = ReadonlyMap<string, number>;
+
+const dexCache = new WeakMap<Record<string, boolean>, { size: number; counts: DexCounts }>();
+
+export function dexCounts(dex: Record<string, boolean>): DexCounts {
+  const keys = Object.keys(dex);
+  const cached = dexCache.get(dex);
+  if (cached?.size === keys.length) return cached.counts;
+  const counts = new Map<string, number>();
+  const add = (k: string) => counts.set(k, (counts.get(k) ?? 0) + 1);
+  for (const key of keys) {
+    const at = key.indexOf(':');
+    const species = at < 0 ? key : key.slice(0, at);
+    const rarity = at < 0 ? '' : key.slice(at + 1).split(':')[0]!;
+    if (rarity) add(`${species}:${rarity}`);
+    add(`${species}:`);
+    add(`:${rarity}`);
+    add(':');
+  }
+  dexCache.set(dex, { size: keys.length, counts });
+  return counts;
+}
+
+/** `dex` may be passed in when many conditions are checked against the same state. */
+export function checkCondition(state: GameState, c: Condition, dex?: DexCounts): boolean {
   switch (c.type) {
     case 'always':
       return true;
@@ -18,13 +48,8 @@ export function checkCondition(state: GameState, c: Condition): boolean {
       return state.creatures.length >= c.count;
     case 'statistic':
       return (state.statistics[c.statistic] ?? 0) >= c.amount;
-    case 'dex': {
-      const matches = Object.keys(state.dex).filter((key) => {
-        const [species, rarity] = key.split(':');
-        return (!c.species || c.species === species) && (!c.rarity || c.rarity === rarity);
-      });
-      return matches.length >= (c.count ?? 1);
-    }
+    case 'dex':
+      return ((dex ?? dexCounts(state.dex)).get(`${c.species ?? ''}:${c.rarity ?? ''}`) ?? 0) >= (c.count ?? 1);
     case 'prestigeCount':
       return (state.prestige[c.layer]?.count ?? 0) >= c.count;
     case 'talent':
@@ -38,9 +63,9 @@ export function checkCondition(state: GameState, c: Condition): boolean {
     case 'geneLibrary':
       return Object.keys(state.geneLibrary ?? {}).length >= c.count;
     case 'all':
-      return c.of.every((sub) => checkCondition(state, sub));
+      return c.of.every((sub) => checkCondition(state, sub, dex ??= dexCounts(state.dex)));
     case 'any':
-      return c.of.some((sub) => checkCondition(state, sub));
+      return c.of.some((sub) => checkCondition(state, sub, dex ??= dexCounts(state.dex)));
   }
 }
 
