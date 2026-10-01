@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature } from '@core/creatures';
-import { startMission } from '@core/features/expedition';
+import { campSlots, campsUsed, startMission } from '@core/features/expedition';
+import { eggCost, startBreeding } from '@core/features/breeding';
+import { canAfford, toCost } from '@core/costs';
+import { collect } from '@core/actions';
 import { startDeepSequencing } from '@core/features/deepSequencing';
 import { revealGenome } from '@core/features/sequencing';
 import { performPrestige, resetImpactText } from '@core/prestige';
@@ -184,8 +187,8 @@ describe('long projects and inheritance', () => {
     expect(g.state.processes.map((p) => p.kind).sort()).toEqual(['mission', 'voyage']);
     expect(g.state.creatures.map((x) => x.id)).toEqual(expect.arrayContaining([a!.id, b!.id]));
     expect(g.state.creatures.some((x) => x.id === c!.id)).toBe(false);
-    // A fresh start creature is at home.
-    expect(g.state.creatures.filter((x) => x.job === null)).toHaveLength(1);
+    // The travellers fill both camps, so a companion joins the fresh start creature.
+    expect(g.state.creatures.filter((x) => x.job === null).map((x) => x.speciesId)).toEqual([balance.start.species, balance.start.companion.species]);
 
     g.simulateOffline(voyageDurationMs(g) + 1000);
     expect(g.state.voyage.pending).not.toBeNull();
@@ -199,5 +202,48 @@ describe('reset impact text', () => {
     expect(resetImpactText(g)).toBe('');
     expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
     expect(resetImpactText(g)).toContain('Eine Reise läuft weiter');
+    // The voyage fills the only camp: the player is told they start with two creatures.
+    expect(resetImpactText(g)).toContain('startest du mit zwei Kreaturen');
+  });
+});
+
+describe('inheritance with every camp taken by travellers', () => {
+  /** Voyage and journey running, ready for an inheritance (seed 2024 of the long-run bot). Camp upgrade level 1: both camps are taken. */
+  function campsFull(campUpgrade = 1) {
+    const g = voyageGame(2024);
+    unlockFeature(g, 'inheritance');
+    unlockFeature(g, 'breeding');
+    g.state.prestige.inheritance = { count: 2 };
+    const camp = content.upgrades.list.find((u) => u.modifiers.some((m) => m.target === 'slots.camp'))!;
+    g.state.upgrades[camp.id] = campUpgrade;
+    g.invalidate();
+    const [, a, b, c] = g.state.creatures;
+    expect(startVoyage(g, [a!.id, b!.id, c!.id]).ok).toBe(true);
+    expect(startMission(g, g.state.creatures[0]!.id, 'mistmoor').ok).toBe(true);
+    g.state.earned.food = D(1e12);
+    g.state.earned.gold = D(1e12);
+    return g;
+  }
+
+  it('gives a companion, so the player can breed right away', () => {
+    const g = campsFull();
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(campsUsed(g)).toBe(campSlots(g));
+    const home = g.state.creatures.filter((x) => x.job === null);
+    expect(home).toHaveLength(2);
+    expect(startMission(g, home[0]!.id, 'short')).toEqual({ ok: false, reason: 'Alle Camps sind belegt.' });
+    // Food from collecting is enough for the first egg.
+    while (!canAfford(g.state, eggCost(g, 2))) expect(collect(g).ok).toBe(true);
+    expect(startBreeding(g, home[0]!.id, home[1]!.id)).toEqual({ ok: true });
+  });
+
+  it('keeps the single start creature while a camp stays free', () => {
+    const g = campsFull(2);
+    expect(resetImpactText(g)).not.toContain('zwei Kreaturen');
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    const home = g.state.creatures.filter((x) => x.job === null);
+    expect(home).toHaveLength(1);
+    while (!canAfford(g.state, toCost(content.missions.get('short').cost))) expect(collect(g).ok).toBe(true);
+    expect(startMission(g, home[0]!.id, 'short')).toEqual({ ok: true });
   });
 });

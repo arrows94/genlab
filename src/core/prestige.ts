@@ -5,6 +5,7 @@ import { grant } from './resources';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
 import { survivesReset } from './systems/processes';
 import { finishRpgRun } from './features/rpg';
+import { campSlots, campsUsed } from './features/expedition';
 import type { PrestigeLayerDef } from './content/types';
 import type { GameContext } from './context';
 import type { ActionResult } from './actions';
@@ -57,8 +58,16 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   ctx.invalidate();
   applyTalentGuarantees(ctx);
   if (s.creatures.every((c) => c.job?.kind === 'mission')) {
-    createCreature(ctx, { speciesId: ctx.balance.start.species, rarity: ctx.balance.start.rarity, source: 'start' });
+    const start = ctx.balance.start;
+    createCreature(ctx, { speciesId: start.species, rarity: start.rarity, source: 'start' });
+    // Travellers in every camp: alone, the start creature could neither explore nor breed.
+    if (campsFullAfterReset(ctx)) createCreature(ctx, { speciesId: start.companion.species, rarity: start.companion.rarity, source: 'start' });
   }
+}
+
+/** Whether the travellers who stay in the run occupy every expedition camp. */
+function campsFullAfterReset(ctx: GameContext): boolean {
+  return campsUsed(ctx, (p) => survivesReset(ctx, p)) >= campSlots(ctx);
 }
 
 /**
@@ -87,6 +96,7 @@ export function resetImpactText(ctx: GameContext): string {
   if (lostLong > 0) parts.push(`${lostLong === 1 ? 'Ein langes Projekt im Labor geht' : `${lostLong} lange Projekte im Labor gehen`} verloren (z. B. Tiefensequenzierung, Brutritual).`);
   if (building > 0) parts.push(`${building === 1 ? 'Eine Großforschung oder ein Bau läuft' : `${building} Großforschungen und Bauten laufen`} ungestört weiter.`);
   if (travelling > 0) parts.push(`${travelling === 1 ? 'Eine Reise läuft' : `${travelling} Reisen laufen`} weiter – die Reisenden kommen in den neuen Durchlauf zurück.`);
+  if (travelling > 0 && campsFullAfterReset(ctx)) parts.push('Weil sie alle Camps belegen, startest du mit zwei Kreaturen, damit du gleich züchten kannst.');
   return parts.join(' ');
 }
 
@@ -200,7 +210,7 @@ export function resetOverview(ctx: GameContext, layerId: string): { lost: ResetI
     const home = s.creatures.filter((c) => c.job?.kind !== 'mission');
     const favourites = home.filter((c) => c.locked).length;
     if (home.length > 0) {
-      lost.push({ icon: '🐾', label: 'Kreaturen', detail: `${formatNumber(home.length)}${favourites > 0 ? ` (auch ${formatNumber(favourites)} Favoriten ★)` : ''} – du startest mit einer neuen` });
+      lost.push({ icon: '🐾', label: 'Kreaturen', detail: `${formatNumber(home.length)}${favourites > 0 ? ` (auch ${formatNumber(favourites)} Favoriten ★)` : ''} – du startest mit ${campsFullAfterReset(ctx) ? 'zwei neuen' : 'einer neuen'}` });
     }
   }
   if (r.processes) {

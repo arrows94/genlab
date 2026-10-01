@@ -149,6 +149,7 @@ export const balance: Balance = {
     resources: { food: 0, gold: 0, essence: 0, catalyst: 0, fragments: 0, heritage: 0, towerTokens: 0, aeonShards: 0 },
     species: 'emberpup',
     rarity: 'common',
+    companion: { species: 'sproutle', rarity: 'common' },
   },
   collect: {
     amounts: { food: 1 },

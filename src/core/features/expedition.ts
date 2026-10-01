@@ -9,7 +9,7 @@ import { stableFree } from './stable';
 import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature } from '../state';
+import type { Creature, Process } from '../state';
 
 export const MISSION = 'mission';
 
@@ -41,8 +41,8 @@ export function registerCampProcess(kind: string): void {
   campKinds.add(kind);
 }
 
-export function campsUsed(ctx: GameContext): number {
-  return ctx.state.processes.filter((p) => campKinds.has(p.kind)).length;
+export function campsUsed(ctx: GameContext, filter: (p: Process) => boolean = () => true): number {
+  return ctx.state.processes.filter((p) => campKinds.has(p.kind) && filter(p)).length;
 }
 
 export function missionDurationMs(ctx: GameContext, missionId: string): number {

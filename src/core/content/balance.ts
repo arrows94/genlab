@@ -170,6 +170,12 @@ export interface Balance {
     resources: ResourceAmounts;
     species: string;
     rarity: string;
+    /**
+     * Second start creature after a reset when the travellers who stay in
+     * the run occupy every camp: the start creature alone could neither
+     * explore nor breed.
+     */
+    companion: { species: string; rarity: string };
   };
   collect: {
     /** Base amounts per manual click (modified by `collect.<resource>`). */

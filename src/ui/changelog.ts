@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 28,
+    date: '2026-10-01',
+    title: 'Nie allein im Labor',
+    items: [
+      { text: 'Belegen deine Reisenden bei einer Vererbung alle Camps, startest du jetzt mit zwei Kreaturen statt einer – so kannst du sofort wieder züchten, statt auf die Rückkehr zu warten. Die Bestätigung sagt dir vorher Bescheid.', feature: 'inheritance' },
+    ],
+  },
+  {
     id: 27,
     date: '2026-10-01',
     title: 'Willkommen zurück, schneller',
