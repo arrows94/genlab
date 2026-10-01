@@ -2,9 +2,10 @@
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber } from '@core/format';
-  import { INTENT_INFO, ROOM_INFO, chooseEventOption, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
+  import { INTENT_INFO, ROOM_INFO, chooseEventOption, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
+  import type { Creature, RpgAftermath, RpgBattle } from '@core/state';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { STATUS_ICON, STATUS_NAME, gearOf, itemText, lootList, pct, rarityOf, speciesLook } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -36,6 +37,8 @@
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
       heroLevel: hero ? rpgLevel(game, hero.id) : null,
+      /** The monster of the finished run (for its last fight). */
+      resultHero: r.lastResult?.creatureId !== undefined ? (game.state.creatures.find((c) => c.id === r.lastResult!.creatureId) ?? null) : null,
     };
   });
 
@@ -64,6 +67,48 @@
     act(useRpgSkill(game, id));
   }
 </script>
+
+{#snippet arena(b: RpgBattle, heroC: Creature, ended?: 'win' | 'lose')}
+  {@const sp = content.species.get(heroC.speciesId)}
+  {@const intent = INTENT_INFO[foeIntent(game, b.foe)]}
+  {@const fl = speciesLook(b.foe)}
+  {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
+  {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
+  <section class="arena" class:ended={!!ended} style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
+    <span class="round">Runde {b.round}</span>
+    <div class="fighter">
+      {#key b.round}
+        <div class="fx" class:hurt={heroHits.length > 0} class:ko={ended === 'lose'}>
+          <CreatureSvg appearance={expressedAppearance(game, heroC)} shape={sp.shape} tier={sp.tier} size={88} shiny={heroC.shiny} />
+          {#each heroHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
+        </div>
+      {/key}
+      <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
+      <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
+    </div>
+    <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
+      {#if !ended}<span class="intent" title={intent.hint}>{intent.icon} {intent.name}</span>{/if}
+      {#key b.round}
+        <div class="fx" class:hurt={foeHits.length > 0} class:ko={ended === 'win'}>
+          <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 88 : 104} />
+          {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
+        </div>
+      {/key}
+      <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
+      <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
+      <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
+    </div>
+  </section>
+{/snippet}
+
+{#snippet gains(af: RpgAftermath)}
+  <div class="pouch gains">
+    {#if af.xp > 0}<span class="tag xp">✨ +{formatNumber(af.xp)} EP</span>{/if}
+    {#if af.levelTo > af.levelFrom}<span class="tag up">⬆️ Stufe {af.levelFrom} → {af.levelTo}</span>{/if}
+    {#each lootList(af.loot) as l (l.name)}<span class="tag">{l.icon} +{formatNumber(l.amount)} {l.name}</span>{/each}
+    {#each af.gear as item (item.id)}<span class="tag" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
+  </div>
+{/snippet}
 
 <div class="world" style="--realm: {data.realm}">
   <div class="torch left" aria-hidden="true"></div>
@@ -120,35 +165,7 @@
 
   {#if run.battle}
     {@const b = run.battle}
-    {@const intent = INTENT_INFO[foeIntent(game, b.foe)]}
-    {@const fl = speciesLook(b.foe)}
-    {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
-    {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
-    <section class="arena" style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
-      <span class="round">Runde {b.round}</span>
-      <div class="fighter">
-        {#key b.round}
-          <div class="fx" class:hurt={heroHits.length > 0}>
-            <CreatureSvg appearance={expressedAppearance(game, data.hero)} shape={sp.shape} tier={sp.tier} size={88} shiny={data.hero.shiny} />
-            {#each heroHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
-          </div>
-        {/key}
-        <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
-        <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
-      </div>
-      <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
-        <span class="intent" title={intent.hint}>{intent.icon} {intent.name}</span>
-        {#key b.round}
-          <div class="fx" class:hurt={foeHits.length > 0}>
-            <CreatureSvg appearance={fl.appearance} shape={fl.shape} tier={fl.tier} size={b.foe.kind === 'normal' ? 88 : 104} />
-            {#each foeHits as h, i (i)}<span class="dmg-float" class:crit={h.crit || (h.m ?? 1) > 1} style="--i: {i}">{h.dmg ? `−${formatNumber(h.dmg)}` : '🛡️'}</span>{/each}
-          </div>
-        {/key}
-        <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
-        <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
-        <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
-      </div>
-    </section>
+    {@render arena(b, data.hero)}
     <ol class="parchment chronicle">{#each b.log as line, i (i)}<li>{line}</li>{/each}</ol>
     <div class="skills">
       {#each data.skills as k (k.id)}
@@ -165,6 +182,18 @@
         </button>
       {/each}
     </div>
+  {:else if run.aftermath}
+    {@const af = run.aftermath}
+    {@const foe = af.battle.foe}
+    {@render arena(af.battle, data.hero, 'win')}
+    <ol class="parchment chronicle">{#each af.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
+    <section class="parchment scroll verdict won">
+      <h2>{foe.kind === 'elite' ? '💀 Elite besiegt!' : '⚔️ Sieg!'}</h2>
+      <p class="tale">{foe.name}{foe.level ? ` (Stufe ${foe.level})` : ''} fällt in Runde {af.battle.round}. {data.hero.name} bleiben {formatNumber(af.battle.hero.hp)} von {formatNumber(af.battle.hero.maxHp)} KP.</p>
+      {@render gains(af)}
+      {#if run.offer.length > 0}<p class="c-text">Gleich wählst du {run.offer.length > 0 && run.pendingLevels > 0 ? `${run.pendingLevels + 1} Gaben` : 'eine Gabe'} für diesen Lauf.</p>{/if}
+      <button class="iron go" onclick={() => act(closeRpgAftermath(game))}>Weiter ➜</button>
+    </section>
   {:else if run.offer.length > 0}
     <section class="parchment scroll">
       <h2>⬆️ Eine Gabe für diesen Lauf{run.pendingLevels > 0 ? ` (noch ${run.pendingLevels} weitere)` : ''}</h2>
@@ -205,17 +234,42 @@
   {/if}
 {:else if data.lastResult}
   {@const res = data.lastResult}
+  {@const fight = res.fight}
+  {#if fight && data.resultHero}
+    {@render arena(fight.battle, data.resultHero, fight.win ? 'win' : 'lose')}
+    <ol class="parchment chronicle">{#each fight.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
+  {/if}
   <section class="parchment scroll result" class:won={res.cleared} class:lost={!res.win}>
     <h2>{res.cleared ? '👑 Dungeon geschafft!' : res.win ? '🚪 Lauf beendet' : '💀 Niederlage'}</h2>
+    {#if fight}
+      <p class="tale">
+        {#if fight.win}{fight.battle.foe.name}{fight.battle.foe.level ? ` (Stufe ${fight.battle.foe.level})` : ''} fällt in Runde {fight.battle.round}.
+        {:else}{fight.battle.foe.name}{fight.battle.foe.level ? ` (Stufe ${fight.battle.foe.level})` : ''} hat {fight.battle.hero.name} in Runde {fight.battle.round} besiegt – dein Monster wird durch das Portal zurückgeschleudert.{/if}
+      </p>
+      {#if fight.win}{@render gains(fight)}{/if}
+    {/if}
     <p class="tale">
       {content.rpgDungeons.get(res.dungeon).name} · Raum {res.depth} · Stufe {res.startLevel !== undefined && res.startLevel < res.level ? `${res.startLevel} → ${res.level}` : res.level}
-      {#if !res.win}· Nur gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.{/if}
     </p>
-    <div class="pouch">
-      {#each lootList(res.loot) as l (l.name)}<span class="tag">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="c-text">Keine Beute.</span>{/each}
-      {#each res.gear as item (item.id)}<span class="tag" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
+    {#if !res.win}
+      <div class="ledger">
+        <span class="ledger-head">Verloren</span>
+        <div class="pouch">
+          {#each lootList(res.lost ?? {}) as l (l.name)}<span class="tag lost">{l.icon} −{formatNumber(l.amount)} {l.name}</span>{/each}
+          {#each res.lostGear ?? [] as item (item.id)}<span class="tag lost" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name}</span>{/each}
+          {#if lootList(res.lost ?? {}).length === 0 && !(res.lostGear ?? []).length}<span class="c-text">Nichts – du hattest nichts Ungesichertes dabei.</span>{/if}
+        </div>
+        <span class="c-text">Bei einer Niederlage bleiben gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen, getragene Ausrüstung geht verloren. Rastplätze sichern alles.</span>
+      </div>
+    {/if}
+    <div class="ledger">
+      <span class="ledger-head">{res.win ? 'Mitgebracht' : 'Behalten'}</span>
+      <div class="pouch">
+        {#each lootList(res.loot) as l (l.name)}<span class="tag">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="c-text">Keine Beute.</span>{/each}
+        {#each res.gear as item (item.id)}<span class="tag" style="border-color: {rarityOf(item).color}" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name} ({rarityOf(item).name})</span>{/each}
+      </div>
     </div>
-    <button class="iron back" disabled={!!view.portal} onclick={() => goBack(res.creatureId)}>🧬 Zurück ins Labor</button>
+    <button class="iron back go" disabled={!!view.portal} onclick={() => goBack(res.creatureId)}>🧬 Zurück ins Labor</button>
   </section>
 {:else}
   <section class="parchment scroll result">
@@ -378,6 +432,26 @@
   .leave-bar button, .back { padding: 0.55rem 1rem; }
 
   .result { display: grid; gap: 0.6rem; justify-items: start; }
+  /* After the last blow: the loser sinks into the dust, the fight's outcome is told below. */
+  .arena.ended { box-shadow: inset 0 0 60px #000e; }
+  .fx.ko { animation: ko 0.9s ease-in 0.35s forwards; }
+  .fx.hurt.ko { animation: hurt 0.35s ease-out, ko 0.9s ease-in 0.35s forwards; }
+  @keyframes ko {
+    0% { transform: translateY(0) rotate(0); filter: none; opacity: 1; }
+    25% { transform: translateY(-6px) rotate(-6deg); filter: brightness(1.8); }
+    100% { transform: translateY(14px) rotate(14deg); filter: grayscale(1) brightness(0.45); opacity: 0.45; }
+  }
+  .verdict { display: grid; gap: 0.5rem; justify-items: start; }
+  .verdict.won { border-color: #b8860b; }
+  .verdict .tale, .result .tale { margin: 0; }
+  .gains .tag.xp { border-color: #b8860b; background: #ffcf7a55; }
+  .gains .tag.up { border-color: #3f7d54; background: #8fd19e55; font-weight: 700; }
+  .ledger { display: grid; gap: 0.3rem; width: 100%; }
+  .ledger-head { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); }
+  .tag.lost { border-color: #8a2d26; background: #d9483b33; text-decoration: line-through; text-decoration-color: #8a2d2699; }
+  /* The button to go on appears where the skills were: hold it back a moment, so a last tap on a skill does not skip the outcome. */
+  .go { padding: 0.55rem 1.2rem; font-size: 1.05rem; animation: arm 0.8s steps(1, end); }
+  @keyframes arm { 0% { pointer-events: none; opacity: 0.45; } }
   .result.won { border-color: #b8860b; box-shadow: inset 0 0 26px #8a6a3a66, 0 0 24px #ffcf7a55; }
   .result.lost { border-color: #8a2d26; }
   .back { font-size: 1.05rem; }

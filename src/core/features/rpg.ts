@@ -3,7 +3,7 @@ import { creaturePower, findCreature } from '../creatures';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
-import type { Creature, RpgItem, RpgRun } from '../state';
+import type { Creature, RpgAftermath, RpgItem, RpgRun } from '../state';
 import type { RpgEventOutcome, RpgGearSlot, RpgIntent, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
 import { isBeingSequenced } from './sequencing';
@@ -243,13 +243,15 @@ export function secureLoot(ctx: GameContext): void {
  * Ends the run. Leaving (win) brings all carried loot home, a defeat keeps
  * `defeatKeep` of it. Secured loot was paid out already.
  */
-export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): void {
+export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false, fight?: RpgAftermath): void {
   const r = ctx.state.rpg;
   const run = r.run;
   if (!run) return;
   const kept: Record<string, number> = {};
   addLoot(kept, run.loot, win ? 1 : ctx.balance.rpg.defeatKeep);
   payOut(ctx, kept);
+  const lost: Record<string, number> = {};
+  for (const [res, amount] of Object.entries(run.loot)) if (amount - (kept[res] ?? 0) > 0) lost[res] = amount - (kept[res] ?? 0);
   const total: Record<string, number> = { ...run.secured };
   addLoot(total, kept);
   // Carried equipment only comes home when the hero walks out.
@@ -259,6 +261,11 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false): v
   r.best[run.dungeon] = Math.max(r.best[run.dungeon] ?? 0, run.depth);
   if (cleared) r.cleared[run.dungeon] = (r.cleared[run.dungeon] ?? 0) + 1;
   r.lastResult = { win, creatureId: run.creatureId, dungeon: run.dungeon, cleared, depth: run.depth, startLevel: run.startLevel, level: rpgLevel(ctx, run.creatureId).level, loot: total, gear, at: ctx.state.lastTickAt };
+  if (!win) {
+    r.lastResult.lost = lost;
+    r.lastResult.lostGear = [...run.gear];
+  }
+  if (fight) r.lastResult.fight = fight;
   r.run = null;
   pruneRanks(ctx);
   ctx.invalidate();
@@ -315,22 +322,36 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   const outcome = playRound(ctx, battle, skill, heroPerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
   ctx.bus.emit('rpgRound', { events: battle.last ?? [], outcome, boss: battle.foe.kind === 'boss' });
-  if (outcome === 'lose') finishRpgRun(ctx, false);
-  else if (outcome === 'win') winBattle(ctx, run);
+  if (outcome === 'lose') {
+    const level = rpgLevel(ctx, run.creatureId).level;
+    finishRpgRun(ctx, false, false, { win: false, battle: structuredClone(battle), xp: 0, levelFrom: level, levelTo: level, loot: {}, gear: [] });
+  } else if (outcome === 'win') winBattle(ctx, run);
+  return { ok: true };
+}
+
+/** The won fight is shown until the player goes on (the next rooms are already offered). */
+export function closeRpgAftermath(ctx: GameContext): ActionResult {
+  const run = ctx.state.rpg.run;
+  if (!run?.aftermath) return { ok: false, reason: 'Es gibt nichts abzuschließen.' };
+  run.aftermath = null;
   return { ok: true };
 }
 
 function winBattle(ctx: GameContext, run: RpgRun): void {
   const kind = run.room === 'boss' ? 'boss' : run.room === 'elite' ? 'elite' : 'fight';
-  const xp = foeXp(ctx, kind, run.battle?.foe.level ?? roomLevel(ctx, run));
+  const battle = run.battle!;
+  const xp = foeXp(ctx, kind, battle.foe.level ?? roomLevel(ctx, run));
+  const levelFrom = rpgLevel(ctx, run.creatureId).level;
   run.battle = null;
-  rollLoot(ctx, run, kind);
+  const found = rollLoot(ctx, run, kind);
+  const aftermath = (): RpgAftermath => ({ win: true, battle: structuredClone(battle), xp, levelFrom, levelTo: rpgLevel(ctx, run.creatureId).level, loot: found.loot, gear: found.gear });
   if (kind === 'boss') {
     addRankXp(ctx, run.creatureId, xp);
-    finishRpgRun(ctx, true, true);
+    finishRpgRun(ctx, true, true, aftermath());
     return;
   }
   gainXp(ctx, run, xp);
+  run.aftermath = aftermath();
   if (kind === 'elite' && ctx.balance.rpg.eliteUpgrade) queueOffer(ctx, run);
   roomDone(ctx, run);
 }
@@ -429,18 +450,28 @@ export function lootChance(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite
 }
 
 /** Rolls a room's loot (fixed amounts and chances) into the carried loot, within the weekly cap. */
-function rollLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss', times = 1): void {
+/** Rolls the loot of a room into the carried loot; returns what was found (after the weekly cap). */
+function rollLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'treasure' | 'boss', times = 1): { loot: Record<string, number>; gear: RpgItem[] } {
   const found: Record<string, number> = {};
+  const got: { loot: Record<string, number>; gear: RpgItem[] } = { loot: {}, gear: [] };
   addLoot(found, roomLoot(ctx, run, kind), times);
   for (const res of Object.keys(ctx.balance.rpg.loot[kind]?.chance ?? {})) {
     if (ctx.rng.chance(Math.min(1, lootChance(ctx, run, kind, res) * times))) found[res] = (found[res] ?? 0) + 1;
   }
   for (const [res, amount] of Object.entries(found)) {
     const v = Math.min(amount, weeklyRoom(ctx, res));
-    if (v > 0) run.loot[res] = (run.loot[res] ?? 0) + v;
+    if (v > 0) {
+      run.loot[res] = (run.loot[res] ?? 0) + v;
+      got.loot[res] = v;
+    }
   }
   const gearChance = Math.min(1, (ctx.balance.rpg.gearChance[kind] ?? 0) * ctx.content.rpgDungeons.get(run.dungeon).loot * times);
-  if (ctx.rng.chance(gearChance)) run.gear.push(rollItem(ctx, run.dungeon));
+  if (ctx.rng.chance(gearChance)) {
+    const item = rollItem(ctx, run.dungeon);
+    run.gear.push(item);
+    got.gear.push(item);
+  }
+  return got;
 }
 
 /** A new piece of equipment from a dungeon: deeper dungeons give rarer pieces more often. */
@@ -518,6 +549,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
   const kind = run.choices[index];
   if (!kind) return { ok: false, reason: 'Diesen Weg gibt es nicht.' };
   run.choices = [];
+  run.aftermath = null;
   run.depth++;
   run.room = kind;
   (run.path ??= []).push(kind);

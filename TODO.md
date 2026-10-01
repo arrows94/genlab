@@ -636,6 +636,9 @@ Löst die grobe Idee „Isekai mit einem ausgewählten Monster“ (Endgame → I
       Tore, Gaben als Runensteine, Pfad aus `run.path` mit Boss-Krone; das Labor-Menü für das RPG bleibt im Labor-Stil)
 - [x] Schritt 6: eigene Musikstimmung und Portal-Klang (Stimmung `isekai` in `ui/music.ts`: dunkles, modales Moll;
       Klang `portal` hinein und rückwärts heraus, einzeln abschaltbar)
+- [x] Kampfende sichtbar: `run.aftermath` hält den gewonnenen Kampf (letzte Runde, EP, Stufen, Beute) bis „Weiter“
+      (`closeRpgAftermath`); Boss-Sieg und Niederlage stehen in `lastResult.fight`, eine Niederlage zusätzlich mit
+      `lost`/`lostGear`. Die Arena zeigt den K.-o. des Verlierers
 - [x] Kampfmusik: im Kampf wechselt die Stimmung auf `battle` (schnell, Taiko, Snare, galoppierender Bass, Hornmotiv
       über Dm – Bb – F – C / Dm – Bb – Gm – A); beim Erkunden (`isekai`) nur ferne Kriegstrommeln. Schrittraster `grid` in `MoodDef`
 - [x] Schritt 7: Versionshinweis, Doku, PR

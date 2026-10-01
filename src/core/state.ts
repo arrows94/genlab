@@ -366,6 +366,20 @@ export interface RpgBattle {
   last?: RpgEvent[];
 }
 
+/** How a fight ended, shown until the player moves on: the last round, what it brought and what it cost. */
+export interface RpgAftermath {
+  win: boolean;
+  /** The fight as it stood after the last round. */
+  battle: RpgBattle;
+  /** XP gained and the monster's level before and after (a defeat gives none). */
+  xp: number;
+  levelFrom: number;
+  levelTo: number;
+  /** Loot and equipment this fight dropped. */
+  loot: Record<string, number>;
+  gear: RpgItem[];
+}
+
 /** A run of the GenLab RPG: one monster, levels only count inside the run (roguelite). */
 export interface RpgRun {
   creatureId: number;
@@ -403,6 +417,8 @@ export interface RpgRun {
   /** Wall clock of the start. */
   startedAt: number;
   battle: RpgBattle | null;
+  /** The fight just won, until the player goes on (missing = nothing to show). */
+  aftermath?: RpgAftermath | null;
 }
 
 /** A piece of equipment the player owns. */
@@ -429,6 +445,11 @@ export interface RpgResult {
   loot: Record<string, number>;
   /** Equipment the run brought home. */
   gear: RpgItem[];
+  /** What a defeat cost: carried loot left behind and carried equipment lost. */
+  lost?: Record<string, number>;
+  lostGear?: RpgItem[];
+  /** The fight that ended the run (boss won or fight lost). */
+  fight?: RpgAftermath;
   at: number;
 }
 
