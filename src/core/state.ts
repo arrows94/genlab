@@ -178,6 +178,12 @@ export interface TowerState {
   /** When the record last rose (lastTickAt; 0 = not yet known) and the Entschlossenheit bonus built up since. */
   recordAt: number;
   resolve: number;
+  /**
+   * Checkpoints the auto-restart steps back: a run that loses its very first floor lets the next
+   * auto-restart begin one checkpoint lower (after a reset the stable is weaker than at the record);
+   * clearing a checkpoint floor climbs back up, a run started by hand tries the real checkpoint.
+   */
+  retreat: number;
   /** The fight that ended the latest lost run – for the defeat analysis (kept while later runs climb towards it). */
   lastDefeat: { floor: number; at: number; fighters: FightFighterSnapshot[]; stats: FightStats } | null;
 }
@@ -559,7 +565,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0 },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, retreat: 0 },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

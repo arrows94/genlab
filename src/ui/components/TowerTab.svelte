@@ -6,7 +6,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, restartCheckpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
@@ -296,6 +296,7 @@
       size,
       team,
       cp,
+      restartCp: restartCheckpoint(game),
       current,
       nextFloor,
       enemy,
@@ -654,7 +655,7 @@
         {#if data.cp > 0}<button disabled={data.team.length === 0} onclick={() => act(startRun(game, false))}>Ab Etage 1</button>{/if}
       {/if}
       {#if data.auto}
-        <label class="small auto"><input type="checkbox" checked={data.tw.autoRestart} onchange={(e) => act(setTowerAutoRestart(game, e.currentTarget.checked))} /> Auto-Neustart <span class="muted" title="Startet wie dein letzter Lauf – ab dem Checkpoint oder ab Etage 1">ab Etage {data.tw.restartFromCheckpoint ? data.cp + 1 : 1}</span></label>
+        <label class="small auto"><input type="checkbox" checked={data.tw.autoRestart} onchange={(e) => act(setTowerAutoRestart(game, e.currentTarget.checked))} /> Auto-Neustart <span class="muted" title="Startet wie dein letzter Lauf – ab dem Checkpoint oder ab Etage 1. Verliert ein Lauf gleich die erste Etage, beginnt der nächste einen Checkpoint tiefer; ein geschaffter Checkpoint holt ihn wieder hoch.">ab Etage {data.tw.restartFromCheckpoint ? data.restartCp + 1 : 1}</span></label>
       {/if}
     </div>
 
