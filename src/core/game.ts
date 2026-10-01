@@ -38,6 +38,18 @@ export interface OfflineReport {
   completed: Record<string, number>;
 }
 
+/** A catch-up in progress (see `Game.update` with a budget). */
+interface CatchUp {
+  requestedMs: number;
+  simulatedMs: number;
+  capMs: number;
+  /** Capped time still to simulate. */
+  remainingMs: number;
+  before: Record<string, ReturnType<typeof D>>;
+  completed: Record<string, number>;
+  off: () => void;
+}
+
 export class Game implements GameContext {
   readonly content: ContentDB;
   readonly balance: Balance;
@@ -48,6 +60,7 @@ export class Game implements GameContext {
   private _rng!: Rng;
   private modCache: ModifierSet | null = null;
   private accumulatorMs = 0;
+  private catchUp: CatchUp | null = null;
 
   constructor(opts: GameOptions) {
     this.content = opts.content;
@@ -72,6 +85,7 @@ export class Game implements GameContext {
 
   /** Replaces the state (load, import, prestige tests). */
   setState(state: GameState): void {
+    this.cancelCatchUp();
     this._state = state;
     this._rng = new Rng(state.rng);
     this.accumulatorMs = 0;
@@ -116,13 +130,20 @@ export class Game implements GameContext {
 
   /**
    * Called from the UI loop with the current wall clock. Long gaps (sleeping
-   * tab, closed game) become offline progress.
+   * tab, closed game) become offline progress. `budgetMs` limits how long one
+   * call may compute: a longer catch-up then continues on the next calls (see
+   * `catchingUp`) and returns its report when done. The real time those calls
+   * take is simulated afterwards like any other gap.
    */
-  update(now: number): OfflineReport | null {
+  update(now: number, budgetMs = Infinity): OfflineReport | null {
+    if (this.catchUp) return this.continueCatchUp(budgetMs);
     const elapsed = now - this._state.lastTickAt;
     this._state.lastTickAt = now;
     if (elapsed <= 0) return null;
-    if (elapsed > this.balance.sim.catchUpThresholdMs) return this.simulateOffline(elapsed);
+    if (elapsed > this.balance.sim.catchUpThresholdMs) {
+      this.beginCatchUp(elapsed);
+      return this.continueCatchUp(budgetMs);
+    }
     this.advance(elapsed);
     return null;
   }
@@ -131,36 +152,62 @@ export class Game implements GameContext {
     return offlineCapMs(this);
   }
 
+  /** A running catch-up: share already computed (0–1) and the time away it covers; null when none runs. */
+  get catchingUp(): { done: number; requestedMs: number } | null {
+    const c = this.catchUp;
+    if (!c) return null;
+    return { done: c.simulatedMs === 0 ? 1 : 1 - c.remainingMs / c.simulatedMs, requestedMs: c.requestedMs };
+  }
+
   /**
    * Offline progress: same `step` logic with coarser steps, capped. Time
    * beyond the cap only advances running timers, so long projects still
    * finish by the real clock while production stays capped.
    */
   simulateOffline(elapsedMs: number): OfflineReport {
+    this.cancelCatchUp();
+    this.beginCatchUp(elapsedMs);
+    return this.continueCatchUp(Infinity)!;
+  }
+
+  private beginCatchUp(elapsedMs: number): void {
     const capMs = this.offlineCapMs();
     const simulatedMs = Math.min(elapsedMs, capMs);
     const before: Record<string, ReturnType<typeof D>> = {};
     for (const [k, v] of Object.entries(this._state.resources)) before[k] = v;
     const completed: Record<string, number> = {};
     const off = this.bus.on('processCompleted', ({ kind }) => (completed[kind] = (completed[kind] ?? 0) + 1));
+    this.catchUp = { requestedMs: elapsedMs, simulatedMs, capMs, remainingMs: simulatedMs, before, completed, off };
+  }
 
+  /** Computes for at most `budgetMs` (at least one step); the report once the catch-up is complete. */
+  private continueCatchUp(budgetMs: number): OfflineReport | null {
+    const c = this.catchUp!;
     const stepMs = this.balance.sim.offlineStepMs;
-    let remaining = simulatedMs;
-    while (remaining > 0) {
-      const dt = Math.min(stepMs, remaining);
+    const until = budgetMs === Infinity ? Infinity : performance.now() + budgetMs;
+    while (c.remainingMs > 0) {
+      const dt = Math.min(stepMs, c.remainingMs);
       this.step(dt);
-      remaining -= dt;
+      c.remainingMs -= dt;
+      if (until !== Infinity && performance.now() >= until) break;
     }
-    advanceTimers(this, elapsedMs - simulatedMs);
-    off();
+    if (c.remainingMs > 0) return null;
+    advanceTimers(this, c.requestedMs - c.simulatedMs);
+    this.cancelCatchUp();
 
     const gained: Record<string, string> = {};
     for (const [k, v] of Object.entries(this._state.resources)) {
-      const diff = v.sub(before[k] ?? D(0));
+      const diff = v.sub(c.before[k] ?? D(0));
       if (diff.gt(0)) gained[k] = diff.toString();
     }
-    this.bus.emit('offlineProgress', { requestedMs: elapsedMs, simulatedMs });
-    return { requestedMs: elapsedMs, simulatedMs, capMs, gained, completed };
+    this.bus.emit('offlineProgress', { requestedMs: c.requestedMs, simulatedMs: c.simulatedMs });
+    return { requestedMs: c.requestedMs, simulatedMs: c.simulatedMs, capMs: c.capMs, gained, completed: c.completed };
+  }
+
+  /** Drops an unfinished catch-up (the state is being replaced). */
+  private cancelCatchUp(): void {
+    this.catchUp?.off();
+    this.catchUp = null;
   }
 
   productionRates() {

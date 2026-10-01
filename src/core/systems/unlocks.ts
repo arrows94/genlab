@@ -1,4 +1,4 @@
-import { checkCondition } from '../conditions';
+import { checkCondition, dexCounts } from '../conditions';
 import { createCreature } from '../creatures';
 import { checkAnomaly } from '../features/anomalies';
 import type { GameContext } from '../context';
@@ -17,25 +17,28 @@ export function unlockFeature(ctx: GameContext, feature: string): boolean {
   return true;
 }
 
-/** Checks feature conditions, dex milestones and achievements. */
+/**
+ * Checks feature conditions, dex milestones and achievements. Runs every step (also offline),
+ * so the dex is counted once and only recounted when an unlock granted a creature.
+ */
 export function checkUnlocks(ctx: GameContext): void {
   const { state, content } = ctx;
+  let dex = dexCounts(state.dex);
+  const unlock = (feature: string) => {
+    if (unlockFeature(ctx, feature)) dex = dexCounts(state.dex);
+  };
   for (const f of content.features.list) {
-    if (!state.features[f.id] && f.condition && checkCondition(state, f.condition)) unlockFeature(ctx, f.id);
+    if (!state.features[f.id] && f.condition && checkCondition(state, f.condition, dex)) unlock(f.id);
   }
-  const perRarity: Record<string, number> = {};
-  for (const key of Object.keys(state.dex)) {
-    const rarity = key.split(':')[1] ?? '';
-    perRarity[rarity] = (perRarity[rarity] ?? 0) + 1;
-  }
+  const perRarity = dex;
   for (const reward of content.dexRewards.list) {
     for (const milestone of reward.unlocksFeatures ?? []) {
-      if ((perRarity[reward.rarity] ?? 0) >= milestone.count) milestone.features.forEach((f) => unlockFeature(ctx, f));
+      if ((perRarity.get(`:${reward.rarity}`) ?? 0) >= milestone.count) milestone.features.forEach(unlock);
     }
   }
   checkAnomaly(ctx);
   for (const a of content.achievements.list) {
-    if (!state.achievements[a.id] && checkCondition(state, a.condition)) {
+    if (!state.achievements[a.id] && checkCondition(state, a.condition, dex)) {
       state.achievements[a.id] = true;
       ctx.invalidate();
       ctx.bus.emit('achievementUnlocked', { achievement: a.id });

@@ -17,8 +17,11 @@ import { SYNC_URL, SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyn
  * uploads at once, so this only bounds the loss after a crash; longer = fewer server writes.
  */
 const PUSH_EVERY_MS = 5 * 60_000;
-/** How long the start waits for the cloud save before playing the local one. */
-const START_TIMEOUT_MS = 4000;
+/**
+ * How long the start waits for the cloud save before playing the local one. Coming back to the
+ * app after a long absence waits as long before catching up (see the store).
+ */
+export const START_TIMEOUT_MS = 4000;
 
 export interface SyncLink {
   code: string;
@@ -52,6 +55,8 @@ export interface SyncHost {
   /** Replaces the running game with a downloaded state and saves it. */
   adopt(state: GameState): void;
   notify(text: string, kind?: 'info' | 'error'): void;
+  /** True while the game is half caught up: nothing may be uploaded until it is done. */
+  busy(): boolean;
 }
 
 class SyncView {
@@ -212,7 +217,7 @@ async function finishPush(link: SyncLink, result: PutResult, editsAtStart: numbe
 
 async function doPush(force: boolean): Promise<void> {
   const link = sync.link;
-  if (!link || sync.conflict || snoozed || (!link.dirty && !force)) return;
+  if (!link || sync.conflict || snoozed || (!link.dirty && !force) || host!.busy()) return;
   const at = edits;
   const client = await clientFor(link.code);
   await finishPush(link, await client.put(await host!.exportText(), meta(link)), at);
@@ -222,7 +227,7 @@ async function doPush(force: boolean): Promise<void> {
 async function prepare(): Promise<void> {
   prepareTimer = null;
   const link = sync.link;
-  if (!link) return;
+  if (!link || host!.busy()) return;
   try {
     const at = edits;
     const baseRev = link.rev;
@@ -291,14 +296,14 @@ export function syncOnHide(): void {
 }
 
 let lastShow = 0;
-/** The app is back: fetch what other devices did meanwhile. */
-export function syncOnShow(): void {
+/** The app is back: fetch what other devices did meanwhile. Returns the download, or null if none started. */
+export function syncOnShow(): Promise<unknown> | null {
   snoozed = false;
   hideHandled = false;
   // Native apps report both `resume` and `visibilitychange`.
-  if (!sync.link || Date.now() - lastShow < 2000) return;
+  if (!sync.link || Date.now() - lastShow < 2000) return null;
   lastShow = Date.now();
-  void serial(() => attempt(() => doPull(), false));
+  return serial(() => attempt(() => doPull(), false));
 }
 
 /** Forget the link without asking the server (e.g. before a hard reset). */

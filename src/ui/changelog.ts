@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 27,
+    date: '2026-10-01',
+    title: 'Willkommen zurück, schneller',
+    items: [
+      { text: 'Nach einer langen Pause holt dein Labor die verpasste Zeit um ein Vielfaches schneller nach – und die App friert dabei nicht mehr ein.' },
+      { text: '„Dein Labor holt auf …“: Währenddessen tragen deine eigenen Kreaturen DNA ins Brutlabor und Daten zurück ins Genarchiv, ein Balken zeigt den Fortschritt.' },
+      { text: 'Erst das Neueste, dann rechnen: Wartet eine neue Version, wird sie nach einer langen Pause zuerst eingespielt, und mit Geräte-Sync wird erst der neueste Spielstand deiner Geräte geholt – nachgerechnet wird danach nur einmal.' },
+    ],
+  },
+  {
+    id: 26,
+    date: '2026-10-01',
+    title: 'Freie Sicht',
+    items: [
+      { text: 'Benachrichtigungen verdecken nichts mehr: Auf dem Handy erscheint die neueste kurz oben in der Kopfzeile (antippen zeigt alle), am Computer stehen sie unten rechts – höchstens drei auf einmal.' },
+    ],
+  },
+  {
     id: 25,
     date: '2026-09-30',
     title: 'Trommeln im Dunkel',
