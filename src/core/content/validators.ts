@@ -437,10 +437,23 @@ export function validateContracts({ data, issues, at, text, ref, num, amounts, c
         case 'minGeneration':
           num(`${rw}.generation`, r.generation, 1);
           break;
+        case 'rpgLevel':
+          num(`${rw}.level`, r.level, 1);
+          break;
+        case 'item':
+          ref(rw, 'rarities', r.minRarity);
+          if (r.slot && !data.rpgGear.some((g) => g.slot === r.slot)) issues.push(`${rw}: keine Ausrüstung für den Platz "${r.slot}"`);
+          break;
         default:
           issues.push(`${rw}: unbekannte Anforderung "${(r as { kind: string }).kind}"`);
       }
     });
+    // Equipment contracts ask for exactly one item and nothing about a creature; the others never for an item.
+    const items = (t.requirements ?? []).filter((r) => r.kind === 'item').length;
+    if (t.delivery === 'item' && (items !== 1 || t.requirements.length !== 1)) issues.push(`${w}.requirements: ein Ausrüstungsauftrag verlangt genau eine Ausrüstung`);
+    if (t.delivery !== 'item' && items > 0) issues.push(`${w}.requirements: Ausrüstung nur mit delivery „item“`);
+    if (t.delivery === 'loan') num(`${w}.loanHours`, t.loanHours, 0.1);
+    else if (t.loanHours !== undefined) issues.push(`${w}.loanHours: nur mit delivery „loan“`);
     amounts(`${w}.reward.resources`, t.reward.resources);
     if (t.reward.minutes !== undefined) num(`${w}.reward.minutes`, t.reward.minutes, 0);
     if (t.reward.alleleSamples !== undefined) num(`${w}.reward.alleleSamples`, t.reward.alleleSamples, 0);

@@ -237,7 +237,10 @@ export type ContractRequirement =
   | { kind: 'minTier'; tier: string }
   | { kind: 'topLoci'; count: number; homozygous: boolean }
   | { kind: 'minRarity'; rarity: string }
-  | { kind: 'minGeneration'; generation: number };
+  | { kind: 'minGeneration'; generation: number }
+  | { kind: 'rpgLevel'; level: number }
+  /** RPG equipment of this slot (weapon, armor, charm) and at least this rarity. */
+  | { kind: 'item'; minRarity: string; slot: string };
 
 export interface ContractOffer {
   template: string;

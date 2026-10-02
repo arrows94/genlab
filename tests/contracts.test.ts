@@ -14,7 +14,15 @@ import {
   requirementText,
   rerollContract,
   boardLevels,
+  CONTRACT_LOAN,
+  activeLoans,
+  deliverItem,
+  itemCandidates,
 } from '@core/features/contracts';
+import { performPrestige } from '@core/prestige';
+import { D } from '@core/num';
+import { validateContent } from '@core/content/validate';
+import { contentData } from '@content/index';
 import { activeLoci, libraryHas, missingAlleles } from '@core/genetics';
 import { deserialize, serialize } from '@core/save';
 import type { ContractOffer, Genome } from '@core/state';
@@ -281,5 +289,93 @@ describe('reward bonuses', () => {
     expect(out.essence?.toNumber()).toBe(200);
     expect(out.aeonShards?.toNumber()).toBe(2);
     expect(out.timeCrystals?.toNumber()).toBe(1);
+  });
+});
+
+describe('equipment, veterans and loans', () => {
+  const H = 3_600_000;
+  const offer = (template: string, requirements: ContractOffer['requirements']): ContractOffer => ({ template, requirements, done: false });
+  const gearOf = (slot: string) => content.rpgGear.list.find((x) => x.slot === slot)!.id;
+
+  it('equipment contracts take a fitting, unworn piece instead of a creature', () => {
+    const g = contractGame();
+    unlockFeature(g, 'rpg');
+    const r = g.state.rpg;
+    r.items = [
+      { id: 1, gear: gearOf('weapon'), rarity: 'common' },
+      { id: 2, gear: gearOf('weapon'), rarity: 'epic' },
+      { id: 3, gear: gearOf('armor'), rarity: 'legendary' },
+      { id: 4, gear: gearOf('weapon'), rarity: 'rare' },
+    ];
+    r.equipped.weapon = 2;
+    g.state.contracts.offers = [offer('deepFind', [{ kind: 'item', minRarity: 'rare', slot: 'weapon' }])];
+    expect(requirementText(g, g.state.contracts.offers[0]!.requirements[0]!)).toBe('Waffe ab Selten');
+    // Too common, worn, wrong slot: only the rare weapon fits.
+    expect(itemCandidates(g, g.state.contracts.offers[0]!).map((i) => i.id)).toEqual([4]);
+    expect(contractCandidates(g, g.state.contracts.offers[0]!).ready).toEqual([]);
+    expect(fulfillableCount(g)).toBe(1);
+    expect(deliverContract(g, 0, g.state.creatures[0]!.id).ok).toBe(false);
+    expect(deliverItem(g, 0, 2)).toEqual({ ok: false, reason: 'Lege sie zuerst ab.' });
+    expect(deliverItem(g, 0, 1).ok).toBe(false);
+
+    const runes = g.state.resources['runes']?.toNumber() ?? 0;
+    expect(deliverItem(g, 0, 4).ok).toBe(true);
+    expect(r.items.map((i) => i.id)).toEqual([1, 2, 3]);
+    expect(g.state.resources['runes']!.toNumber()).toBe(runes + 20);
+    expect(g.state.contracts.completed).toBe(1);
+    expect(g.state.contracts.offers[0]!.done).toBe(true);
+  });
+
+  it('veterans are judged by their level in the GenLab RPG, no sequencing needed', () => {
+    const g = contractGame();
+    const c = creature(g, {}, false);
+    const req = { kind: 'rpgLevel' as const, level: 2 };
+    expect(requirementStatus(g, c, req)).toBe('unmet');
+    g.state.rpg.ranks[String(c.id)] = 1e6;
+    expect(requirementStatus(g, c, req)).toBe('met');
+  });
+
+  it('a loan sends the creature away for some hours, favourites included, and brings it back', () => {
+    const g = contractGame();
+    const c = creature(g);
+    c.locked = true;
+    g.state.contracts.offers = [offer('breedingLoan', [{ kind: 'element', element: 'fire' }])];
+    expect(deliverContract(g, 0, c.id).ok).toBe(true);
+    expect(g.state.creatures).toContain(c);
+    expect(c.job?.kind).toBe('mission');
+    expect(g.state.contracts.completed).toBe(1);
+    expect(activeLoans(g).map((l) => [l.creature.id, l.client])).toEqual([[c.id, 'Zuchtverein Mendelhof']]);
+    const hours = content.contracts.get('breedingLoan').loanHours!;
+    g.simulateOffline(hours * H - 60_000);
+    expect(c.job?.kind).toBe('mission');
+    g.simulateOffline(120_000);
+    expect(c.job).toBeNull();
+    expect(activeLoans(g)).toEqual([]);
+  });
+
+  it('a creature on loan is away during an inheritance and keeps its loan', () => {
+    const g = contractGame();
+    unlockFeature(g, 'inheritance');
+    const c = creature(g);
+    g.state.contracts.offers = [offer('breedingLoan', [{ kind: 'element', element: 'fire' }])];
+    expect(deliverContract(g, 0, c.id).ok).toBe(true);
+    g.state.earned.food = D(1e12);
+    g.state.earned.gold = D(1e12);
+    expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    expect(g.state.creatures).toContain(c);
+    expect(g.state.processes.some((p) => p.kind === CONTRACT_LOAN)).toBe(true);
+  });
+
+  it('content checks keep equipment and loans consistent', () => {
+    const data = structuredClone(contentData);
+    data.contracts.push(
+      { id: 'badItem', name: 'x', client: 'x', level: 1, weight: 1, delivery: 'item', requirements: [{ kind: 'item', minRarity: 'rare' }, { kind: 'element' }], reward: {} },
+      { id: 'strayItem', name: 'x', client: 'x', level: 1, weight: 1, requirements: [{ kind: 'item', minRarity: 'rare' }], reward: {} },
+      { id: 'noHours', name: 'x', client: 'x', level: 1, weight: 1, delivery: 'loan', requirements: [{ kind: 'element' }], reward: {} },
+    );
+    const issues = validateContent(data).join('\n');
+    expect(issues).toContain('contracts[badItem].requirements: ein Ausrüstungsauftrag verlangt genau eine Ausrüstung');
+    expect(issues).toContain('contracts[strayItem].requirements: Ausrüstung nur mit delivery „item“');
+    expect(issues).toContain('contracts[noHours].loanHours');
   });
 });

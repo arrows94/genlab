@@ -402,7 +402,11 @@ export type ContractRequirementSpec =
   /** At least `count` loci with their top allele (expressed or homozygous). */
   | { kind: 'topLoci'; count: number; homozygous: boolean }
   | { kind: 'minRarity'; rarity: string }
-  | { kind: 'minGeneration'; generation: number };
+  | { kind: 'minGeneration'; generation: number }
+  /** Level in the GenLab RPG (needs no sequencing). */
+  | { kind: 'rpgLevel'; level: number }
+  /** A piece of RPG equipment (only with `delivery: 'item'`); `slot` omitted = rolled. */
+  | { kind: 'item'; minRarity: string; slot?: RpgGearSlot };
 
 export interface ContractTemplateDef {
   id: string;
@@ -415,6 +419,12 @@ export interface ContractTemplateDef {
   weight: number;
   /** Extra gate besides the level (e.g. hybrids unlocked). */
   requires?: Condition;
+  /**
+   * What the client gets: the creature for good (default), the creature on
+   * loan for `loanHours` (it comes back), or a piece of RPG equipment.
+   */
+  delivery?: 'creature' | 'loan' | 'item';
+  loanHours?: number;
   requirements: ContractRequirementSpec[];
   reward: {
     /** Minutes of the current production of every produced resource. */

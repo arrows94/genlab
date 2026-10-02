@@ -98,4 +98,47 @@ export const contracts: ContractTemplateDef[] = [
     requirements: [{ kind: 'genotype', locus: 'primal', allele: 'U' }, { kind: 'topLoci', count: 3, homozygous: true }],
     reward: { minutes: 180, resources: { aeonShards: 2, timeCrystals: 2 }, alleleSamples: 1 },
   },
+  // Aus der anderen Welt und auf Zeit: Ausrüstung statt Kreatur, Leihgaben statt Abgabe.
+  {
+    id: 'usedGear', name: 'Gebrauchte Ausrüstung', client: 'Trödler Rostnagel', level: 2, weight: 2,
+    requires: { type: 'feature', feature: 'rpg' }, delivery: 'item',
+    requirements: [{ kind: 'item', minRarity: 'uncommon' }],
+    reward: { minutes: 25, resources: { runes: 10 } },
+  },
+  {
+    id: 'sparring', name: 'Trainingspartner', client: 'Kampfschule Eisenfaust', level: 2, weight: 2,
+    requires: { type: 'feature', feature: 'rpg' }, delivery: 'loan', loanHours: 4,
+    requirements: [{ kind: 'rpgLevel', level: 5 }],
+    reward: { minutes: 20, resources: { essence: 30 } },
+  },
+  {
+    id: 'deepFind', name: 'Fundstück aus der Tiefe', client: 'Museum der anderen Welt', level: 3, weight: 2,
+    requires: { type: 'feature', feature: 'rpg' }, delivery: 'item',
+    requirements: [{ kind: 'item', minRarity: 'rare' }],
+    reward: { minutes: 40, resources: { runes: 20, timeCrystals: 1 } },
+  },
+  {
+    id: 'breedingLoan', name: 'Leihgabe für die Zucht', client: 'Zuchtverein Mendelhof', level: 3, weight: 2,
+    delivery: 'loan', loanHours: 8,
+    requirements: [{ kind: 'minRarity', rarity: 'epic' }, { kind: 'element' }],
+    reward: { minutes: 30, resources: { essence: 60 } },
+  },
+  {
+    id: 'veteran', name: 'Veteran gesucht', client: 'Söldnergilde Narbenhand', level: 3, weight: 1,
+    requires: { type: 'feature', feature: 'rpg' },
+    requirements: [{ kind: 'rpgLevel', level: 15 }],
+    reward: { minutes: 60, resources: { essence: 100, runes: 25, timeCrystals: 1 } },
+  },
+  {
+    id: 'masterGear', name: 'Meisterstück', client: 'Waffenmeisterin Kael', level: 4, weight: 2,
+    requires: { type: 'feature', feature: 'rpg' }, delivery: 'item',
+    requirements: [{ kind: 'item', minRarity: 'epic' }],
+    reward: { minutes: 90, resources: { runes: 45, timeCrystals: 1 } },
+  },
+  {
+    id: 'mentor', name: 'Lehrmeister auf Zeit', client: 'Akademie der Genkunde', level: 4, weight: 2,
+    requires: { type: 'feature', feature: 'rpg' }, delivery: 'loan', loanHours: 12,
+    requirements: [{ kind: 'rpgLevel', level: 25 }],
+    reward: { minutes: 60, resources: { essence: 150, runes: 15 } },
+  },
 ];

@@ -4,10 +4,16 @@
   import { formatDuration } from '@core/format';
   import { missingAlleles } from '@core/genetics';
   import {
+    activeLoans,
     contractCandidates,
+    contractDelivery,
     contractLevel,
     contractReward,
     deliverContract,
+    deliverItem,
+    deliveryBlocker,
+    itemCandidates,
+    loanHours,
     nextContractDay,
     nextLevelAt,
     requirementStatus,
@@ -15,17 +21,18 @@
     rerollContract,
     type RequirementStatus,
   } from '@core/features/contracts';
-  import { consumeBlocker } from '@core/features/stable';
-  import type { ContractRequirement, Creature } from '@core/state';
+  import type { ContractRequirement, Creature, RpgItem } from '@core/state';
+  import { gearOf, itemText, rarityOf } from '../rpgView';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureTile from './CreatureTile.svelte';
 
-  /** Selected creature per board slot. */
+  /** Selected creature (or piece of equipment) per board slot. */
   let chosen = $state<Record<number, number | null>>({});
+  let chosenItem = $state<Record<number, number | null>>({});
 
   const ICONS: Record<ContractRequirement['kind'], string> = {
-    expresses: '👁', genotype: '🧬', element: '✦', minTier: '🔀', topLoci: '⭐', minRarity: '💠', minGeneration: '🌳',
+    expresses: '👁', genotype: '🧬', element: '✦', minTier: '🔀', topLoci: '⭐', minRarity: '💠', minGeneration: '🌳', rpgLevel: '🔥', item: '🎒',
   };
   const MARK: Record<RequirementStatus, string> = { met: '✔', unmet: '✖', unknown: '?' };
 
@@ -41,13 +48,19 @@
       const t = content.contracts.get(offer.template);
       const { ready, maybe } = contractCandidates(game, offer);
       const pick = chosen[slot] !== undefined && chosen[slot] !== null ? ready.find((c) => c.id === chosen[slot]) : undefined;
+      const delivery = contractDelivery(game, offer);
+      const items = delivery === 'item' ? [...itemCandidates(game, offer)].sort((a, b) => rarityOf(a).order - rarityOf(b).order) : [];
       return {
         slot,
         offer,
         t,
+        delivery,
+        hours: loanHours(game, offer),
+        items,
+        pickItem: items.find((i) => i.id === chosenItem[slot]),
         reward: contractReward(game, offer),
         samples: hasMissing ? (t.reward.alleleSamples ?? 0) : 0,
-        ready: ready.map((c) => ({ c, blocker: consumeBlocker(game, c) })),
+        ready: ready.map((c) => ({ c, blocker: deliveryBlocker(game, offer, c) })),
         maybe: maybe.length,
         pick,
         lines: offer.requirements.map((r) => ({ r, text: requirementText(game, r), status: pick ? requirementStatus(game, pick, r) : null })),
@@ -66,16 +79,33 @@
       renewIn: nextContractDay(game, now) - now,
       rerollsLeft: game.balance.contracts.rerollsPerDay - board.rerolls,
       groups,
+      loans: activeLoans(game),
     };
   });
 
-  async function deliver(slot: number, c: Creature, client: string) {
-    if (!(await ask(`${c.name} an „${client}“ abgeben? Die Kreatur verlässt dein Labor.`, { ok: 'Abgeben' }))) return;
+  function done(level: number) {
+    toast('Auftrag erfüllt! Die Belohnung ist da.', 'unlock');
+    if (contractLevel(game) > level) toast(`Ruf ${contractLevel(game)} erreicht – ab dem nächsten Tag gibt es mehr und anspruchsvollere Aufträge.`, 'rare', 6000);
+  }
+
+  async function deliver(slot: number, c: Creature, client: string, hours: number | null) {
+    const text = hours !== null
+      ? `${c.name} für ${formatDuration(hours * 3_600_000)} an „${client}“ verleihen? Danach kommt die Kreatur zurück.`
+      : `${c.name} an „${client}“ abgeben? Die Kreatur verlässt dein Labor.`;
+    if (!(await ask(text, { ok: hours !== null ? 'Verleihen' : 'Abgeben' }))) return;
     const level = contractLevel(game);
     if (act(deliverContract(game, slot, c.id))) {
       chosen[slot] = null;
-      toast('Auftrag erfüllt! Die Belohnung ist da.', 'unlock');
-      if (contractLevel(game) > level) toast(`Ruf ${contractLevel(game)} erreicht – ab dem nächsten Tag gibt es mehr und anspruchsvollere Aufträge.`, 'rare', 6000);
+      done(level);
+    }
+  }
+
+  async function deliverGear(slot: number, item: RpgItem, client: string) {
+    if (!(await ask(`${gearOf(item).name} (${rarityOf(item).name}) an „${client}“ abgeben?`, { ok: 'Abgeben' }))) return;
+    const level = contractLevel(game);
+    if (act(deliverItem(game, slot, item.id))) {
+      chosenItem[slot] = null;
+      done(level);
     }
   }
 </script>
@@ -97,6 +127,15 @@
   Züchter suchen Kreaturen mit bestimmten Genen. Gene zählen erst, wenn das Genom sequenziert ist. Die abgegebene Kreatur verlässt dein Labor. Jeder erfüllte Auftrag bringt Ruf – mit mehr Ruf gibt es mehr Aufträge und mehr Sterne.
 </p>
 
+{#if data.loans.length > 0}
+  <div class="loans">
+    <span class="muted small">Verliehen:</span>
+    {#each data.loans as l (l.creature.id)}
+      <span class="chip small" title="Bei {l.client}">⏳ {l.creature.name} · noch {formatDuration(l.remainingMs)}</span>
+    {/each}
+  </div>
+{/if}
+
 {#each data.groups as grp (grp.star)}
 <h3 class="stars-head"><span class="level">{'★'.repeat(grp.star)}</span> <span class="muted small">{grp.done}/{grp.offers.length} erledigt</span></h3>
 <div class="board">
@@ -110,6 +149,11 @@
       </div>
       <h3>{o.t.name}</h3>
       <p class="client muted">{o.t.client}</p>
+      {#if o.delivery === 'loan'}
+        <p class="kind small">⏳ Leihgabe – die Kreatur kommt nach {formatDuration(o.hours * 3_600_000)} zurück.</p>
+      {:else if o.delivery === 'item'}
+        <p class="kind small">🎒 Gesucht ist Ausrüstung aus dem GenLab RPG.</p>
+      {/if}
 
       <ul class="reqs">
         {#each o.lines as line, i (i)}
@@ -128,6 +172,27 @@
 
       {#if o.offer.done}
         <div class="stamp">✔ Erledigt</div>
+      {:else if o.delivery === 'item'}
+        {#if o.items.length > 0}
+          <div class="gear">
+            {#each o.items as item (item.id)}
+              <button
+                class="gear-pick"
+                class:sel={o.pickItem?.id === item.id}
+                style="--rc: {rarityOf(item).color}"
+                title={itemText(game, item)}
+                onclick={() => (chosenItem[o.slot] = o.pickItem?.id === item.id ? null : item.id)}
+              >{gearOf(item).icon} {gearOf(item).name} <span class="muted">({rarityOf(item).name})</span></button>
+            {/each}
+          </div>
+          {#if o.pickItem}
+            <button class="primary" onclick={() => o.pickItem && deliverGear(o.slot, o.pickItem, o.t.client)}>{gearOf(o.pickItem).name} abgeben</button>
+          {:else}
+            <p class="small muted">{o.items.length === 1 ? 'Ein Stück passt' : `${o.items.length} Stücke passen`} – zum Abgeben auswählen. Getragene Ausrüstung zählt nicht.</p>
+          {/if}
+        {:else}
+          <p class="small muted">Noch keine passende Ausrüstung – sie fällt im GenLab RPG. Getragene Ausrüstung zählt nicht.</p>
+        {/if}
       {:else}
         {#if o.ready.length > 0}
           <div class="tiles">
@@ -149,11 +214,13 @@
             {/each}
           </div>
           {#if o.pick}
-            {@const blocker = consumeBlocker(game, o.pick)}
+            {@const blocker = deliveryBlocker(game, o.offer, o.pick)}
             {#if blocker}<p class="small warn">{blocker}</p>{/if}
-            <button class="primary" disabled={!!blocker} onclick={() => o.pick && deliver(o.slot, o.pick, o.t.client)}>{o.pick.name} abgeben</button>
+            <button class="primary" disabled={!!blocker} onclick={() => o.pick && deliver(o.slot, o.pick, o.t.client, o.delivery === 'loan' ? o.hours : null)}>
+              {o.pick.name} {o.delivery === 'loan' ? 'verleihen' : 'abgeben'}
+            </button>
           {:else}
-            <p class="small muted">{o.ready.length === 1 ? 'Eine Kreatur passt' : `${o.ready.length} Kreaturen passen`} – zum Abgeben auswählen.</p>
+            <p class="small muted">{o.ready.length === 1 ? 'Eine Kreatur passt' : `${o.ready.length} Kreaturen passen`} – zum {o.delivery === 'loan' ? 'Verleihen' : 'Abgeben'} auswählen.</p>
           {/if}
         {:else}
           <p class="small muted">
@@ -185,6 +252,11 @@
   .reroll { font-size: 0.75rem; padding: 0.15rem 0.5rem; }
   h3 { margin: 0; }
   .client { margin: -0.3rem 0 0; font-size: 0.8rem; font-style: italic; }
+  .kind { margin: 0; color: var(--teal); }
+  .loans { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0 0 0.8rem; }
+  .gear { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .gear-pick { font-size: 0.8rem; padding: 0.25rem 0.55rem; border: 1px solid var(--line); border-left: 3px solid var(--rc); border-radius: 8px; background: var(--bg-2); }
+  .gear-pick.sel { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c455; }
 
   .reqs { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem; }
   .reqs li { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; gap: 0.3rem; padding: 0.3rem 0.5rem; border-radius: 8px; background: var(--bg-2); font-size: 0.88rem; }
