@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 30,
+    date: '2026-10-02',
+    title: 'Ruf, Suche und Ordnung',
+    items: [
+      { text: 'Gen-Aufträge: Aus „Stufe“ wird „Ruf“ – und mit jedem Ruf wächst dein Auftragsbrett. Auf Ruf 5 warten jeden Tag 15 Aufträge, von fünf 1★ bis zu einem 5★. Das Brett ist nach Sternen geordnet.', feature: 'contracts' },
+      { text: 'Turm: Suche nach Name oder Art und neue Sortierungen für die Kandidaten – KP, Angriff, Verteidigung, Rolle und Seltenheit. „Vorteil vs.“ gilt jetzt für jedes Element, das du wählst, und die Sortierung bleibt beim Tabwechsel erhalten.', feature: 'tower' },
+      { text: 'Relikte stehen nach ihrem Platz im Team sortiert in einem aufgeräumten Raster.', feature: 'tower' },
+      { text: 'Monster, die gerade sequenziert werden, bleiben im GenLab RPG wählbar – sie verschwinden nicht mehr aus der Liste.', feature: 'rpg' },
+      { text: 'Die Monsterliste des GenLab RPG hat eine Suche, und die Kreatur-Details zeigen die Stufe in der anderen Welt.', feature: 'rpg' },
+      { text: 'Wochenexpedition: 21 neue Erlebnisse unterwegs, darunter eigene für jedes Reiseziel.', feature: 'voyage' },
+      { text: 'Neue Großforschung „Handelskontor“: bis zu −45 % auf alle Preise im Markt.', feature: 'grandResearch' },
+      { text: 'Neue Erfolge für perfekte Genome und schillernde Kreaturen – von 3 Arten bis zu allen.', feature: 'sequencing' },
+      { text: 'Ist alles erforscht, sagt die Forschung das jetzt auch, statt „keine Forschung bezahlbar“.', feature: 'research' },
+      { text: 'Die Hintergrundmusik wechselt nur noch mit dem Bereich – innerhalb eines Bereichs läuft der Track über alle Unter-Tabs weiter.' },
+      { text: 'Monster-Dex: Die Fortschrittsringe stehen wieder auf einer Höhe.', feature: 'dex' },
+    ],
+  },
+  {
     id: 29,
     date: '2026-10-02',
     title: 'Nach dem letzten Schlag',
