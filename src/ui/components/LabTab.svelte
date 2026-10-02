@@ -53,7 +53,7 @@
     view.frame;
     const max = staminaMax(game);
     const now = stamina(game);
-    return { now, max, pct: max > 0 ? (now / max) * 100 : 0, tired: now < 1 };
+    return { now, max: Math.max(1, max), tired: now < 1 };
   });
 
   let pulse = $state(0);
@@ -118,7 +118,7 @@
   <div>
     <h3>🍖 Sammeln</h3>
     {#if energy.tired}
-      <p class="muted"><b class="tired">Erschöpft</b> – schnelleres Klicken bringt gerade nichts extra. Gönn dir eine kurze Pause, deine Ausdauer füllt sich von selbst wieder.</p>
+      <p class="muted"><b class="tired">Erschöpft</b> – schneller klicken bringt gerade nichts extra. Die Ausdauer füllt sich von selbst wieder.</p>
     {:else}
       <p class="muted">Sammle Nahrung für deine Kreaturen. Mit etwas Glück stößt du dabei auf ein Fundstück.</p>
     {/if}
@@ -129,11 +129,11 @@
     <span class="num gain">
       {#each perClick as [res, amount] (res)}+{formatNumber(amount)} {content.resources.get(res).icon} {/each}
     </span>
-    <span class="stamina" class:tired={energy.tired} title="Ausdauer: {Math.floor(energy.now)}/{energy.max} – jeder Klick kostet einen Punkt, sie füllt sich von selbst wieder.">
-      <span class="fill" style="width: {energy.pct}%"></span>
-    </span>
   </button>
-  <div class="helix"><DnaHelix progress={1} spin={pulse} /></div>
+  <div class="helix" class:tired={energy.tired} title="Ausdauer: {Math.floor(energy.now)}/{energy.max} – jeder Klick kostet einen Punkt, sie füllt sich von selbst wieder.">
+    <DnaHelix progress={energy.now / energy.max} spin={pulse} />
+    <small class="num">Ausdauer {Math.floor(energy.now)}/{energy.max}</small>
+  </div>
 </section>
 
 <section>
@@ -228,13 +228,15 @@
   section { margin-bottom: 1rem; }
   .collect { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: space-between; }
   .collect p { margin: 0; }
+  /* The text wraps instead of pushing button and helix into a new row when it changes. */
+  .collect > div:first-child { flex: 1 1 16rem; }
   .big { font-size: 1.15rem; padding: 0.9rem 1.6rem; display: flex; flex-direction: column; align-items: center; min-width: 11rem; }
   .gain { font-size: 0.8rem; opacity: 0.85; }
-  .stamina { display: block; width: 100%; height: 0.3rem; margin-top: 0.4rem; border-radius: 999px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
-  .stamina .fill { display: block; height: 100%; background: var(--gold); transition: width 0.15s linear; }
-  .stamina.tired .fill { background: var(--danger); }
-  :global(.reduce-motion) .stamina .fill { transition: none; }
-  .tired { color: var(--danger); }
+  .helix { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .helix small { color: var(--muted); font-size: 0.75rem; }
+  .helix.tired small, .tired { color: var(--danger); }
+  /* Exhausted: the helix pales until Ausdauer is back. */
+  .helix.tired :global(svg) { opacity: 0.55; }
   .big { position: relative; overflow: visible; }
   .floater { position: absolute; pointer-events: none; font-size: 0.95rem; font-weight: 700; color: var(--gold); text-shadow: 0 1px 4px #000; white-space: nowrap; transform: translate(-50%, -50%); animation: float-up 0.9s ease-out forwards; }
   @keyframes float-up { to { transform: translate(-50%, -260%); opacity: 0; } }
