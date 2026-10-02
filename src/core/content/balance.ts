@@ -178,6 +178,20 @@ export interface Balance {
   collect: {
     /** Base amounts per manual click (modified by `collect.<resource>`). */
     amounts: ResourceAmounts;
+    /** A click also brings this many seconds of the current production of those resources (`collect.production`). */
+    productionSeconds: number;
+    /**
+     * Ausdauer: one point per click, refilled over time (`collect.stamina`,
+     * `collect.staminaRegen`). An exhausted click brings only the refilled share,
+     * so `perSec` is the most full clicks per second, however fast one clicks.
+     */
+    stamina: { max: number; perSec: number };
+    /**
+     * Fundstücke: chance per rested click (`collect.findChance`), at most one per
+     * cooldown; worth `clicks` full clicks plus `productionSeconds` of production
+     * of a random resource the player collects or produces.
+     */
+    finds: { chance: number; cooldownSec: number; clicks: number; productionSeconds: number };
   };
   production: {
     /** Each point of the building's work stat adds this fraction of output. */

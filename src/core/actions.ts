@@ -1,7 +1,7 @@
 import { D, type Decimal } from './num';
 import { upgradeCost, type Cost } from './costs';
 import { findCreature, isOccupied } from './creatures';
-import { grant, spend } from './resources';
+import { spend } from './resources';
 import { checkCondition } from './conditions';
 import { jobCount, jobSlots } from './systems/production';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
@@ -17,24 +17,7 @@ export type ActionResult = { ok: true } | { ok: false; reason: string };
 const ok: ActionResult = { ok: true };
 const fail = (reason: string): ActionResult => ({ ok: false, reason });
 
-export function collectAmounts(ctx: GameContext): Record<string, Decimal> {
-  const mods = ctx.mods();
-  const out: Record<string, Decimal> = {};
-  for (const r of ctx.content.resources.list) {
-    const amount = mods.apply(`collect.${r.id}`, ctx.balance.collect.amounts[r.id] ?? 0);
-    if (amount > 0) out[r.id] = D(amount);
-  }
-  return out;
-}
-
-export function collect(ctx: GameContext): ActionResult {
-  if (!ctx.state.features['collect']) return fail('Sammeln ist noch nicht verfügbar.');
-  const amounts = collectAmounts(ctx);
-  for (const [res, amount] of Object.entries(amounts)) grant(ctx, res, amount, 'collect');
-  ctx.bus.emit('collected', { amounts });
-  checkUnlocks(ctx);
-  return ok;
-}
+export { collect, collectAmounts } from './features/collect';
 
 export function upgradeAvailable(ctx: GameContext, id: string): boolean {
   const def = ctx.content.upgrades.get(id);
