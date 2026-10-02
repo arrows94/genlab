@@ -360,11 +360,11 @@ export function setMusic(on: boolean, vol: number, next: Mood): void {
   }
 }
 
-/** Mood for a tab id. */
-export function moodFor(tab: string): Mood {
-  if (tab === 'tower') return 'tower';
-  if (tab === 'breeding') return 'breeding';
+/** Mood per area of the tab bar (`GROUPS` in App.svelte), so a track keeps playing across its sub-tabs. */
+const AREA_MOODS: Record<string, Mood> = { base: 'lab', breed: 'breeding', adventure: 'tower', progress: 'aeon' };
+
+/** Mood for the open tab in its area; the Genlabor keeps its own sequencer track. */
+export function moodFor(tab: string, area: string): Mood {
   if (tab === 'genetics') return 'genetics';
-  if (tab === 'aeon' || tab === 'anomalies' || tab === 'prestige') return 'aeon';
-  return 'lab';
+  return AREA_MOODS[area] ?? 'lab';
 }
