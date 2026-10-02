@@ -5,6 +5,11 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Erkundungskarte als Wegenetz
+
+- Statt acht Kurven vom Camp hängt jedes Ziel an seinem Vorgänger (`PARENT` in `ExpeditionTab.svelte`), jeder
+  Abschnitt wird einmal gezeichnet, der gewählte Weg leuchtet bis zum Camp; Reisende laufen die ganze Route ab
+
 ## 2026-10-02 – Mehr Ritualnester
 
 - Statt Nester umzuwandeln: Forschung „Ritualkammer“ (+1 Ritualnest, bis zu zwei Stufen). Damit hat
