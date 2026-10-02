@@ -127,6 +127,8 @@ export const balance: Balance = {
     riposteMult: 2.5,
     // Heiltränke per run (like Estus): drinking costs the turn, the Leuchtfeuer refills them.
     flasks: 3,
+    // Bosses change into their second phase below this share of their HP.
+    bossPhaseAt: 0.5,
     // Gleichgewicht: every hit fills the target's poise by perHit × its strength (a heavy blow 2.2×, the special 3×).
     // Full = staggered: it skips its next move and the next hit against it is critical. A round without a hit
     // takes regen off. Your monster can be staggered too.

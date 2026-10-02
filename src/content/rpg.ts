@@ -45,7 +45,38 @@ export const rpgEnemies: RpgEnemyDef[] = [
   { id: 'guardian', name: 'Gepanzerter', kind: 'normal', pattern: ['guard', 'attack', 'attack'], hp: 1.2, atk: 0.9, def: 1.4, spd: 0.8 },
   { id: 'adept', name: 'Kundiger', kind: 'normal', pattern: ['tech', 'attack', 'attack'], hp: 0.9, atk: 1, def: 0.9, spd: 1.1 },
   { id: 'champion', name: 'Rasender', kind: 'elite', pattern: ['attack', 'charge', 'heavy', 'tech'], hp: 1.8, atk: 1.25, def: 1.2, spd: 1.1 },
+  // Fallback boss for a dungeon without its own (and fights saved before the named bosses).
   { id: 'warden', name: 'Hüter', kind: 'boss', pattern: ['tech', 'attack', 'guard', 'charge', 'heavy', 'heal'], hp: 2.2, atk: 1.2, def: 1.2, spd: 1 },
+
+  // The lords of the dungeons: their own name, a mark their blows leave, and a second phase at half their HP.
+  { id: 'rootMother', name: 'Morgrin, die Wurzelmutter', kind: 'boss', dungeon: 'rootMaze', species: 'worldtree',
+    pattern: ['attack', 'guard', 'charge', 'heavy', 'attack', 'heal'], hp: 3, atk: 1.3, def: 1.3, spd: 0.9,
+    onHit: { id: 'slow', rounds: 2, value: 1 },
+    phase2: { pattern: ['tech', 'charge', 'heavy', 'attack', 'charge', 'heavy'], atk: 1.2, spd: 1.3,
+      text: 'Die Wurzeln brechen aus dem Boden – Morgrin erhebt sich in voller Größe!' } },
+  { id: 'emberLord', name: 'Ignaros, der Glutfürst', kind: 'boss', dungeon: 'emberCaves', species: 'phoenix',
+    pattern: ['attack', 'tech', 'attack', 'charge', 'heavy'], hp: 2.8, atk: 1.45, def: 1.1, spd: 1.1,
+    onHit: { id: 'burn', rounds: 3, value: 0.15 },
+    phase2: { pattern: ['tech', 'attack', 'charge', 'heavy', 'tech', 'attack'], atk: 1.25, spd: 1.15,
+      text: 'Ignaros lodert auf – die Höhle steht in Flammen!' } },
+  { id: 'tideQueen', name: 'Neridia, Herrin der Flut', kind: 'boss', dungeon: 'tidalHalls', species: 'leviathan',
+    pattern: ['attack', 'guard', 'tech', 'attack', 'heal'], hp: 3.2, atk: 1.35, def: 1.25, spd: 1,
+    onHit: { id: 'slow', rounds: 2, value: 1 },
+    phase2: { pattern: ['charge', 'heavy', 'tech', 'charge', 'heavy', 'attack'], atk: 1.15, spd: 1.25,
+      text: 'Das Wasser steigt – Neridia reitet auf der Flut!' } },
+  { id: 'stormCaller', name: 'Voltar, der Sturmrufer', kind: 'boss', dungeon: 'stormSpire', species: 'tempestlord',
+    pattern: ['attack', 'attack', 'tech', 'charge', 'heavy'], hp: 2.7, atk: 1.5, def: 1, spd: 1.4,
+    phase2: { pattern: ['attack', 'charge', 'heavy', 'attack', 'charge', 'heavy'], atk: 1.15, spd: 1.2,
+      text: 'Blitze zucken um Voltar – der Sturm bricht los!' } },
+  { id: 'nameless', name: 'Die Namenlose', kind: 'boss', dungeon: 'shadowCrypt', species: 'eclipsewing',
+    pattern: ['tech', 'attack', 'guard', 'attack', 'charge', 'heavy'], hp: 3, atk: 1.4, def: 1.2, spd: 1.15,
+    onHit: { id: 'poison', rounds: 3, value: 0.15 },
+    phase2: { pattern: ['heal', 'tech', 'charge', 'heavy', 'attack', 'tech'], atk: 1.2,
+      text: 'Die Schatten verdichten sich – die Namenlose zeigt ihr wahres Gesicht!' } },
+  { id: 'prismaton', name: 'Prismaton, der Kristallkoloss', kind: 'boss', dungeon: 'crystalCore', species: 'prismgolem',
+    pattern: ['guard', 'attack', 'charge', 'heavy', 'guard', 'tech'], hp: 3.6, atk: 1.4, def: 1.5, spd: 0.85,
+    phase2: { pattern: ['charge', 'heavy', 'charge', 'heavy', 'attack', 'tech'], atk: 1.3, spd: 1.2,
+      text: 'Prismaton zerspringt – und setzt sich schärfer wieder zusammen!' } },
 ];
 
 /** Dungeons in unlock order: each one opens after the previous is cleared. */

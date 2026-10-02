@@ -613,8 +613,10 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
     case 'elite':
     case 'boss': {
       const enemyKind = kind === 'fight' ? 'normal' : kind;
-      const enemy = ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind));
-      return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomLevel(ctx, run));
+      // Behind the fog gate waits the dungeon's own boss (others only where it has none).
+      const own = kind === 'boss' ? ctx.content.rpgEnemies.list.find((e) => e.dungeon === run.dungeon) : undefined;
+      const enemy = own ?? ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind && !e.dungeon));
+      return startRpgBattle(ctx, enemy.id, enemy.species ?? foeSpecies(ctx, run, kind === 'boss'), roomLevel(ctx, run));
     }
     case 'treasure':
       rollLoot(ctx, run, 'treasure');

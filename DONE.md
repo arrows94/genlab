@@ -329,6 +329,16 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 5: Bosse mit Namen und zweiter Phase
+
+- Je Dungeon ein eigener Boss (`rpgEnemies` mit `dungeon`, `species`, `onHit`, `phase2`): Morgrin die Wurzelmutter
+  (verlangsamt), Ignaros der Glutfürst (Brand), Neridia Herrin der Flut (verlangsamt), Voltar der Sturmrufer
+  (schnell), die Namenlose (Gift), Prismaton der Kristallkoloss (Panzer) – stärker als der alte Hüter
+  (KP ×2,7–3,6, ANG ×1,3–1,5); der Hüter bleibt als Rückfall
+- Zweite Phase unter `balance.rpg.bossPhaseAt` (50 %) der KP: neues Zugmuster von vorn, mehr Angriff und Tempo,
+  eigener Text; Phasen-Ereignis für Klang und Darstellung
+- Große Boss-Leiste mit Namen unter der Arena, rötlicher Schimmer in Phase 2
+
 ## 2026-10-02 – Dark Souls, Schritt 4: Gleichgewicht
 
 - Gleichgewicht (`RpgCombatant.poise`, `balance.rpg.poise`): jeder Treffer füllt die Leiste um 20 × seine Stärke

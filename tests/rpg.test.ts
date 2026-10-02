@@ -494,6 +494,68 @@ describe('GenLab RPG – Ausdauer, Abwehr und Heiltränke', () => {
   });
 });
 
+describe('GenLab RPG – Bosse', () => {
+  it('every dungeon has its own named boss behind the fog gate', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    const c = makeHero(g, 60);
+    for (const d of g.content.rpgDungeons.list) {
+      const def = g.content.rpgEnemies.list.find((e) => e.dungeon === d.id);
+      expect(def, d.id).toBeDefined();
+      g.state.rpg.cleared = Object.fromEntries(g.content.rpgDungeons.list.map((x) => [x.id, 1]));
+      g.state.resources['torches'] = D(9);
+      startRpgRun(g, c.id, d.id);
+      const run = g.state.rpg.run!;
+      run.depth = d.rooms;
+      run.choices = ['boss'];
+      enterRoom(g, 0);
+      expect(run.battle!.foe.enemy).toBe(def!.id);
+      expect(run.battle!.foe.name).toBe(def!.name);
+      giveUpRpgRun(g);
+    }
+  });
+
+  it('below half its HP a boss enters its second phase: new pattern, stronger', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = makeHero(g, 1);
+    g.state.rpg.cleared['rootMaze'] = 1;
+    startRpgRun(g, c.id, 'emberCaves');
+    const run = g.state.rpg.run!;
+    run.room = 'boss';
+    startRpgBattle(g, 'emberLord', 'phoenix', 10);
+    const b = run.battle!;
+    b.hero.hp = b.hero.maxHp = 1_000_000;
+    const atk = b.foe.atk;
+    b.foe.hp = Math.floor(b.foe.maxHp * balance.rpg.bossPhaseAt) + 1;
+    b.foe.step = 2; // attack – the strike takes it below half
+    useRpgSkill(g, 'strike');
+    expect(b.foe.phase).toBe(2);
+    expect(b.foe.atk).toBeGreaterThan(atk);
+    expect(b.last?.some((e) => e.kind === 'phase')).toBe(true);
+    expect(foeIntent(g, b.foe)).toBe(g.content.rpgEnemies.get('emberLord').phase2!.pattern[0]);
+  });
+
+  it("a boss's blows leave its mark", () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = makeHero(g, 1);
+    g.state.rpg.cleared['rootMaze'] = 1;
+    startRpgRun(g, c.id, 'emberCaves');
+    const run = g.state.rpg.run!;
+    run.room = 'boss';
+    startRpgBattle(g, 'emberLord', 'phoenix', 10);
+    const b = run.battle!;
+    b.hero.hp = b.hero.maxHp = 1_000_000;
+    b.hero.spd = 0;
+    b.foe.hp = b.foe.maxHp = 1_000_000;
+    for (let i = 0; i < 6 && !b.hero.statuses.some((st) => st.id === 'burn'); i++) useRpgSkill(g, 'breathe');
+    expect(b.hero.statuses.some((st) => st.id === 'burn')).toBe(true);
+  });
+});
+
 describe('GenLab RPG – Dungeon', () => {
   function run(seed = 42) {
     const g = strongGame(seed);

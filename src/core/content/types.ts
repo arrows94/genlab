@@ -715,6 +715,14 @@ export interface RpgEnemyDef {
   atk: number;
   def: number;
   spd: number;
+  /** A boss of one dungeon: `name` is then its full name (no species added) and it always fights there. */
+  dungeon?: string;
+  /** Its species (look and element); default: the strongest form of the dungeon's elements. */
+  species?: string;
+  /** What its attacks leave behind when they land (burn, poison, slow …). */
+  onHit?: { id: StatusId; rounds: number; value: number };
+  /** Second phase below `balance.rpg.bossPhaseAt` of its HP: a new pattern, stronger and faster. */
+  phase2?: { pattern: RpgIntent[]; atk?: number; spd?: number; text: string };
 }
 
 /** Room kinds of a dungeon; after each room the player picks the next from 2–3. */

@@ -54,17 +54,40 @@ export function validateRpgSkills({ data, issues, at, text, ref, num }: ContentC
 }
 
 /** RPG enemies, plus at least one enemy of every kind. */
-export function validateRpgEnemies({ data, issues, at, text, num }: ContentChecks): void {
+export function validateRpgEnemies({ data, issues, at, text, num, ref }: ContentChecks): void {
+  const checkPattern = (w: string, pattern: string[]) => {
+    if (!Array.isArray(pattern) || pattern.length === 0) issues.push(`${w}: mindestens ein Zug`);
+    (pattern ?? []).forEach((m, i) => {
+      if (!intents.includes(m)) issues.push(`${w}[${i}]: unbekannter Zug "${m}"`);
+      if (m === 'charge' && pattern[(i + 1) % pattern.length] !== 'heavy') issues.push(`${w}[${i}]: auf „charge“ muss „heavy“ folgen`);
+    });
+  };
+  const bossOf = new Set<string>();
   for (const e of data.rpgEnemies) {
     const w = at('rpgEnemies', e.id);
     text(`${w}.name`, e.name);
     if (!['normal', 'elite', 'boss'].includes(e.kind)) issues.push(`${w}.kind: ungültig "${e.kind}"`);
-    if (!Array.isArray(e.pattern) || e.pattern.length === 0) issues.push(`${w}.pattern: mindestens ein Zug`);
-    (e.pattern ?? []).forEach((m, i) => {
-      if (!intents.includes(m)) issues.push(`${w}.pattern[${i}]: unbekannter Zug "${m}"`);
-      if (m === 'charge' && e.pattern[(i + 1) % e.pattern.length] !== 'heavy') issues.push(`${w}.pattern[${i}]: auf „charge“ muss „heavy“ folgen`);
-    });
+    checkPattern(`${w}.pattern`, e.pattern);
     for (const k of ['hp', 'atk', 'def', 'spd'] as const) num(`${w}.${k}`, e[k], 0.1, 20);
+    if (e.dungeon !== undefined) {
+      if (e.kind !== 'boss') issues.push(`${w}.dungeon: nur für Bosse`);
+      ref(`${w}.dungeon`, 'rpgDungeons', e.dungeon);
+      if (bossOf.has(e.dungeon)) issues.push(`${w}.dungeon: "${e.dungeon}" hat schon einen Boss`);
+      bossOf.add(e.dungeon);
+    }
+    ref(`${w}.species`, 'species', e.species);
+    if (e.onHit) {
+      if (!['burn', 'poison', 'slow', 'stun'].includes(e.onHit.id)) issues.push(`${w}.onHit.id: nur burn, poison, slow oder stun`);
+      num(`${w}.onHit.rounds`, e.onHit.rounds, 1, 10);
+      num(`${w}.onHit.value`, e.onHit.value, 0);
+    }
+    if (e.phase2) {
+      if (e.kind !== 'boss') issues.push(`${w}.phase2: nur für Bosse`);
+      checkPattern(`${w}.phase2.pattern`, e.phase2.pattern);
+      if (e.phase2.atk !== undefined) num(`${w}.phase2.atk`, e.phase2.atk, 1, 5);
+      if (e.phase2.spd !== undefined) num(`${w}.phase2.spd`, e.phase2.spd, 1, 5);
+      text(`${w}.phase2.text`, e.phase2.text);
+    }
   }
   for (const kind of ['normal', 'elite', 'boss']) {
     if (!data.rpgEnemies.some((e) => e.kind === kind)) issues.push(`rpgEnemies: mindestens ein Gegner der Art "${kind}"`);

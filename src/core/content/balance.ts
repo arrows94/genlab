@@ -135,6 +135,8 @@ export interface Balance {
     parryFailMult: number;
     riposteMult: number;
     flasks: number;
+    /** A boss with a second phase enters it below this share of its HP. */
+    bossPhaseAt: number;
     /** Gleichgewicht: poise damage per hit (× the hit's strength), the limit per side or foe kind, recovery per quiet round. */
     poise: { perHit: number; hero: number; normal: number; elite: number; boss: number; regen: number };
     bonfireHeal: number;

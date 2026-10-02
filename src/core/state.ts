@@ -354,12 +354,14 @@ export interface RpgFoe extends RpgCombatant {
   step: number;
   /** Level in the other world (missing in fights started before it existed). */
   level?: number;
+  /** A boss in its second phase. */
+  phase?: 2;
 }
 
 /** What happened in the latest round (for sounds and hit animations). */
 export interface RpgEvent {
   by: 'hero' | 'foe';
-  kind: 'hit' | 'miss' | 'heal' | 'skill' | 'dodge' | 'parry' | 'stagger';
+  kind: 'hit' | 'miss' | 'heal' | 'skill' | 'dodge' | 'parry' | 'stagger' | 'phase';
   /** Damage of a hit and its element factor (> 1 strong, < 1 weak). */
   dmg?: number;
   m?: number;

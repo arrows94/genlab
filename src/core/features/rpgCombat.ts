@@ -244,7 +244,8 @@ export function makeFoe(ctx: GameContext, enemyId: string, speciesId: string, le
   const stat = (k: (typeof STAT_KEYS)[number]) => Math.max(1, Math.round((profile[k] / tier) * grown * cfg.enemyMult[k] * def[k]));
   const hp = stat('hp');
   return {
-    name: `${def.name} ${sp.name}`,
+    // A dungeon's own boss has a name of its own.
+    name: def.dungeon ? def.name : `${def.name} ${sp.name}`,
     speciesId: sp.id,
     element: sp.element,
     hp,
@@ -272,7 +273,8 @@ export function newBattle(hero: RpgCombatant, foe: RpgFoe): RpgBattle {
 
 /** The foe's next move (shown before the hero chooses). */
 export function foeIntent(ctx: GameContext, foe: RpgFoe): RpgIntent {
-  const pattern = ctx.content.rpgEnemies.get(foe.enemy).pattern;
+  const def = ctx.content.rpgEnemies.get(foe.enemy);
+  const pattern = foe.phase === 2 && def.phase2 ? def.phase2.pattern : def.pattern;
   return pattern[foe.step % pattern.length]!;
 }
 
@@ -425,6 +427,21 @@ function shake(ctx: GameContext, battle: RpgBattle, target: RpgCombatant, streng
   (battle.last ??= []).push({ by: byHero ? 'hero' : 'foe', kind: 'stagger', special: true });
 }
 
+/** A boss below `bossPhaseAt` of its HP changes: its second pattern from the start, stronger and faster. */
+function enterPhase2(ctx: GameContext, battle: RpgBattle): void {
+  const foe = battle.foe;
+  const p2 = ctx.content.rpgEnemies.get(foe.enemy).phase2;
+  if (!p2 || foe.phase === 2 || foe.hp > foe.maxHp * ctx.balance.rpg.bossPhaseAt) return;
+  foe.phase = 2;
+  foe.step = -1; // the round's end moves it to the first move
+  foe.atk = Math.round(foe.atk * (p2.atk ?? 1));
+  foe.spd = Math.round(foe.spd * (p2.spd ?? 1));
+  foe.poise = 0;
+  foe.exposed = false;
+  battle.log.push(p2.text);
+  (battle.last ??= []).push({ by: 'foe', kind: 'phase', special: true });
+}
+
 /** Wut: the foe's damage factor in this round (1 before `enrageAfter`). */
 export function enrageFactor(ctx: GameContext, round: number): number {
   const cfg = ctx.balance.rpg;
@@ -479,12 +496,15 @@ function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent, stance?:
     factor = defend(ctx, battle, stance, intent, perks);
     if (factor === 0) return;
   } else if (stance === 'dodge' || stance === 'parry') battle.log.push(`${battle.hero.name} ${stance === 'dodge' ? 'weicht' : 'pariert'} ins Leere.`);
+  // A boss's blows leave its mark (burn, poison, slow …) when they land.
+  const onHit = ctx.content.rpgEnemies.get(foe.enemy).onHit;
+  const blow = (name: string) => ({ ...basic, name, ...(onHit ? { status: onHit } : {}) });
   switch (intent) {
     case 'attack':
-      useSkill(ctx, battle, side, { ...basic, name: 'Angriff' }, rage * factor);
+      useSkill(ctx, battle, side, blow('Angriff'), rage * factor);
       break;
     case 'heavy':
-      useSkill(ctx, battle, side, { ...basic, name: 'Schwerer Schlag' }, cfg.heavyMult * rage * factor);
+      useSkill(ctx, battle, side, blow('Schwerer Schlag'), cfg.heavyMult * rage * factor);
       break;
     case 'charge':
       battle.log.push(`${foe.name} sammelt Kraft …`);
@@ -569,7 +589,10 @@ export function playRound(ctx: GameContext, battle: RpgBattle, skill: RpgSkillDe
     }
     act();
   }
-  if (battle.hero.hp > 0 && battle.foe.hp > 0) endRound(ctx, battle, all, stance === 'breathe');
+  if (battle.hero.hp > 0 && battle.foe.hp > 0) {
+    enterPhase2(ctx, battle);
+    endRound(ctx, battle, all, stance === 'breathe');
+  }
   battle.log = battle.log.slice(-ctx.balance.rpg.logSize);
   if (battle.foe.hp <= 0 && battle.hero.hp > 0) return 'win';
   if (battle.hero.hp <= 0) return 'lose';

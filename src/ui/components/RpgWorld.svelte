@@ -80,7 +80,7 @@
   {@const fl = speciesLook(b.foe)}
   {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
   {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
-  <section class="arena" class:ended={!!ended} style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
+  <section class="arena" class:ended={!!ended} class:phase2={b.foe.phase === 2} style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
     <span class="round">Runde {b.round}</span>
     <div class="fighter">
       {#key b.round}
@@ -106,11 +106,18 @@
         </div>
       {/key}
       <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
-      <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
+      {#if b.foe.kind !== 'boss'}<div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>{/if}
       {@render poise(b.foe)}
       <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
     </div>
   </section>
+  {#if b.foe.kind === 'boss'}
+    <!-- The lord of the dungeon: its name and a long bar across the bottom, like in the old dark tales. -->
+    <div class="boss-bar" class:phase2={b.foe.phase === 2}>
+      <span class="boss-name">{b.foe.name}{b.foe.phase === 2 ? ' · entfesselt' : ''}</span>
+      <div class="bar blood boss-hp"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)} / {formatNumber(b.foe.maxHp)}</span></div>
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet poise(c: RpgCombatant)}
@@ -442,6 +449,12 @@
   .skill.flask:not(:disabled) { border-color: #b0453a; background: linear-gradient(180deg, #5a2622, #2f1513); }
   .cost { position: absolute; top: 0.15rem; left: 0.3rem; font-size: 0.65rem; color: #9fe0a0; opacity: 0.85; }
   .cost::before { content: '⚡'; font-size: 0.6rem; }
+  .boss-bar { display: grid; gap: 0.2rem; margin: -0.3rem 0 0.7rem; padding: 0 0.3rem; }
+  .boss-name { font-size: 0.95rem; letter-spacing: 0.06em; color: var(--parch); text-shadow: 0 1px 3px #000; }
+  .boss-hp { height: 12px; border-color: #7a5a2a; }
+  .boss-hp > div { background: linear-gradient(180deg, #c0392b, #6e1414); }
+  .boss-bar.phase2 .boss-name { color: #ff9a8a; }
+  .arena.phase2 { box-shadow: inset 0 0 50px #a3262a88, inset 0 0 40px #000c; }
   .bar.poise { height: 5px; border-color: #4a3a1a; }
   .bar.poise > div { background: linear-gradient(90deg, #b8860b, #ffcf7a); }
   .bar.poise.broken { height: 12px; }
