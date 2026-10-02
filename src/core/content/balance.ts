@@ -132,6 +132,10 @@ export interface Balance {
     stamina: { max: number; regen: number; breathe: number; cost: Record<'basic' | 'technique' | 'third' | 'special' | 'defense' | 'item', number> };
     dodgeChance: number;
     parryChance: number;
+    /** Parieren gets harder against stronger foes: × this per foe kind. */
+    parryKind: Record<'normal' | 'elite' | 'boss', number>;
+    /** Kombo: two quick hits of this strength each. */
+    comboMult: number;
     parryFailMult: number;
     riposteMult: number;
     flasks: number;

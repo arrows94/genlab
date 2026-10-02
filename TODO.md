@@ -120,16 +120,12 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 
 # GenLab RPG
 
-## Dark-Souls-Umbau (Oktober 2026)
-
-Ziel: weniger Erholung, schwere Bosse (beim ersten Versuch meist tödlich), mehr Taktik im Kampf. Entscheidungen:
-Bosse sehr hart (1a), mit Ausdauerleiste (2b), mit Blutfleck (3a), Reihenfolge wie unten.
-
-- [ ] Schritt 8: Bot lernt Ausweichen, Parieren, Tränke und Ausdauer; Zahlen neu abstimmen (Boss beim ersten
-      Versuch meist tödlich, mit Vorbereitung schaffbar)
-
 ## Sonstiges
 
+- [ ] Dark-Souls-Umbau mit echten Spielern prüfen: Sind die Bosse beim ersten Versuch tödlich genug (der Bot
+      pariert und weicht perfekt aus)? Der Kieselkauz braucht im Wurzellabyrinth 17–20 Läufe (doppelter
+      Element-Nachteil), der Zephyrix hängt lange in der Sturmspitze – vielleicht einen Hinweis auf den
+      Element-Nachteil in der Lobby
 - [ ] Idee zum Überlegen: Die Stufe hängt an der **Art** statt an der einzelnen Kreatur – dann übersteht sie jeden
       Neustart, und ein neuer Glutwelpe knüpft an den alten an. Frage: Lohnt sich dann noch ein zweites Monster
       derselben Art, und wird der Dex zum „Helden-Buch“? (Durchsicht: Heute löscht jede Vererbung die Stufe, und

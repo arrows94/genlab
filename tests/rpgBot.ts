@@ -45,7 +45,8 @@ export function pickSkill(g: Game): string {
   if (low && defense['flask'] && rpgFlasks(g) > 0) return 'flask';
   if ((intent === 'heavy' || intent === 'tech') && defense['dodge']) return 'dodge';
   const stamina = b.stamina ?? Infinity;
-  if (intent === 'attack' && defense['parry'] && stamina >= 60) return 'parry';
+  if ((intent === 'attack' || intent === 'combo') && defense['parry'] && stamina >= 60) return 'parry';
+  if (intent === 'combo' && defense['dodge']) return 'dodge';
   const special = attacks.find((k) => k.slot === 'special');
   if (special) return special.id;
   if (intent === 'heavy') {

@@ -4,7 +4,7 @@ import { statusIds } from './validators';
 
 /** Per-kind validators for the GenLab RPG content (see `CONTENT_VALIDATORS`). */
 
-const intents = ['attack', 'charge', 'heavy', 'guard', 'heal', 'tech'];
+const intents = ['attack', 'combo', 'charge', 'heavy', 'guard', 'heal', 'tech'];
 
 /** RPG skills, plus exactly one basic and one special skill and a third skill per role. */
 export function validateRpgSkills({ data, issues, at, text, ref, num }: ContentChecks): void {

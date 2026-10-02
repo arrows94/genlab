@@ -694,6 +694,7 @@ export const ROOM_INFO: Record<RpgRoomKind, { name: string; icon: string; hint: 
 export const INTENT_INFO: Record<RpgIntent, { name: string; icon: string; hint: string }> = {
   attack: { name: 'Angriff', icon: '🗡️', hint: 'Greift normal an.' },
   charge: { name: 'Lädt auf', icon: '⚡', hint: 'Sammelt Kraft – danach kommt ein schwerer Schlag.' },
+  combo: { name: 'Kombo', icon: '🌪️', hint: 'Zwei schnelle Treffer – Ausweichen entgeht nur dem ersten, eine Parade fängt beide.' },
   heavy: { name: 'Schwerer Schlag', icon: '💢', hint: 'Ein sehr starker Treffer. Schild, Deckung oder Betäubung helfen.' },
   guard: { name: 'Deckung', icon: '🛡️', hint: 'Ein Schild fängt in dieser Runde Schaden ab.' },
   heal: { name: 'Heilung', icon: '💚', hint: 'Heilt sich.' },

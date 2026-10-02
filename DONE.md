@@ -329,6 +329,19 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 8: Bot und Balancing
+
+- Bot: Heiltrank bei wenig KP, Ausweichen vor schweren Schlägen, Techniken und Kombos, Parieren bei genug Ausdauer
+- Neuer Gegnerzug `combo` (zwei Treffer à `comboMult` 0,85: Ausweichen entgeht nur dem ersten, eine Parade
+  beiden) bei Elite und Bossen; Parieren gegen Elite ×0,8, gegen Bosse ×0,6 (`parryKind`)
+- Zahlen: Ausweichen 80 % (30 Ausdauer), Parieren 60 % (25 Ausdauer), Wut erst ab Runde 25, Wanken-Grenze des
+  Helden 100; Elite-Räume 13; Bosse eher tödlich als zäh (Wurzelmutter ohne Heilung KP 5 / ANG 3,4, die anderen
+  KP 2,5–3,8, ANG 1,2–1,45); Ignaros' Brand 10 % ANG
+- Bot (Boss-Siegrate, wenn erreicht, Glutwelpe auf Ankunftsstufe → 6 Stufen höher): Glutgrotten 39 → 46 %,
+  Flutgewölbe 0 → 36 % (Element-Nachteil), Sturmspitze 38 → 25 %, Schattengruft 33 → 57 %, Kristallkern 27 → 74 %
+- Frisches Monster bis alle Dungeons: Glutwelpe 23–30 Läufe (vorher 45–70), Magmaulwurf 17–26 (20–47), Zephyrix
+  150–178 (120–165, Mauer Sturmspitze), Kieselkauz ab Lauf 17–20 im Wurzellabyrinth (doppelter Element-Nachteil)
+
 ## 2026-10-02 – Dark Souls, Schritt 7: Einblendungen und Klänge
 
 - Große Einblendungen nach einem Kampf (blockieren keinen Tipp): „FEIND GEFÄLLT“ / „STARKER FEIND GEFÄLLT“

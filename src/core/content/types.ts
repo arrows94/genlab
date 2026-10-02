@@ -700,7 +700,7 @@ export interface RpgSkillDef {
 }
 
 /** What a dungeon foe does next; shown to the player before they choose. */
-export type RpgIntent = 'attack' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
+export type RpgIntent = 'attack' | 'combo' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
 
 /** A kind of dungeon foe; species and element come from the dungeon. */
 export interface RpgEnemyDef {

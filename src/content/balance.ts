@@ -89,12 +89,12 @@ export const balance: Balance = {
     chargeWhenHit: 0.15,
     logSize: 8,
     // Wut like in the tower: from round enrageAfter on the foe hits enrageGrowth harder every round (no endless fights).
-    enrageAfter: 15,
+    enrageAfter: 25,
     enrageGrowth: 0.2,
     // Dungeon: after each room 2–3 ways, drawn by these weights. Treasure and camps are rare: recovery is earned
     // at the Leuchtfeuer behind the guardian.
     choices: [2, 3],
-    roomWeights: { fight: 56, elite: 16, treasure: 4, rest: 3, event: 12 },
+    roomWeights: { fight: 58, elite: 13, treasure: 4, rest: 3, event: 12 },
     // Isekai: in the other world every monster starts at level 1 with its species' base stats – breeding does not
     // count there. The level stays with the monster: XP per won fight, level n → n+1 needs xpBase × xpGrowth^(n − 1);
     // each level adds statsPerLevel of the base stats and heals a little. Every level-up (and every won elite fight)
@@ -118,12 +118,15 @@ export const balance: Balance = {
     // The Leuchtfeuer right after the guardian heals this share, secures the loot and refills the Heiltränke.
     bonfireHeal: 1,
     // Dark Souls: every move costs stamina, regen comes back each round (Verschnaufen: + breathe on top).
-    stamina: { max: 100, regen: 20, breathe: 40, cost: { basic: 25, technique: 40, third: 35, special: 45, defense: 20, item: 0 } },
+    stamina: { max: 100, regen: 20, breathe: 40, cost: { basic: 25, technique: 40, third: 35, special: 45, defense: 30, item: 0 } },
     // Ausweichen: a damaging foe move misses with this chance. Parieren: a normal attack is caught with parryChance –
     // the foe staggers (skips its next move) and the hero counters with riposteMult; against a heavy blow, a technique
     // or a failed parry the hit lands × parryFailMult.
-    dodgeChance: 0.9,
-    parryChance: 0.75,
+    dodgeChance: 0.8,
+    parryChance: 0.6,
+    parryKind: { normal: 1, elite: 0.8, boss: 0.6 },
+    // Kombo: two quick hits; Ausweichen only escapes the first, a parry catches both.
+    comboMult: 0.85,
     parryFailMult: 1.5,
     riposteMult: 2.5,
     // Heiltränke per run (like Estus): drinking costs the turn, the Leuchtfeuer refills them.
@@ -133,7 +136,7 @@ export const balance: Balance = {
     // Gleichgewicht: every hit fills the target's poise by perHit × its strength (a heavy blow 2.2×, the special 3×).
     // Full = staggered: it skips its next move and the next hit against it is critical. A round without a hit
     // takes regen off. Your monster can be staggered too.
-    poise: { perHit: 20, hero: 70, normal: 50, elite: 90, boss: 150, regen: 20 },
+    poise: { perHit: 20, hero: 100, normal: 50, elite: 90, boss: 150, regen: 20 },
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
     // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {

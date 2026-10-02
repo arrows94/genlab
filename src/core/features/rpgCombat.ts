@@ -466,7 +466,8 @@ function defend(ctx: GameContext, battle: RpgBattle, stance: RpgSkillDef['stance
     return 1;
   }
   if (stance === 'parry') {
-    if (intent === 'attack' && ctx.rng.chance(cfg.parryChance)) {
+    const parryable = intent === 'attack' || intent === 'combo';
+    if (parryable && ctx.rng.chance(cfg.parryChance * cfg.parryKind[battle.foe.kind])) {
       battle.log.push(`${hero.name} pariert – ${battle.foe.name} taumelt!`);
       event('parry');
       // Two rounds, so the stagger outlasts this round's end and costs the foe its next move.
@@ -475,7 +476,7 @@ function defend(ctx: GameContext, battle: RpgBattle, stance: RpgSkillDef['stance
       useSkill(ctx, battle, { self: hero, other: battle.foe, isHero: true, perks }, { ...basic, name: 'Gegenschlag' }, cfg.riposteMult);
       return 0;
     }
-    battle.log.push(intent === 'attack' ? 'Die Parade misslingt!' : 'Zu wuchtig zum Parieren!');
+    battle.log.push(parryable ? 'Die Parade misslingt!' : 'Zu wuchtig zum Parieren!');
     return cfg.parryFailMult;
   }
   return 1;
@@ -490,11 +491,13 @@ function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent, stance?:
   const rage = enrageFactor(ctx, battle.round);
   if (battle.round === cfg.enrageAfter + 1) battle.log.push(`${foe.name} gerät in Wut!`);
   const tech = intent === 'tech' ? techniqueFor(ctx, foe.element) : undefined;
-  const damaging = intent === 'attack' || intent === 'heavy' || (!!tech && tech.hit > 0 && tech.target === 'enemy');
+  const damaging = intent === 'attack' || intent === 'combo' || intent === 'heavy' || (!!tech && tech.hit > 0 && tech.target === 'enemy');
   let factor = 1;
+  // A Kombo's second hit comes after the dodge: only a parry stops both.
+  const dodgedFirst = intent === 'combo' && stance === 'dodge';
   if (damaging && (stance === 'dodge' || stance === 'parry')) {
     factor = defend(ctx, battle, stance, intent, perks);
-    if (factor === 0) return;
+    if (factor === 0 && !dodgedFirst) return;
   } else if (stance === 'dodge' || stance === 'parry') battle.log.push(`${battle.hero.name} ${stance === 'dodge' ? 'weicht' : 'pariert'} ins Leere.`);
   // A boss's blows leave its mark (burn, poison, slow …) when they land.
   const onHit = ctx.content.rpgEnemies.get(foe.enemy).onHit;
@@ -502,6 +505,10 @@ function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent, stance?:
   switch (intent) {
     case 'attack':
       useSkill(ctx, battle, side, blow('Angriff'), rage * factor);
+      break;
+    case 'combo':
+      if (factor > 0) useSkill(ctx, battle, side, blow('Kombo'), cfg.comboMult * rage * factor);
+      if (battle.hero.hp > 0) useSkill(ctx, battle, side, blow('Kombo'), cfg.comboMult * rage * (dodgedFirst ? 1 : factor));
       break;
     case 'heavy':
       useSkill(ctx, battle, side, blow('Schwerer Schlag'), cfg.heavyMult * rage * factor);

@@ -450,6 +450,19 @@ describe('GenLab RPG – Ausdauer, Abwehr und Heiltränke', () => {
     expect(b.log.some((l) => l.includes('betäubt'))).toBe(true);
   });
 
+  it('a Kombo: Ausweichen escapes only the first hit, a parry catches both', () => {
+    const foeHits = (stance: string) => {
+      const { g, b } = duel({ dodgeChance: 1, parryChance: 1, parryKind: { normal: 1, elite: 1, boss: 1 } }, 'champion');
+      b.foe.step = 4; // champion: attack, charge, heavy, tech, combo
+      expect(foeIntent(g, b.foe)).toBe('combo');
+      useRpgSkill(g, stance);
+      return (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit').length;
+    };
+    expect(foeHits('breathe')).toBe(2);
+    expect(foeHits('dodge')).toBe(1);
+    expect(foeHits('parry')).toBe(0);
+  });
+
   it('Parieren fails against a heavy blow: the hit lands harder', () => {
     const hit = (stance: string) => {
       const { g, b } = duel({ parryChance: 1 });
