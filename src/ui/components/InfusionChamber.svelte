@@ -19,6 +19,7 @@
   import { game, view, act, ask } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import CostLabel from './CostLabel.svelte';
 
   /**
@@ -51,8 +52,6 @@
       v,
       ep: infusionEp(game, v),
       blocker: consumeBlocker(game, v),
-      look: expressedAppearance(game, v),
-      species: content.species.get(v.speciesId),
       rarity: content.rarities.get(v.rarity),
     }))
       // Usable ones first, cheapest first – the same order the quick picks use.
@@ -81,7 +80,7 @@
         maxLevel: quick(c, 'maxLevel'),
       },
       next: next ? content.rarities.get(next) : null,
-      partners: breakthroughPartners(game, c).map((p) => ({ p, blocker: consumeBlocker(game, p), look: expressedAppearance(game, p) })),
+      partners: breakthroughPartners(game, c).map((p) => ({ p, blocker: consumeBlocker(game, p) })),
       btCost: breakthroughCost(game, c),
     };
   });
@@ -209,20 +208,20 @@
     {:else}
       <div class="tiles">
         {#each data.tiles as t (t.v.id)}
-          <button
-            class="tile"
-            class:on={selected.has(t.v.id)}
-            class:blocked={!!t.blocker}
-            disabled={!!t.blocker}
-            title={t.blocker ?? `${t.v.name} · ${t.rarity.name} · Gen ${t.v.generation}`}
-            style="--rc: {t.rarity.color}"
-            onclick={() => toggle(t.v.id)}
-            out:scale={{ duration: 450, start: 0.2, opacity: 0 }}
-          >
-            <CreatureSvg appearance={t.look} shape={t.species.shape} tier={t.species.tier} shiny={t.v.shiny} size={44} />
-            <span class="tname">{t.v.name}</span>
-            <span class="tep num">{t.blocker ? (t.v.locked ? '★' : '⚙') : `+${formatNumber(t.ep)} EP`}</span>
-          </button>
+          <div class="cell" out:scale={{ duration: 450, start: 0.2, opacity: 0 }}>
+            <CreatureTile
+              creature={t.v}
+              info="+{formatNumber(t.ep)} EP"
+              selected={selected.has(t.v.id)}
+              disabled={!!t.blocker}
+              title={t.blocker ?? `${t.v.name} · ${t.rarity.name} · Gen ${t.v.generation}`}
+              onclick={() => toggle(t.v.id)}
+            >
+              {#snippet corner()}
+                {#if t.blocker}<span>{t.v.locked ? '★' : '⚙'}</span>{/if}
+              {/snippet}
+            </CreatureTile>
+          </div>
         {/each}
       </div>
     {/if}
@@ -249,11 +248,16 @@
       {:else}
         <div class="tiles">
           {#each data.partners as t (t.p.id)}
-            <button class="tile" class:on={partner === t.p.id} class:blocked={!!t.blocker} disabled={!!t.blocker} title={t.blocker ?? t.p.name} style="--rc: {data.rarity.color}" onclick={() => (partner = t.p.id)} out:scale={{ duration: 450, start: 0.2, opacity: 0 }}>
-              <CreatureSvg appearance={t.look} shape={data.species.shape} tier={data.species.tier} shiny={t.p.shiny} size={44} />
-              <span class="tname">{t.p.name}</span>
-              <span class="tep num">Gen {t.p.generation}</span>
-            </button>
+            <div class="cell" out:scale={{ duration: 450, start: 0.2, opacity: 0 }}>
+              <CreatureTile
+                creature={t.p}
+                info="Gen {t.p.generation}"
+                selected={partner === t.p.id}
+                disabled={!!t.blocker}
+                title={t.blocker ?? t.p.name}
+                onclick={() => (partner = t.p.id)}
+              />
+            </div>
           {/each}
         </div>
       {/if}
@@ -313,16 +317,8 @@
   .qbtns button { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
   .tiny { font-size: 0.68rem; }
   .hint { margin: 0.3rem 0 0; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.4rem; margin: 0.5rem 0; max-height: 15rem; overflow-y: auto; padding: 2px; }
-  .tile {
-    display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem; border-radius: 10px;
-    border: 2px solid color-mix(in srgb, var(--rc) 60%, var(--line)); background: var(--bg-2); position: relative;
-  }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
-  .tile.on::after { content: '✓'; position: absolute; top: 2px; right: 6px; color: var(--gold); font-weight: 800; }
-  .tile.blocked { opacity: 0.4; }
-  .tname { font-size: 0.72rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tep { font-size: 0.7rem; color: var(--violet); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; margin: 0.5rem 0; max-height: 15rem; overflow-y: auto; padding: 2px; }
+  .cell { display: grid; }
   .summary { margin: 0.2rem 0 0.5rem; }
   .dna { color: var(--teal); }
   .go { width: 100%; padding: 0.65rem; font-size: 1rem; }

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { meter } from '../meter';
   import { onDestroy, untrack } from 'svelte';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
@@ -20,6 +19,8 @@
   import { viewState, type ReplaySpeed } from '../viewState.svelte';
   import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
+  import Meter from './Meter.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
   import TowerFloors from './TowerFloors.svelte';
@@ -401,7 +402,7 @@
     {#if activeMarks(i).length}
       <span class="marks">{#each activeMarks(i) as m (m.name)}<span class="mark" class:bad={m.harmful} title={m.name}>{m.icon}</span>{/each}</span>
     {/if}
-    <div class="hpbar" title="Lebenspunkte" use:meter={pct}><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
+    <Meter size="sm" value={pct} low={pct < 0.3} title="Lebenspunkte" />
     <div class="atbrow" title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
       <div class="atb" class:idle={!fighting} class:ready={fill > 0.8}>
         {#if fighting}
@@ -428,7 +429,7 @@
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
     <span class="kpi veteran" title="Kampferfahrung: Jede gewonnene Etage bringt Erfahrung – je höher, desto mehr, ein Boss {game.balance.tower.xpBossMult}-mal so viel. Sie bleibt bei jeder Vererbung und jedem Äon. Je Rang +{formatPercent(game.balance.tower.xpRankBonus, 0)} KP und Schaden im Turm und gegen den Wochen-Boss – jetzt +{formatPercent(data.veteran.bonus, 0)}. Noch {formatNumber(Math.ceil(data.veteran.need - data.veteran.into))} bis Rang {data.veteran.rank + 1}.">
       <b class="num">🎖 {data.veteran.rank}</b><small>Rang · +{formatPercent(data.veteran.bonus, 0)}</small>
-      <span class="xpbar" use:meter={(data.veteran.into / data.veteran.need)}><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
+      <Meter size="sm" tone="gold" value={data.veteran.into / data.veteran.need} title="Kampferfahrung bis zum nächsten Rang" />
     </span>
     {#if data.resolve.bonus > 0}
       <span class="kpi resolve" title="Entschlossenheit: Seit {formatDuration(data.resolve.hours * 3_600_000)} kein neuer Rekord – dein Team beißt sich fest: je Tag +{formatPercent(game.balance.tower.resolvePerDay, 0)} KP und Schaden im Turm, höchstens +{formatPercent(game.balance.tower.resolveCap, 0)}. Ein neuer Rekord setzt sie zurück.">
@@ -599,7 +600,7 @@
         </summary>
         <div class="foehp" title="KP der Gegner am Ende des Kampfes">
           <span class="small muted">Gegner-KP übrig</span>
-          <div class="bar" use:meter={defeat.foeHpLeft}><div style="width: {defeat.foeHpLeft * 100}%"></div></div>
+          <span class="bar"><Meter tone="danger" value={defeat.foeHpLeft} title="Gegner-KP übrig" /></span>
           <b class="num small">{formatPercent(defeat.foeHpLeft, 0)}</b>
         </div>
         <ul class="reasons">
@@ -718,20 +719,19 @@
     <div class="tiles">
       {#each data.candidates as t (t.c.id)}
         {@const sp = content.species.get(t.c.speciesId)}
-        <button
-          class="tile"
-          class:on={t.inTeam}
+        <CreatureTile
+          creature={t.c}
+          info={sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}
+          selected={t.inTeam}
           disabled={!t.inTeam && data.team.length >= data.size}
-          style="--el: {el(sp.element).color}; --rc: {content.rarities.get(t.c.rarity).color}"
           title="{t.c.name} · {el(sp.element).name} · {content.rarities.get(t.c.rarity).name}"
           onclick={() => toggle(t.c.id)}
         >
-          <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={44} shiny={t.c.shiny} />
-          <span class="tname">{t.c.name}</span>
-          <span class="num small muted">{sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}</span>
-          {#if t.dealt > 1}<span class="adv good">▲</span>{:else if t.dealt < 1}<span class="adv bad">▼</span>{/if}
-          <span class="trole" title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
-        </button>
+          {#snippet corner()}
+            <span title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
+            {#if t.dealt > 1}<span class="good" title="Elementvorteil gegen {el(data.enemy.element).name}">▲</span>{:else if t.dealt < 1}<span class="bad" title="Elementnachteil gegen {el(data.enemy.element).name}">▼</span>{/if}
+          {/snippet}
+        </CreatureTile>
       {:else}
         <p class="muted small">Keine freien Kreaturen.</p>
       {/each}
@@ -766,8 +766,6 @@
   .bossin { margin: 0.35rem 0 0; text-align: center; }
   .wut { color: var(--danger); font-weight: 700; }
   .veteran { gap: 0.1rem; }
-  .xpbar { width: 100%; height: 3px; border-radius: 99px; background: var(--bg); overflow: hidden; }
-  .xpbar span { display: block; height: 100%; background: var(--gold); }
   .trait.guard { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .floor.next { border: 2px solid var(--gold); color: var(--text); animation: glow 1.6s ease-in-out infinite; }
   .floor.best::after { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; border-top: 2px dashed var(--gold); }
@@ -848,9 +846,6 @@
   .crown { position: absolute; top: -14px; font-size: 1.3rem; z-index: 1; filter: drop-shadow(0 2px 3px #000); }
   .uname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .unit.big .uname { font-weight: 700; font-size: 0.85rem; }
-  .hpbar { width: 100%; height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
-  .hpbar div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); transition: width 0.25s; }
-  .hpbar div.low { background: linear-gradient(90deg, #a33, var(--danger)); }
   .atbrow { display: flex; align-items: center; gap: 0.25rem; width: 100%; }
   .atb { flex: 1; height: 6px; border-radius: 99px; background: #0009; overflow: hidden; border: 1px solid #ffffff14; }
   .atb div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 45%, transparent), var(--gold)); }
@@ -933,8 +928,7 @@
     border: 1px solid color-mix(in srgb, var(--danger) 50%, var(--line)); background: color-mix(in srgb, var(--danger) 7%, var(--bg-2));
   }
   .foehp { display: flex; align-items: center; gap: 0.5rem; margin: 0.45rem 0 0.2rem; }
-  .foehp .bar { flex: 1; height: 7px; border-radius: 99px; background: var(--bg); overflow: hidden; }
-  .foehp .bar div { height: 100%; background: var(--danger); }
+  .foehp .bar { flex: 1; display: flex; }
   .reasons { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.45rem; }
   .reasons li { display: flex; gap: 0.5rem; align-items: flex-start; }
   .reasons p { margin: 0.1rem 0 0; }
@@ -969,20 +963,10 @@
   .synergies { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.45rem; }
   .syn { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
   .syn.on { color: var(--text); border-color: var(--c, var(--gold)); background: color-mix(in srgb, var(--c, var(--gold)) 15%, transparent); }
-  .trole { position: absolute; bottom: 2px; left: 5px; font-size: 0.72rem; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .seg button { border: 0; border-radius: 0; font-size: 0.78rem; padding: 0.25rem 0.6rem; background: var(--bg-2); }
   .seg button.on { background: var(--petrol); color: #fff; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
-  .tile {
-    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem;
-    border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: var(--bg-2);
-  }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
-  .tile.on::after { content: '✓'; position: absolute; top: 2px; left: 6px; color: var(--gold); font-weight: 800; }
-  .tile:disabled { opacity: 0.45; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
-  .adv { position: absolute; top: 2px; right: 6px; font-size: 0.75rem; }
 
   /* Leaderboard */
   .board { margin-top: 0.75rem; }

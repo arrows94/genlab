@@ -16,6 +16,7 @@
   import { game, view, act, ask } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import CostLabel from './CostLabel.svelte';
   import VoyagePanel from './VoyagePanel.svelte';
   import PickerExclude, { pickerAllows } from './PickerExclude.svelte';
@@ -328,17 +329,12 @@
       <div class="tiles">
         {#each data.idle as t (t.c.id)}
           {@const sp = content.species.get(t.c.speciesId)}
-          <button
-            class="tile"
-            class:on={chosen === t.c.id}
-            style="--el: {content.elements.get(sp.element).color}; --rar: {content.rarities.get(t.c.rarity).color}"
-            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name}"
+          <CreatureTile
+            creature={t.c}
+            info="💨 {formatNumber(t.spd)} · ×{formatNumber(t.factor, { decimals: 2 })}"
+            selected={chosen === t.c.id}
             onclick={() => (chosen = chosen === t.c.id ? null : t.c.id)}
-          >
-            <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
-            <span class="tiny num">💨 {formatNumber(t.spd)} · ×{formatNumber(t.factor, { decimals: 2 })}</span>
-          </button>
+          />
         {:else}
           <p class="muted small">Keine freie Kreatur.</p>
         {/each}
@@ -442,11 +438,7 @@
 
   .crew-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
   .crew-head h3 { margin: 0 0 0.5rem; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); gap: 0.4rem; max-height: 19rem; overflow-y: auto; padding: 2px; margin-bottom: 0.6rem; }
-  .tile { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); position: relative; }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
-  .tile.on::after { content: '✓'; position: absolute; top: 2px; right: 6px; color: var(--gold); font-weight: 800; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rar); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 19rem; overflow-y: auto; padding: 2px; margin-bottom: 0.6rem; }
   .go { width: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); }
 
   /* Returns */

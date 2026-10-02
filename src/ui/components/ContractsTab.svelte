@@ -2,7 +2,7 @@
   import { meter } from '../meter';
   import { content } from '@content/index';
   import { formatDuration } from '@core/format';
-  import { expressedAppearance, missingAlleles } from '@core/genetics';
+  import { missingAlleles } from '@core/genetics';
   import {
     contractCandidates,
     contractLevel,
@@ -19,7 +19,7 @@
   import type { ContractRequirement, Creature } from '@core/state';
   import { game, view, act, ask, toast } from '../store.svelte';
   import CostLabel from './CostLabel.svelte';
-  import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
 
   /** Selected creature per board slot. */
   let chosen = $state<Record<number, number | null>>({});
@@ -126,18 +126,18 @@
             {#each o.ready as { c, blocker } (c.id)}
               {@const sp = content.species.get(c.speciesId)}
               {@const rar = content.rarities.get(c.rarity)}
-              <button
-                class="tile"
-                class:sel={o.pick?.id === c.id}
-                class:blocked={!!blocker}
-                style="--rc: {rar.color}"
+              <CreatureTile
+                creature={c}
+                info="Gen {c.generation}"
+                selected={o.pick?.id === c.id}
+                dim={!!blocker}
                 title={blocker ? `${c.name}: ${blocker}` : `${c.name} · ${sp.name} · ${rar.name}`}
                 onclick={() => (chosen[o.slot] = o.pick?.id === c.id ? null : c.id)}
               >
-                <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={40} shiny={c.shiny} />
-                <span class="tname">{c.name}</span>
-                {#if blocker}<span class="lock">{c.locked ? '★' : '⚒'}</span>{/if}
-              </button>
+                {#snippet corner()}
+                  {#if blocker}<span>{c.locked ? '★' : '⚒'}</span>{/if}
+                {/snippet}
+              </CreatureTile>
             {/each}
           </div>
           {#if o.pick}
@@ -187,12 +187,7 @@
   .reward { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; border-top: 1px dashed var(--line); padding-top: 0.4rem; }
   .sample { color: var(--teal); margin-left: 0.4rem; }
 
-  .tiles { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-  .tile { position: relative; display: flex; flex-direction: column; align-items: center; width: 4.6rem; padding: 0.25rem; border: 1px solid var(--line); border-top: 2px solid var(--rc); border-radius: 10px; background: var(--bg-2); }
-  .tile.sel { border-color: var(--teal); box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 33%, transparent); }
-  .tile.blocked { opacity: 0.55; }
-  .tname { font-size: 0.68rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lock { position: absolute; top: 2px; right: 4px; font-size: 0.7rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; padding: 2px; }
   .warn { color: var(--danger); margin: 0; }
   .primary { width: 100%; }
 

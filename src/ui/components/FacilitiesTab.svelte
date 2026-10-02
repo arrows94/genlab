@@ -11,6 +11,7 @@
   import { game, view, act } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import FacilityScene from './FacilityScene.svelte';
 
   /** Building whose creature picker is open. */
@@ -180,21 +181,19 @@
           </div>
           <div class="tiles">
             {#each candidates as t (t.c.id)}
-              <button
-                class="tile"
-                class:fit={t.fit}
+              <CreatureTile
+                creature={t.c}
+                info="{b.stat.short} {formatNumber(t.stat)}"
                 disabled={b.used >= b.slots}
-                style="--el: {el(t.c).color}; --rarity: {content.rarities.get(t.c.rarity).color}"
                 title="{t.c.name} · {species(t.c).name} · {el(t.c).name}{t.fit ? ' (Typvorteil)' : ''} · {content.rarities.get(t.c.rarity).name}{t.from ? ` · arbeitet in: ${t.from.name}` : ''}"
                 onclick={() => assign(t.c, b.def.id)}
               >
-                {#if t.from}<span class="from" title="Arbeitet gerade in: {t.from.name}">{t.from.icon}</span>{/if}
-                {#if t.fit}<span class="fitmark" title="Typvorteil: {el(t.c).name}">★</span>{/if}
-                <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={species(t.c).shape} tier={species(t.c).tier} size={40} shiny={t.c.shiny} />
-                <span class="tname">{t.c.name}</span>
-                <span class="small num"><span class="muted">{b.stat.short}</span> {formatNumber(t.stat)}</span>
-                <span class="small num gain">+{formatNumber(t.gain)} {b.res.icon}/s</span>
-              </button>
+                {#snippet corner()}
+                  {#if t.fit}<span class="fitc" title="Typvorteil: {el(t.c).name}">★</span>{/if}
+                  {#if t.from}<span title="Arbeitet gerade in: {t.from.name}">{t.from.icon}</span>{/if}
+                {/snippet}
+                <span class="extra num gain">+{formatNumber(t.gain)} {b.res.icon}/s</span>
+              </CreatureTile>
             {:else}
               <p class="muted small">Keine freie Kreatur. Kreaturen auf Erkundung, im Nest oder im Turm-Team können nicht arbeiten.</p>
             {/each}
@@ -240,7 +239,7 @@
   .el { padding: 0 0.4rem; border-radius: 99px; font-size: 0.72rem; color: var(--text); background: color-mix(in srgb, var(--el) 22%, transparent); border: 1px solid color-mix(in srgb, var(--el) 60%, transparent); }
   .fitmark { position: absolute; top: 2px; left: 5px; font-size: 0.8rem; color: var(--gold); text-shadow: 0 0 6px color-mix(in srgb, var(--gold) 70%, transparent); }
   .socket.fit { box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 30%, transparent); }
-  .tile.fit { background: radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--gold) 12%, transparent), var(--bg-2) 70%); }
+  .fitc { color: var(--gold); text-shadow: 0 0 6px color-mix(in srgb, var(--gold) 70%, transparent); }
 
   .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.8rem, 1fr)); gap: 0.4rem; }
   .socket {
@@ -264,13 +263,7 @@
   .picker { border-top: 1px dashed var(--line); padding-top: 0.5rem; display: grid; gap: 0.4rem; }
   .picker-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
   .close { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); gap: 0.4rem; max-height: 20rem; overflow-y: auto; padding: 2px; }
-  .tile {
-    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.05rem; padding: 0.35rem 0.25rem;
-    border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: var(--bg-2);
-  }
-  .tile:hover:not(:disabled) { border-color: var(--rc); }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 20rem; overflow-y: auto; padding: 2px; }
+  .extra { font-size: 0.68rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .gain { color: var(--rc); font-weight: 600; }
-  .from { position: absolute; top: 2px; right: 5px; font-size: 0.8rem; }
 </style>
