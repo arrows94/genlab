@@ -33,7 +33,7 @@ export const talents: TalentDef[] = [
     modifiers: [{ target: 'slots.tower', op: 'add', value: 1 }] },
   // Tier 4 (Observatorium: Kuppel)
   { id: 'bloodline', name: 'Starke Blutlinie', tier: 4, cost: 6, requires: ['shinyAura'], unlock: dome,
-    description: 'Nachkommen erben jede Fähigkeit ihrer Eltern sicher (sonst 50 % je Fähigkeit).',
+    description: 'Nachkommen erben jede Fähigkeit ihrer Eltern sicher (sonst 35 % je Fähigkeit, 85 %, wenn beide Eltern sie haben).',
     modifiers: [{ target: 'breeding.abilityInherit', op: 'add', value: 1 }] },
   { id: 'wildHybrids', name: 'Wilde Kreuzungen', tier: 4, cost: 6, requires: ['deepTime'], unlock: dome,
     description: '30 % der wilden Funde auf Erkundungen sind Hybride – entdeckte Hybride, deren Rezept eine Art der Region enthält.',

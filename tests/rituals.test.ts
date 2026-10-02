@@ -76,6 +76,21 @@ describe('Besondere Brut', () => {
     expect(startBreeding(g, c!.id, d!.id, 'crossing')).toEqual({ ok: false, reason: 'Das Ritualnest ist belegt.' });
   });
 
+  it('the Ritualkammer opens a second Ritualnest', () => {
+    const g = ritualGame();
+    g.state.upgrades['ritualChamber'] = 1;
+    g.invalidate();
+    const [a, b] = g.state.creatures;
+    const c = createCreature(g, { speciesId: 'emberpup', source: 'other' });
+    const d = createCreature(g, { speciesId: 'bubbloon', source: 'other' });
+    const e = createCreature(g, { speciesId: 'emberpup', source: 'other' });
+    const f = createCreature(g, { speciesId: 'bubbloon', source: 'other' });
+    expect(startBreeding(g, a!.id, b!.id, 'noble').ok).toBe(true);
+    expect(startBreeding(g, c.id, d.id, 'crossing').ok).toBe(true);
+    expect(ritualEggs(g)).toHaveLength(2);
+    expect(startBreeding(g, e.id, f.id, 'crossing')).toEqual({ ok: false, reason: 'Alle Ritualnester sind belegt.' });
+  });
+
   it('hatches from its Keimprobe even if the parents are gone', () => {
     const g = ritualGame();
     const a = createCreature(g, { speciesId: 'emberpup', source: 'other' });
@@ -185,5 +200,25 @@ describe('Besondere Brut', () => {
     expect(hybridP('crossing')).toBe(1);
     expect(hybridP('master')).toBeCloseTo(hybridP() * 2);
     expect(mutationChance(g, content.breedingRituals.get('master'))).toBeCloseTo(mutationChance(g) + 0.15);
+  });
+});
+
+describe('Keimöl from Brutrituale', () => {
+  it('a ritual sometimes leaves Keimöl, but only once the Fähigkeits-Elixier is known', () => {
+    const count = (elixir: boolean) => {
+      const g = ritualGame();
+      if (elixir) unlockFeature(g, 'abilityElixir');
+      const [a, b] = g.state.creatures;
+      for (let i = 0; i < 40; i++) {
+        hatch(g, a!.id, b!.id, 'crossing');
+        g.state.creatures = [a!, b!]; // keep the stable from filling up
+      }
+      return g.state.resources['germOil']?.toNumber() ?? 0;
+    };
+    expect(count(false)).toBe(0);
+    const got = count(true);
+    // About `ritualGermOilChance` of the rituals (0,3 × 40 = 12).
+    expect(got).toBeGreaterThan(4);
+    expect(got).toBeLessThan(22);
   });
 });

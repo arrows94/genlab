@@ -41,17 +41,17 @@ export const rpgEnemies: RpgEnemyDef[] = [
 
 /** Dungeons in unlock order: each one opens after the previous is cleared. */
 export const rpgDungeons: RpgDungeonDef[] = [
-  { id: 'rootMaze', name: 'Wurzellabyrinth', icon: '🌳', elements: ['nature', 'earth'], level: 1, levelsPerRoom: 0.6, rooms: 8, loot: 1,
+  { id: 'rootMaze', name: 'Wurzellabyrinth', icon: '🌳', elements: ['nature', 'earth'], level: 1, levelsPerRoom: 0.4, rooms: 12, loot: 0.8,
     description: 'Verschlungene Gänge unter einem uralten Baum. Hier fängt jeder an.' },
-  { id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], level: 8, levelsPerRoom: 0.9, rooms: 9, loot: 1.6, requires: 'rootMaze',
+  { id: 'emberCaves', name: 'Glutgrotten', icon: '🌋', elements: ['fire'], level: 8, levelsPerRoom: 0.58, rooms: 14, loot: 1.3, requires: 'rootMaze',
     description: 'Heiße Höhlen voller Lava – Wassermonster sind hier im Vorteil.' },
-  { id: 'tidalHalls', name: 'Flutgewölbe', icon: '🌊', elements: ['water', 'ice'], level: 17, levelsPerRoom: 1, rooms: 10, loot: 2.5, requires: 'emberCaves',
+  { id: 'tidalHalls', name: 'Flutgewölbe', icon: '🌊', elements: ['water', 'ice'], level: 17, levelsPerRoom: 0.67, rooms: 15, loot: 2, requires: 'emberCaves',
     description: 'Überflutete Hallen, in denen das Eis nie schmilzt.' },
-  { id: 'stormSpire', name: 'Sturmspitze', icon: '🌩️', elements: ['air', 'electric'], level: 26, levelsPerRoom: 1.1, rooms: 11, loot: 4, requires: 'tidalHalls',
+  { id: 'stormSpire', name: 'Sturmspitze', icon: '🌩️', elements: ['air', 'electric'], level: 26, levelsPerRoom: 0.71, rooms: 17, loot: 3.2, requires: 'tidalHalls',
     description: 'Ein Turm im Gewitter. Blitze zucken zwischen den Stockwerken.' },
-  { id: 'shadowCrypt', name: 'Schattengruft', icon: '🕯️', elements: ['shadow', 'poison'], level: 34, levelsPerRoom: 1.1, rooms: 12, loot: 6, requires: 'stormSpire',
+  { id: 'shadowCrypt', name: 'Schattengruft', icon: '🕯️', elements: ['shadow', 'poison'], level: 34, levelsPerRoom: 0.73, rooms: 18, loot: 4.8, requires: 'stormSpire',
     description: 'Giftige Nebel und Schatten, die sich bewegen, wenn niemand hinsieht.' },
-  { id: 'crystalCore', name: 'Kristallkern', icon: '💠', elements: ['crystal', 'light', 'metal'], level: 56, levelsPerRoom: 1.2, rooms: 12, loot: 9, requires: 'shadowCrypt',
+  { id: 'crystalCore', name: 'Kristallkern', icon: '💠', elements: ['crystal', 'light', 'metal'], level: 56, levelsPerRoom: 0.8, rooms: 18, loot: 7.2, requires: 'shadowCrypt',
     description: 'Das funkelnde Herz der Welt. Nur die stärksten Monster kommen bis zum Grund.' },
 ];
 

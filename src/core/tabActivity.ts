@@ -5,6 +5,7 @@ import { VOYAGE } from './features/voyage';
 import { DEEP_SEQUENCE, SEQUENCE } from './features/sequencing';
 import { GRAND_RESEARCH } from './features/grandResearch';
 import { MEGA_PROJECT } from './features/megaProjects';
+import { CONTRACT_LOAN } from './features/contracts';
 import { recyclingNow } from './features/automation';
 import { fightIntervalMs } from './features/tower';
 import { isWaiting, processRemainingMs } from './systems/processes';
@@ -18,6 +19,7 @@ const PROCESS_TABS: Record<string, string> = {
   [DEEP_SEQUENCE]: 'genetics',
   [GRAND_RESEARCH]: 'research',
   [MEGA_PROJECT]: 'aeon',
+  [CONTRACT_LOAN]: 'contracts',
 };
 
 /** What a tab is working on: the task that finishes next. */

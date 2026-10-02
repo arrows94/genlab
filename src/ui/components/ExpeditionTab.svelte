@@ -57,19 +57,64 @@
 
   let chosen = $state<number | null>(null);
 
-  function control(p: { x: number; y: number }) {
-    return { x: (CAMP.x + p.x) / 2, y: Math.min(CAMP.y, p.y) - 45 };
+  /**
+   * Road network: every region is reached through the one before it, so the paths branch like a trail map
+   * instead of all fanning out from the camp. Unknown regions hang directly at the camp.
+   */
+  const PARENT: Record<string, string> = {
+    short: 'camp', medium: 'short', long: 'medium', cloudridge: 'long',
+    mistmoor: 'medium', frostpeak: 'mistmoor', shadowwood: 'short', crystalcaves: 'shadowwood',
+  };
+  type XY = { x: number; y: number };
+  const posOf = (id: string): XY => (id === 'camp' ? CAMP : place(id, content.missions.list.findIndex((m) => m.id === id)));
+  /** Regions from the camp to `id` (camp first). */
+  function chainOf(id: string): string[] {
+    const out = [id];
+    for (let guard = 0; guard < 20 && out[0] !== 'camp'; guard++) out.unshift(PARENT[out[0]!] ?? 'camp');
+    return out;
   }
-  function pathOf(p: { x: number; y: number }) {
-    const c = control(p);
-    return `M${CAMP.x} ${CAMP.y} Q${c.x} ${c.y} ${p.x} ${p.y}`;
+  /** A gently bent road between two places. */
+  function bend(a: XY, b: XY): XY {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    return { x: (a.x + b.x) / 2 + dy * 0.12, y: (a.y + b.y) / 2 - dx * 0.12 };
+  }
+  /** The road from the region before `id` to `id`. */
+  function edgeOf(id: string): string {
+    const a = posOf(PARENT[id] ?? 'camp');
+    const b = posOf(id);
+    const c = bend(a, b);
+    return `M${a.x} ${a.y} Q${c.x} ${c.y} ${b.x} ${b.y}`;
+  }
+  /** Points along the whole route from the camp to `id`, for the travellers. */
+  function routePoints(id: string): XY[] {
+    const chain = chainOf(id);
+    const pts: XY[] = [CAMP];
+    for (let i = 1; i < chain.length; i++) {
+      const a = posOf(chain[i - 1]!);
+      const b = posOf(chain[i]!);
+      const c = bend(a, b);
+      for (let s = 1; s <= 12; s++) {
+        const t = s / 12;
+        const u = 1 - t;
+        pts.push({ x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y });
+      }
+    }
+    return pts;
   }
   /** Traveller position: out to the region in the first half, back in the second. */
-  function travel(p: { x: number; y: number }, progress: number) {
+  function travel(id: string, progress: number) {
     const t = progress < 0.5 ? progress * 2 : 2 - progress * 2;
-    const c = control(p);
-    const u = 1 - t;
-    return { x: u * u * CAMP.x + 2 * u * t * c.x + t * t * p.x, y: u * u * CAMP.y + 2 * u * t * c.y + t * t * p.y, back: progress >= 0.5 };
+    const pts = routePoints(id);
+    const lens = [0];
+    for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1]! + Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.y - pts[i - 1]!.y));
+    const at = t * lens[lens.length - 1]!;
+    let i = 1;
+    while (i < pts.length - 1 && lens[i]! < at) i++;
+    const f = (at - lens[i - 1]!) / Math.max(1e-6, lens[i]! - lens[i - 1]!);
+    const a = pts[i - 1]!;
+    const b = pts[i]!;
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, back: progress >= 0.5 };
   }
   function lockText(cond: Condition | undefined): string {
     if (cond?.type === 'upgradeLevel') return `${content.upgrades.get(cond.upgrade).name} Stufe ${cond.level}`;
@@ -178,7 +223,7 @@
 
     <!-- paths -->
     {#each data.regions as r (r.def.id)}
-      <path d={pathOf(r.pos)} class="route" class:open={r.open} class:sel={r.def.id === data.sel} />
+      <path d={edgeOf(r.def.id)} class="route" class:open={r.open} class:sel={chainOf(data.sel).includes(r.def.id)} />
     {/each}
 
     <!-- camp -->
@@ -217,7 +262,7 @@
 
     <!-- travellers -->
     {#each data.running as r (r.id)}
-      {@const p = travel(place(r.missionId, content.missions.list.indexOf(r.mission)), r.progress)}
+      {@const p = travel(r.missionId, r.progress)}
       {#if r.creature}
         {@const sp = content.species.get(r.creature.speciesId)}
         <g transform="translate({p.x - 15} {p.y - 26})" class="traveller" class:back={p.back}>

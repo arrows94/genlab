@@ -13,7 +13,8 @@ export interface GameEvents {
   dexDiscovered: { species: string; rarity: string };
   processStarted: { processId: number; kind: string };
   processCompleted: { processId: number; kind: string };
-  contractCompleted: { template: string; creatureId: number; level: number };
+  /** `creatureId` is null for equipment deliveries. */
+  contractCompleted: { template: string; creatureId: number | null; level: number };
   deepSequenced: { creatureId: number; latent: string | null; awakened: boolean };
   dailyClaimed: { step: number };
   weeklyBossHit: { damage: number; total: number; defeated: boolean };

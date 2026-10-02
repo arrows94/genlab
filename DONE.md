@@ -3,7 +3,77 @@
 Was aus `TODO.md` fertig ist, steht hier als kurze Zusammenfassung – je Bereich, neueste Einträge oben. Einzelheiten,
 Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 
+# Tester-Feedback (Oktober 2026)
+
+## 2026-10-02 – Reine Linie vererbt Fähigkeitsstufen
+
+- `inheritAbilityLevels`: ein gewöhnliches Kind erbt eine Stufe weniger als der bessere Elternteil (mindestens I),
+  eine reine Linie ab Tiefe 5 behält die Stufe, ab Tiefe 10 steigt eine Fähigkeit beider Eltern um eine Stufe (bis
+  III) – Zahlen in `balance.abilities.lineageKeepDepth` / `lineageRaiseDepth` (= 1. und 2. Dynastie-Stufe).
+  Ohne Keimöl führt der Weg zu Stufe III nur über zehn reinrassige Generationen. Erklärt im Dynastie-Panel
+
+## 2026-10-02 – Fähigkeits-Elixier und Keimöl
+
+- Fähigkeiten haben Stufen (`Creature.abilityLevels`, `balance.abilities.levelMults` [1; 1,5; 2]); Anzeige
+  „Brutpfleger II“ in Karte und Details. Neue Trankart `abilityLevel`: das Fähigkeits-Elixier im Markt hebt eine
+  Fähigkeit einer Kreatur um eine Stufe (20 000 Gold + 2 Keimöl, die nächste Stufe ×3), höchstens Stufe III
+- Neue Ressource „Keimöl“ (🌰, `germOil`, nicht von Belohnungs-Boni vervielfacht): 30 % je Brutritual, 1 aus
+  Gen-Aufträgen 4★, 2 aus 5★, selten aus der Wochenexpedition (Ereignis „Keimquelle“) – jeweils erst nach der
+  Freischaltung
+- Freischaltung: Forschung „Elixierkunde“ nach der ersten Vererbung und dem Nestwärter (600 Essenz + 3
+  Evolutionskristalle) – dann bringen Rituale und 4★-Aufträge das Keimöl
+
+## 2026-10-02 – Nestwärter und gezieltere Vererbung
+
+- Forschung „Nestwärter“ (nach 20 geschlüpften Eiern, 1 200 Gold + 40 Essenz; im Bot ≈ 15 min, nach Bio-Labor und
+  Markt): eine Kreatur sitzt an den Nestern (Job `keeper`), ihre eigenen Brut-Boni (Brutpfleger, Nesthüter, Mutagen,
+  Genweber, Gen „Fruchtbar“) gelten für jedes Ei. Ein Platz (`slots.nestKeeper`), ein neuer löst den alten ab
+- Vererbung: eine Fähigkeit eines Elternteils 35 % (vorher 50 %), eine beider Eltern 85 %; gemeinsame Fähigkeiten
+  zuerst, damit sie nicht am Platzlimit scheitern. Talent „Starke Blutlinie“ macht weiter beides sicher
+
+## 2026-10-02 – Fähigkeiten wirken nur bei der eigenen Tätigkeit
+
+- Brutpfleger, Nesthüter (Brutzeit) und Mutagen, Genweber (Mutation) zählen nur noch bei Eiern, deren Elternteil die
+  Kreatur ist (Scope `self`, `mutationChance` nimmt die Eltern); Fernweh nur auf der eigenen Erkundung
+  (`missionRewardFactor`); Goldherz wirkt global, aber nur, solange es in einem Gebäude arbeitet
+  (`globalAbilityProvider`). Vorher zählte jede Kreatur im Stall – die Ursache der 1-Sekunden-Eier
+- Die Brutzeit-Untergrenze (25 % der Grundzeit) bleibt als Sicherheitsnetz
+
+## 2026-10-02 – Zuchtautomat mit eigenem Nest
+
+- Der Zuchtautomat brütet nur noch im eigenen Automatennest (`slots.autoNest`, Grundwert 1) – wie Sequenzer und
+  Recycler mit festem Platz; die normalen Nester bleiben für die Zucht von Hand frei
+- Seine Eier brauchen das Dreifache der Brutzeit (`balance.automation.autoBreedTimeMult`)
+- Grund-Brutzeit 20 → 60 s, dazu eine Untergrenze: Boni drücken ein Ei höchstens auf 25 % seiner Grundzeit
+  (`balance.breeding.minTimeShare`). Ursache der 1-Sekunden-Eier: globale Fähigkeiten wie „Brutpfleger“ (−10 %) zählen
+  für jede Kreatur im Stall, zehn davon ergaben −100 % und nur noch die 1-s-Grenze (Test in `tests/breeding.test.ts`)
+- Der Bot gibt mit langsameren Eiern weniger für Brut aus und forscht früher; damit der Markt nicht vor 15 Minuten
+  öffnet, braucht er jetzt 30 statt 25 verdiente Essenz. Erste Vererbung im Bot nach 46 statt 45 Minuten
+
+## 2026-10-02 – Erkundungskarte als Wegenetz
+
+- Statt acht Kurven vom Camp hängt jedes Ziel an seinem Vorgänger (`PARENT` in `ExpeditionTab.svelte`), jeder
+  Abschnitt wird einmal gezeichnet, der gewählte Weg leuchtet bis zum Camp; Reisende laufen die ganze Route ab
+
+## 2026-10-02 – Mehr Ritualnester
+
+- Statt Nester umzuwandeln: Forschung „Ritualkammer“ (+1 Ritualnest, bis zu zwei Stufen). Damit hat
+  `slots.ritualNest` eine Quelle
+
+## 2026-10-02 – Längere Dungeons mit Wächter
+
+- Etwa 1,5-mal so viele Räume (12–18 statt 8–12), Stufenanstieg pro Raum so gesenkt, dass Start- und Boss-Stufe
+  gleich bleiben; zur Hälfte versperrt ein Wächter (fester Elite-Kampf, `balance.rpg.guardianAt`) den Weg
+- Beute-Faktor der Dungeons −20 %, damit die Beute pro Fackel nur leicht steigt (Runen laufen ohnehin über)
+- RPG-Bot vorher → nachher: Kämpfe pro Lauf +30–50 %, Beute pro Lauf etwa gleich (Wurzellabyrinth 🗼68 → 68,
+  Schattengruft Stufe 60 🗼394 → 472); Abschluss Kristallkern Stufe 40 75 % → 33 %, Flutgewölbe Stufe 20 8 % → 50 %
+  (mehr Erfahrung im Lauf); Stufe beim ersten Abschluss je Dungeon etwa gleich
+
 # Code-Durchsicht (Oktober 2026)
+
+## 2026-10-02 – `cost.potion` hat eine Quelle
+
+- Großforschung „Handelskontor“: −15 % auf alle Marktpreise pro Stufe, bis zu drei Stufen (Tester-Feedback, PR #51)
 
 ## 2026-10-02 – „Minuten Produktion“ ohne Trank-Buffs
 

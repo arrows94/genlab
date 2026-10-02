@@ -1,6 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { effectiveStats } from '@core/creatures';
+  import { abilityName } from '@core/abilities';
   import { formatNumberParts } from '@core/format';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
@@ -55,7 +56,7 @@
       name: creature.name,
       epithet: creature.epithet,
       lineage: creature.lineage,
-      abilities: [...creature.abilities],
+      abilities: creature.abilities.filter((id) => content.abilities.has(id)).map((id) => ({ def: content.abilities.get(id), label: abilityName(creature, content.abilities.get(id)) })),
       job: creature.job ? jobText(creature.job) : '',
       recycler: a.recycling?.creatureId === creature.id ? 'chamber' : a.recycleQueue.includes(creature.id) ? 'queue' : null,
     };
@@ -67,6 +68,7 @@
     if (job.kind === 'mission') return '🧭 Auf Erkundung';
     if (job.kind === 'tower') return '🗼 Im Genom-Turm';
     if (job.kind === 'rpg') return '🔥 Im Dungeon';
+    if (job.kind === 'keeper') return '🪺 Nestwärter';
     return 'Beschäftigt';
   }
 
@@ -136,9 +138,8 @@
   <div class="dna"><DnaSequence genome={creature.genome} known={sequenced} /></div>
   {#if live.abilities.length > 0}
     <ul class="abilities">
-      {#each live.abilities as id (id)}
-        {@const a = content.abilities.get(id)}
-        <li style="--t: {content.rarities.get(a.tier).color}" title={a.description}>{a.name}</li>
+      {#each live.abilities as { def: a, label } (a.id)}
+        <li style="--t: {content.rarities.get(a.tier).color}" title={a.description}>{label}</li>
       {/each}
     </ul>
   {/if}

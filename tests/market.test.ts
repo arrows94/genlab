@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
-import { effectiveStats } from '@core/creatures';
+import { createCreature, creatureModifiers, effectiveStats } from '@core/creatures';
+import { abilityLevel } from '@core/abilities';
+import { contractReward } from '@core/features/contracts';
 import { potionCost, usePotion } from '@core/features/market';
 import { startProcess } from '@core/systems/processes';
 import { productionRates } from '@core/systems/production';
@@ -105,5 +107,44 @@ describe('market potions', () => {
     // After the window the price is back to normal.
     g.state.lastTickAt += balance.market.timeSkipWindowHours * 3_600_000 + 1;
     expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBe(first);
+  });
+});
+
+describe('Fähigkeits-Elixier and Keimöl', () => {
+  const elixirGame = () => {
+    const g = marketGame();
+    unlockFeature(g, 'abilityElixir');
+    g.state.resources['germOil'] = D(100);
+    const c = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer', 'tough'] });
+    return { g, c };
+  };
+
+  it('raises one ability of one creature a level: ×1,5, then ×2, never further', () => {
+    const { g, c } = elixirGame();
+    const factor = () => creatureModifiers(g, c).factor('breeding.time');
+    expect(factor()).toBeCloseTo(0.9);
+    const first = potionCost(g, 'abilityElixir', c.id, 'nurturer');
+    expect(usePotion(g, 'abilityElixir', c.id, 'nurturer').ok).toBe(true);
+    expect(abilityLevel(c, 'nurturer')).toBe(2);
+    expect(factor()).toBeCloseTo(0.85);
+    // The next level costs `costGrowth` times as much – Keimöl included.
+    const second = potionCost(g, 'abilityElixir', c.id, 'nurturer');
+    expect(second['germOil']!.toNumber()).toBe(first['germOil']!.toNumber() * content.potions.get('abilityElixir').costGrowth!);
+    expect(usePotion(g, 'abilityElixir', c.id, 'nurturer').ok).toBe(true);
+    expect(factor()).toBeCloseTo(0.8);
+    expect(usePotion(g, 'abilityElixir', c.id, 'nurturer')).toEqual({ ok: false, reason: 'Diese Fähigkeit ist bereits auf der höchsten Stufe.' });
+    expect(usePotion(g, 'abilityElixir', c.id, 'mutagenic')).toEqual({ ok: false, reason: 'Wähle eine Fähigkeit der Kreatur.' });
+    expect(abilityLevel(c, 'tough')).toBe(1);
+  });
+
+  it('needs Keimöl, which only arrives once the elixir is known', () => {
+    const g = marketGame();
+    expect(usePotion(g, 'abilityElixir', g.state.creatures[0]!.id, 'nurturer').ok).toBe(false);
+    // 4★ contracts pay Keimöl only after the unlock.
+    const offer = { template: 'eliteLine', requirements: [], done: false };
+    unlockFeature(g, 'contracts');
+    expect(contractReward(g, offer)['germOil']).toBeUndefined();
+    unlockFeature(g, 'abilityElixir');
+    expect(contractReward(g, offer)['germOil']!.toNumber()).toBe(1);
   });
 });

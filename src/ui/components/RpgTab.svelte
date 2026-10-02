@@ -21,6 +21,7 @@
   let pickedId: number | null = $state(null);
   let gearSlot: RpgGearSlot | null = $state(null);
   let pickedDungeon: string | null = $state(null);
+  let search = $state('');
 
   const data = $derived.by(() => {
     view.frame;
@@ -38,14 +39,21 @@
       meta: content.rpgMeta.list.map((m) => ({ m, level: r.meta[m.id] ?? 0, cost: metaCost(game, m.id) })),
       nextIn: next === null ? null : Math.max(0, next - Date.now()),
       dungeons,
-      candidates: run ? [] : rpgCandidates(game).slice(0, 40),
+      candidates: run ? [] : rpgCandidates(game),
       items: [...r.items],
       equipped: { ...r.equipped },
     };
   });
 
   const dungeonId = $derived(pickedDungeon ?? [...data.dungeons].reverse().find((x) => x.open)?.d.id ?? 'rootMaze');
-  const picked = $derived(data.candidates.find((c) => c.id === pickedId) ?? data.candidates[0] ?? null);
+  /** The list shows the 40 strongest matches of the search; the picked monster stays picked while it is hidden. */
+  const shown = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    return data.candidates
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
+      .slice(0, 40);
+  });
+  const picked = $derived(data.candidates.find((c) => c.id === pickedId) ?? shown[0] ?? data.candidates[0] ?? null);
 
   function start() {
     if (!picked) return;
@@ -97,12 +105,17 @@
   </article>
 
   <article class="panel">
-    <h3>Monster</h3>
+    <div class="m-head">
+      <h3>Monster</h3>
+      {#if data.candidates.length > 0}<input type="search" placeholder="Name oder Art …" bind:value={search} />{/if}
+    </div>
     {#if data.candidates.length === 0}
       <p class="muted small">Gerade ist kein Monster frei.</p>
+    {:else if shown.length === 0}
+      <p class="muted small">Kein freies Monster passt zur Suche.</p>
     {:else}
       <div class="picker">
-        {#each data.candidates as c (c.id)}
+        {#each shown as c (c.id)}
           {@const sp = content.species.get(c.speciesId)}
           {@const s = heroStats(game, c)}
           {@const lv = rpgLevel(game, c.id).level}
@@ -182,6 +195,8 @@
   .torch-count { font-size: 0.95rem; }
   .small { font-size: 0.8rem; }
   h3 { margin: 0 0 0.5rem; }
+  .m-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; }
+  .m-head input { flex: 0 1 14rem; min-width: 0; margin-bottom: 0.5rem; }
   .panel { margin-bottom: 0.8rem; }
   .result.won { border-color: var(--gold); }
   .result.lost { border-color: var(--danger); }

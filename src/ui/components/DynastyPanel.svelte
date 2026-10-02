@@ -43,6 +43,8 @@
     und gibt der Kreatur +{formatPercent(data.b.statPerDepth, 0)} Werte. Der Rekord jeder Art bleibt für immer – Stufen ab Tiefe
     {data.b.tiers.join(' / ')} geben der ganzen Art +{formatPercent(data.b.statPerTier, 0)} Werte je Stufe{#if data.shardTiers.length > 0}, Stufe
       {data.shardTiers.map((x) => x.tier).join(' und ')} auch Äon-Splitter{/if}.
+    Fähigkeitsstufen: Ein Kind erbt sonst eine Stufe weniger – ab Tiefe {game.balance.abilities.lineageKeepDepth} behält es die
+    Stufe der Eltern, ab Tiefe {game.balance.abilities.lineageRaiseDepth} steigt eine Fähigkeit beider Eltern um eine Stufe.
   </p>
   {#if data.rows.length === 0}
     <p class="muted small">Noch keine reine Linie. Paare zwei Kreaturen derselben Art.</p>

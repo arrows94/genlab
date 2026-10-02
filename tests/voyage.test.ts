@@ -82,6 +82,23 @@ describe('Wochenexpedition', () => {
     expect(new Set((p.data as { events: string[] }).events).size).toBe(balance.voyage.events);
   });
 
+  it('draws events of everywhere or of its own destination', () => {
+    let local = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const g = voyageGame(seed);
+      expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
+      const d = runningVoyage(g)!.data as { destination: string; events: string[] };
+      for (const id of d.events) {
+        const only = content.voyageEvents.get(id).destinations;
+        if (only) {
+          expect(only).toContain(d.destination);
+          local++;
+        }
+      }
+    }
+    expect(local).toBeGreaterThan(0);
+  });
+
   it('brings Zeitkristalle and (with the GenLab RPG) Fackeln home on top of the loot', () => {
     const plain = returned('injured', 3).g;
     expect(plain.state.voyage.pending!.loot['torches']).toBeUndefined();
@@ -223,5 +240,20 @@ describe('reset impact text', () => {
     expect(resetImpactText(g)).toBe('');
     expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
     expect(resetImpactText(g)).toContain('Eine Reise läuft weiter');
+  });
+});
+
+describe('Keimöl on the way', () => {
+  it('the Keimöl spring only fills a vial once the Fähigkeits-Elixier is known', () => {
+    const loot = (elixir: boolean) => {
+      const g = voyageGame();
+      if (elixir) unlockFeature(g, 'abilityElixir');
+      expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
+      (runningVoyage(g)!.data as { events: string[] }).events = ['germSpring'];
+      g.simulateOffline(voyageDurationMs(g) + 1000);
+      return g.state.voyage.pending!.loot['germOil']?.toNumber() ?? 0;
+    };
+    expect(loot(false)).toBe(0);
+    expect(loot(true)).toBe(1);
   });
 });

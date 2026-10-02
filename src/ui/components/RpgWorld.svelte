@@ -2,7 +2,7 @@
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
-  import { INTENT_INFO, ROOM_INFO, chooseEventOption, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
+  import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
   import type { Creature, RpgAftermath, RpgBattle } from '@core/state';
@@ -18,6 +18,7 @@
    * and calls actions.
    */
   let menuOpen = $state(false);
+  const GUARDIAN_INFO = { icon: '🛡️', name: 'Wächter', hint: 'Ein starker Elite-Gegner bewacht die Mitte des Dungeons – an ihm führt kein Weg vorbei.' };
 
   const data = $derived.by(() => {
     view.frame;
@@ -158,8 +159,9 @@
     {#each Array.from({ length: d.rooms + 1 }, (_, i) => i) as i (i)}
       {@const kind = path[i]}
       {@const here = i === run.depth - 1 && (!!run.battle || !!run.event)}
-      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} title={kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
-        {kind ? ROOM_INFO[kind].icon : i === d.rooms ? '👑' : ''}
+      {@const guard = i === guardianRoom(game, run.dungeon)}
+      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} class:guard title={guard ? 'Wächter' : kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
+        {kind ? ROOM_INFO[kind].icon : i === d.rooms ? '👑' : guard ? '🛡️' : ''}
       </li>
     {/each}
   </ol>
@@ -222,11 +224,12 @@
     </section>
   {:else}
     {#if run.eventResult}<p class="parchment tale told">{run.eventResult}</p>{/if}
-    <h2 class="fork">{run.choices.includes('boss') ? 'Vor dir liegt der letzte Raum …' : 'Der Weg teilt sich'}</h2>
+    {@const guardian = isGuardianNext(game, run)}
+    <h2 class="fork">{run.choices.includes('boss') ? 'Vor dir liegt der letzte Raum …' : guardian ? 'Ein Wächter versperrt den Weg …' : 'Der Weg teilt sich'}</h2>
     <div class="doors">
       {#each run.choices as kind, i (kind)}
-        {@const info = ROOM_INFO[kind]}
-        <button class="door" class:boss={kind === 'boss'} onclick={() => act(enterRoom(game, i))}>
+        {@const info = guardian ? GUARDIAN_INFO : ROOM_INFO[kind]}
+        <button class="door" class:boss={kind === 'boss' || guardian} onclick={() => act(enterRoom(game, i))}>
           <span class="c-icon">{info.icon}</span><b>{info.name}</b><span class="c-text">{info.hint}</span>
         </button>
       {/each}
@@ -356,6 +359,7 @@
   .trail li.done { border-style: solid; border-color: var(--brass); background: #3a2a1c; opacity: 1; }
   .trail li.here { border: 2px solid var(--glow); background: #5a3a1a; opacity: 1; box-shadow: 0 0 10px #ff9a3c99; }
   .trail li.boss { border-color: #b0453a; opacity: 0.9; }
+  .trail li.guard { border-color: #c9a227; }
 
   /* The fight: two fighters on a torchlit stone floor. */
   .arena {

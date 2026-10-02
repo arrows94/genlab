@@ -83,6 +83,30 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
+    id: 'nestKeeper', theme: 'breeding', name: 'Nestwärter', category: 'research',
+    // After some breeding experience, when the first abilities show up in the stable.
+    requires: { type: 'statistic', statistic: 'hatched', amount: 20 },
+    description: 'Eine Kreatur wacht an den Nestern: Ihre Brut-Fähigkeiten gelten für jedes Ei.',
+    cost: { gold: 1200, essence: 40 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['nestKeeper'],
+  },
+  {
+    id: 'elixirLore', theme: 'breeding', name: 'Elixierkunde', category: 'research',
+    // After the first inheritance: then Brutrituale and 4★ contracts bring the Keimöl it needs.
+    requires: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 1 }, { type: 'upgradeLevel', upgrade: 'nestKeeper', level: 1 }] },
+    description: 'Der Markt braut Fähigkeits-Elixiere: Sie stärken eine Fähigkeit einer Kreatur um eine Stufe.',
+    cost: { essence: 600, catalyst: 3 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['abilityElixir'],
+  },
+  {
+    id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research',
+    // Same moment as "Besondere Brut" (first inheritance), without waiting on a long feature.
+    requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
+    description: '+1 Ritualnest: ein weiteres Brutritual gleichzeitig.',
+    cost: { essence: 300, catalyst: 3 }, costGrowth: 4, maxLevel: 2,
+    modifiers: [{ target: 'slots.ritualNest', op: 'add', value: 1 }],
+  },
+  {
     id: 'breedBook', theme: 'breeding', name: 'Zuchtbuch', category: 'research', requires: { type: 'feature', feature: 'hybrids' },
     description: 'Die Brutstation merkt sich dein letztes Paar und wählt es mit einem Tipp wieder aus.',
     cost: { gold: 1500, essence: 60 }, costGrowth: 1, maxLevel: 1,

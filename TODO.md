@@ -12,7 +12,7 @@ wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, v
 ## Schritt 4 – Balancing und Qualität
 
 Spiellogik (ungeprüft):
-- [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.potion`, `cost.capsule`, `cost.upgrade`,
+- [ ] Ohne Quelle: `infusion.transferChance`, `cost.capsule`, `cost.upgrade`,
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 # Endgame
@@ -41,6 +41,36 @@ Spiellogik (ungeprüft):
 Mögliche neue Splitter-Quellen – vor dem Umsetzen Umfang, Freischaltung und Splitter-Ertrag festlegen.
 
 - [ ] **Basebuilding / Worldbuilding / Universebuilding**
+
+# Gen-Aufträge
+
+Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung, Veteranen, Leihgaben.
+
+- [ ] Weitere Bedingungen: reine Linie ab Tiefe N, bestimmte Erbanlage (Tiefensequenzierung), schillernd (seltener
+      5★-Bonusauftrag), Infusionsstufe ab N
+- [ ] Lieferaufträge: Rohstoffe gegen andere Rohstoffe tauschen (z. B. Fragmente gegen Evolutionskristalle) – könnte
+      auch den Markt beleben
+- [ ] Eilaufträge: laufen nach wenigen Stunden ab, dafür mehr Belohnung
+- [ ] Wochenauftrag: ein großer Auftrag pro Woche zum Element der Wochen-Mutation
+- [ ] Ruf je Auftraggeber: Stammkunden geben ab N erfüllten Aufträgen eigene Boni oder einen Titel
+- [ ] Auftragsketten: mehrstufige Geschichte eines Auftraggebers mit Lore und Abschlussbelohnung
+- [ ] Ruf-Schwellen prüfen: Mit dem wachsenden Brett erreicht der Langzeit-Bot Ruf 4 an Tag 11 (vorher nie);
+      `balance.contracts.levelThresholds` ggf. anheben
+
+# Zucht: Fähigkeiten stärken
+
+Nestwärter, gezieltere Vererbung und das Fähigkeits-Elixier mit Keimöl sind umgesetzt.
+
+- [ ] Keimöl-Menge beobachten: Ritual 30 %, Auftrag 4★ 1 / 5★ 2, Wochenexpedition selten – Elixier II kostet 2,
+      Elixier III 6 Keimöl
+
+# Tester-Feedback (Oktober 2026)
+
+Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).
+
+- [ ] „Markt“ – beim Tester nachfragen, was gemeint ist
+- [ ] Animierte Szenen für die großen Erkundungen (Wolkengrat, Nebelmoor, Wochenexpedition), nach dem Vorbild des
+      Großprojekts
 
 # Langzeitmotivation (Idle über Tage und Wochen)
 

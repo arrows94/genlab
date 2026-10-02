@@ -9,7 +9,10 @@ import { deserialize, serialize } from '@core/save';
 import { checkUnlocks, unlockFeature } from '@core/systems/unlocks';
 import { claimDaily, dailyReward } from '@core/features/daily';
 import { D } from '@core/num';
+import { startSequencing } from '@core/features/sequencing';
 import { NOW, balance, makeGame } from './helpers';
+import { makeHero, pickSkill } from './rpgBot';
+import { guardianRoom } from '@core/features/rpg';
 
 const HOUR = 3_600_000;
 
@@ -697,6 +700,31 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
     expect(torches(g)).toBe(balance.rpg.maxTorches - 1);
   });
 
+  it('a guardian blocks the way halfway through every dungeon', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    const hero = makeHero(g, 60);
+    for (const d of g.content.rpgDungeons.list) {
+      g.state.rpg.cleared[d.id] = 1;
+      g.state.resources['torches'] = D(9);
+      expect(startRpgRun(g, hero.id, d.id).ok).toBe(true);
+      const at = guardianRoom(g, d.id);
+      expect(at).toBe(Math.round(d.rooms * balance.rpg.guardianAt));
+      // Play on (always the first way) until the ways after room `at` are offered.
+      for (let step = 0; step < 2000; step++) {
+        const run = g.state.rpg.run!;
+        if (run.battle) useRpgSkill(g, pickSkill(g));
+        else if (run.aftermath) closeRpgAftermath(g);
+        else if (run.offer.length > 0) chooseUpgrade(g, 0);
+        else if (run.event) chooseEventOption(g, 0);
+        else if (run.depth === at) break;
+        else enterRoom(g, 0);
+      }
+      expect(g.state.rpg.run!.choices).toEqual(['elite']);
+      leaveRpgRun(g);
+    }
+  });
+
   it('candidates are the free monsters, strongest first', () => {
     const g = makeGame();
     unlockFeature(g, 'rpg');
@@ -704,6 +732,20 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
     expect(rpgCandidates(g).map((c) => c.id)).toEqual([g.state.creatures[0]!.id]);
     startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     expect(rpgCandidates(g)).toEqual([]);
+  });
+
+  it('a monster being sequenced stays free for the dungeon and keeps its level', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    unlockFeature(g, 'sequencing');
+    refreshTorches(g, NOW);
+    g.state.resources['essence'] = D(1e6);
+    const c = g.state.creatures[0]!;
+    g.state.rpg.ranks[String(c.id)] = xpToNext(g, 1);
+    expect(startSequencing(g, c.id).ok).toBe(true);
+    expect(rpgCandidates(g).map((x) => x.id)).toEqual([c.id]);
+    expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
+    expect(rpgLevel(g, c.id).level).toBe(2);
   });
 
   it('every Tagesbelohnung brings a Fackel once the RPG is open, the last calendar day more', () => {

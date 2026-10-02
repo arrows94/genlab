@@ -143,7 +143,7 @@
     view.frame;
     return view.world === 'run' && !!game.state.rpg.run?.battle;
   });
-  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab)));
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab, activeGroup.id)));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();

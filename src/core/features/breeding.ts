@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { inheritAbilities } from '../abilities';
+import { inheritAbilities, inheritAbilityLevels } from '../abilities';
 import { createCreature, creatureModifiers, creaturePower, findCreature, inheritLatent } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { checkCondition } from '../conditions';
@@ -14,6 +14,7 @@ import { completeProcesses, isWaiting, registerProcessHandler, startProcess } fr
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import { grant } from '../resources';
 import type { AncestorInfo, Appearance, Creature, StatBlock } from '../state';
 
 export const EGG = 'egg';
@@ -25,6 +26,8 @@ export interface EggData extends Record<string, unknown> {
   ritual?: string;
   /** Ritual eggs: Keimprobe – the parents as they were when the ritual began (they stay free). */
   sample?: [Creature, Creature];
+  /** Laid by the Zuchtautomat in its own nest. */
+  auto?: boolean;
 }
 
 export function nestSlots(ctx: GameContext): number {
@@ -36,6 +39,50 @@ export function ritualNestSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.ritualNest', ctx.balance.breeding.ritualNests));
 }
 
+/** Places for a Nestwärter at the Brutstation. */
+export function nestKeeperSlots(ctx: GameContext): number {
+  return Math.floor(ctx.mods().apply('slots.nestKeeper', ctx.balance.breeding.nestKeepers));
+}
+
+/** Creatures watching the nests: their own breeding bonuses (Brutpfleger, Mutagen, genes …) count for every egg. */
+export function nestKeepers(ctx: GameContext): Creature[] {
+  if (!ctx.state.features['nestKeeper']) return [];
+  return ctx.state.creatures.filter((c) => c.job?.kind === 'keeper');
+}
+
+/** Breeding-time factor and extra mutation chance a creature would give as Nestwärter. */
+export function keeperBonus(ctx: GameContext, c: Creature): { time: number; mutation: number } {
+  const own = creatureModifiers(ctx, c);
+  return { time: own.factor('breeding.time'), mutation: own.apply('breeding.mutation', 0) };
+}
+
+/**
+ * Makes a creature the Nestwärter (a working creature leaves its building). A full place is handed over:
+ * the previous keeper is free again. `null` frees every place.
+ */
+export function setNestKeeper(ctx: GameContext, creatureId: number | null): ActionResult {
+  if (!ctx.state.features['nestKeeper']) return { ok: false, reason: 'Der Nestwärter ist noch nicht erforscht.' };
+  const keepers = nestKeepers(ctx);
+  if (creatureId === null) {
+    for (const k of keepers) k.job = null;
+    ctx.invalidate();
+    return { ok: true };
+  }
+  const c = findCreature(ctx, creatureId);
+  if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
+  if (c.job?.kind === 'keeper') return { ok: true };
+  if (c.job && c.job.kind !== 'building') return { ok: false, reason: `${c.name} ist beschäftigt.` };
+  if (keepers.length >= nestKeeperSlots(ctx)) keepers[0]!.job = null;
+  c.job = { kind: 'keeper', target: 'nest' };
+  ctx.invalidate();
+  return { ok: true };
+}
+
+/** Places in the Automatennest: the Zuchtautomat breeds only there, slower than by hand. */
+export function autoNestSlots(ctx: GameContext): number {
+  return Math.floor(ctx.mods().apply('slots.autoNest', ctx.balance.breeding.autoNests));
+}
+
 /** Every egg, normal and ritual. */
 export function eggs(ctx: GameContext) {
   return ctx.state.processes.filter((p) => p.kind === EGG);
@@ -43,7 +90,12 @@ export function eggs(ctx: GameContext) {
 
 /** Eggs in the normal nests. */
 export function nestEggs(ctx: GameContext) {
-  return eggs(ctx).filter((p) => !(p.data as EggData).ritual);
+  return eggs(ctx).filter((p) => !(p.data as EggData).ritual && !(p.data as EggData).auto);
+}
+
+/** Eggs in the Automatennest. */
+export function autoEggs(ctx: GameContext) {
+  return eggs(ctx).filter((p) => !!(p.data as EggData).auto);
 }
 
 /** Eggs in the Ritualnest. */
@@ -92,17 +144,23 @@ export function breedingCost(ctx: GameContext, generation = 2): Cost {
 /** Breeding time; parents' own `breeding.time` modifiers (e.g. fertility genes) apply too. */
 export function breedingTimeMs(ctx: GameContext, generation: number, parents: (Creature | undefined)[] = []): number {
   const b = ctx.balance.breeding;
-  let seconds = ctx.mods().apply('breeding.time', b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1)));
+  const base = b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1));
+  let seconds = ctx.mods().apply('breeding.time', base);
   for (const p of parents) {
     if (!p) continue;
     // creatureModifiers only carries global stat.* targets, so this is the parent's own share.
     seconds *= creatureModifiers(ctx, p).factor('breeding.time');
   }
-  return Math.max(1000, seconds * 1000);
+  for (const k of nestKeepers(ctx)) seconds *= keeperBonus(ctx, k).time;
+  return Math.max(1000, Math.max(seconds, base * b.minTimeShare) * 1000);
 }
 
-export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef): number {
-  return Math.min(1, Math.max(0, ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0)));
+/** Mutation chance of an egg; parents' own bonuses (Mutagen, Genweber) count for their own eggs only. */
+export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef, parents: (Creature | undefined)[] = []): number {
+  let chance = ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0);
+  for (const p of parents) if (p) chance += creatureModifiers(ctx, p).apply('breeding.mutation', 0);
+  for (const k of nestKeepers(ctx)) chance += keeperBonus(ctx, k).mutation;
+  return Math.min(1, Math.max(0, chance));
 }
 
 /** Rituals the player can use right now (Besondere Brut). */
@@ -155,14 +213,16 @@ export function eggTimeMs(ctx: GameContext, generation: number, parents: (Creatu
   return ritual ? ritual.hours * 3_600_000 : breedingTimeMs(ctx, generation, parents);
 }
 
-export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined, ritual?: BreedingRitualDef): ActionResult {
+export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined, ritual?: BreedingRitualDef, auto = false): ActionResult {
   if (!ctx.state.features['breeding']) return { ok: false, reason: 'Die Brutstation ist noch nicht freigeschaltet.' };
   if (!a || !b) return { ok: false, reason: 'Wähle zwei Kreaturen.' };
   if (a.id === b.id) return { ok: false, reason: 'Wähle zwei verschiedene Kreaturen.' };
   // Working creatures are pulled from their building automatically.
   if ((a.job && a.job.kind !== 'building') || (b.job && b.job.kind !== 'building')) return { ok: false, reason: 'Beide Kreaturen müssen frei sein.' };
-  if (ritual) {
-    if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: 'Das Ritualnest ist belegt.' };
+  if (auto) {
+    if (autoEggs(ctx).length >= autoNestSlots(ctx)) return { ok: false, reason: 'Das Automatennest ist belegt.' };
+  } else if (ritual) {
+    if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: ritualNestSlots(ctx) > 1 ? 'Alle Ritualnester sind belegt.' : 'Das Ritualnest ist belegt.' };
   } else if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0) return { ok: false, reason: 'Der Stall ist voll.' };
   return { ok: true };
@@ -186,12 +246,13 @@ export function lastPair(ctx: GameContext): { a: Creature; b: Creature; ritual: 
   return { a, b, ritual };
 }
 
-export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
+/** Starts an egg. `auto`: the Zuchtautomat's egg in the Automatennest (no rituals, takes longer). */
+export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string, auto = false): ActionResult {
   const a = findCreature(ctx, aId);
   const b = findCreature(ctx, bId);
-  const ritual = ritualId ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
+  const ritual = ritualId && !auto ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
   if (ritualId && !ritual) return { ok: false, reason: 'Dieses Brutritual ist nicht verfügbar.' };
-  const check = canBreed(ctx, a, b, ritual);
+  const check = canBreed(ctx, a, b, ritual, auto);
   if (!check.ok) return check;
   const generation = offspringGeneration(a, b);
   const paid = spend(ctx, eggCost(ctx, generation, ritual));
@@ -202,7 +263,9 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number, ritual
     data.ritual = ritual.id;
     data.sample = [structuredClone(a!), structuredClone(b!)];
   }
-  const proc = startProcess(ctx, EGG, eggTimeMs(ctx, generation, [a, b], ritual), data);
+  if (auto) data.auto = true;
+  const time = eggTimeMs(ctx, generation, [a, b], ritual) * (auto ? ctx.balance.automation.autoBreedTimeMult : 1);
+  const proc = startProcess(ctx, EGG, time, data);
   if (!ritual) {
     a!.job = { kind: 'nest', target: String(proc.id) };
     b!.job = { kind: 'nest', target: String(proc.id) };
@@ -283,7 +346,9 @@ registerProcessHandler(EGG, {
     const [a, b] = data.sample ?? live;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
     const ritual = data.ritual && ctx.content.breedingRituals.has(data.ritual) ? ctx.content.breedingRituals.get(data.ritual) : undefined;
-    const mutation = mutationChance(ctx, ritual);
+    // A ritual sometimes leaves a drop of Keimöl for the Fähigkeits-Elixier (only once the elixir is known).
+    if (ritual && ctx.state.features['abilityElixir'] && ctx.rng.chance(ctx.balance.breeding.ritualGermOilChance)) grant(ctx, 'germOil', 1, `ritual:${ritual.id}`);
+    const mutation = mutationChance(ctx, ritual, [a, b]);
     const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1, ritual?.guaranteedHybrid ?? false);
     // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.
     const rarity = hatchRarity(ctx, ritual);
@@ -312,6 +377,7 @@ registerProcessHandler(EGG, {
       family,
       source: 'hatch',
     });
+    child.abilityLevels = inheritAbilityLevels(ctx, child.abilities, a, b, lineage);
     recordLineage(ctx, child);
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
 
@@ -335,6 +401,7 @@ registerProcessHandler(EGG, {
         family,
         source: 'hatch',
       });
+      twin.abilityLevels = inheritAbilityLevels(ctx, twin.abilities, a, b, lineage);
       recordLineage(ctx, twin);
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
     }

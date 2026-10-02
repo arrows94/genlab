@@ -1,5 +1,5 @@
 import { ModifierSet, type SourcedModifier } from './modifiers';
-import { rollStartingAbilities } from './abilities';
+import { abilityModifiers, rollStartingAbilities } from './abilities';
 import { rarityWeights, rollRarity } from './rarity';
 import { genomeModifiers, isPerfectGenome, rollGenome } from './genetics';
 import { dynastyModifiers } from './features/dynasty';
@@ -178,7 +178,7 @@ export function creatureOwnModifiers(ctx: GameContext, c: Creature): SourcedModi
     if (!ctx.content.abilities.has(id)) continue;
     const def = ctx.content.abilities.get(id);
     if (def.scope === 'global') continue;
-    for (const m of def.modifiers) out.push({ ...m, source: `ability:${id}` });
+    for (const m of abilityModifiers(ctx, def, c)) out.push({ ...m, source: `ability:${id}` });
   }
   for (const buff of ctx.state.buffs) {
     if (buff.creatureId === c.id) for (const m of buff.modifiers) out.push({ ...m, source: `buff:${buff.source}` });

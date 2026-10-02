@@ -1,5 +1,5 @@
 import { D, type Decimal } from '../num';
-import { createCreature, effectiveStats, findCreature, isOccupied } from '../creatures';
+import { createCreature, creatureModifiers, effectiveStats, findCreature, isOccupied } from '../creatures';
 import { grant, spend } from '../resources';
 import { toCost } from '../costs';
 import { checkCondition } from '../conditions';
@@ -90,7 +90,9 @@ export function hintChance(ctx: GameContext, missionId: string): number {
 /** Loot multiplier for a creature: global bonuses × its speed. */
 export function missionRewardFactor(ctx: GameContext, creature: Creature | undefined): number {
   const speed = creature ? (effectiveStats(ctx, creature).spd ?? 0) : 0;
-  return ctx.mods().apply('mission.reward', 1) * (1 + speed * ctx.balance.missions.statScaling);
+  // The traveller's own loot bonus (Erbanlage „Fernweh“) counts for its own journeys only.
+  const own = creature ? creatureModifiers(ctx, creature).factor('mission.reward') : 1;
+  return ctx.mods().apply('mission.reward', 1) * own * (1 + speed * ctx.balance.missions.statScaling);
 }
 
 /** Rarity with the usual (modified) weights, but at least `min`. */

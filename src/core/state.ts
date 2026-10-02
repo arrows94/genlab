@@ -16,7 +16,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg';
+  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg' | 'keeper';
   target: string;
 }
 
@@ -45,6 +45,8 @@ export interface Creature {
   boosts: Record<string, number>;
   /** Number of permanent boosts used on this creature (drives their cost). */
   boostUses: number;
+  /** Fähigkeits-Elixier: level per ability id (missing = level 1). */
+  abilityLevels?: Record<string, number>;
   sequenced: boolean;
   /** Erbanlage (latent trait id) – hidden until `deepSequenced`; null = none. */
   latent: string | null;
@@ -237,7 +239,10 @@ export type ContractRequirement =
   | { kind: 'minTier'; tier: string }
   | { kind: 'topLoci'; count: number; homozygous: boolean }
   | { kind: 'minRarity'; rarity: string }
-  | { kind: 'minGeneration'; generation: number };
+  | { kind: 'minGeneration'; generation: number }
+  | { kind: 'rpgLevel'; level: number }
+  /** RPG equipment of this slot (weapon, armor, charm) and at least this rarity. */
+  | { kind: 'item'; minRarity: string; slot: string };
 
 export interface ContractOffer {
   template: string;

@@ -22,14 +22,15 @@
   }
 
   /** One nest (or the Ritualnest) with its egg, parents and progress. */
-  let { egg, ritual, opening, onopen }: { egg: EggView | undefined; ritual: boolean; opening: number | null; onopen: (id: number, ritual: string) => void } = $props();
+  let { egg, ritual, auto = false, opening, onopen }: { egg: EggView | undefined; ritual: boolean; auto?: boolean; opening: number | null; onopen: (id: number, ritual: string) => void } = $props();
 
   const twigs: [number, number, number, number][] = [[10, 24, 60, 14], [22, 32, 104, 20], [16, 16, 94, 30], [30, 30, 110, 22], [6, 20, 70, 32]];
   const look = (c: Creature) => expressedAppearance(game, c);
 </script>
 
-<article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ready={!!egg?.ready} class:cracking={!!egg && opening === egg.id} class:ritualnest={ritual}>
+<article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ready={!!egg?.ready} class:cracking={!!egg && opening === egg.id} class:ritualnest={ritual} class:autonest={auto}>
   {#if ritual}<span class="rn-label tiny">✨ Ritualnest</span>{/if}
+  {#if auto}<span class="rn-label an-label tiny" title="Hier brütet nur der Zuchtautomat – langsamer als von Hand">🤖 Automatennest</span>{/if}
   <div class="egg-wrap">
     {#if egg}
       <span class="glow" style="--h: {egg.hues[0]}; opacity: {0.25 + egg.progress * 0.6}"></span>
@@ -82,6 +83,8 @@
   .nest.soon { border-color: var(--gold); }
   .nest.ritualnest { position: relative; border: 1px dashed color-mix(in srgb, var(--violet) 60%, var(--line)); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--violet) 12%, transparent), var(--panel) 70%); }
   .rn-label { position: absolute; top: 0.3rem; left: 0.5rem; color: var(--violet); font-weight: 700; }
+  .nest.autonest { position: relative; border: 1px dashed color-mix(in srgb, var(--teal) 55%, var(--line)); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--teal) 10%, transparent), var(--panel) 70%); }
+  .an-label { color: var(--teal); }
   .egg-wrap { position: relative; width: 120px; height: 86px; display: grid; justify-items: center; align-items: end; }
   .twigs { position: absolute; bottom: 0; width: 120px; height: 40px; }
   .egg { position: relative; z-index: 1; margin-bottom: 12px; transform-origin: 50% 90%; }

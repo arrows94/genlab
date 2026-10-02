@@ -12,6 +12,8 @@
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
   import { fragmentValue } from '@core/features/recycler';
   import { inRecycler, sendToRecycler, speciesLostWith, takeBackFromRecycler } from '@core/features/automation';
+  import { rpgLevel } from '@core/features/rpgCombat';
+  import { abilityLevel, abilityName } from '@core/abilities';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import GenomeView from './GenomeView.svelte';
@@ -114,7 +116,7 @@
             <ul class="plain">
               {#each c.abilities as id (id)}
                 {@const a = content.abilities.get(id)}
-                <li><b style="color: {content.rarities.get(a.tier).color}">{a.name}</b> <span class="muted small">{a.description}</span></li>
+                <li><b style="color: {content.rarities.get(a.tier).color}">{abilityName(c, a)}</b> <span class="muted small">{a.description}{abilityLevel(c, id) > 1 ? ` (Stufe ${abilityLevel(c, id)}: ×${formatNumber(game.balance.abilities.levelMults[abilityLevel(c, id) - 1] ?? 1)})` : ''}</span></li>
               {/each}
             </ul>
           {/if}
@@ -131,6 +133,13 @@
               {#if latent}<span class="lname">{latent.name}</span> <span class="muted small">{latent.description}</span>
               {:else if c.deepSequenced}<span class="muted">keine</span>
               {:else}<span class="muted">??? – nur die Tiefensequenzierung im Genlabor deckt sie auf.</span>{/if}
+            </p>
+          {/if}
+          {#if game.state.features['rpg']}
+            {@const rank = rpgLevel(game, c.id)}
+            <p class="latent" title="Stufe in der anderen Welt – sie wächst nur im Dungeon">
+              <b>GenLab RPG:</b> Stufe {rank.level}
+              <span class="muted small">{rank.need > 0 ? `· ${formatNumber(rank.into)}/${formatNumber(rank.need)} EP bis Stufe ${rank.level + 1}` : '· Höchststufe'}</span>
             </p>
           {/if}
 

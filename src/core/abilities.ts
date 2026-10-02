@@ -1,4 +1,51 @@
 import type { GameContext } from './context';
+import type { AbilityDef } from './content/types';
+import type { ModifierDef } from './modifiers';
+import type { Creature } from './state';
+
+/** Level of an ability on a creature (1 … `abilities.levelMults.length`). */
+export function abilityLevel(c: Creature, abilityId: string): number {
+  return c.abilityLevels?.[abilityId] ?? 1;
+}
+
+/** „Brutpfleger II“: the name with its level from level II on. */
+export function abilityName(c: Creature, def: AbilityDef): string {
+  const level = abilityLevel(c, def.id);
+  return level > 1 ? `${def.name} ${['I', 'II', 'III', 'IV', 'V'][level - 1] ?? level}` : def.name;
+}
+
+/**
+ * Levels of the inherited abilities: an ordinary child gets one level less than the better parent (at least I),
+ * a pure line keeps it (depth ≥ `lineageKeepDepth`) and raises an ability both parents have (depth ≥
+ * `lineageRaiseDepth`). Only levels above I are listed.
+ */
+export function inheritAbilityLevels(ctx: GameContext, abilities: readonly string[], a: Creature, b: Creature, lineage: number): Record<string, number> | undefined {
+  const cfg = ctx.balance.abilities;
+  const out: Record<string, number> = {};
+  for (const id of abilities) {
+    const has = [a, b].filter((p) => p.abilities.includes(id));
+    if (has.length === 0) continue; // a new ability from a mutation starts at level I
+    const best = Math.max(...has.map((p) => abilityLevel(p, id)));
+    let level = lineage >= cfg.lineageKeepDepth ? best : best - 1;
+    if (lineage >= cfg.lineageRaiseDepth && has.length === 2) level++;
+    level = Math.min(maxAbilityLevel(ctx), Math.max(1, level));
+    if (level > 1) out[id] = level;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Highest level an ability can reach with the Fähigkeits-Elixier. */
+export function maxAbilityLevel(ctx: GameContext): number {
+  return ctx.balance.abilities.levelMults.length;
+}
+
+/** The ability's modifiers at the creature's level: add/pct scale, mult moves away from 1. */
+export function abilityModifiers(ctx: GameContext, def: AbilityDef, c: Creature): ModifierDef[] {
+  const mults = ctx.balance.abilities.levelMults;
+  const k = mults[Math.min(mults.length, abilityLevel(c, def.id)) - 1] ?? 1;
+  if (k === 1) return def.modifiers;
+  return def.modifiers.map((m) => ({ ...m, value: m.op === 'mult' ? 1 + (m.value - 1) * k : m.value * k }));
+}
 
 /** Rolls a random ability not in `exclude` (tier by balance weights). */
 export function rollAbility(ctx: GameContext, exclude: readonly string[] = []): string | null {
@@ -24,16 +71,22 @@ export function rollStartingAbilities(ctx: GameContext): string[] {
   return out;
 }
 
-/** Offspring abilities: each parent ability may pass on, plus a mutation chance for a new one. */
+/** Chance that an ability passes on: higher when both parents have it. */
+export function abilityInheritChance(ctx: GameContext, both: boolean): number {
+  const b = ctx.balance.breeding;
+  // Äon talent „Starke Blutlinie“ raises the chance up to a sure inheritance.
+  return Math.min(1, ctx.mods().apply('breeding.abilityInherit', both ? b.abilityInheritBoth : b.abilityInheritChance));
+}
+
+/** Offspring abilities: each parent ability may pass on (shared ones likely), plus a mutation chance for a new one. */
 export function inheritAbilities(ctx: GameContext, a: readonly string[], b: readonly string[], mutationChance: number): string[] {
   const { balance, rng } = ctx;
-  const pool = [...new Set([...a, ...b])];
+  // Shared abilities first: they are the likely ones and should not lose their place to the slot limit.
+  const pool = [...new Set([...a, ...b])].sort((x, y) => Number(b.includes(y) && a.includes(y)) - Number(b.includes(x) && a.includes(x)));
   const out: string[] = [];
-  // Äon talent „Starke Blutlinie“ raises the chance up to a sure inheritance.
-  const inherit = Math.min(1, ctx.mods().apply('breeding.abilityInherit', balance.breeding.abilityInheritChance));
   for (const id of pool) {
     if (out.length >= balance.abilities.max) break;
-    if (ctx.content.abilities.has(id) && rng.chance(inherit)) out.push(id);
+    if (ctx.content.abilities.has(id) && rng.chance(abilityInheritChance(ctx, a.includes(id) && b.includes(id)))) out.push(id);
   }
   if (out.length < balance.abilities.max && rng.chance(mutationChance)) {
     const id = rollAbility(ctx, out);

@@ -33,7 +33,7 @@ function pickRoom(g: Game): number {
   return idx ?? 0;
 }
 
-function pickSkill(g: Game): string {
+export function pickSkill(g: Game): string {
   const b = g.state.rpg.run!.battle!;
   const ready = rpgSkills(g).filter((k) => !skillBlocker(b, k));
   const special = ready.find((k) => k.slot === 'special');

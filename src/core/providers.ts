@@ -2,6 +2,7 @@ import { D } from './num';
 import { ModifierSet } from './modifiers';
 import type { GameContext } from './context';
 import { activeLatent } from './creatures';
+import { abilityModifiers } from './abilities';
 import { resonanceProvider, talentProvider } from './features/talents';
 import { anomalyProvider } from './features/anomalies';
 import { weeklyProvider } from './features/weekly';
@@ -55,11 +56,17 @@ export const buffProvider: ModifierProvider = (ctx, into) => {
   }
 };
 
+/**
+ * Global abilities and Erbanlagen help everyone – but only while their creature is at work in a building, so a
+ * full stable of idle specialists does not stack up. Abilities tied to an activity (own eggs, own expedition)
+ * are scope 'self' and count where that activity is computed.
+ */
 export const globalAbilityProvider: ModifierProvider = (ctx, into) => {
   for (const c of ctx.state.creatures) {
+    if (c.job?.kind !== 'building') continue;
     for (const id of c.abilities) {
       const def = ctx.content.abilities.has(id) ? ctx.content.abilities.get(id) : null;
-      if (def?.scope === 'global') into.addAll(`ability:${id}#${c.id}`, def.modifiers);
+      if (def?.scope === 'global') into.addAll(`ability:${id}#${c.id}`, abilityModifiers(ctx, def, c));
     }
     const latent = activeLatent(ctx, c);
     if (latent?.scope === 'global') into.addAll(`latent:${latent.id}#${c.id}`, latent.modifiers);

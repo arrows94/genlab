@@ -7,7 +7,7 @@ import type { ActionResult } from '../actions';
 import type { AutoBreedConfig, AutoRecycleConfig, Creature } from '../state';
 import { D } from '../num';
 import type { System } from '../systems/types';
-import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding } from './breeding';
+import { autoEggs, autoNestSlots, breedingCost, offspringGeneration, startBreeding } from './breeding';
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
@@ -143,7 +143,7 @@ function abilityScore(ctx: GameContext, c: Creature): number {
  */
 export function planAutoBreed(ctx: GameContext, opts: { ignoreRoom?: boolean } = {}): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
-  if (!opts.ignoreRoom && nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (!opts.ignoreRoom && autoEggs(ctx).length >= autoNestSlots(ctx)) return { ok: false, reason: 'Das Automatennest ist belegt.' };
   // Room is made by the Recycling-Automat (or the player) – the only automation that removes creatures.
   if (!opts.ignoreRoom && stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
   const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
@@ -382,10 +382,10 @@ export const recyclerSystem: System = {
   },
 };
 
-/** Breeds the planned pair (a full stable makes the plan wait). */
+/** Breeds the planned pair in the Automatennest (a full stable makes the plan wait). */
 export function autoBreedOnce(ctx: GameContext): boolean {
   const plan = planAutoBreed(ctx);
-  return plan.ok && startBreeding(ctx, plan.a.id, plan.b.id).ok;
+  return plan.ok && startBreeding(ctx, plan.a.id, plan.b.id, undefined, true).ok;
 }
 
 /**

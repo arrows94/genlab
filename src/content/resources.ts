@@ -11,5 +11,6 @@ export const resources: ResourceDef[] = [
   { id: 'aeonShards', name: 'Äon-Splitter', icon: '⏳', color: '#e1bee7', feature: 'aeon', description: 'Aus dem Äon-Reset. Für den Talentbaum.' },
   { id: 'torches', name: 'Fackeln', icon: '🔥', color: '#ff8a50', feature: 'rpg', description: 'Eintritt ins GenLab RPG: Jeder Lauf kostet eine Fackel. Alle 6 Stunden kommt eine neue dazu (bis 3), dazu welche aus Tagesbelohnung, Gen-Aufträgen und Wochenexpedition.' },
   { id: 'runes', name: 'Runen', icon: '🪬', color: '#c792ea', feature: 'rpg', description: 'Aus dem GenLab RPG: von Elite-Gegnern, Bossen und zerlegter Ausrüstung. Für dauerhaften Fortschritt im Dungeon.' },
+  { id: 'germOil', name: 'Keimöl', icon: '🌰', color: '#c6ff6b', feature: 'abilityElixir', description: 'Selten: aus Brutritualen, Gen-Aufträgen ab 4★ und Wochenexpeditionen. Für das Fähigkeits-Elixier.' },
   { id: 'heritage', name: 'Erbgut', icon: '🧬', color: '#4fd6c8', feature: 'inheritance', description: 'Dauerhafter Produktionsbonus aus der Vererbung.' },
 ];

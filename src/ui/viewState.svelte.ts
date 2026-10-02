@@ -31,11 +31,15 @@ interface ViewState {
   /**
    * Tempo of the fight replay in the arena (1×, 2× or 0 = skip to the result),
    * the protocol filter „Nur Wichtiges“ and whether the defeat analysis is open.
+   * Candidate sort: order, ⇅ and the element for „Vorteil vs.“ ('' = the next enemy's).
    */
-  tower: { replaySpeed: ReplaySpeed; logImportant: boolean; defeatOpen: boolean };
+  tower: { replaySpeed: ReplaySpeed; logImportant: boolean; defeatOpen: boolean; sort: TowerSort; invert: boolean; vsElement: string };
 }
 
 export type ReplaySpeed = 0 | 1 | 2;
+
+export const TOWER_SORTS = ['power', 'matchup', 'speed', 'hp', 'atk', 'def', 'role', 'rarity'] as const;
+export type TowerSort = (typeof TOWER_SORTS)[number];
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
 
@@ -51,7 +55,7 @@ const defaults = (): ViewState => ({
   infusion: { maxRarity: 'common', donorsOnly: false },
   genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false, sort: 'power', invert: false },
   nav: { last: {} },
-  tower: { replaySpeed: 1, logImportant: true, defeatOpen: true },
+  tower: { replaySpeed: 1, logImportant: true, defeatOpen: true, sort: 'power', invert: false, vsElement: '' },
 });
 
 function load(): ViewState {
@@ -76,6 +80,7 @@ function load(): ViewState {
         ...base.tower,
         ...saved.tower,
         replaySpeed: ([0, 1, 2] as const).find((v) => v === saved.tower?.replaySpeed) ?? base.tower.replaySpeed,
+        sort: TOWER_SORTS.find((v) => v === saved.tower?.sort) ?? base.tower.sort,
       },
     };
   } catch {

@@ -90,7 +90,8 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
   const paid = spend(ctx, toCost(ctx.balance.voyage.cost));
   if (!paid.ok) return paid;
 
-  const pool = [...ctx.content.voyageEvents.list];
+  const destination = voyageDestination(ctx).id;
+  const pool = ctx.content.voyageEvents.list.filter((e) => !e.destinations || e.destinations.includes(destination));
   const events: string[] = [];
   for (let i = 0; i < ctx.balance.voyage.events && pool.length > 0; i++) {
     const weights: Record<string, number> = {};
@@ -99,7 +100,7 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
     events.push(id);
     pool.splice(pool.findIndex((e) => e.id === id), 1);
   }
-  const data: VoyageData = { destination: voyageDestination(ctx).id, team: ids, events, bonus: ctx.state.voyage.nextBonus };
+  const data: VoyageData = { destination, team: ids, events, bonus: ctx.state.voyage.nextBonus };
   ctx.state.voyage.nextBonus = 0;
   const proc = startProcess(ctx, VOYAGE, voyageDurationMs(ctx), data);
   for (const c of team) c!.job = { kind: 'mission', target: String(proc.id) };
@@ -122,7 +123,11 @@ registerProcessHandler(VOYAGE, {
     for (const [res, [min, max]] of Object.entries(dest.rewards)) loot[res] = D(Math.floor(ctx.rng.range(min, max) * factor));
     for (const [res, amount] of Object.entries(voyageBonus(ctx))) loot[res] = (loot[res] ?? D(0)).add(amount);
     for (const e of events) {
-      for (const [res, amount] of Object.entries(e.effect.resources ?? {})) loot[res] = (loot[res] ?? D(0)).add(amount);
+      for (const [res, amount] of Object.entries(e.effect.resources ?? {})) {
+        // Resources of systems not yet unlocked (Keimöl before the Fähigkeits-Elixier) stay behind.
+        const feature = ctx.content.resources.get(res).feature;
+        if (!feature || ctx.state.features[feature]) loot[res] = (loot[res] ?? D(0)).add(amount);
+      }
       if (e.effect.hint && ctx.state.features['hybrids']) revealHint(ctx);
     }
     const decisions: Record<string, number> = {};

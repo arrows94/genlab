@@ -26,7 +26,7 @@ export interface Balance {
     unscaled: string[];
   };
   contracts: {
-    /** Offers on the board per (UTC) day. */
+    /** Least offers on the board per day (the board grows with the Ruf, see `boardLevels`). */
     offersPerDay: number;
     /** Free exchanges of an open offer per day. */
     rerollsPerDay: number;
@@ -124,6 +124,8 @@ export interface Balance {
     upgradeChoices: number;
     /** A won elite fight offers upgrades too. */
     eliteUpgrade: boolean;
+    /** A guardian (elite fight, no other way) waits after this share of the rooms; 0 = none. */
+    guardianAt: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /**
@@ -225,9 +227,17 @@ export interface Balance {
     /** Tier (rarity id) weights when rolling a new ability. */
     tierWeights: Record<string, number>;
     max: number;
+    /** Strength of an ability per level (index 0 = level 1); the length is the highest level. */
+    levelMults: number[];
+    /** From this pure-line depth a child keeps the parents' ability level (else it drops one level). */
+    lineageKeepDepth: number;
+    /** From this depth an ability both parents have rises one level in the child. */
+    lineageRaiseDepth: number;
   };
   breeding: {
     baseTimeSec: number;
+    /** Shortest egg time as a share of the base time of its generation (bonuses cannot go below). */
+    minTimeShare: number;
     /** Each generation of the offspring adds this fraction of base time. */
     timePerGeneration: number;
     /**
@@ -241,10 +251,18 @@ export interface Balance {
     mutationStatRange: [number, number];
     /** Chance each parent ability is passed on. */
     abilityInheritChance: number;
+    /** Chance for an ability both parents have (`breeding.abilityInherit` raises both). */
+    abilityInheritBoth: number;
+    /** Places for a Nestwärter (`slots.nestKeeper`): its breeding bonuses count for every egg. */
+    nestKeepers: number;
+    /** Chance that a finished Brutritual leaves one Keimöl (once the Fähigkeits-Elixier is known). */
+    ritualGermOilChance: number;
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
     /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */
     ritualNests: number;
+    /** Places in the Automatennest: the Zuchtautomat only breeds there (`slots.autoNest`). */
+    autoNests: number;
   };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */
@@ -319,6 +337,8 @@ export interface Balance {
   };
   automation: {
     intervalSec: number;
+    /** Eggs of the Zuchtautomat take this many times as long as a hand-bred egg. */
+    autoBreedTimeMult: number;
   };
   tower: {
     fightIntervalSec: number;

@@ -17,7 +17,7 @@ export const balance: Balance = {
   },
   rewards: {
     // Bonuses such as `contracts.reward` never multiply these (rare currencies stay fixed).
-    unscaled: ['aeonShards', 'timeCrystals', 'catalyst'],
+    unscaled: ['aeonShards', 'timeCrystals', 'catalyst', 'germOil'],
   },
   contracts: {
     offersPerDay: 3,
@@ -109,6 +109,8 @@ export const balance: Balance = {
     levelHeal: 0.15,
     upgradeChoices: 3,
     eliteUpgrade: true,
+    // Halfway through every dungeon a guardian blocks the way: a fixed elite fight.
+    guardianAt: 0.5,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
@@ -185,19 +187,31 @@ export const balance: Balance = {
     slotChances: [0.35, 0.15, 0.05],
     tierWeights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 },
     max: 3,
+    // Fähigkeits-Elixier: level II ×1,5, level III ×2 (Brutpfleger −10 / −15 / −20 %).
+    levelMults: [1, 1.5, 2],
+    // Pure lines carry ability levels: kept from the 1st dynasty tier (depth 5), raised from the 2nd (depth 10).
+    lineageKeepDepth: 5,
+    lineageRaiseDepth: 10,
   },
   breeding: {
-    baseTimeSec: 20,
+    baseTimeSec: 60,
     timePerGeneration: 0.15,
+    // Bonuses stack (every Brutpfleger in the stable counts) – an egg never takes less than this share of its base time.
+    minTimeShare: 0.25,
     costs: [
       { resource: 'food', base: 30, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 2 },
       { resource: 'gold', base: 20, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 3 },
     ],
     mutationChance: 0.08,
     mutationStatRange: [1.05, 1.25],
-    abilityInheritChance: 0.5,
+    // An ability one parent has passes on now and then; one both parents share almost always.
+    abilityInheritChance: 0.35,
+    abilityInheritBoth: 0.85,
+    nestKeepers: 1,
+    ritualGermOilChance: 0.3,
     baseNests: 1,
     ritualNests: 1,
+    autoNests: 1,
   },
   genetics: {
     alleleMutationFactor: 0.5,
@@ -264,6 +278,8 @@ export const balance: Balance = {
   },
   automation: {
     intervalSec: 5,
+    // The Zuchtautomat breeds in its own nest, but slowly – the normal nests stay free for breeding by hand.
+    autoBreedTimeMult: 3,
   },
   tower: {
     // Three small floors per former floor: 4 s each (in former floors 1.5× as long as the old 8 s; see TODO.md).

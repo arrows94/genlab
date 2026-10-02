@@ -3,9 +3,10 @@
   import { creaturePower, effectiveStats } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
-  import { ROLE_INFO, elementMultiplier, roleOf, setRow, setTeam, techniqueFor, type Row, type Synergy } from '@core/features/tower';
+  import { ROLE_INFO, elementMultiplier, roleOf, setRow, setTeam, techniqueFor, type Role, type Row, type Synergy } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
+  import { viewState, type TowerSort } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CreatureTile from './CreatureTile.svelte';
   import SortToggle from './SortToggle.svelte';
@@ -22,21 +23,43 @@
   } = $props();
 
   const MAX_SLOTS = 5;
-  let sortBy = $state<'power' | 'matchup' | 'speed'>('power');
-  let invertSort = $state(false);
+  let search = $state('');
   const el = (id: string) => content.elements.get(id);
+  const SORT_LABELS: Record<TowerSort, string> = {
+    power: 'Stärke', matchup: 'Vorteil vs.', speed: 'Tempo', hp: 'KP', atk: 'Angriff', def: 'Verteidigung', role: 'Rolle', rarity: 'Seltenheit',
+  };
+  const ROLE_ORDER: Record<Role, number> = { tank: 2, attacker: 1, fast: 0 };
+  /** The number under a candidate: the sorted stat, otherwise the total power. */
+  const STAT_SHORT: Partial<Record<TowerSort, string>> = { speed: '💨', hp: 'KP', atk: 'ANG', def: 'VER' };
+  /** „Vorteil vs.“ against the chosen element, or the next enemy's. */
+  const vsElement = $derived(content.elements.has(viewState.tower.vsElement) ? viewState.tower.vsElement : enemyElement);
 
   const candidates = $derived.by(() => {
     view.slowFrame;
     const inTeam = game.state.tower.team;
+    const { sort, invert } = viewState.tower;
+    const q = search.trim().toLowerCase();
     return [...game.state.creatures]
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
       .map((c) => {
         const element = content.species.get(c.speciesId).element;
         const stats = effectiveStats(game, c);
-        return { c, power: creaturePower(game, c), spd: stats.spd ?? 0, role: roleOf(game, stats), inTeam: inTeam.includes(c.id), dealt: elementMultiplier(game, element, enemyElement), taken: elementMultiplier(game, enemyElement, element) };
+        const role = roleOf(game, stats);
+        const dealt = elementMultiplier(game, element, vsElement);
+        const taken = elementMultiplier(game, vsElement, element);
+        const key =
+          sort === 'matchup' ? dealt / taken
+          : sort === 'speed' ? (stats.spd ?? 0)
+          : sort === 'hp' || sort === 'atk' || sort === 'def' ? (stats[sort] ?? 0)
+          : sort === 'role' ? ROLE_ORDER[role]
+          : sort === 'rarity' ? content.rarities.get(c.rarity).order
+          : 0;
+        const short = STAT_SHORT[sort];
+        const info = short ? `${short} ${formatNumber(stats[sort === 'speed' ? 'spd' : sort] ?? 0)}` : `Σ ${formatNumber(creaturePower(game, c))}`;
+        return { c, power: creaturePower(game, c), info, role, key, inTeam: inTeam.includes(c.id), dealt };
       })
-      .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : sortBy === 'speed' ? b.spd - a.spd : 0) || b.power - a.power))
+      .sort((a, b) => (invert ? -1 : 1) * (b.key - a.key || b.power - a.power))
       .slice(0, 40);
   });
 
@@ -99,12 +122,17 @@
     <div class="team-head">
       <h3>Kandidaten</h3>
       <div class="sorting">
-        <div class="seg">
-          <button class:on={sortBy === 'power'} onclick={() => (sortBy = 'power')}>Stärke</button>
-          <button class:on={sortBy === 'matchup'} onclick={() => (sortBy = 'matchup')}>Vorteil vs. {el(enemyElement).name}</button>
-          <button class:on={sortBy === 'speed'} onclick={() => (sortBy = 'speed')} title="Schnelle Kreaturen handeln öfter und weichen langsameren Gegnern aus">Tempo</button>
-        </div>
-        <SortToggle bind:inverted={invertSort} />
+        <input type="search" placeholder="Name oder Art …" bind:value={search} />
+        <select bind:value={viewState.tower.sort} title="Sortierung">
+          {#each Object.entries(SORT_LABELS) as [id, label] (id)}<option value={id}>{label}</option>{/each}
+        </select>
+        {#if viewState.tower.sort === 'matchup'}
+          <select bind:value={viewState.tower.vsElement} title="Vorteil gegen welches Element?">
+            <option value="">{el(enemyElement).name} (nächster Gegner)</option>
+            {#each content.elements.list as e (e.id)}<option value={e.id}>{e.name}</option>{/each}
+          </select>
+        {/if}
+        <SortToggle bind:inverted={viewState.tower.invert} />
       </div>
     </div>
     <div class="tiles">
@@ -112,7 +140,7 @@
         {@const sp = content.species.get(t.c.speciesId)}
         <CreatureTile
           creature={t.c}
-          info={sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}
+          info={t.info}
           selected={t.inTeam}
           disabled={!t.inTeam && team.length >= size}
           title="{t.c.name} · {el(sp.element).name} · {content.rarities.get(t.c.rarity).name}"
@@ -120,7 +148,7 @@
         >
           {#snippet corner()}
             <span title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
-            {#if t.dealt > 1}<span class="good" title="Elementvorteil gegen {el(enemyElement).name}">▲</span>{:else if t.dealt < 1}<span class="bad" title="Elementnachteil gegen {el(enemyElement).name}">▼</span>{/if}
+            {#if t.dealt > 1}<span class="good" title="Elementvorteil gegen {el(vsElement).name}">▲</span>{:else if t.dealt < 1}<span class="bad" title="Elementnachteil gegen {el(vsElement).name}">▼</span>{/if}
           {/snippet}
         </CreatureTile>
       {:else}
@@ -154,7 +182,9 @@
   .team-panel { margin-top: 0.75rem; }
   .team-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; margin: 0.3rem 0 0.5rem; }
   .team-head h3 { margin: 0; }
-  .sorting { display: flex; gap: 0.3rem; align-items: stretch; }
+  .sorting { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: stretch; }
+  .sorting input[type='search'] { flex: 1 1 9rem; max-width: 14rem; }
+  .sorting select { max-width: 11rem; }
   .sockets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
   .socket {
     position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
@@ -178,9 +208,6 @@
   .synergies { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.45rem; }
   .syn { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
   .syn.on { color: var(--text); border-color: var(--c, var(--gold)); background: color-mix(in srgb, var(--c, var(--gold)) 15%, transparent); }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg button { border: 0; border-radius: 0; font-size: 0.78rem; padding: 0.25rem 0.6rem; background: var(--bg-2); }
-  .seg button.on { background: var(--petrol); color: #fff; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
 
   /* Leaderboard */

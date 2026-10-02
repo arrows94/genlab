@@ -41,6 +41,12 @@ export const grandResearch: GrandResearchDef[] = [
     modifiers: [{ target: 'contracts.reward', op: 'pct', value: 0.25 }, { target: 'daily.reward', op: 'pct', value: 0.25 }],
   },
   {
+    id: 'tradingPost', name: 'Handelskontor', icon: '⚗️', hours: 16, hoursGrowth: 1.5, maxLevel: 3,
+    description: '−15 % auf alle Preise im Markt pro Stufe.', cost: { essence: 900, gold: 40000 }, costGrowth: 2.5,
+    requires: { type: 'feature', feature: 'market' },
+    modifiers: [{ target: 'cost.potion', op: 'pct', value: -0.15 }],
+  },
+  {
     id: 'eternalHarvest', name: 'Ewige Ernte', icon: '🌾', hours: 48, hoursGrowth: 1.5, maxLevel: 5,
     description: '+50 % Nahrung, Gold und Essenz pro Stufe.', cost: { essence: 2000, catalyst: 5 }, costGrowth: 3, requires: afterInheritance,
     modifiers: [

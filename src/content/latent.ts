@@ -19,10 +19,10 @@ export const latentTraits: LatentTraitDef[] = [
     modifiers: [{ target: 'production.food', op: 'pct', value: 0.4 }] },
   { id: 'essenceVein', name: 'Essenzader', weight: 2, scope: 'job', description: '+40 % Essenz bei der Arbeit.',
     modifiers: [{ target: 'production.essence', op: 'pct', value: 0.4 }] },
-  { id: 'wanderer', name: 'Fernweh', weight: 2, scope: 'global', description: '+5 % Beute bei Erkundungen.',
+  { id: 'wanderer', name: 'Fernweh', weight: 2, scope: 'self', description: '+5 % Beute auf den eigenen Erkundungen.',
     modifiers: [{ target: 'mission.reward', op: 'pct', value: 0.05 }] },
-  { id: 'broodKeeper', name: 'Nesthüter', weight: 2, scope: 'global', description: '−5 % Brutzeit.',
+  { id: 'broodKeeper', name: 'Nesthüter', weight: 2, scope: 'self', description: '−5 % Brutzeit bei den eigenen Eiern.',
     modifiers: [{ target: 'breeding.time', op: 'pct', value: -0.05 }] },
-  { id: 'geneWeaver', name: 'Genweber', weight: 1, scope: 'global', description: '+2 % Mutationschance beim Brüten.',
+  { id: 'geneWeaver', name: 'Genweber', weight: 1, scope: 'self', description: '+2 % Mutationschance bei den eigenen Eiern.',
     modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.02 }] },
 ];

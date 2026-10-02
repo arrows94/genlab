@@ -21,6 +21,8 @@
         <path d="M22 14 V30 L16 40 V70 Q16 76 22 76 H38 Q44 76 44 70 V40 L38 30 V14 Z" />
       {:else if kind === 'globalBuff'}
         <path d="M22 14 V24 C10 26 8 34 8 44 V66 Q8 76 18 76 H42 Q52 76 52 66 V44 C52 34 50 26 38 24 V14 Z" />
+      {:else if kind === 'abilityLevel'}
+        <path d="M24 14 V30 L10 60 Q7 76 30 76 Q53 76 50 60 L36 30 V14 Z" />
       {:else}
         <path d="M14 14 H46 C46 30 34 38 34 45 C34 52 46 60 46 76 H14 C14 60 26 52 26 45 C26 38 14 30 14 14 Z" />
       {/if}
@@ -48,6 +50,9 @@
   {:else if kind === 'globalBuff'}
     <path d="M22 14 V24 C10 26 8 34 8 44 V66 Q8 76 18 76 H42 Q52 76 52 66 V44 C52 34 50 26 38 24 V14 Z" class="glass" />
     <path d="M52 40 Q60 44 58 54 Q56 60 50 60" fill="none" stroke="#9ec9cc" stroke-width="2.5" opacity="0.7" />
+  {:else if kind === 'abilityLevel'}
+    <path d="M24 14 V30 L10 60 Q7 76 30 76 Q53 76 50 60 L36 30 V14 Z" class="glass" />
+    <text x="30" y="64" text-anchor="middle" font-size="13" fill="#fff" opacity="0.8">✦</text>
   {:else}
     <path d="M14 14 H46 C46 30 34 38 34 45 C34 52 46 60 46 76 H14 C14 60 26 52 26 45 C26 38 14 30 14 14 Z" class="glass" />
     <rect x="10" y="74" width="40" height="5" rx="2" fill="#6b4a2b" />
