@@ -6,7 +6,8 @@ import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
 import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
-import { lookForUpdate, registerPwa } from './platform/pwa';
+import { errorText } from './errors';
+import { checkForUpdate, lookForUpdate, registerPwa, watchForUpdates } from './platform/pwa';
 import { closeNews, initNews, news } from './news.svelte';
 import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
@@ -50,6 +51,8 @@ export const view = $state({
   muteDex: false,
   /** Set when a new app version is downloaded (PWA); calling it reloads into the update. */
   applyUpdate: null as (() => void) | null,
+  /** The player put the update banner away („Später“); it returns when the game comes back to the foreground. */
+  updateLater: false,
   /** False until the stored save has been loaded (async on native platforms). */
   ready: false,
   /** Wall clock of the last successful save. */
@@ -157,13 +160,13 @@ async function loadSave(): Promise<boolean> {
   try {
     raw = await storage.load();
   } catch (err) {
-    view.loadError = (err as Error).message;
+    view.loadError = errorText(err);
   }
   if (!raw) return false;
   try {
     game.loadState(deserialize(raw).state);
   } catch (err) {
-    view.loadError = (err as Error).message;
+    view.loadError = errorText(err);
     // Keep the broken save around so it can be exported / inspected.
     try {
       localStorage.setItem('genlab.save.broken', raw);
@@ -184,6 +187,11 @@ function wireEvents(g: Game): void {
       toast(`📖 Neu im Dex: ${content.species.get(e.species).name} (${content.rarities.get(e.rarity).name})`, 'info');
   });
   g.bus.on('prestige', () => toast('🧬 Vererbung abgeschlossen!', 'rare'));
+  g.bus.on('collected', (e) => {
+    if (!e.find) return;
+    const r = content.resources.get(e.find.resource);
+    toast(`✨ Fundstück beim Sammeln: +${formatNumber(e.find.amount)} ${r.icon} ${r.name}`, 'rare');
+  });
   const markUnseen = (tab: string) => {
     if (view.tab !== tab) view.unseen = { ...view.unseen, [tab]: (view.unseen[tab] ?? 0) + 1 };
   };
@@ -212,6 +220,10 @@ function wireEvents(g: Game): void {
     Object.entries(v).map(([r, a]) => `+${formatNumber(a.toString())} ${content.resources.get(r).icon}`).join(' ');
   g.bus.on('sold', (e) => !e.auto && toast(`💰 ${e.count} verkauft: ${amounts(e.value)}`));
   g.bus.on('recycled', (e) => !e.auto && toast(`♻️ ${e.count} recycelt: +${formatNumber(e.fragments)} 🧩`));
+  g.bus.on('recycleFailed', (e) => {
+    const c = g.state.creatures.find((x) => x.id === e.creatureId);
+    toast(`♻️ ${c?.name ?? 'Kreatur'} wurde nicht recycelt: ${e.reason}`, 'error');
+  });
   g.bus.on('stableFull', (e) => toast(`🏠 Stall voll – wilde Kreatur freigelassen (${amounts(e.value)})`, 'error'));
   g.bus.on('infused', (e) => {
     const parts = [`🔮 Infusion: +${formatNumber(e.ep)} EP`];
@@ -332,7 +344,7 @@ function writeSave(): void {
   saveInbox();
   storage.save(serialize(game.state)).then(
     () => (view.lastSaved = Date.now()),
-    (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
+    (err: unknown) => toast(`Speichern fehlgeschlagen: ${errorText(err)}`, 'error'),
   );
 }
 
@@ -345,7 +357,7 @@ export async function readImport(text: string): Promise<{ state: GameState; save
   try {
     return await importSave(text);
   } catch (err) {
-    toast((err as Error).message, 'error', 6000);
+    toast(errorText(err), 'error', 6000);
     return null;
   }
 }
@@ -381,7 +393,9 @@ function toBackground(): void {
 function toForeground(): void {
   cancelNotices();
   const pull = syncOnShow();
-  if (!longGap()) return;
+  // A dismissed update banner comes back, and a short absence still looks for a new version.
+  view.updateLater = false;
+  if (!longGap()) return checkForUpdate();
   void beforeCatchUp(pull, lookForUpdate(START_TIMEOUT_MS)).then(() => {
     advance(FIRST_SLICE_MS);
     refresh();
@@ -482,6 +496,8 @@ export async function init(): Promise<void> {
   for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, () => (touched = true), { capture: true, passive: true });
   // Look for a new version at once: after a long absence it is installed before anything is synced or caught up.
   const update = registerPwa((apply) => (view.applyUpdate = apply), START_TIMEOUT_MS).catch(() => null);
+  // An open game looks for new versions by itself; the banner appears as soon as one is ready.
+  void update.then(() => watchForUpdates());
   const hadSave = await loadSave();
   view.ready = true;
   // Before the loop starts, so the game continues on the newest save of all devices.

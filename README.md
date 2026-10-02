@@ -42,7 +42,7 @@ Der Build nutzt relative Pfade (`base: './'`) und läuft damit auch per `file://
 
 ## Spielen
 
-Alles startet mit einer Kreatur und dem „Sammeln“-Knopf. Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → GenLab RPG → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern, teilen und auf einem anderen Gerät wieder einspielen.
+Alles startet mit einer Kreatur und dem „Sammeln“-Knopf (mit Ausdauer, damit Dauerklicken sich nicht lohnt, und gelegentlichen Fundstücken). Neue Systeme schalten sich nach und nach frei (Farm → Brutstation → Mine → Erkundung → Bio-Labor → Infusion → Sequenzierung → Gen-Aufträge → Markt → Gen-Recycler → Hybride → Vererbung → Genom-Turm → GenLab RPG → Anomalien → Äon → Großprojekte). Der Spielstand wird automatisch im Browser gespeichert; unter **Optionen** lässt er sich als Text oder Datei sichern, teilen und auf einem anderen Gerät wieder einspielen.
 
 ## Architektur
 
@@ -79,7 +79,7 @@ tests/         Vitest-Tests für die Core-Logik
 | Gen-Aufträge | `core/features/contracts.ts`, `content/contracts.ts` | Tägliches Auftragsbrett (Seed aus Spielstand + Tag, kein Server). Vorlagen mit offenen Parametern werden aus Genbibliothek und Dex gewürfelt; erfüllte Aufträge heben die Auftragsstufe. |
 | Erbanlagen | `core/features/deepSequencing.ts`, `content/latent.ts` | Verborgene, vererbbare Eigenschaften (etwa jede dritte Kreatur); die Tiefensequenzierung (8 h, Sequenzierer-Platz) deckt sie auf und aktiviert sie. |
 | Stammbaum-Dynastien | `core/features/dynasty.ts`, `balance.dynasty` | Äon-Talent: reine Linien (beide Eltern und das Kind dieselbe Art): Die Linien-Tiefe (kürzere Elternlinie + 1) stärkt die Kreatur. Der tiefste Rekord je Art bleibt für immer; Stufen ab Tiefe 5/10/20/35/50 stärken die ganze Art, erhöhen die Produktion und bringen ab Stufe 4 Äon-Splitter. |
-| Besondere Brut | `core/features/breeding.ts`, `content/rituals.ts` | Brutrituale (4–24 h) mit höherer Hybrid-Chance, Mindestseltenheit oder mehr Mutation; belegen Nest und Eltern. |
+| Besondere Brut | `core/features/breeding.ts`, `content/rituals.ts` | Brutrituale (1–8 h) mit höherer Hybrid-Chance, Mindestseltenheit oder mehr Mutation; belegen Nest und Eltern. |
 | Wochenexpedition | `core/features/voyage.ts`, `content/voyages.ts` | 7-Tage-Reise mit Team (bis 3), Ereignissen pro Tag und einer Entscheidung bei der Rückkehr. Ziel wechselt wöchentlich und folgt dem Element der Wochen-Mutation. |
 | Endgame | `core/features/tower.ts`, `talents.ts`, `anomalies.ts`, `weekly.ts` | Turm als System (läuft offline weiter), Talente/Anomalien/Wochen-Mutation als Modifier-Provider. |
 | Genetik | `core/genetics.ts` | Ausprägung (dominant/rezessiv/kodominant), Mendel-Vererbung, Genom-Modifier, sichtbarer Phänotyp. Neue Gene in alten Spielständen werden beim Laden automatisch ergänzt. |

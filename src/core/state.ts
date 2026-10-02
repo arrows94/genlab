@@ -16,7 +16,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'lab' | 'tower' | 'rpg';
+  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg';
   target: string;
 }
 
@@ -501,6 +501,8 @@ export interface GameState {
   creatures: Creature[];
   processes: Process[];
   buffs: Buff[];
+  /** Wall-clock times of recent Zeittränke (their price grows with each one in the window). */
+  timeSkips: number[];
   nextId: number;
   /** Hybrid recipes whose hint has been revealed. */
   recipeHints: Record<string, boolean>;
@@ -556,6 +558,8 @@ export interface GameState {
   prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
   rpg: RpgState;
+  /** Sammeln: Ausdauer spent (refills over time, see features/collect.ts) and when the next Fundstück can turn up (sim time). */
+  collect: { spent: number; nextFindAt: number };
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -573,6 +577,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     creatures: [],
     processes: [],
     buffs: [],
+    timeSkips: [],
     nextId: 1,
     dex: {},
     geneLibrary: {},
@@ -606,6 +611,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
     rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {} },
+    collect: { spent: 0, nextFindAt: 0 },
   };
 }
 
@@ -615,4 +621,11 @@ export function dexKey(species: string, rarity: string): string {
 
 export function resource(state: GameState, id: string): Decimal {
   return state.resources[id] ?? D(0);
+}
+
+/** Drops references to creatures that no longer exist (tower rows, the RPG hero). */
+export function pruneCreatureRefs(state: GameState, exists: (id: number) => boolean): void {
+  state.tower.team = state.tower.team.filter(exists);
+  state.tower.back = state.tower.back.filter(exists);
+  if (state.rpg.run && !exists(state.rpg.run.creatureId)) state.rpg.run = null;
 }

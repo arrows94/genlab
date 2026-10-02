@@ -12,6 +12,7 @@ npm test             # all Vitest tests (tests/**/*.test.ts)
 npx vitest run tests/management.test.ts        # one file
 npx vitest run tests/management.test.ts -t "infusion"   # tests matching a name
 npm run check        # svelte-check / tsc – the only "lint" step
+npm run coverage     # tests with coverage of core, content and sync server (HTML report in coverage/)
 npm run build        # check + production build to dist/ (incl. PWA service worker)
 ```
 
@@ -41,7 +42,7 @@ Three layers with strict import direction `ui → core ← content` (aliases `@u
 - **Modifiers** (`core/modifiers.ts`, `core/providers.ts`): every bonus is `{ target, op: 'add'|'pct'|'mult', value }`, combined as `(base + Σadd) × (1 + Σpct) × Πmult`. Each bonus source (upgrades, achievements, dex, talents, anomalies, weekly mutation …) is a `ModifierProvider`. Results are cached, so **call `ctx.invalidate()` after any state change that affects bonuses** (creature stats, upgrades, jobs …). Valid target roots are listed in `MODIFIER_ROOTS`.
 - **Processes** (`core/systems/processes.ts`): generic timed jobs (egg, mission, sequencing, voyage, grand research …) keyed by `kind`. Feature modules register their `ProcessHandler` on import (`core/features/index.ts` is imported by `game.ts`). They can also mark kinds as surviving prestige (`registerResetSurvivor`) or occupying an expedition camp (`registerCampProcess`).
 - **Features** (`core/features/*.ts`): one module per game system. Actions return `ActionResult` (`{ ok: true } | { ok: false, reason }`, where `reason` is a German player-facing message) and never throw for invalid player input. Unlocks are data (`content/progression.ts` `features` with `Condition`s), checked by `systems/unlocks.ts`. Test for an unlock with `state.features[id]`.
-- **Creature jobs**: `creature.job` is `null` or `{ kind: 'building' | 'nest' | 'mission' | 'tower', target }`. Voyage teams also use `'mission'`. Consuming creatures (sell, recycle, infuse) must go through `canConsume` / `takeConsumable` in `features/stable.ts`, which protect favourites (`locked`), busy creatures and creatures being sequenced.
+- **Creature jobs**: `creature.job` is `null` or `{ kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg', target }`. Voyage teams also use `'mission'`. `isOccupied(c)` (`core/creatures.ts`) is true for every job except building work, which can be interrupted. Consuming creatures (sell, recycle, infuse) must go through `canConsume` / `takeConsumable` in `features/stable.ts`, which protect favourites (`locked`), busy creatures and creatures being sequenced.
 - **Save** (`core/save.ts`): versioned envelope with `SAVE_VERSION` and `MIGRATIONS[old]` (old → old+1). New fields with defaults in `createEmptyState` are merged automatically. Only renames and restructures need a migration. New gene loci and latent traits are added to old creatures on load (`ensureGenomes`, `ensureLatentTraits`). The RNG state lives in the save, so runs are reproducible.
 - **Prestige** (`core/prestige.ts`): what a reset clears is data (`PrestigeLayerDef.resets`).
 
@@ -76,3 +77,12 @@ Before a release, add a new entry at the **top** of `src/ui/changelog.ts` and in
 - Player-visible strings are German, with typographic quotes „…“ and `–` dashes. Numbers are formatted via `core/format.ts` (`formatNumber`, `formatDuration`, `formatPercent`).
 - Use `D()` / `Decimal` from `core/num.ts` for resources. Stats are plain numbers.
 - `README.md` has the full feature/architecture table and platform packaging notes. `TODO.md` tracks planned work, and `genlab-neubau-prompt.md` is the original project brief.
+
+## TODO and DONE
+
+- `TODO.md` holds **only open work**. The section "Code-Durchsicht (Oktober 2026)" is the review backlog. Work through it step by step, in the order given there.
+- Whenever you finish an item from `TODO.md`, do both of these in the same commit:
+  - delete the item from `TODO.md`;
+  - add a short summary of it to `DONE.md` under the matching area, newest entries first, with the date (`## YYYY-MM-DD – …`).
+- Never tick an item (`- [x]`) or cross it out (`~~…~~`), and don't leave "Erledigt:" paragraphs in `TODO.md`.
+- `tests/todo.test.ts` enforces this rule.

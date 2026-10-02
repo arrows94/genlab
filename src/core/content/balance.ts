@@ -21,6 +21,10 @@ export interface Balance {
     /** Offline summaries are only shown for absences longer than this. */
     summaryMinSec: number;
   };
+  rewards: {
+    /** Resources a reward bonus (`contracts.reward`, `daily.reward` …) does not multiply. */
+    unscaled: string[];
+  };
   contracts: {
     /** Least offers on the board per day (the board grows with the Ruf, see `boardLevels`). */
     offersPerDay: number;
@@ -174,6 +178,20 @@ export interface Balance {
   collect: {
     /** Base amounts per manual click (modified by `collect.<resource>`). */
     amounts: ResourceAmounts;
+    /** A click also brings this many seconds of the current production of those resources (`collect.production`). */
+    productionSeconds: number;
+    /**
+     * Ausdauer: one point per click, refilled over time (`collect.stamina`,
+     * `collect.staminaRegen`). An exhausted click brings only the refilled share,
+     * so `perSec` is the most full clicks per second, however fast one clicks.
+     */
+    stamina: { max: number; perSec: number };
+    /**
+     * Fundstücke: chance per rested click (`collect.findChance`), at most one per
+     * cooldown; worth `clicks` full clicks plus `productionSeconds` of production
+     * of a random resource the player collects or produces.
+     */
+    finds: { chance: number; cooldownSec: number; clicks: number; productionSeconds: number };
   };
   production: {
     /** Each point of the building's work stat adds this fraction of output. */
@@ -245,6 +263,8 @@ export interface Balance {
       maxPerCreature: number;
       /** Base chance a splice fails and scrambles another locus (modified by `splicing.instability`). */
       instability: number;
+      /** Floor for the reduced chance (if the base itself is lower, the base is the floor). */
+      minInstability: number;
     };
   };
   hybrids: {
@@ -421,6 +441,8 @@ export interface Balance {
     statPerTier: number;
     /** Äon-Splitter for reaching each tier (same order as `tiers`). */
     shardsPerTier: number[];
+    /** Total Äon-Splitter dynasties can pay over all species. */
+    maxShards: number;
     /** Permanent bonus per tier, summed over all species. */
     modifiersPerTier: ModifierDef[];
   };
@@ -432,10 +454,15 @@ export interface Balance {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */
     statScaling: number;
+    /** Missions at least this long are Tagesreisen (survive an inheritance). */
+    journeyHours: number;
   };
   market: {
     /** Per-creature cost growth for permanent stat potions is on the potion; this caps uses. */
     maxBoostsPerStat: number;
+    /** Price factor per Zeittrank already drunk within `timeSkipWindowHours`. */
+    timeSkipGrowth: number;
+    timeSkipWindowHours: number;
   };
   appearance: {
     patterns: string[];

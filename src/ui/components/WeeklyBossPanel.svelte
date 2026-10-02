@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { contractDay, nextContractDay } from '@core/features/contracts';
   import { attackWeeklyBoss, bossAttempts, bossDefeated } from '@core/features/weeklyBoss';
@@ -53,7 +54,7 @@
         <h3>👹 Wochen-Titan: {data.species.name}</h3>
         <span class="small muted">{data.element.name} · wie die Wochenexpedition · neuer Titan in {formatDuration(data.weekLeft)}</span>
       </div>
-      <div class="hp" title="{formatPercent(data.share, 1)} Schaden">
+      <div class="hp" title="{formatPercent(data.share, 1)} Schaden" use:meter={data.share}>
         <div class="dmg" style="width: {Math.min(100, data.share * 100)}%"></div>
         {#each data.tiers as t, i (i)}
           <span class="tier" class:reached={t.reached} style="left: {t.at * 100}%" title="{formatPercent(t.at, 0)}: Belohnung"></span>

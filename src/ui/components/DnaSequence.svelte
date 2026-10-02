@@ -12,7 +12,7 @@
 
   // Only active loci: gated genes (Urgen) appear once their talent is learned.
   const rows = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return activeLoci(game).map((locus) => {
       const pair = genome[locus.id];
       const a = pair ? alleleDef(locus, pair[0]) : undefined;

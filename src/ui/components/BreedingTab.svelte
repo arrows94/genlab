@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { lineageDepth } from '@core/features/dynasty';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
@@ -7,10 +8,10 @@
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, openRitualEgg, type EggData } from '@core/features/breeding';
   import { isWaiting, processRemainingMs } from '@core/systems/processes';
-  import { planAutoBreed, setAutoBreed } from '@core/features/automation';
+  import { planAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
-  import type { AutoBreedConfig, Creature, Process } from '@core/state';
-  import { game, view, act, openTab } from '../store.svelte';
+  import type { Creature, Process } from '@core/state';
+  import { game, view, act } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
   import { viewState } from '../viewState.svelte';
   import CostLabel from './CostLabel.svelte';
@@ -18,9 +19,13 @@
   import DnaHelix from './DnaHelix.svelte';
   import EggSvg from './EggSvg.svelte';
   import BreedingPlanner from './BreedingPlanner.svelte';
-  import CrystalSkip from './CrystalSkip.svelte';
   import SortToggle from './SortToggle.svelte';
   import DynastyPanel from './DynastyPanel.svelte';
+  import BreedingAutomat from './BreedingAutomat.svelte';
+  import NestCard from './NestCard.svelte';
+  import RitualReveal from './RitualReveal.svelte';
+  import CreatureTile from './CreatureTile.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -28,7 +33,6 @@
    * and candidate tiles, and the visual breeding planner.
    */
 
-  const twigs: [number, number, number, number][] = [[10, 24, 60, 14], [22, 32, 104, 20], [16, 16, 94, 30], [30, 30, 110, 22], [6, 20, 70, 32]];
 
   let parentA = $state<number | null>(null);
   /** Besondere Brut: chosen ritual (null = normal egg). */
@@ -40,8 +44,9 @@
   /** Hatchling of the last opened ritual egg, shown big with its rarity glow. */
   let reveal = $state<{ id: number; ritual: string } | null>(null);
 
+  // Lists, costs and filters: the slow tick is enough (actions refresh at once); egg progress runs below.
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const a = parentA !== null ? findCreature(game, parentA) : undefined;
     const b = parentB !== null ? findCreature(game, parentB) : undefined;
     const generation = offspringGeneration(a, b);
@@ -85,9 +90,7 @@
       knownAlleles: activeLoci(game).flatMap((l) => l.alleles.filter((al) => libraryHas(game, l.id, al.id)).map((al) => ({ id: `${l.id}:${al.id}`, label: `${l.name}: ${al.name} (${al.symbol})` }))),
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
-      eggs: nestEggs(game).map(eggView),
       ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
-      ritualEggs: ritualEggs(game).map(eggView),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -105,7 +108,7 @@
       special: game.state.features['specialBreeding'] === true,
       dynasties: game.state.features['dynasties'] === true,
       // Pure line of the child (a hybrid would break it).
-      lineage: a && b && a.speciesId === b.speciesId ? Math.min(a.lineage ?? 0, b.lineage ?? 0) + 1 : 0,
+      lineage: a && b ? lineageDepth(game, a.speciesId, a, b) : 0,
     };
   });
 
@@ -115,12 +118,18 @@
     return game.state.features['autoBreed'] && game.state.automation.autoBreed.enabled ? planAutoBreed(game) : null;
   });
 
-  const nestsFull = $derived(data.eggs.length >= data.slots);
-  const ritualFull = $derived(data.ritualEggs.length >= data.ritualSlots);
+  /** Eggs in the nests with their progress bars (fast tick). */
+  const nests = $derived.by(() => {
+    view.frame;
+    return { eggs: nestEggs(game).map(eggView), ritualEggs: ritualEggs(game).map(eggView) };
+  });
+
+  const nestsFull = $derived(nests.eggs.length >= data.slots);
+  const ritualFull = $derived(nests.ritualEggs.length >= data.ritualSlots);
   /** Normal nests first, then the Ritualnest (Besondere Brut). */
   const nestList = $derived([
-    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: data.eggs[i], ritual: false })),
-    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: data.ritualEggs[i], ritual: true })),
+    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: nests.eggs[i], ritual: false })),
+    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: nests.ritualEggs[i], ritual: true })),
   ]);
 
   function eggView(p: Process) {
@@ -138,17 +147,6 @@
       ritual: d.ritual && content.breedingRituals.has(d.ritual) ? content.breedingRituals.get(d.ritual) : null,
     };
   }
-
-  const BUDGETS = [[1, 'alle Vorräte'], [0.5, '50 %'], [0.25, '25 %'], [0.1, '10 %']] as const;
-  const GOAL_HINTS: Record<string, string> = {
-    power: 'Die zwei stärksten Kreaturen.',
-    hybrid: 'Eltern eines noch unentdeckten Hybrid-Rezepts (höchste Chance zuerst).',
-    dex: 'Die günstigsten zwei einer Art, der noch Dex-Einträge fehlen.',
-    allele: 'Sequenzierte Träger des Ziel-Allels – reinerbige zuerst.',
-    abilities: 'Kreaturen mit den meisten und seltensten Fähigkeiten.',
-    lineage: 'Die zwei tiefsten reinen Linien einer Art – so wächst die Dynastie Generation für Generation.',
-    cheap: 'Die niedrigsten Generationen – billiger Nachwuchs für Infusion und Recycler.',
-  };
 
   const sortArrow = $derived(viewState.breeding.invert ? '↑' : '↓');
   const sortAz = $derived(viewState.breeding.invert ? 'Z–A' : 'A–Z');
@@ -177,9 +175,6 @@
     }
   }
 
-  function setAuto(patch: Partial<AutoBreedConfig>) {
-    act(setAutoBreed(game, patch));
-  }
   function look(c: Creature) {
     return expressedAppearance(game, c);
   }
@@ -255,142 +250,28 @@
 <header class="tab-head">
   <h2>🥚 Brutstation</h2>
   <div class="kpis">
-    <span class="kpi"><b class="num">{data.eggs.length}/{data.slots}</b><small>Nester</small></span>
+    <span class="kpi"><b class="num">{nests.eggs.length}/{data.slots}</b><small>Nester</small></span>
     <span class="kpi" class:warn={data.stableFull}>
       <b class="num">{data.stableUsed}/{data.stableCap}</b><small>Stall</small>
-      <span class="mini"><span style="width: {Math.min(100, (data.stableUsed / Math.max(1, data.stableCap)) * 100)}%"></span></span>
+      <Meter size="sm" value={data.stableUsed / Math.max(1, data.stableCap)} low={data.stableFull} title="Stall-Belegung" />
     </span>
     <span class="kpi"><b class="num">{formatPercent(data.mutation, 1)}</b><small>Mutation</small></span>
   </div>
 </header>
 
 {#if data.automaton}
-  {@const auto = data.autoBreed}
-  <div class="panel auto" class:on={auto.enabled}>
-    <div class="auto-row">
-      <label class="switch"><input type="checkbox" checked={auto.enabled} onchange={(e) => setAuto({ enabled: e.currentTarget.checked })} /> <b>🤖 Zuchtautomat</b></label>
-      <label>Ziel
-        <select value={auto.rule} onchange={(e) => setAuto({ rule: e.currentTarget.value })}>
-          <optgroup label="Stärke">
-            <option value="power">Gesamtstärke</option>
-            {#each content.stats.list as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-          </optgroup>
-          <optgroup label="Sammeln">
-            {#if data.hybrids}<option value="hybrid">Neue Hybride entdecken</option>{/if}
-            <option value="dex">Dex-Lücken füllen</option>
-            <option value="abilities">Fähigkeiten</option>
-            <option value="allele">Gen-Ziel (Allel)</option>
-            {#if data.dynasties}<option value="lineage">Reine Linie vertiefen</option>{/if}
-          </optgroup>
-          <optgroup label="Verwertung">
-            <option value="cheap">Günstiger Nachwuchs</option>
-          </optgroup>
-        </select>
-      </label>
-      {#if auto.rule === 'allele'}
-        <label>Allel
-          <select value={auto.allele ?? ''} onchange={(e) => setAuto({ allele: e.currentTarget.value || null })}>
-            <option value="">– wählen –</option>
-            {#each data.knownAlleles as al (al.id)}<option value={al.id}>{al.label}</option>{/each}
-          </select>
-        </label>
-      {/if}
-      {#if auto.rule !== 'hybrid'}
-        <label>Art
-          <select value={auto.species ?? ''} onchange={(e) => setAuto({ species: e.currentTarget.value || null })}>
-            <option value="">beliebig</option>
-            {#each data.ownedSpecies as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-          </select>
-        </label>
-      {/if}
-    </div>
-    <div class="auto-row">
-      <label title="Ein Ei darf höchstens diesen Anteil jeder Ressource kosten.">Budget pro Ei
-        <select value={String(auto.budget)} onchange={(e) => setAuto({ budget: Number(e.currentTarget.value) })}>
-          {#each BUDGETS as [v, label] (v)}<option value={String(v)}>{label}</option>{/each}
-        </select>
-      </label>
-    </div>
-    <p class="auto-status small">
-      <span class="muted">{GOAL_HINTS[auto.rule] ?? `Die zwei mit dem höchsten Wert in ${content.stats.get(auto.rule).name}.`}</span>
-      {#if autoPlan}
-        {#if autoPlan.ok}<span class="next">Nächstes Paar: <b>{autoPlan.a.name}</b> × <b>{autoPlan.b.name}</b></span>
-        {:else}<span class="wait">Wartet: {autoPlan.reason}</span>{/if}
-      {/if}
-    </p>
-    <p class="auto-status small">
-      <span class="muted">
-        Ist der Stall voll, wartet der Zuchtautomat.
-        {#if data.recycleAuto}Platz schafft der Recycling-Automat mit seiner Zerlege-Kammer{data.recycleAutoOn ? '' : ' (gerade ausgeschaltet)'}.{:else if data.recycler}Platz schaffst du im Labor oder im Gen-Recycler – der Recycling-Automat kann das später übernehmen.{:else}Platz schaffst du im Labor (verkaufen).{/if}
-      </span>
-      {#if data.recycler}<button class="to-recycler" onclick={() => openTab('recycler')}>♻️ Zum Gen-Recycler</button>{/if}
-    </p>
-  </div>
+  <BreedingAutomat auto={data.autoBreed} plan={autoPlan} hybrids={data.hybrids} dynasties={data.dynasties} knownAlleles={data.knownAlleles} ownedSpecies={data.ownedSpecies} recycler={data.recycler} recycleAuto={data.recycleAuto} recycleAutoOn={data.recycleAutoOn} />
 {/if}
 
 <!-- Nests -->
 <div class="nests">
   {#each nestList as n (n.key)}
-    {@const egg = n.egg}
-    <article class="nest" class:busy={!!egg} class:soon={!!egg && egg.progress > 0.85} class:ready={!!egg?.ready} class:cracking={!!egg && opening === egg.id} class:ritualnest={n.ritual}>
-      {#if n.ritual}<span class="rn-label tiny">✨ Ritualnest</span>{/if}
-      <div class="egg-wrap">
-        {#if egg}
-          <span class="glow" style="--h: {egg.hues[0]}; opacity: {0.25 + egg.progress * 0.6}"></span>
-          <span class="egg"><EggSvg hueA={egg.hues[0]} hueB={egg.hues[1]} progress={egg.progress} size={52} /></span>
-        {:else}
-          <span class="egg"><EggSvg hueA={180} hueB={200} size={44} ghost /></span>
-        {/if}
-        <svg class="twigs" viewBox="0 0 120 40" aria-hidden="true">
-          <ellipse cx="60" cy="22" rx="52" ry="14" fill="#4a3320" />
-          <ellipse cx="60" cy="18" rx="40" ry="8" fill="#2b1d12" />
-          {#each twigs as [x1, y1, x2, y2], j (j)}
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#7a5433" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
-          {/each}
-        </svg>
-      </div>
-      {#if egg}
-        <div class="parents">
-          {#each egg.parents as p, j (j)}
-            {#if p}
-              {@const sp = content.species.get(p.speciesId)}
-              <span title={p.name}><CreatureSvg appearance={look(p)} shape={sp.shape} tier={sp.tier} size={24} /></span>
-            {/if}
-            {#if j === 0}<span class="times">×</span>{/if}
-          {/each}
-        </div>
-        <span class="small">{egg.parents.map((p) => p?.name ?? '?').join(' × ')}</span>
-        {#if egg.ready}
-          <button class="open-egg" disabled={opening !== null} onclick={() => openEgg(egg.id, egg.ritual?.name ?? 'Brutritual')}>
-            ✨ Ei öffnen
-          </button>
-          <span class="small muted">{#if egg.ritual}{egg.ritual.icon} {egg.ritual.name} · {/if}<span class="gen">Gen {egg.generation}</span></span>
-        {:else}
-          <DnaHelix progress={egg.progress} pairs={14} width={130} height={22} />
-          <span class="small num">{#if egg.ritual}<span class="ritual-tag" title={egg.ritual.name}>{egg.ritual.icon}</span>{' '}{/if}<span class="gen">Gen {egg.generation}</span> · noch {formatDuration(egg.remaining)}</span>
-          <CrystalSkip process={game.state.processes.find((p) => p.id === egg.id)} />
-        {/if}
-      {:else}
-        <span class="small muted">{n.ritual ? 'Frei für ein Brutritual' : 'Freies Nest'}</span>
-      {/if}
-    </article>
+    <NestCard egg={n.egg} ritual={n.ritual} {opening} onopen={openEgg} />
   {/each}
 </div>
 
 {#if revealed}
-  <div class="reveal-backdrop" role="presentation" onclick={() => (reveal = null)}>
-    <div class="reveal" class:hybrid={revealed.sp.tier !== 'base'} style="--rc: {revealed.rar.color}" role="dialog" aria-label="Ritual-Ei geöffnet" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (reveal = null)} in:scale={{ duration: 450, start: 0.4 }}>
-      <span class="rays" aria-hidden="true"></span>
-      <span class="small muted">{reveal?.ritual}</span>
-      <span class="reveal-art"><CreatureSvg appearance={look(revealed.c)} shape={revealed.sp.shape} tier={revealed.sp.tier} size={110} shiny={revealed.c.shiny} /></span>
-      <strong class="reveal-name">{revealed.c.name}</strong>
-      <span class="small"><span class="rar">{revealed.rar.name}</span> · {revealed.sp.name}{revealed.sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
-      <div class="reveal-actions">
-        <button onclick={() => { view.detail = revealed.c.id; reveal = null; }}>Details</button>
-        <button class="primary" onclick={() => (reveal = null)}>Weiter</button>
-      </div>
-    </div>
-  </div>
+  <RitualReveal {revealed} ritualName={reveal?.ritual ?? ''} onclose={() => (reveal = null)} />
 {/if}
 
 {#if data.hatchlings.length}
@@ -413,23 +294,19 @@
   <div class="tiles" class:half={!!side}>
     {#each list as t (t.c.id)}
       {@const sp = content.species.get(t.c.speciesId)}
-      {@const rar = content.rarities.get(t.c.rarity)}
-      <button
-        class="tile"
-        class:a={parentA === t.c.id}
-        class:b={parentB === t.c.id}
-        style="--el: {content.elements.get(sp.element).color}; --rc: {rar.color}"
-        title="{t.c.name} · {sp.name} · {rar.name}"
+      <CreatureTile
+        creature={t.c}
+        mark={parentA === t.c.id ? 1 : parentB === t.c.id ? 2 : null}
+        info="Gen {t.c.generation} · {viewState.breeding.sort.startsWith('stat:') ? `${content.stats.get(viewState.breeding.sort.slice(5)).short} ${formatNumber(t.key)}` : `Σ ${formatNumber(t.power)}`}"
         onclick={() => (side ? pickSide(t.c.id, side) : pick(t.c.id))}
       >
-        <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-        <span class="tname">{t.c.name}</span>
+        {#snippet corner()}
+          {#if t.c.sequenced}<span title="Sequenziert">🧬</span>{/if}
+          {#if t.c.job?.kind === 'building'}<span title="Arbeitet gerade" class="muted">⚒</span>{/if}
+        {/snippet}
         {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
-        <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
         {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
-        {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
-        {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
-      </button>
+      </CreatureTile>
     {:else}
       <p class="muted small">Keine freien Kreaturen.</p>
     {/each}
@@ -562,7 +439,6 @@
 
 <style>
   .small { font-size: 0.8rem; }
-  .to-recycler { align-self: flex-start; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
   .tiny { font-size: 0.68rem; }
   .repeat {
     display: grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; border-radius: 50%; font-size: 1.15rem; line-height: 1;
@@ -580,71 +456,19 @@
   @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
 
   .kpi.warn { border-color: var(--danger); }
-  .mini { width: 100%; height: 3px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }
-  .mini span { display: block; height: 100%; background: var(--teal); }
-  .kpi.warn .mini span { background: var(--danger); }
 
-  .auto { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
-  .auto-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-  .auto-status { margin: 0; display: flex; gap: 0.3rem 0.75rem; flex-wrap: wrap; }
-  .auto-status .next { color: var(--teal); }
-  .auto-status .wait { color: var(--gold); }
-  .auto.on { border-color: var(--teal); box-shadow: 0 0 12px #2fd3c433; }
 
   /* Nests */
   .nests { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.6rem; }
-  .nest {
-    display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.6rem 0.5rem; text-align: center;
-    border-radius: var(--radius); border: 1px dashed var(--line); background: var(--bg-2);
-  }
-  .nest.busy { border: 1px solid var(--line); background: radial-gradient(circle at 50% 30%, #f2c14e14, var(--panel) 70%); }
-  .nest.soon { border-color: var(--gold); }
-  .nest.ritualnest { position: relative; border: 1px dashed color-mix(in srgb, var(--violet) 60%, var(--line)); background: radial-gradient(circle at 50% 30%, #9b6bff1f, var(--panel) 70%); }
-  .rn-label { position: absolute; top: 0.3rem; left: 0.5rem; color: var(--violet); font-weight: 700; }
-  .egg-wrap { position: relative; width: 120px; height: 86px; display: grid; justify-items: center; align-items: end; }
-  .twigs { position: absolute; bottom: 0; width: 120px; height: 40px; }
   .egg { position: relative; z-index: 1; margin-bottom: 12px; transform-origin: 50% 90%; }
-  .glow { position: absolute; bottom: 10px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, hsl(var(--h) 80% 60% / 0.7), transparent 65%); }
-  .busy .egg { animation: rock 3s ease-in-out infinite; }
-  .soon .egg { animation: wobble 0.45s ease-in-out infinite; }
   @keyframes rock { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; } }
-  @keyframes wobble { 0%, 100% { rotate: -9deg; } 50% { rotate: 9deg; } }
-  /* Ritual egg done: it waits, glowing, until the player opens it. */
-  .nest.ready { border-style: solid; border-color: var(--gold); box-shadow: 0 0 16px #f2c14e55; }
-  .ready .egg { animation: wobble 0.9s ease-in-out infinite; }
-  .ready .glow { opacity: 1 !important; animation: pulse 1.4s ease-in-out infinite; }
-  .cracking .egg { animation: crack 0.7s ease-in forwards; }
-  @keyframes pulse { 0%, 100% { scale: 0.9; } 50% { scale: 1.15; } }
-  @keyframes crack { 0% { rotate: 0deg; scale: 1; } 20% { rotate: -14deg; } 40% { rotate: 14deg; } 60% { rotate: -10deg; scale: 1.08; } 100% { rotate: 0deg; scale: 1.35; opacity: 0; filter: brightness(2.5); } }
-  .open-egg { margin: 0.2rem 0; border-color: var(--gold); color: var(--gold); font-weight: 700; }
-  .reveal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: #0009; }
-  .reveal {
-    position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-    width: min(20rem, 100%); padding: 1.2rem 1rem 1rem; border-radius: 16px; text-align: center;
-    border: 2px solid var(--rc); background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--rc) 30%, transparent), var(--panel) 70%);
-    box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 55%, transparent);
-  }
-  .reveal.hybrid { box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 55%, transparent), 0 0 18px #9b6bffaa; }
-  .rays {
-    position: absolute; left: 50%; top: 38%; width: 30rem; height: 30rem; translate: -50% -50%; z-index: 0; pointer-events: none;
-    background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 22%, transparent) 0 10deg, transparent 10deg 20deg);
-    mask: radial-gradient(circle, #000 20%, transparent 60%); animation: spin 12s linear infinite;
-  }
-  @keyframes spin { to { rotate: 360deg; } }
-  .reveal > :not(.rays) { position: relative; z-index: 1; }
-  .reveal-name { font-size: 1.2rem; }
-  .rar { color: var(--rc); font-weight: 700; }
-  .reveal-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
-  .parents { display: flex; align-items: center; gap: 0.2rem; }
-  .times { color: var(--muted); font-size: 0.8rem; }
-  .gen { color: var(--violet); }
 
   .hatched { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem; }
   .chick {
     display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem 0.2rem 0.3rem; border-radius: 99px;
     border: 1px solid color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 10%, var(--bg-2));
   }
-  .chick.hybrid { border-color: var(--violet); box-shadow: 0 0 10px #9b6bff66; }
+  .chick.hybrid { border-color: var(--violet); box-shadow: 0 0 10px color-mix(in srgb, var(--violet) 40%, transparent); }
   .cname { font-weight: 600; font-size: 0.8rem; }
 
   /* Altar */
@@ -667,8 +491,7 @@
   .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; margin: 0.7rem 0 0.5rem; }
   .rituals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.35rem; margin-top: 0.7rem; }
   .ritual { display: grid; gap: 0.15rem; text-align: left; padding: 0.4rem 0.55rem; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); }
-  .ritual.on { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e44; }
-  .ritual-tag { font-size: 0.9rem; }
+  .ritual.on { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 27%, transparent); }
   .fact { padding: 0.15rem 0.6rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
   .go { width: 100%; background: linear-gradient(90deg, var(--petrol), #c26bd8); }
   .note { text-align: center; margin: 0.3rem 0 0; }
@@ -682,17 +505,8 @@
   .sortgroup { display: flex; gap: 0.3rem; }
   .lin { color: var(--gold); font-weight: 700; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
-  .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
-  .tile.a { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; }
-  .tile.b { border-color: #ff7ad9; box-shadow: 0 0 12px #ff7ad988; }
-  .tile.a::after, .tile.b::after { position: absolute; top: 2px; left: 6px; font-weight: 800; font-size: 0.75rem; }
-  .tile.a::after { content: '1'; color: var(--gold); }
-  .tile.b::after { content: '2'; color: #ff7ad9; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
   .sp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .more { margin: 0.3rem 0 0; text-align: center; }
-  .seq { position: absolute; top: 2px; right: 5px; font-size: 0.7rem; }
-  .work { position: absolute; top: 18px; right: 6px; font-size: 0.7rem; color: var(--muted); }
   .hint { margin-top: 1rem; }
 
   @media (max-width: 600px) {

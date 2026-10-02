@@ -105,7 +105,7 @@
     if (g && untrack(() => viewState.nav.last[g.id]) !== tab) viewState.nav.last[g.id] = tab;
   });
   const badges = $derived.by((): Record<string, number> => {
-    view.frame;
+    view.slowFrame;
     // A voyage waiting for its decision counts as news in the expedition tab.
     const voyage = game.state.voyage.pending ? 1 : 0;
     return { ...view.unseen, research: affordableUpgradeCount(game), contracts: fulfillableCount(game), expedition: (view.unseen.expedition ?? 0) + voyage, lab: (view.unseen.lab ?? 0) + (dailyAvailable(game, Date.now()) ? 1 : 0), breeding: (view.unseen.breeding ?? 0) + readyRitualEggs(game).length, tower: (view.unseen.tower ?? 0) + (game.state.features['weeklyBoss'] && game.state.tower.team.length > 0 && game.state.weeklyBoss.damage < game.state.weeklyBoss.maxHp ? game.state.weeklyBoss.attempts : 0) };
@@ -235,7 +235,7 @@
 <CreatureDetail />
 <OfflineModal />
 <WhatsNew />
-{#if view.applyUpdate}<UpdateBanner />{/if}
+{#if view.applyUpdate && !view.updateLater}<UpdateBanner />{/if}
 {/if}
 <Toasts />
 {#if view.ready && view.world === 'off'}<Celebration />{/if}

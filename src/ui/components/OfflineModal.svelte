@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { content } from '@content/index';
   import { formatDuration, formatNumber } from '@core/format';
   import { view } from '../store.svelte';
@@ -22,8 +23,8 @@
 
 {#if view.offline}
   {@const r = view.offline}
-  <div class="backdrop" role="presentation" onclick={() => (view.offline = null)}>
-    <div class="panel modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (view.offline = null)}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && (view.offline = null)}>
+    <div class="panel modal" role="dialog" aria-modal="true" tabindex="-1" use:dialog={{ onescape: () => (view.offline = null) }}>
       <h2>Willkommen zurück!</h2>
       <p>Du warst {formatDuration(r.requestedMs)} weg.</p>
       {#if r.simulatedMs < r.requestedMs}

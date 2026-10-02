@@ -25,7 +25,7 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: 30,
+    id: 33,
     date: '2026-10-02',
     title: 'Ruf, Suche und Ordnung',
     items: [
@@ -40,6 +40,55 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Ist alles erforscht, sagt die Forschung das jetzt auch, statt „keine Forschung bezahlbar“.', feature: 'research' },
       { text: 'Die Hintergrundmusik wechselt nur noch mit dem Bereich – innerhalb eines Bereichs läuft der Track über alle Unter-Tabs weiter.' },
       { text: 'Monster-Dex: Die Fortschrittsringe stehen wieder auf einer Höhe.', feature: 'dex' },
+    ],
+  },
+  {
+    id: 32,
+    date: '2026-10-02',
+    title: 'Sammeln mit Ausdauer und Fundstücken',
+    items: [
+      { text: 'Sammeln kostet jetzt Ausdauer – die DNA-Helix neben dem Knopf zeigt, wie viel noch da ist: Jeder Klick kostet einen Punkt, sie füllt sich von selbst wieder. Ist sie leer, bringt schnelleres Klicken nichts extra – eine kurze Pause lohnt sich mehr als Dauerklicken.' },
+      { text: 'Sammeln wächst mit: Jeder Klick bringt zusätzlich einen Teil deiner aktuellen Nahrungsproduktion.' },
+      { text: 'Mit etwas Glück stößt du beim Sammeln auf ein Fundstück – einen Schwung Nahrung oder anderer Rohstoffe, die du gerade herstellst.' },
+    ],
+  },
+  {
+    id: 31,
+    date: '2026-10-02',
+    title: 'Updates sofort bemerken',
+    items: [
+      { text: 'Lässt du Genlab offen, sieht das Spiel jetzt regelmäßig und beim Zurückkehren nach einer neuen Version – dann erscheint oben „Eine neue Version von Genlab ist da“.' },
+      { text: 'Das Hinweisfeld lässt sich mit „Später“ ausblenden; in den Optionen unter „Info“ kannst du jederzeit nach Updates suchen und sie installieren.' },
+      { text: 'Auf dem Handy werden Kreaturen-Namen nicht mehr abgeschnitten: In den Anlagen, allen Auswahlfenstern und im Turm-Team stehen lange Namen auf zwei Zeilen, Arbeiter- und Teamplätze sind breiter.' },
+    ],
+  },
+  {
+    id: 30,
+    date: '2026-10-02',
+    title: 'Kleine Reparaturen im Labor',
+    items: [
+      { text: 'Neuer einheitlicher Look: Fortschrittsbalken und Kreaturen-Kacheln sehen überall gleich aus – mit Element-Schein, Seltenheitsleiste und klarer Auswahl.' },
+      { text: 'Der Zeittrank kostet jetzt 20 Minuten deiner Essenz-Produktion – wer mehrere in einer Stunde trinkt, zahlt jedes Mal das Doppelte.', feature: 'market' },
+      { text: 'Festmahl und Turbo-Trank kosten jetzt ein paar Minuten deiner Produktion statt eines festen Preises – so bleiben sie auch später eine echte Entscheidung.', feature: 'market' },
+      { text: 'Boni auf Auftrags- und Tagesbelohnungen gelten nicht mehr für Äon-Splitter, Zeit- und Evolutionskristalle.', feature: 'contracts' },
+      { text: 'Evolutionskristalle im Turm gibt es nur noch für eine neue höchste Etage.', feature: 'tower' },
+      { text: 'Reisende, die während einer Vererbung unterwegs sind, kommen ohne Infusion, Trank-Boni und Linie zurück wie alle anderen. Der Unterricht unterwegs hält die Kraftfutter-Grenze ein.', feature: 'voyage' },
+      { text: 'Gen-Splicing behält immer mindestens 5 % Risiko.', feature: 'splicing' },
+      { text: 'Dynastien bringen zusammen höchstens 25 Äon-Splitter.', feature: 'dynasties' },
+      { text: 'Fenster wie die Kreaturen-Details lassen sich mit Escape schließen, und die Tastatur bleibt darin, solange sie offen sind.' },
+      { text: 'Fehlermeldungen von Browser und Gerät erscheinen auf Deutsch.' },
+      { text: '„Weniger Bewegung“ hält jetzt auch das Farbenspiel schillernder Kreaturen an.' },
+      { text: 'Das Labor rechnet sparsamer – angenehmer auf dem Handy.' },
+      { text: 'Vererbung auf dem Handy: Große Bonuswerte werden nicht mehr abgeschnitten.', feature: 'inheritance' },
+      { text: 'Der Sequenzier-Roboter lässt Kreaturen in Ruhe, die auf dem Weg in den Gen-Recycler sind.', feature: 'autoSequence' },
+      { text: 'Wird der Recycler schneller, während eine Kreatur in der Kammer liegt, springt die nächste nicht mehr vor.', feature: 'autoRecycle' },
+      { text: 'Wochen-Boss: Jeder verpasste Tag bringt seine Angriffe (bis zur Obergrenze), nicht nur der letzte.', feature: 'weeklyBoss' },
+      { text: 'Wochen-Boss: Senkst du den Turm-Rekord, wird der Titan nie schwächer als die Etagen, die dein Team zuletzt erreicht hat.', feature: 'weeklyBoss' },
+      { text: 'Zwillinge, die als Hybrid schlüpfen, bekommen die Werte ihrer neuen Art wie ihr Geschwister.', feature: 'aeon' },
+      { text: 'Der Recycling-Automat lässt das Paar in Ruhe, das der Zuchtautomat als Nächstes verpaaren will – auch wenn der Stall voll ist.', feature: 'autoRecycle' },
+      { text: 'Schickst du eine Kreatur in den Recycler, die am Ende doch bleiben muss, sagt dir eine Nachricht warum.', feature: 'recycler' },
+      { text: 'Nach einer langen Pause wechselt die Wochen-Mutation beim Aufholen zur richtigen Zeit, und die Entschlossenheit im Turm wächst Stunde für Stunde statt sofort voll.', feature: 'weekly' },
+      { text: 'Startvorräte aus Talenten zählen nicht mehr als „in diesem Lauf verdient“.', feature: 'aeon' },
     ],
   },
   {

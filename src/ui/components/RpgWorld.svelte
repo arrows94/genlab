@@ -1,7 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
-  import { formatNumber } from '@core/format';
+  import { formatNumber, formatPercent } from '@core/format';
   import { INTENT_INFO, ROOM_INFO, chooseEventOption, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
@@ -9,6 +9,7 @@
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { STATUS_ICON, STATUS_NAME, gearOf, itemText, lootList, pct, rarityOf, speciesLook } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * The other world (Isekai): while a GenLab RPG run lasts, the app shows only this – no tabs, no resources,
@@ -54,7 +55,7 @@
     menuOpen = false;
     const fighting = !!data.run?.battle;
     const text = fighting
-      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.`
+      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${formatPercent(game.balance.rpg.defeatKeep, 0)} der getragenen bleiben.`
       : 'Aufgeben und zurückkehren? Du nimmst alle Beute mit, der Lauf ist dann vorbei.';
     if (await ask(text, { ok: 'Aufgeben', danger: fighting })) act(giveUpRpgRun(game));
   }
@@ -140,7 +141,7 @@
     <div class="hp-body">
       <div class="hero-title"><b>{data.hero.name}</b> <span class="lvl">Stufe {data.heroLevel?.level ?? 1}</span></div>
       <div class="bar blood" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
-      <div class="bar xp" title="Erfahrung bis zur nächsten Stufe"><div style="width: {data.heroLevel && data.heroLevel.need > 0 ? pct(data.heroLevel.into, data.heroLevel.need) : '100%'}"></div></div>
+      <Meter size="sm" tone="gold" value={data.heroLevel && data.heroLevel.need > 0 ? data.heroLevel.into / data.heroLevel.need : 1} title="Erfahrung bis zur nächsten Stufe" />
       {#if run.upgrades.length > 0}
         <div class="ups" title="Verbesserungen dieses Laufs">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
       {/if}
@@ -175,7 +176,7 @@
           <span class="k-icon">{k.icon}</span>
           <span class="k-name">{k.name}</span>
           {#if k.slot === 'special'}
-            <span class="charge"><span style="width: {pct(b.charge, 1)}"></span></span>
+            <span class="charge"><Meter size="sm" tone="gold" value={b.charge} title="Aufladung" /></span>
           {:else if cd > 0}
             <span class="cd num">{cd}</span>
           {/if}
@@ -346,8 +347,6 @@
   .bar span { position: absolute; inset: 0; font-size: 0.68rem; line-height: 12px; text-align: center; color: #fff; text-shadow: 0 1px 1px #000; font-family: var(--mono); }
   .bar.blood > div { background: linear-gradient(180deg, #d0453d, var(--blood)); }
   .bar.foe-bar > div { background: linear-gradient(180deg, #8b5cc4, #4b2d7a); }
-  .bar.xp { height: 5px; }
-  .bar.xp > div { background: linear-gradient(90deg, #b8860b, var(--glow)); }
 
   /* The way through the dungeon: rooms behind, the room now, the boss at the end. */
   .trail { list-style: none; display: flex; align-items: center; gap: 0; margin: 0 0 0.8rem; padding: 0 0.2rem; overflow-x: auto; scrollbar-width: none; }
@@ -403,8 +402,7 @@
   .k-icon { font-size: 1.4rem; }
   .k-name { font-size: 0.75rem; line-height: 1.1; text-align: center; }
   .cd { position: absolute; top: 0.2rem; right: 0.35rem; font-size: 0.75rem; color: var(--glow); }
-  .charge { width: 80%; height: 4px; border-radius: 2px; background: #000a; overflow: hidden; }
-  .charge span { display: block; height: 100%; background: linear-gradient(90deg, #b8860b, var(--glow)); }
+  .charge { display: flex; width: 80%; }
 
   .scroll { padding: 0.9rem 1rem; margin-bottom: 0.8rem; }
   .tale { margin: 0 0 0.7rem; line-height: 1.45; }

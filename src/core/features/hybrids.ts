@@ -30,14 +30,6 @@ export function recipeMatches(ctx: GameContext, r: HybridRecipeDef, a: Creature,
   return true;
 }
 
-/** Species parents only (ignores requirements) – used to hint at a possible cross. */
-export function recipesForPair(ctx: GameContext, a: Creature, b: Creature): HybridRecipeDef[] {
-  return ctx.content.recipes.list.filter((r) => {
-    const [p1, p2] = r.parents;
-    return (a.speciesId === p1 && b.speciesId === p2) || (a.speciesId === p2 && b.speciesId === p1);
-  });
-}
-
 export function hybridChance(ctx: GameContext, r: HybridRecipeDef): number {
   return Math.min(1, Math.max(0, ctx.mods().apply('breeding.hybridChance', r.chance)));
 }

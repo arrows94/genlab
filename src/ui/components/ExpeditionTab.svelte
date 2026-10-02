@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { fade } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford, toCost } from '@core/costs';
@@ -15,6 +16,7 @@
   import { game, view, act, ask } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import CostLabel from './CostLabel.svelte';
   import VoyagePanel from './VoyagePanel.svelte';
   import PickerExclude, { pickerAllows } from './PickerExclude.svelte';
@@ -289,7 +291,7 @@
       {#if data.minRarity}<span class="fact" style="color: {data.minRarity.color}">✦ mindestens {data.minRarity.name}</span>{/if}
       {#if data.hint > 0}<span class="fact">📜 <b class="num">{formatPercent(data.hint, 0)}</b> Rezepthinweis</span>{/if}
     </div>
-    <div class="meter" title="Chance auf eine wilde Kreatur"><div style="width: {data.wild * 100}%"></div></div>
+    <Meter tone="violet" value={data.wild} title="Chance auf eine wilde Kreatur" />
     {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.{#if data.def.maxConcurrent} Nur {data.def.maxConcurrent === 1 ? 'ein Team' : `${data.def.maxConcurrent} Teams`} gleichzeitig.{/if}</p>{/if}
 
     <h4>Beute {#if data.chosenCreature}<span class="small muted">mit {data.chosenCreature.name} (×{formatNumber(data.factor, { decimals: 2 })})</span>{/if}</h4>
@@ -327,17 +329,12 @@
       <div class="tiles">
         {#each data.idle as t (t.c.id)}
           {@const sp = content.species.get(t.c.speciesId)}
-          <button
-            class="tile"
-            class:on={chosen === t.c.id}
-            style="--el: {content.elements.get(sp.element).color}; --rar: {content.rarities.get(t.c.rarity).color}"
-            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name}"
+          <CreatureTile
+            creature={t.c}
+            info="💨 {formatNumber(t.spd)} · ×{formatNumber(t.factor, { decimals: 2 })}"
+            selected={chosen === t.c.id}
             onclick={() => (chosen = chosen === t.c.id ? null : t.c.id)}
-          >
-            <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
-            <span class="tiny num">💨 {formatNumber(t.spd)} · ×{formatNumber(t.factor, { decimals: 2 })}</span>
-          </button>
+          />
         {:else}
           <p class="muted small">Keine freie Kreatur.</p>
         {/each}
@@ -392,7 +389,7 @@
   .node.locked { cursor: default; }
   .disc { fill: color-mix(in srgb, var(--rc) 30%, #0c1f25); stroke: var(--rc); stroke-width: 2; transition: stroke-width 0.2s; }
   .node:hover .disc, .node:focus-visible .disc { stroke-width: 4; }
-  .node.sel .disc { stroke: var(--gold); stroke-width: 4; filter: drop-shadow(0 0 6px #f2c14e); }
+  .node.sel .disc { stroke: var(--gold); stroke-width: 4; filter: drop-shadow(0 0 6px var(--gold)); }
   .fog { fill: #9fb3b6; opacity: 0.28; }
   .badge { fill: var(--teal); }
   .badge-t { font-size: 10px; font-weight: 800; fill: #071317; }
@@ -428,8 +425,6 @@
   .facts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .fact { padding: 0.15rem 0.55rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
   .fact.journey { border-color: var(--violet); color: #d7c6ff; }
-  .meter { height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; margin: 0.45rem 0 0.2rem; }
-  .meter div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--rc)); }
   h4 { margin: 0.7rem 0 0.35rem; font-size: 0.9rem; }
   .loot { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .loot-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c) 60%, var(--line)); background: color-mix(in srgb, var(--c) 10%, var(--bg-2)); }
@@ -441,18 +436,14 @@
 
   .crew-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
   .crew-head h3 { margin: 0 0 0.5rem; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); gap: 0.4rem; max-height: 19rem; overflow-y: auto; padding: 2px; margin-bottom: 0.6rem; }
-  .tile { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); position: relative; }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; background: color-mix(in srgb, #f2c14e 12%, var(--bg-2)); }
-  .tile.on::after { content: '✓'; position: absolute; top: 2px; right: 6px; color: var(--gold); font-weight: 800; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rar); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 19rem; overflow-y: auto; padding: 2px; margin-bottom: 0.6rem; }
   .go { width: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); }
 
   /* Returns */
   .returns { margin-top: 0.75rem; }
   .returns ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem; }
   .returns li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.3rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.85rem; }
-  .returns li.wildfind { border-color: var(--violet); box-shadow: 0 0 10px #9b6bff44; }
+  .returns li.wildfind { border-color: var(--violet); box-shadow: 0 0 10px color-mix(in srgb, var(--violet) 27%, transparent); }
   .rloot { display: flex; gap: 0.5rem; margin-left: auto; }
   .wild { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--violet); font-weight: 600; }
 

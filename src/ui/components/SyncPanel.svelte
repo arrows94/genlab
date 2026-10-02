@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../errors';
   import { formatDuration } from '@core/format';
   import { ask, toast, view } from '../store.svelte';
   import { createSync, joinSync, leaveSync, sync, syncNow } from '../sync.svelte';
@@ -33,7 +34,7 @@
     try {
       await shareText(sync.link!.code, 'Genlab-Sync-Code');
     } catch (err) {
-      toast(`Teilen fehlgeschlagen: ${(err as Error).message}`, 'error');
+      toast(`Teilen fehlgeschlagen: ${errorText(err)}`, 'error');
     }
   }
   async function setup() {

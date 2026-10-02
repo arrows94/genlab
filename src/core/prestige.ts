@@ -34,12 +34,20 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   const s = ctx.state;
   const r = layer.resets;
   for (const res of r.resources) s.resources[res] = D(ctx.balance.start.resources[res] ?? 0);
-  s.earned = {};
   // Travellers (Tagesreisen, Wochenexpedition) are not at home: they and their journey survive.
   const kept = s.processes.filter((p) => survivesReset(ctx, p));
   const away = new Set(kept.map((p) => String(p.id)));
   if (r.creatures) {
     s.creatures = s.creatures.filter((c) => c.job?.kind === 'mission' && away.has(c.job.target));
+    // Travellers keep their journey and their genes, but start over like everyone else:
+    // no infusion, potion boosts, pure line or hero level from the old run.
+    for (const c of s.creatures) {
+      c.infusion = { level: 0, ep: 0 };
+      c.boosts = {};
+      c.boostUses = 0;
+      c.lineage = 0;
+      delete s.rpg.ranks[String(c.id)];
+    }
     s.tower.run = null;
     s.tower.team = [];
     s.tower.lastDefeat = null;
@@ -59,6 +67,8 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   if (s.creatures.every((c) => c.job?.kind === 'mission')) {
     createCreature(ctx, { speciesId: ctx.balance.start.species, rarity: ctx.balance.start.rarity, source: 'start' });
   }
+  // Last: RPG loot and talent start resources are no income of the new run.
+  s.earned = {};
 }
 
 /**

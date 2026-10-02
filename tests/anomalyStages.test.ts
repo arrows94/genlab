@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import {
   abandonAnomaly, anomalyGoal, anomalyGoalText, anomalyProgress, anomalyScale, maxStartLevel, ruleActive, startAnomalies, startAnomaly,
+  recordShards,
 } from '@core/features/anomalies';
 import { formatNumber } from '@core/format';
 import { deserialize } from '@core/save';
@@ -88,6 +89,9 @@ describe('anomaly stages', () => {
     g.step(100);
     expect(g.state.anomalyRecord).toBe(3);
     expect(g.state.resources.aeonShards!.toNumber()).toBe(3 * balance.anomalies.shardsPerRecordPoint);
+    // The preview in the tab: only points above the record pay.
+    expect(recordShards(g, 3)).toBe(0);
+    expect(recordShards(g, 5)).toBe(2 * balance.anomalies.shardsPerRecordPoint);
     expect(g.mods().totals('prestige.inheritance.gain').pct).toBeCloseTo(inheritance + 0.015 * 3);
     // Rewards grow with the best stage mastered: famine II = twice +20 % food.
     expect(g.mods().list('production.food').find((m) => m.source === 'anomalyReward:famine')!.value).toBeCloseTo(0.4);

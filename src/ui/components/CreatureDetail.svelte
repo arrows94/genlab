@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { content } from '@content/index';
   import { activeLatent } from '@core/creatures';
   import { findCreature } from '@core/creatures';
   import type { Creature } from '@core/state';
   import { expressedAppearance } from '@core/genetics';
-  import { formatNumber, formatPercent } from '@core/format';
+  import { formatModifier, formatNumber, formatPercent } from '@core/format';
   import { statBreakdown } from '@core/queries';
   import { dynastyRecord, dynastyTier, lineageBonus, nextTierDepth } from '@core/features/dynasty';
   import { toggleLock } from '@core/actions';
@@ -64,16 +65,12 @@
     if (!cur) return;
     if ((await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.${lastOfSpecies(cur)}`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
-  function fmtMod(op: string, v: number) {
-    if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;
-    if (op === 'mult') return `×${formatNumber(v, { decimals: 2 })}`;
-    return `${v >= 0 ? '+' : ''}${formatNumber(v)}`;
-  }
+  const fmtMod = (op: string, v: number) => formatModifier(op, v);
 </script>
 
 {#if c && data}
-  <div class="backdrop" role="presentation" onclick={close}>
-    <div class="modal panel" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && close()}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && close()}>
+    <div class="modal panel" role="dialog" aria-modal="true" tabindex="-1" use:dialog={{ onescape: close }}>
       <header style="--rarity: {data.rarity.color}; --el: {data.element.color}">
         <div class="art"><CreatureSvg appearance={data.look} shape={data.species.shape} tier={data.species.tier} size={120} shiny={c.shiny} /></div>
         <div class="title">

@@ -30,7 +30,7 @@
 
   async function lower() {
     const f = Math.floor(target);
-    const boss = data.boss ? ' Der Wochen-Boss dieser Woche wird an den neuen Rekord angepasst (bisheriger Schaden bleibt anteilig erhalten).' : '';
+    const boss = data.boss ? ' Der Wochen-Boss dieser Woche wird an den neuen Rekord angepasst, aber nie schwächer als die Etagen, die dein Team zuletzt erreicht hat (bisheriger Schaden bleibt anteilig erhalten).' : '';
     const ok = await ask(
       `Turm-Rekord von Etage ${data.best} auf Etage ${f} senken? Der Checkpoint sinkt mit.${boss} Meilenstein-Boni bleiben, einmalige Belohnungen gibt es nicht noch einmal.`,
       { ok: 'Rekord senken', danger: true },

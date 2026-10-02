@@ -62,7 +62,7 @@
 
   .vortex {
     position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
-    background: conic-gradient(from 0deg, #2fd3c4, #1a0f3a, #9b6bff, #05030a, #f2c14e, #1a0f3a, #2fd3c4);
+    background: conic-gradient(from 0deg, var(--teal), #1a0f3a, var(--violet), #05030a, var(--gold), #1a0f3a, var(--teal));
     filter: blur(6px); opacity: 0;
     -webkit-mask: radial-gradient(circle, #000 0 35%, transparent 70%); mask: radial-gradient(circle, #000 0 35%, transparent 70%);
     animation: open 2.5s ease-in forwards, spin 0.9s linear infinite;
@@ -77,7 +77,7 @@
   }
   @keyframes spin { to { rotate: 360deg; } }
 
-  .monster { position: relative; z-index: 1; filter: drop-shadow(0 0 16px #9b6bffaa); }
+  .monster { position: relative; z-index: 1; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--violet) 67%, transparent)); }
   .in .monster { animation: pulled 1.7s cubic-bezier(0.55, 0, 0.9, 0.5) forwards; }
   @keyframes pulled {
     0% { transform: translateY(18vh) scale(1) rotate(0deg); opacity: 1; }
@@ -92,7 +92,7 @@
     100% { transform: scale(1) rotate(0deg); opacity: 0; }
   }
 
-  .caption { position: absolute; bottom: 18vh; z-index: 1; margin: 0; padding: 0 1rem; text-align: center; font-size: 1.1rem; letter-spacing: 0.05em; color: #e9dcff; text-shadow: 0 0 12px #9b6bff; opacity: 0; animation: caption 2.5s ease-in-out forwards; }
+  .caption { position: absolute; bottom: 18vh; z-index: 1; margin: 0; padding: 0 1rem; text-align: center; font-size: 1.1rem; letter-spacing: 0.05em; color: #e9dcff; text-shadow: 0 0 12px var(--violet); opacity: 0; animation: caption 2.5s ease-in-out forwards; }
   @keyframes caption { 0%, 10% { opacity: 0; } 25%, 60% { opacity: 1; } 70%, 100% { opacity: 0; } }
 
   /* Reduced motion: only a short fade through dark. */

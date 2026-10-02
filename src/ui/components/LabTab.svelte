@@ -1,5 +1,6 @@
 <script lang="ts">
   import { collect, collectAmounts } from '@core/actions';
+  import { stamina, staminaMax } from '@core/features/collect';
   import { formatNumber } from '@core/format';
   import { content } from '@content/index';
   import { filterCreatures, sortCreatures } from '@core/queries';
@@ -24,7 +25,7 @@
   const activeFilters = $derived(activeListFilters());
 
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const [locus, allele] = list.alleleKey ? list.alleleKey.split(':') : [];
     const f = { ...list.filter, allele: locus && allele ? { locus, allele } : null };
     const sorted = sortCreatures(game, filterCreatures(game, f), list.sort);
@@ -48,15 +49,24 @@
     view.frame;
     return Object.entries(collectAmounts(game));
   });
+  const energy = $derived.by(() => {
+    view.frame;
+    const max = staminaMax(game);
+    const now = stamina(game);
+    return { now, max: Math.max(1, max), tired: now < 1 };
+  });
 
   let pulse = $state(0);
   /** Floating "+X" numbers at the click position. */
   let floaters = $state<{ id: number; x: number; y: number; text: string }[]>([]);
   let floaterId = 0;
   function onCollect(e: MouseEvent) {
-    const gain = perClick.map(([res, amount]) => `+${formatNumber(amount)} ${content.resources.get(res).icon}`).join(' ');
+    // Read right before the click: Ausdauer may have just run out.
+    const amounts = Object.entries(collectAmounts(game));
+    const gain = amounts.map(([res, amount]) => `+${formatNumber(amount)} ${content.resources.get(res).icon}`).join(' ');
     if (!act(collect(game))) return;
     pulse++;
+    if (amounts.every(([, a]) => a.lte(0))) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const f = { id: ++floaterId, x: (e.clientX || rect.left + rect.width / 2) - rect.left + (Math.random() * 30 - 15), y: (e.clientY || rect.top + rect.height / 2) - rect.top, text: gain };
     floaters = [...floaters.slice(-8), f];
@@ -107,7 +117,11 @@
 <section class="panel collect">
   <div>
     <h3>🍖 Sammeln</h3>
-    <p class="muted">Sammle Nahrung für deine Kreaturen.</p>
+    {#if energy.tired}
+      <p class="muted"><b class="tired">Erschöpft</b> – schneller klicken bringt gerade nichts extra. Die Ausdauer füllt sich von selbst wieder.</p>
+    {:else}
+      <p class="muted">Sammle Nahrung für deine Kreaturen. Mit etwas Glück stößt du dabei auf ein Fundstück.</p>
+    {/if}
   </div>
   <button class="primary big" onclick={onCollect}>
     {#each floaters as f (f.id)}<span class="floater num" style="left: {f.x}px; top: {f.y}px">{f.text}</span>{/each}
@@ -116,7 +130,10 @@
       {#each perClick as [res, amount] (res)}+{formatNumber(amount)} {content.resources.get(res).icon} {/each}
     </span>
   </button>
-  <div class="helix"><DnaHelix progress={1} spin={pulse} /></div>
+  <div class="helix" class:tired={energy.tired} title="Ausdauer: {Math.floor(energy.now)}/{energy.max} – jeder Klick kostet einen Punkt, sie füllt sich von selbst wieder.">
+    <DnaHelix progress={energy.now / energy.max} spin={pulse} />
+    <small class="num">Ausdauer {Math.floor(energy.now)}/{energy.max}</small>
+  </div>
 </section>
 
 <section>
@@ -211,8 +228,15 @@
   section { margin-bottom: 1rem; }
   .collect { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: space-between; }
   .collect p { margin: 0; }
+  /* The text wraps instead of pushing button and helix into a new row when it changes. */
+  .collect > div:first-child { flex: 1 1 16rem; }
   .big { font-size: 1.15rem; padding: 0.9rem 1.6rem; display: flex; flex-direction: column; align-items: center; min-width: 11rem; }
   .gain { font-size: 0.8rem; opacity: 0.85; }
+  .helix { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .helix small { color: var(--muted); font-size: 0.75rem; }
+  .helix.tired small, .tired { color: var(--danger); }
+  /* Exhausted: the helix pales until Ausdauer is back. */
+  .helix.tired :global(svg) { opacity: 0.55; }
   .big { position: relative; overflow: visible; }
   .floater { position: absolute; pointer-events: none; font-size: 0.95rem; font-weight: 700; color: var(--gold); text-shadow: 0 1px 4px #000; white-space: nowrap; transform: translate(-50%, -50%); animation: float-up 0.9s ease-out forwards; }
   @keyframes float-up { to { transform: translate(-50%, -260%); opacity: 0; } }

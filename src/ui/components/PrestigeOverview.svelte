@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { fade, scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
@@ -102,7 +103,7 @@
       <span class="num">{formatNumber(data.next.total)} / {formatNumber(data.next.needed)}</span>
       {source.map((r) => r.icon).join('+')} {layer.gainSource === 'owned' ? 'im Besitz' : 'verdient'}
     </div>
-    <div class="bar"><div style="width: {data.next.progress * 100}%"></div></div>
+    <Meter value={data.next.progress} title="Fortschritt zum nächsten Punkt" />
     <button class="primary go" disabled={data.gain.lte(0) || data.anomaly} onclick={confirm}>
       {text.action} für <span class="num">+{formatNumber(data.gain)}</span> {currency.icon}
     </button>
@@ -211,8 +212,6 @@
   .icon { font-size: 0.6em; margin-left: 0.2rem; }
   .next { display: grid; gap: 0.4rem; }
   .desc { margin: 0; }
-  .bar { height: 10px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
-  .bar div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); transition: width 0.4s; }
   .go { font-size: 1rem; padding: 0.7rem 1rem; }
 
   .bonus { margin-bottom: 0.75rem; }
@@ -261,7 +260,10 @@
   @media (max-width: 640px) {
     .hero { grid-template-columns: 1fr; gap: 0.6rem; }
     .split { grid-template-columns: 1fr; }
-    .brow { grid-template-columns: 1fr auto auto auto; gap: 0.4rem; }
+    /* Label on its own line, so big numbers keep the full width (they were cut off at 320 px). */
+    .brow { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.1rem 0.4rem; }
+    .brow .blabel { grid-column: 1 / -1; }
+    .brow .after { text-align: left; }
     .big { font-size: 2.6rem; }
   }
 </style>

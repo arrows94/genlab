@@ -1,6 +1,6 @@
 import { D, type Decimal } from '../num';
 import { createCreature, removeCreature } from '../creatures';
-import { grant, trySpend } from '../resources';
+import { grant, spend } from '../resources';
 import { scaleCost, type Cost } from '../costs';
 import { checkUnlocks } from '../systems/unlocks';
 import type { CapsuleDef, SpeciesTier } from '../content/types';
@@ -98,7 +98,8 @@ export function openCapsules(ctx: GameContext, capsuleId: string, count: number,
     if (Object.keys(capsuleSpecies(ctx, def, element)).length === 0) return { ok: false, reason: 'Keine Art dieses Elements verfügbar.' };
   }
   if (stableFree(ctx) < count) return { ok: false, reason: 'Nicht genug Platz im Stall.' };
-  if (!trySpend(ctx, capsuleCost(ctx, capsuleId, count))) return { ok: false, reason: 'Nicht genug Gen-Fragmente.' };
+  const paid = spend(ctx, capsuleCost(ctx, capsuleId, count));
+  if (!paid.ok) return paid;
 
   const minOrder = ctx.content.rarities.get(def.pity.minRarity).order;
   const results: CapsuleResult[] = [];

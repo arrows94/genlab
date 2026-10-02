@@ -12,6 +12,7 @@
   import { game, view, act } from '../store.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import DnaHelix from './DnaHelix.svelte';
   import GenomeInspector from './GenomeInspector.svelte';
   import GeneLibrary from './GeneLibrary.svelte';
@@ -167,17 +168,12 @@
       <div class="tiles">
         {#each candidates as t (t.c.id)}
           {@const sp = species(t.c)}
-          <button
-            class="tile"
-            class:on={chosen === t.c.id}
-            style="--el: {content.elements.get(sp.element).color}; --rarity: {content.rarities.get(t.c.rarity).color}"
-            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name}"
+          <CreatureTile
+            creature={t.c}
+            info="Gen {t.c.generation} · Σ {Math.round(t.power)}"
+            selected={chosen === t.c.id}
             onclick={() => (chosen = chosen === t.c.id ? null : t.c.id)}
-          >
-            <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={40} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
-            <span class="small num muted">Gen {t.c.generation} · Σ {Math.round(t.power)}</span>
-          </button>
+          />
         {:else}
           <p class="small muted">{picking === 'seq' ? 'Alle Genome sind entschlüsselt oder werden gerade sequenziert.' : 'Keine Kreatur bereit – erst normal sequenzieren.'}</p>
         {/each}
@@ -204,11 +200,11 @@
   section { margin-bottom: 1rem; }
   .small { font-size: 0.8rem; margin: 0.2rem 0; }
   h3 { margin: 0; }
-  .kpi.live { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
+  .kpi.live { border-color: var(--teal); box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 20%, transparent); }
 
   .lab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
   .robot { display: flex; gap: 0.45rem; align-items: center; padding: 0.3rem 0.6rem; border-radius: 8px; border: 1px solid var(--line); font-size: 0.85rem; }
-  .robot.on { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c433; }
+  .robot.on { border-color: var(--teal); box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 20%, transparent); }
 
   /* Sequencer machines */
   .machines { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); }
@@ -252,11 +248,7 @@
   .picker.deep { border-color: color-mix(in srgb, var(--violet) 55%, var(--line)); }
   .phead { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
   .close { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: 0.4rem; max-height: 18rem; overflow-y: auto; padding: 2px; }
-  .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.05rem; padding: 0.35rem 0.25rem; border-radius: 10px;
-    border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: var(--bg-2); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; background: color-mix(in srgb, #f2c14e 12%, var(--bg-2)); }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 18rem; overflow-y: auto; padding: 2px; }
   .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .confirm button { min-width: 12rem; }
 

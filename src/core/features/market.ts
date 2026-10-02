@@ -1,12 +1,25 @@
 import { D } from '../num';
 import { findCreature } from '../creatures';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { scaleCost, type Cost } from '../costs';
 import { addBuff } from '../systems/buffs';
 import { skipProcessTime } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import { ruleActive } from './anomalies';
+import { baseProductionRates } from '../systems/production';
+
+/** Highest permanent boost per stat (Kraftfutter cap); other sources (voyage) respect it too. */
+export function maxStatBoost(ctx: GameContext): number {
+  const feed = ctx.content.potions.list.find((p) => p.kind === 'permanentStat');
+  return ctx.balance.market.maxBoostsPerStat * (feed?.statBonus ?? 0);
+}
+
+/** Zeittränke drunk within the price window (older ones no longer count). */
+export function recentTimeSkips(ctx: GameContext): number {
+  const since = ctx.state.lastTickAt - ctx.balance.market.timeSkipWindowHours * 3_600_000;
+  return ctx.state.timeSkips.filter((t) => t > since).length;
+}
 
 export function potionCost(ctx: GameContext, potionId: string, creatureId: number | null = null): Cost {
   const def = ctx.content.potions.get(potionId);
@@ -15,6 +28,17 @@ export function potionCost(ctx: GameContext, potionId: string, creatureId: numbe
   if (def.kind === 'permanentStat' && creatureId !== null) {
     const c = findCreature(ctx, creatureId);
     growth = D(def.costGrowth ?? 1).pow(c?.boostUses ?? 0);
+  }
+  // Zeittrank: every further one within the window costs more.
+  if (def.kind === 'timeSkip') growth = D(ctx.balance.market.timeSkipGrowth).pow(recentTimeSkips(ctx));
+  if (def.costMinutes) {
+    // Follows production (without potion buffs), so the potion stays a real choice late in the game.
+    const cost: Cost = {};
+    for (const [res, base] of Object.entries(def.cost)) {
+      const perMinutes = (baseProductionRates(ctx)[res] ?? D(0)).mul(60 * def.costMinutes);
+      cost[res] = D(base).max(perMinutes).mul(growth).mul(discount).ceil();
+    }
+    return cost;
   }
   const cost = scaleCost(def.cost, growth, discount);
   for (const k of Object.keys(cost)) cost[k] = cost[k]!.ceil();
@@ -40,11 +64,12 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
   if (def.kind === 'permanentStat') {
     if (!stat || !ctx.content.stats.has(stat)) return { ok: false, reason: 'Wähle einen Wert.' };
     const bonus = def.statBonus ?? 0;
-    if ((c!.boosts[stat] ?? 0) + bonus > ctx.balance.market.maxBoostsPerStat * bonus + 1e-9) return { ok: false, reason: 'Dieser Wert ist bereits voll gestärkt.' };
+    if ((c!.boosts[stat] ?? 0) + bonus > maxStatBoost(ctx) + 1e-9) return { ok: false, reason: 'Dieser Wert ist bereits voll gestärkt.' };
   }
   const shortMs = ctx.balance.timeCrystals.longProjectHours * 3_600_000;
   if (def.kind === 'timeSkip' && !ctx.state.processes.some((p) => p.durationMs < shortMs)) return { ok: false, reason: 'Es laufen keine kurzen Vorgänge – lange Projekte brauchen Zeitkristalle.' };
-  if (!trySpend(ctx, potionCost(ctx, potionId, creatureId))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, potionCost(ctx, potionId, creatureId));
+  if (!paid.ok) return paid;
 
   switch (def.kind) {
     case 'permanentStat':
@@ -58,9 +83,12 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
     case 'globalBuff':
       addBuff(ctx, def.id, def.modifiers ?? [], (def.durationSec ?? 0) * 1000);
       break;
-    case 'timeSkip':
+    case 'timeSkip': {
       skipProcessTime(ctx, (def.skipSec ?? 0) * 1000, shortMs);
+      const since = ctx.state.lastTickAt - ctx.balance.market.timeSkipWindowHours * 3_600_000;
+      ctx.state.timeSkips = [...ctx.state.timeSkips.filter((t) => t > since), ctx.state.lastTickAt];
       break;
+    }
   }
   ctx.bus.emit('potionUsed', { potion: def.id, creatureId: c?.id ?? null });
   return { ok: true };

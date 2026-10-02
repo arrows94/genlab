@@ -106,6 +106,27 @@ export interface RemoteSave extends RemoteMeta {
   recent: { rev: number; writer: string }[];
 }
 
+/**
+ * What a device does with a downloaded cloud save (see `doPull` in sync.svelte.ts):
+ *  - `keep`: up to date, or the newest cloud save is our own upload whose answer got lost –
+ *    the local save is at least as far; `reupload` when the cloud is ahead of what we knew.
+ *  - `restore`: the server lost revisions – upload again from here.
+ *  - `adopt`: someone else continued and this device was not played since (or its blind
+ *    upload from closing the page landed and was continued) – take the cloud save.
+ *  - `conflict`: both devices were played – the player chooses.
+ */
+export type PullDecision = { kind: 'keep'; reupload: boolean } | { kind: 'restore' } | { kind: 'adopt' } | { kind: 'conflict' };
+
+export function decidePull(
+  link: { rev: number; writer: string; dirty: boolean; sentBlind?: number | null },
+  remote: { rev: number; writer: string; recent: { rev: number; writer: string }[] },
+): PullDecision {
+  if (remote.rev === link.rev || remote.writer === link.writer) return { kind: 'keep', reupload: remote.rev !== link.rev };
+  if (remote.rev < link.rev) return { kind: 'restore' };
+  const landed = link.sentBlind != null && remote.recent.some((e) => e.rev === link.sentBlind && e.writer === link.writer);
+  return !link.dirty || landed ? { kind: 'adopt' } : { kind: 'conflict' };
+}
+
 /** `conflict: null` = the cloud save no longer exists (deleted on another device). */
 export type PutResult = { ok: true; rev: number } | { ok: false; conflict: RemoteMeta | null };
 

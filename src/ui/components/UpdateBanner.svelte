@@ -38,7 +38,10 @@
       </ul>
     {/if}
   </div>
-  <button class="primary" onclick={() => { save(); view.applyUpdate?.(); }}>Jetzt aktualisieren</button>
+  <div class="actions">
+    <button class="primary" onclick={() => { save(); view.applyUpdate?.(); }}>Jetzt aktualisieren</button>
+    <button class="later" title="Später – die Anzeige kommt wieder, wenn du ins Spiel zurückkehrst" onclick={() => (view.updateLater = true)}>Später</button>
+  </div>
 </div>
 
 <style>
@@ -50,8 +53,10 @@
   .text { min-width: 0; }
   ul { margin: 0.3rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; display: grid; gap: 0.15rem; }
   .muted { list-style: none; margin-left: -1.1rem; }
-  button { flex: none; }
+  .actions { flex: none; display: flex; gap: 0.4rem; }
+  .later { color: var(--muted); }
   @media (max-width: 520px) {
     .update { flex-direction: column; align-items: stretch; }
+    .actions > .primary { flex: 1; }
   }
 </style>

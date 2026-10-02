@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { creaturePower, findCreature } from '../creatures';
+import { creaturePower, findCreature, isOccupied } from '../creatures';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -96,7 +96,7 @@ export function rpgMaxHp(ctx: GameContext, c: Creature, upgrades: readonly strin
  * Sequencing only reads a sample, so it keeps the monster free – like for the tower and buildings.
  */
 export function rpgStartBlocker(_ctx: GameContext, c: Creature): string | null {
-  if (c.job && c.job.kind !== 'building') return `${c.name} ist beschäftigt.`;
+  if (isOccupied(c)) return `${c.name} ist beschäftigt.`;
   return null;
 }
 

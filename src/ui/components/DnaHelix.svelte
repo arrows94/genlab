@@ -1,7 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   /**
-   * Stylised DNA helix; `progress` (0–1) fills the base pairs. The game's visual signature.
+   * Stylised DNA helix; `progress` (0–1) fills the base pairs from the left, the pair at the edge
+   * partly (it fades in), so a slowly rising value moves smoothly. The game's visual signature.
    * Each change of `spin` speeds up the twist for a moment (it keeps its position and eases back).
    */
   let { progress = 1, pairs = 12, width = 160, height = 36, animated = true, spin = 0 }: {
@@ -46,7 +47,8 @@
     Array.from({ length: pairs }, (_, i) => {
       const x = ((i + 0.5) / pairs) * width;
       const phase = (i / pairs) * Math.PI * 2;
-      return { x, phase, filled: i / pairs < progress, color: colors[i % colors.length] };
+      const fill = Math.min(1, Math.max(0, (progress - i / pairs) * pairs));
+      return { x, phase, fill, color: colors[i % colors.length] };
     }),
   );
 </script>
@@ -56,16 +58,26 @@
     {@const y1 = height / 2 + Math.sin(p.phase) * (height / 2 - 4)}
     {@const y2 = height / 2 - Math.sin(p.phase) * (height / 2 - 4)}
     <g style="animation-delay: {-i * 0.12}s">
-      <line x1={p.x} y1={y1} x2={p.x} y2={y2} stroke={p.filled ? p.color : '#1f4650'} stroke-width="3" stroke-linecap="round" />
-      <circle cx={p.x} cy={y1} r="3" fill={p.filled ? '#2fd3c4' : '#1f4650'} />
-      <circle cx={p.x} cy={y2} r="3" fill={p.filled ? '#9b6bff' : '#1f4650'} />
+      {#if p.fill < 1}
+        <line x1={p.x} y1={y1} x2={p.x} y2={y2} stroke="#1f4650" stroke-width="3" stroke-linecap="round" />
+        <circle cx={p.x} cy={y1} r="3" fill="#1f4650" />
+        <circle cx={p.x} cy={y2} r="3" fill="#1f4650" />
+      {/if}
+      {#if p.fill > 0}
+        <g opacity={p.fill}>
+          <line x1={p.x} y1={y1} x2={p.x} y2={y2} stroke={p.color} stroke-width="3" stroke-linecap="round" />
+          <circle cx={p.x} cy={y1} r="3" fill="#2fd3c4" />
+          <circle cx={p.x} cy={y2} r="3" fill="#9b6bff" />
+        </g>
+      {/if}
     </g>
   {/each}
 </svg>
 
 <style>
-  svg { display: block; overflow: visible; filter: brightness(calc(1 + var(--boost, 0) * 0.5)) drop-shadow(0 0 calc(var(--boost, 0) * 8px) #2fd3c4); }
-  .animated g { animation: twist 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  svg { display: block; overflow: visible; filter: brightness(calc(1 + var(--boost, 0) * 0.5)) drop-shadow(0 0 calc(var(--boost, 0) * 8px) var(--teal)); }
+  /* Direct children only: the fill layer inside a pair must not twist on its own. */
+  .animated > g { animation: twist 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
   @keyframes twist {
     0%, 100% { transform: scaleY(1); }
     50% { transform: scaleY(-1); }

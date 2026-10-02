@@ -1,7 +1,7 @@
 import { D } from '../num';
 import { checkPerfection, findCreature } from '../creatures';
 import { catalogueGenome } from '../genetics';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -53,7 +53,8 @@ export function startSequencing(ctx: GameContext, creatureId: number): ActionRes
   if (c.sequenced) return { ok: false, reason: 'Genom ist bereits entschlüsselt.' };
   if (isBeingSequenced(ctx, creatureId)) return { ok: false, reason: 'Wird bereits sequenziert.' };
   if (sequencerUsed(ctx) >= sequencerSlots(ctx)) return { ok: false, reason: 'Alle Sequenzierer sind belegt.' };
-  if (!trySpend(ctx, sequencingCost(ctx, c))) return { ok: false, reason: 'Nicht genug Essenz.' };
+  const paid = spend(ctx, sequencingCost(ctx, c));
+  if (!paid.ok) return paid;
   const data: SequenceData = { creatureId };
   startProcess(ctx, SEQUENCE, sequencingTimeMs(ctx), data);
   return { ok: true };

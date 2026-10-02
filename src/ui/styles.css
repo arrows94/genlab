@@ -10,6 +10,11 @@
   --teal: #2fd3c4;
   --violet: #9b6bff;
   --gold: #f2c14e;
+  /* Relics (tower) and time crystals. */
+  --relic: #ffb74d;
+  --crystal: #8ecbff;
+  /* Second parent in the Brutstation. */
+  --pink: #ff7ad9;
   --danger: #ff6b6b;
   --radius: 12px;
   --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

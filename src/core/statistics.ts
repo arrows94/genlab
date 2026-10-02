@@ -19,7 +19,10 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
     if (value > (s[key] ?? 0)) s[key] = value;
   };
   const offs = [
-    bus.on('collected', () => inc('clicks')),
+    bus.on('collected', (e) => {
+      inc('clicks');
+      if (e.find) inc('collectFinds');
+    }),
     bus.on('creatureAdded', (e) => {
       inc('creaturesObtained');
       inc(`creatures.${e.source}`);

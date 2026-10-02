@@ -1,5 +1,5 @@
 import { toCost, canAfford } from '../costs';
-import { findCreature, registerDex } from '../creatures';
+import { findCreature, isOccupied, registerDex } from '../creatures';
 import { trySpend } from '../resources';
 import { checkUnlocks } from '../systems/unlocks';
 import type { EvolutionDef } from '../content/types';
@@ -31,7 +31,7 @@ export function checkEvolution(ctx: GameContext, c: Creature, e: EvolutionDef): 
     list.push({ label: `Allel ${allele?.name ?? req.allele.allele} (${locus.name})`, met: c.sequenced ? carriesAllele(c, req.allele.locus, req.allele.allele) : null });
   }
   if (req.cost) list.push({ label: 'Kosten', met: canAfford(ctx.state, toCost(req.cost)) });
-  if (c.job) list.push({ label: 'Kreatur ist frei', met: c.job.kind === 'building' });
+  if (c.job) list.push({ label: 'Kreatur ist frei', met: !isOccupied(c) });
   return { evolution: e, requirements: list, ready: list.every((r) => r.met === true) };
 }
 

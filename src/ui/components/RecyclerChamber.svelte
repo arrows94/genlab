@@ -11,6 +11,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { game, view, act, toast } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * Zerlege-Kammer of the Gen-Recycler: the creature being taken apart right
@@ -118,7 +119,7 @@
         <span class="small" style="color: {now.rarity.color}">{now.rarity.name}</span>
         <span class="small muted">{now.species.name} · Gen {now.creature.generation}</span>
       </div>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(now.progress * 100)}><span style="width: {now.progress * 100}%"></span></div>
+      <Meter value={now.progress} title="Zerlege-Fortschritt" />
       <div class="row">
         <span class="small num">noch {formatDuration(now.remainingMs)} · ≈ {formatNumber(now.fragments)} 🧩</span>
         {#if now.manual}
@@ -159,7 +160,7 @@
     position: relative; width: 96px; height: 118px; border-radius: 44px 44px 12px 12px; overflow: hidden; display: grid; place-items: center;
     border: 2px solid color-mix(in srgb, var(--rc) 55%, var(--line));
     background: radial-gradient(circle at 30% 20%, #ffffff18, transparent 45%), linear-gradient(180deg, #0f2a30, #081619);
-    box-shadow: inset 0 0 18px #2fd3c422, 0 0 calc(6px + var(--p) * 14px) color-mix(in srgb, var(--rc) 40%, transparent);
+    box-shadow: inset 0 0 18px color-mix(in srgb, var(--teal) 13%, transparent), 0 0 calc(6px + var(--p) * 14px) color-mix(in srgb, var(--rc) 40%, transparent);
   }
   .subject {
     position: relative; z-index: 1;
@@ -186,18 +187,16 @@
   @keyframes rise { 0% { transform: translateY(0) rotate(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-58px) rotate(180deg); opacity: 0; } }
   .liquid {
     position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--p) * 100%); z-index: 0;
-    background: linear-gradient(180deg, #2fd3c455, #9b6bff66); transition: height 0.2s linear;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--teal) 33%, transparent), color-mix(in srgb, var(--violet) 40%, transparent)); transition: height 0.2s linear;
   }
   .empty { font-size: 1.8rem; opacity: 0.35; }
   .socket { width: 104px; height: 12px; margin-top: -2px; border-radius: 4px 4px 8px 8px; background: linear-gradient(180deg, var(--panel-2, #1b3238), var(--panel)); border: 1px solid var(--line); }
-  .pop { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: var(--violet); font-weight: 700; white-space: nowrap; text-shadow: 0 0 8px #9b6bff88; animation: popup 1.4s ease-out forwards; pointer-events: none; }
+  .pop { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: var(--violet); font-weight: 700; white-space: nowrap; text-shadow: 0 0 8px color-mix(in srgb, var(--violet) 53%, transparent); animation: popup 1.4s ease-out forwards; pointer-events: none; }
   @keyframes popup { from { opacity: 0; transform: translate(-50%, 10px); } 15% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -34px); } }
 
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
   .label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.68rem; }
   .who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
-  .bar { height: 8px; border-radius: 99px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); }
-  .bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); transition: width 0.2s linear; }
   .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; }
   .rescue { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
   .queue { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; }

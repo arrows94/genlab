@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { fade, scale } from 'svelte/transition';
   import { resolveConflict, sync } from '../sync.svelte';
   import SaveCompare from './SaveCompare.svelte';
@@ -18,7 +19,7 @@
 {#if sync.conflict}
   {@const c = sync.conflict}
   <div class="backdrop" transition:fade={{ duration: 120 }} role="presentation">
-    <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="sync-title" transition:scale={{ duration: 150, start: 0.92 }}>
+    <div class="dialog panel" use:dialog role="alertdialog" aria-modal="true" aria-labelledby="sync-title" transition:scale={{ duration: 150, start: 0.92 }}>
       {#if c.kind === 'connect'}
         <h3 id="sync-title">☁️ Welchen Spielstand behalten?</h3>
         <p>Zu diesem Code gibt es einen Cloud-Stand von „{c.remote.device}“. Beide Geräte spielen danach mit demselben Stand weiter.</p>

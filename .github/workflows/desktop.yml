@@ -47,6 +47,9 @@ jobs:
 
       - run: npm ci
 
+      # Tests once per platform are cheap next to the Tauri build and catch a broken release early.
+      - run: npm test
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

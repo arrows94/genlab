@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Appearance } from '@core/state';
+  import { prefs } from '../prefs.svelte';
 
   let { appearance, shape, tier = 'base', size = 96, shiny = false }: {
     appearance: Appearance & { saturation?: number; lightness?: number };
@@ -59,9 +60,10 @@
   {#if shiny}
     <defs>
       <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#ff7ad9"><animate attributeName="stop-color" values="#ff7ad9;#7ad9ff;#b8ff7a;#ff7ad9" dur="4s" repeatCount="indefinite" /></stop>
+        <!-- SVG <animate> ignores the CSS reduce-motion rule, so it is left out instead. -->
+        <stop offset="0%" stop-color="#ff7ad9">{#if !prefs.reduceMotion}<animate attributeName="stop-color" values="#ff7ad9;#7ad9ff;#b8ff7a;#ff7ad9" dur="4s" repeatCount="indefinite" />{/if}</stop>
         <stop offset="50%" stop-color={body} />
-        <stop offset="100%" stop-color="#7ad9ff"><animate attributeName="stop-color" values="#7ad9ff;#ffe07a;#ff7ad9;#7ad9ff" dur="4s" repeatCount="indefinite" /></stop>
+        <stop offset="100%" stop-color="#7ad9ff">{#if !prefs.reduceMotion}<animate attributeName="stop-color" values="#7ad9ff;#ffe07a;#ff7ad9;#7ad9ff" dur="4s" repeatCount="indefinite" />{/if}</stop>
       </linearGradient>
     </defs>
   {/if}

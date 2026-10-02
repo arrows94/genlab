@@ -139,9 +139,8 @@ export function checkAnomaly(ctx: GameContext): void {
     ctx.state.anomalyBest[a.id] = Math.max(anomalyBest(ctx, a.id), a.level);
   }
   const total = active.reduce((n, a) => n + a.level, 0);
-  const cfg = ctx.balance.anomalies;
   if (total > ctx.state.anomalyRecord) {
-    const shards = (total - ctx.state.anomalyRecord) * cfg.shardsPerRecordPoint;
+    const shards = recordShards(ctx, total);
     ctx.state.anomalyRecord = total;
     if (shards > 0) grant(ctx, 'aeonShards', D(shards), 'anomaly:record');
     ctx.bus.emit('anomalyRecord', { total, shards });
@@ -149,6 +148,11 @@ export function checkAnomaly(ctx: GameContext): void {
   ctx.state.anomaly = null;
   ctx.invalidate();
   for (const a of active) ctx.bus.emit('anomalyCompleted', { anomaly: a.id, level: a.level });
+}
+
+/** Äon-Splitter a combination worth `total` record points would pay (only points above the record count). */
+export function recordShards(ctx: GameContext, total: number): number {
+  return Math.max(0, total - ctx.state.anomalyRecord) * ctx.balance.anomalies.shardsPerRecordPoint;
 }
 
 export function ruleActive(ctx: GameContext, rule: 'noPotions'): boolean {

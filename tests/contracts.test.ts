@@ -268,3 +268,18 @@ describe('contract content and saves', () => {
     expect(state.contracts).toEqual({ day: -1, offers: [], rerolls: 0, completed: 0 });
   });
 });
+
+describe('reward bonuses', () => {
+  it('multiply ordinary rewards but not rare currencies', async () => {
+    const { rewardAmounts } = await import('@core/rewards');
+    const { addBuff } = await import('@core/systems/buffs');
+    const g = makeGame();
+    for (const f of ['contracts', 'aeon', 'biolab']) unlockFeature(g, f);
+    const spec = { resources: { essence: 100, aeonShards: 2, timeCrystals: 1 } };
+    addBuff(g, 'test', [{ target: 'contracts.reward', op: 'pct', value: 1 }], 1e9);
+    const out = rewardAmounts(g, spec, 'contracts.reward');
+    expect(out.essence?.toNumber()).toBe(200);
+    expect(out.aeonShards?.toNumber()).toBe(2);
+    expect(out.timeCrystals?.toNumber()).toBe(1);
+  });
+});

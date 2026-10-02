@@ -395,6 +395,23 @@ describe('Kampferfahrung', () => {
     expect(veteranRank(g, two + 5).into).toBeCloseTo(5);
   });
 
+  it('Evolutionskristalle only for a new highest floor, not when a run clears it again', () => {
+    const g = towerGame();
+    const t = balance.tower;
+    const c = champion(g, 1e6);
+    expect(setTeam(g, [c.id]).ok).toBe(true);
+    const catalyst = () => g.state.resources.catalyst?.toNumber() ?? 0;
+    expect(startRun(g, false).ok).toBe(true);
+    for (let i = 0; i < t.catalystEvery; i++) fightNextFloor(g);
+    const first = catalyst();
+    expect(first).toBeGreaterThan(0);
+    expect(floorRewardInfo(g, t.catalystEvery).catalyst).toBe(0);
+    stopRun(g);
+    expect(startRun(g, false).ok).toBe(true); // from floor 1 again
+    for (let i = 0; i < t.catalystEvery; i++) fightNextFloor(g);
+    expect(catalyst()).toBe(first);
+  });
+
   it('won floors bring XP (bosses more), a new rank raises KP and damage in the tower', () => {
     const g = towerGame();
     const t = balance.tower;
@@ -552,5 +569,18 @@ describe('tower milestones', () => {
     g.state.tower.run!.floor = every - 1;
     fightNextFloor(g);
     expect(g.state.resources.aeonShards!.toNumber()).toBe(before + balance.tower.milestoneShards);
+  });
+});
+
+describe('tower rule helpers (shared by core and the tower tab)', () => {
+  it('Wut factor, floors to the next boss and the next milestone', async () => {
+    const { enrageFactor, floorsToBoss, nextMilestoneFloor } = await import('@core/features/tower');
+    const g = towerGame();
+    const t = balance.tower;
+    expect(enrageFactor(g, t.enrageAfterSec)).toBe(1);
+    expect(enrageFactor(g, t.enrageAfterSec + 10)).toBeCloseTo(1 + t.enrageGrowth * 10, 9);
+    expect(floorsToBoss(g, t.bossEvery)).toBe(0);
+    expect(floorsToBoss(g, 1)).toBe(t.bossEvery - 1);
+    expect(nextMilestoneFloor(g)).toBe(t.milestoneEvery);
   });
 });

@@ -2,7 +2,7 @@ import { formatNumber, formatPercent } from '../format';
 import type { GameContext } from '../context';
 import type { FightFighterSnapshot, FightStats, TowerState } from '../state';
 import type { StatusId } from '../content/types';
-import { MAX_FIGHT_EVENTS, enemiesFor } from './tower';
+import { MAX_FIGHT_EVENTS, enemiesFor, enrageFactor } from './tower';
 
 /**
  * Read-only views of a finished tower fight: the defeat analysis („Warum
@@ -103,7 +103,7 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
   // Wut: the team held out long, but the enemies grew stronger every second.
   const t = ctx.balance.tower;
   if (!stats.timeout && stats.seconds > t.enrageAfterSec + 3) {
-    const factor = 1 + t.enrageGrowth * (stats.seconds - t.enrageAfterSec);
+    const factor = enrageFactor(ctx, stats.seconds);
     add(0.55 + Math.min(0.4, (factor - 1) / 5), {
       id: 'enrage', icon: '😡', title: 'Die Gegner wurden wütend',
       text: `Der Kampf dauerte ${sec(stats.seconds)} – ab ${sec(t.enrageAfterSec)} schlagen die Gegner mit jeder Sekunde härter zu, am Ende ×${formatNumber(factor, { decimals: 1 })}.`,

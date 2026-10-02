@@ -48,6 +48,8 @@ interface CatchUp {
   before: Record<string, ReturnType<typeof D>>;
   completed: Record<string, number>;
   off: () => void;
+  /** Wall clock of the absence (null: `simulateOffline` leaves the clock alone). */
+  clock: { startAt: number; endAt: number } | null;
 }
 
 export class Game implements GameContext {
@@ -141,7 +143,7 @@ export class Game implements GameContext {
     this._state.lastTickAt = now;
     if (elapsed <= 0) return null;
     if (elapsed > this.balance.sim.catchUpThresholdMs) {
-      this.beginCatchUp(elapsed);
+      this.beginCatchUp(elapsed, now - elapsed);
       return this.continueCatchUp(budgetMs);
     }
     this.advance(elapsed);
@@ -170,14 +172,21 @@ export class Game implements GameContext {
     return this.continueCatchUp(Infinity)!;
   }
 
-  private beginCatchUp(elapsedMs: number): void {
+  /**
+   * `startAt`: wall clock when the absence began. The simulated steps then walk
+   * the clock from there to the end of the absence (spread over the capped
+   * span), so the weekly mutation, Entschlossenheit, days and weeks change at
+   * the right point instead of using the end of the absence for all of it.
+   */
+  private beginCatchUp(elapsedMs: number, startAt?: number): void {
     const capMs = this.offlineCapMs();
     const simulatedMs = Math.min(elapsedMs, capMs);
     const before: Record<string, ReturnType<typeof D>> = {};
     for (const [k, v] of Object.entries(this._state.resources)) before[k] = v;
     const completed: Record<string, number> = {};
     const off = this.bus.on('processCompleted', ({ kind }) => (completed[kind] = (completed[kind] ?? 0) + 1));
-    this.catchUp = { requestedMs: elapsedMs, simulatedMs, capMs, remainingMs: simulatedMs, before, completed, off };
+    const clock = startAt === undefined ? null : { startAt, endAt: this._state.lastTickAt };
+    this.catchUp = { requestedMs: elapsedMs, simulatedMs, capMs, remainingMs: simulatedMs, before, completed, off, clock };
   }
 
   /** Computes for at most `budgetMs` (at least one step); the report once the catch-up is complete. */
@@ -187,10 +196,12 @@ export class Game implements GameContext {
     const until = budgetMs === Infinity ? Infinity : performance.now() + budgetMs;
     while (c.remainingMs > 0) {
       const dt = Math.min(stepMs, c.remainingMs);
+      if (c.clock) this._state.lastTickAt = c.clock.startAt + Math.round(((c.simulatedMs - c.remainingMs + dt) / c.simulatedMs) * c.requestedMs);
       this.step(dt);
       c.remainingMs -= dt;
       if (until !== Infinity && performance.now() >= until) break;
     }
+    if (c.clock) this._state.lastTickAt = c.clock.endAt;
     if (c.remainingMs > 0) return null;
     advanceTimers(this, c.requestedMs - c.simulatedMs);
     this.cancelCatchUp();

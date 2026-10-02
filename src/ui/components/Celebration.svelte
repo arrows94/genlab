@@ -78,7 +78,7 @@
 
 <style>
   .celebrate {
-    --c1: #2fd3c4; --c2: #f2c14e;
+    --c1: var(--teal); --c2: var(--gold);
     position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden; cursor: pointer; padding: 1rem;
     background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--c1) 22%, #06121599), #000000e6 70%);
     animation: fade-in 0.25s ease-out;

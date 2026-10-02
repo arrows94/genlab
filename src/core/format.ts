@@ -14,10 +14,6 @@ export function setNotation(n: Notation): void {
   defaultNotation = n;
 }
 
-export function getNotation(): Notation {
-  return defaultNotation;
-}
-
 /**
  * German number formatting: `1.234,5`, `12,3 Tsd.`, `4,56 Mio.` …, and
  * scientific (`1,23e45`) beyond the suffix list or when chosen.
@@ -63,6 +59,21 @@ function floorTo(value: number, decimals: number): number {
 
 export function formatPercent(fraction: number, decimals = 1): string {
   return `${de(fraction * 100, decimals)} %`;
+}
+
+/** `add` targets whose value is a fraction (chances), shown as percent. */
+export const CHANCE_TARGET = /mutation|instability|Chance|crit|thorns/;
+
+/**
+ * The value of a bonus: „+25 %“ (pct), „×1,25“ (mult), „+2“ (add). `percentAdd`
+ * shows an `add` value as percent (chances); `reductionPercent` shows a factor
+ * below 1 as „−27 %“. Negative values use the typographic minus.
+ */
+export function formatModifier(op: string, value: number, opts: { decimals?: number; percentAdd?: boolean; reductionPercent?: boolean } = {}): string {
+  const sign = value >= 0 ? '+' : '−';
+  if (op === 'mult') return opts.reductionPercent && value < 1 ? `−${formatPercent(1 - value, opts.decimals ?? 0)}` : `×${formatNumber(value, { decimals: 2 })}`;
+  if (op === 'pct' || opts.percentAdd) return `${sign}${formatPercent(Math.abs(value), opts.decimals ?? 1)}`;
+  return `${sign}${formatNumber(Math.abs(value), { decimals: opts.decimals ?? 1 })}`;
 }
 
 export function formatDuration(ms: number): string {

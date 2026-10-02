@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { content } from '@content/index';
-  import { canAfford } from '@core/costs';
   import { findCreature } from '@core/creatures';
   import { expressedAppearance, genomeReport, libraryHas } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { describeModifier, sortCreatures, type CreatureSort } from '@core/queries';
-  import { instabilityChance, isFullySpliced, maxSplices, splice, spliceCost, splicePreview, splicesLeft } from '@core/features/splicing';
+  import { instabilityChance, isFullySpliced, maxSplices, splice, spliceBlocker, spliceCost, splicePreview, splicesLeft } from '@core/features/splicing';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import CostLabel from './CostLabel.svelte';
   import CreatureSortSelect from './CreatureSortSelect.svelte';
 
@@ -95,9 +95,13 @@
   });
 
   const showGallery = $derived(choosing || !data.target);
-  const canSplice = $derived(
-    !!data.target && !!data.rung && !!donor && data.used < data.max && !!data.cost && canAfford(game.state, data.cost) && !data.donors.find((d) => d.a.id === donor)?.current,
-  );
+  /** Why the splice button is off (from core, so the reason matches the action). */
+  const blocker = $derived.by(() => {
+    view.frame;
+    if (!data.target || !data.rung || !donor) return 'Wähle ein Gen und ein Allel aus der Bibliothek.';
+    return spliceBlocker(game, data.target.id, data.rung.locus.id, slot, donor);
+  });
+  const canSplice = $derived(blocker === null);
 
   function pickTarget(id: number) {
     targetId = id;
@@ -161,22 +165,21 @@
       <div class="tiles">
         {#each gallery.tiles as t (t.c.id)}
           {@const sp = species(t.c)}
-          <button
-            class="tile"
-            class:on={targetId === t.c.id}
-            class:done={t.done}
-            style="--el: {content.elements.get(sp.element).color}; --rarity: {content.rarities.get(t.c.rarity).color}"
-            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name}"
+          <CreatureTile
+            creature={t.c}
+            info="✦ {t.top.perfect}/{t.top.total}"
+            selected={targetId === t.c.id}
+            dim={t.done}
+            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name} · ✦ {t.top.perfect}/{t.top.total} Loci reinerbig mit dem besten Allel"
             onclick={() => pickTarget(t.c.id)}
           >
-            {#if t.top.total > 0 && t.top.perfect === t.top.total}<span class="badge gold">perfekt</span>{:else if t.left === 0}<span class="badge">fertig</span>{/if}
-            <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
+            {#snippet corner()}
+              {#if t.top.total > 0 && t.top.perfect === t.top.total}<span class="badge gold">perfekt</span>{:else if t.left === 0}<span class="badge">fertig</span>{/if}
+            {/snippet}
             <span class="pips" title="{t.left} von {data.max} Versuchen übrig">
               {#each Array.from({ length: data.max }, (_, i) => i) as i (i)}<span class="pip" class:used={i >= t.left}></span>{/each}
             </span>
-            <span class="small num muted" title="Loci reinerbig mit dem besten Allel">✦ {t.top.perfect}/{t.top.total}</span>
-          </button>
+          </CreatureTile>
         {:else}
           <p class="small muted empty">
             {#if gallery.total === 0}Noch keine sequenzierte Kreatur – erst im Sequenzierlabor entschlüsseln.
@@ -280,7 +283,7 @@
             </div>
           {/if}
 
-          <button class="primary go" disabled={!canSplice} onclick={doSplice}>
+          <button class="primary go" disabled={!canSplice} title={blocker ?? undefined} onclick={doSplice}>
             ✂️ Splicen {#if data.cost}· <CostLabel cost={data.cost} />{/if}
           </button>
           {#if data.used >= data.max}<p class="small warn">Diese Kreatur verträgt keine weiteren Eingriffe.</p>{/if}
@@ -304,7 +307,7 @@
   .head p { margin: 0.15rem 0 0; }
   .small { font-size: 0.8rem; }
   .risk { display: grid; grid-template-columns: auto 110px auto; gap: 0.4rem; align-items: center; }
-  .gauge { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #2fd3c4, #f2c14e, #ff6b6b); position: relative; }
+  .gauge { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--gold), #ff6b6b); position: relative; }
   .gauge div { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px #fff; }
 
   /* Target gallery */
@@ -316,19 +319,11 @@
   .close { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
   .toolbar .close { margin-left: auto; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 17rem; overflow-y: auto; padding: 2px; }
-  .tile {
-    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.4rem 0.25rem 0.3rem; border-radius: 10px;
-    border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--el) 14%, transparent), var(--panel) 70%);
-  }
-  .tile:hover { border-color: var(--teal); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e66; }
-  .tile.done { opacity: 0.55; filter: saturate(0.6); }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
-  .badge { position: absolute; top: 3px; right: 3px; font-size: 0.6rem; padding: 0 0.3rem; border-radius: 99px; background: var(--line); color: var(--text); }
+  .badge { font-size: 0.6rem; font-weight: 600; padding: 0 0.3rem; border-radius: 99px; background: var(--line); color: var(--text); }
   .badge.gold { background: color-mix(in srgb, var(--gold) 30%, transparent); color: var(--gold); }
   .empty { grid-column: 1 / -1; margin: 0.3rem 0; }
 
-  .pips { display: flex; gap: 0.2rem; align-items: center; }
+  .pips { display: flex; gap: 0.2rem; align-items: center; margin-top: 0.1rem; }
   .pip { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 5px var(--teal); }
   .pip.used { background: var(--line); box-shadow: none; }
   .pips.big { gap: 0.25rem; margin-top: 0.2rem; }
