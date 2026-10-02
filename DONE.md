@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Turm-Tab aufgeteilt
+
+- `TowerTab.svelte` von 1 000 auf 92 Zeilen: nur noch Kopfzeile und Aufbau. Neu `TowerArena` (Wiedergabe, Vorschau,
+  Steuerung), `TowerTeam` (Plätze, Reihen, Synergien, Kandidaten mit eigener Sortierung); dazu die schon
+  abgetrennten `TowerFloors` und `TowerBoard`
+- Die Daten der Turm-Ansicht kommen als reine Funktion `towerView` aus `core/features/towerView.ts` (mit Test)
+- Im Browser bei 1200 und 360 px geprüft: Team wählen, Lauf starten, Wiedergabe – ohne Überlauf und Konsolenfehler
+
 ## 2026-10-02 – Einheitliche Optik für Balken und Kacheln
 
 - `Meter.svelte`: ein Fortschrittsbalken in drei Größen (sm 4 px, md 8 px, lg 16 px mit Wert) und Tönen mit Bedeutung

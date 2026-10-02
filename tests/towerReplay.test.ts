@@ -54,3 +54,21 @@ describe('tower fight replay (pure, used by the arena)', () => {
     expect(upcomingActions(intervals, intervals.map(() => false), 0, 4)).toEqual([]);
   });
 });
+
+describe('towerView (data of the tower tab)', () => {
+  it('describes the next floor, the floor column and the team', async () => {
+    const { towerView } = await import('@core/features/towerView');
+    const { lr, g } = lastFight(80);
+    expect(lr).toBeTruthy();
+    const v = towerView(g);
+    expect(v.nextFloor).toBe(v.current + 1);
+    expect(v.floors.filter((f) => f.next).map((f) => f.f)).toEqual([v.nextFloor]);
+    expect(v.floors[0]!.f).toBe(v.nextFloor + 3);
+    expect(v.team.map((c) => c.id)).toEqual(g.state.tower.run?.team ?? g.state.tower.team);
+    for (const c of v.team) {
+      expect(v.rows[c.id]).toMatch(/front|back/);
+      expect(v.roles[c.id]).toBeTruthy();
+    }
+    expect(v.matchups).toHaveLength(v.team.length);
+  });
+});

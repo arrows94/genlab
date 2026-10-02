@@ -18,10 +18,6 @@ Spiellogik (ungeprüft):
 - [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.potion`, `cost.capsule`, `cost.upgrade`,
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
-Qualität:
-- [ ] `TowerTab.svelte` (1 015 Zeilen): Arena und Team-Auswahl als eigene Komponenten (Arena hängt eng am
-      Wiedergabe-Zustand)
-
 # Endgame
 
 - [ ] Gen-Aufträge: kosmetische Muster als Belohnung (braucht neue Muster im Kreaturen-SVG)
