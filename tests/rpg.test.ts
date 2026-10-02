@@ -9,6 +9,7 @@ import { deserialize, serialize } from '@core/save';
 import { checkUnlocks, unlockFeature } from '@core/systems/unlocks';
 import { claimDaily, dailyReward } from '@core/features/daily';
 import { D } from '@core/num';
+import { startSequencing } from '@core/features/sequencing';
 import { NOW, balance, makeGame } from './helpers';
 
 const HOUR = 3_600_000;
@@ -704,6 +705,20 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
     expect(rpgCandidates(g).map((c) => c.id)).toEqual([g.state.creatures[0]!.id]);
     startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     expect(rpgCandidates(g)).toEqual([]);
+  });
+
+  it('a monster being sequenced stays free for the dungeon and keeps its level', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    unlockFeature(g, 'sequencing');
+    refreshTorches(g, NOW);
+    g.state.resources['essence'] = D(1e6);
+    const c = g.state.creatures[0]!;
+    g.state.rpg.ranks[String(c.id)] = xpToNext(g, 1);
+    expect(startSequencing(g, c.id).ok).toBe(true);
+    expect(rpgCandidates(g).map((x) => x.id)).toEqual([c.id]);
+    expect(startRpgRun(g, c.id, 'rootMaze').ok).toBe(true);
+    expect(rpgLevel(g, c.id).level).toBe(2);
   });
 
   it('every Tagesbelohnung brings a Fackel once the RPG is open, the last calendar day more', () => {

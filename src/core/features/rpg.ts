@@ -6,7 +6,6 @@ import type { ActionResult } from '../actions';
 import type { Creature, RpgAftermath, RpgItem, RpgRun } from '../state';
 import type { RpgEventOutcome, RpgGearSlot, RpgIntent, RpgRoomKind, RpgSkillDef } from '../content/types';
 import type { System } from '../systems/types';
-import { isBeingSequenced } from './sequencing';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
 import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
@@ -92,10 +91,12 @@ export function rpgMaxHp(ctx: GameContext, c: Creature, upgrades: readonly strin
   return heroStats(ctx, c, upgrades).hp;
 }
 
-/** Why a monster cannot enter the dungeon (null = it can). */
-export function rpgStartBlocker(ctx: GameContext, c: Creature): string | null {
+/**
+ * Why a monster cannot enter the dungeon (null = it can).
+ * Sequencing only reads a sample, so it keeps the monster free – like for the tower and buildings.
+ */
+export function rpgStartBlocker(_ctx: GameContext, c: Creature): string | null {
   if (c.job && c.job.kind !== 'building') return `${c.name} ist beschäftigt.`;
-  if (isBeingSequenced(ctx, c.id)) return `${c.name} wird gerade sequenziert.`;
   return null;
 }
 
