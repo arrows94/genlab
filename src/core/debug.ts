@@ -11,6 +11,7 @@ import { finishRpgRun, maxTorches } from './features/rpg';
  */
 export type DebugResetId =
   | 'processes'
+  | 'collect'
   | 'daily'
   | 'contracts'
   | 'weeklyBoss'
@@ -32,6 +33,7 @@ export interface DebugResetDef {
 
 export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'processes', group: 'Allgemein', name: 'Alle Vorgänge fertig', description: 'Eier, Erkundungen, Sequenzierung, Reisen, Großforschung … sind beim nächsten Schritt fertig.' },
+  { id: 'collect', group: 'Allgemein', name: 'Sammel-Ausdauer voll', description: 'Die Ausdauer beim Sammeln ist sofort wieder voll, die Wartezeit bis zum nächsten Fundstück ist vorbei.' },
   { id: 'daily', group: 'Allgemein', name: 'Tagesbelohnung wieder offen', description: 'Die heutige Tagesbelohnung kann noch einmal abgeholt werden.' },
   { id: 'contracts', group: 'Allgemein', name: 'Gen-Aufträge neu', description: 'Das heutige Auftragsbrett wird neu ausgelegt, erledigte Aufträge sind wieder offen, der Tausch ist wieder frei.' },
   { id: 'weeklyBoss', group: 'Allgemein', name: 'Wochen-Boss neu', description: 'Ein frischer Wochen-Titan nach dem aktuellen Turm-Rekord, alle Angriffe voll.' },
@@ -54,6 +56,9 @@ export function debugReset(ctx: GameContext, id: DebugResetId): ActionResult {
   switch (id) {
     case 'processes':
       for (const p of s.processes) p.elapsedMs = Math.max(p.elapsedMs, p.durationMs);
+      break;
+    case 'collect':
+      s.collect = { spent: 0, nextFindAt: 0 };
       break;
     case 'daily':
       s.daily.day = -1;

@@ -76,7 +76,8 @@
 
 <style>
   svg { display: block; overflow: visible; filter: brightness(calc(1 + var(--boost, 0) * 0.5)) drop-shadow(0 0 calc(var(--boost, 0) * 8px) var(--teal)); }
-  .animated g { animation: twist 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  /* Direct children only: the fill layer inside a pair must not twist on its own. */
+  .animated > g { animation: twist 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
   @keyframes twist {
     0%, 100% { transform: scaleY(1); }
     50% { transform: scaleY(-1); }
