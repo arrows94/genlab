@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { lineageDepth } from '@core/features/dynasty';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
@@ -104,7 +105,7 @@
       special: game.state.features['specialBreeding'] === true,
       dynasties: game.state.features['dynasties'] === true,
       // Pure line of the child (a hybrid would break it).
-      lineage: a && b && a.speciesId === b.speciesId ? Math.min(a.lineage ?? 0, b.lineage ?? 0) + 1 : 0,
+      lineage: a && b ? lineageDepth(game, a.speciesId, a, b) : 0,
     };
   });
 

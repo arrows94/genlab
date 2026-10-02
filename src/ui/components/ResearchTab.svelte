@@ -1,6 +1,6 @@
 <script lang="ts">
   import { buyUpgrade } from '@core/actions';
-  import { formatDuration, formatNumber, formatPercent } from '@core/format';
+  import { CHANCE_TARGET, formatDuration, formatModifier, formatNumber, formatPercent } from '@core/format';
   import { researchEffect, researchTree, type ResearchNode } from '@core/research';
   import type { UpgradeDef } from '@core/content/types';
   import { game, view, act } from '../store.svelte';
@@ -39,10 +39,8 @@
     const e = researchEffect(def, level);
     if (!e) return '';
     const target = def.modifiers[0]!.target;
-    if (e.op === 'mult') return e.value >= 1 ? `×${formatNumber(e.value, { decimals: 2 })}` : `−${formatPercent(1 - e.value, 0)}`;
-    if (e.op === 'pct') return `${e.value >= 0 ? '+' : '−'}${formatPercent(Math.abs(e.value), 0)}`;
-    if (/mutation|instability|Chance/.test(target)) return `${e.value >= 0 ? '+' : '−'}${formatPercent(Math.abs(e.value), 0)}`;
-    return `+${formatNumber(e.value, { decimals: 1 })}${target.startsWith('production.') ? '/s' : ''}`;
+    if (e.op === 'add' && !CHANCE_TARGET.test(target)) return `${formatModifier('add', e.value)}${target.startsWith('production.') ? '/s' : ''}`;
+    return formatModifier(e.op, e.value, { decimals: 0, percentAdd: CHANCE_TARGET.test(target), reductionPercent: true });
   }
 
   function buy(x: ResearchNode) {

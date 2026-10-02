@@ -571,3 +571,16 @@ describe('tower milestones', () => {
     expect(g.state.resources.aeonShards!.toNumber()).toBe(before + balance.tower.milestoneShards);
   });
 });
+
+describe('tower rule helpers (shared by core and the tower tab)', () => {
+  it('Wut factor, floors to the next boss and the next milestone', async () => {
+    const { enrageFactor, floorsToBoss, nextMilestoneFloor } = await import('@core/features/tower');
+    const g = towerGame();
+    const t = balance.tower;
+    expect(enrageFactor(g, t.enrageAfterSec)).toBe(1);
+    expect(enrageFactor(g, t.enrageAfterSec + 10)).toBeCloseTo(1 + t.enrageGrowth * 10, 9);
+    expect(floorsToBoss(g, t.bossEvery)).toBe(0);
+    expect(floorsToBoss(g, 1)).toBe(t.bossEvery - 1);
+    expect(nextMilestoneFloor(g)).toBe(t.milestoneEvery);
+  });
+});

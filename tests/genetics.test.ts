@@ -250,6 +250,17 @@ describe('gene splicing', () => {
     return { g, c };
   }
 
+  it('spliceBlocker gives the same reason the action would', async () => {
+    const { spliceBlocker } = await import('@core/features/splicing');
+    const { g, c } = spliceGame(0);
+    expect(spliceBlocker(g, c.id, 'strength', 0, 'Kt')).toBeNull();
+    g.state.geneLibrary['strength:k'] = true;
+    expect(spliceBlocker(g, c.id, 'strength', 0, 'k')).toBe('Das Allel ist bereits vorhanden.');
+    g.state.resources.essence = D(0);
+    expect(spliceBlocker(g, c.id, 'strength', 0, 'Kt')).toMatch(/^Nicht genug Essenz/);
+    expect(splice(g, c.id, 'strength', 0, 'Kt')).toEqual({ ok: false, reason: spliceBlocker(g, c.id, 'strength', 0, 'Kt') });
+  });
+
   it('research and achievements lower the risk, but never below the floor', () => {
     const { g } = spliceGame(balance.genetics.splicing.instability);
     addBuff(g, 'test', [{ target: 'splicing.instability', op: 'add', value: -1 }], 1e9);

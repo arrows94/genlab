@@ -6,9 +6,13 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, restartCheckpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, restartCheckpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, enrageFactor, floorsToBoss, nextMilestoneFloor, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
+  import { describeModifier } from '@core/queries';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
+  import {
+    advanceReplay, fightSeconds as fightSecondsOf, finalState, gauge, intervalsOf, replayStart, timedEvents, upcomingActions, type LastResult, type ReplayEvent,
+  } from '@core/features/towerReplay';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
@@ -43,8 +47,6 @@
 
   // ---- fight replay -------------------------------------------------------
 
-  type LastResult = NonNullable<typeof game.state.tower.lastResult>;
-  type ReplayEvent = NonNullable<LastResult['events']>[number] & { at: number };
 
   /**
    * The last fight replayed on its own time line: `clock` runs in fight
@@ -70,9 +72,6 @@
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const keyOf = (lr: typeof game.state.tower.lastResult) => (lr ? `${lr.floor}-${lr.at ?? 0}-${lr.win}` : '');
-  /** Older saves have no event times: spread them evenly. */
-  const timedEvents = (lr: LastResult): ReplayEvent[] => (lr.events ?? []).map((e, i) => ({ ...e, at: e.at ?? (i + 1) * 0.6 }));
-  const intervalsOf = (lr: LastResult) => (lr.fighters ?? []).map((f) => f.interval ?? 1);
 
   function stopReplay() {
     if (frame !== null) cancelAnimationFrame(frame);
@@ -81,30 +80,7 @@
     timer = null;
   }
 
-  function finalState(lr: LastResult): { hp: number[]; elements: string[] } {
-    const fighters = lr.fighters ?? [];
-    const hp = fighters.map((f) => f.maxHp);
-    const elements = fighters.map((f) => f.element);
-    for (const e of lr.events ?? []) {
-      hp[e.t] = e.hp;
-      if (e.kind === 'shift' && e.element) elements[e.t] = e.element;
-    }
-    // Events are capped – make the end state match the outcome.
-    fighters.forEach((f, i) => {
-      if (lr.win && !f.team) hp[i] = 0;
-      if (!lr.win && f.team && !(lr.stats?.timeout ?? lr.log.at(-1) === 'Zeit abgelaufen')) hp[i] = 0;
-    });
-    return { hp, elements };
-  }
-
-  /** Seconds the fight lasted (from the fight stats or the log line, else the last event). */
-  function fightSeconds(lr: LastResult, events: ReplayEvent[]): number {
-    if (lr.stats) return lr.stats.seconds;
-    const m = lr.log.at(-1)?.match(/([\d,]+) s$/);
-    if (m) return Number(m[1]!.replace(',', '.'));
-    if (lr.log.at(-1) === 'Zeit abgelaufen') return game.balance.tower.maxFightSec;
-    return events.at(-1)?.at ?? 1;
-  }
+  const fightSeconds = (lr: LastResult, events: ReplayEvent[]) => fightSecondsOf(game, lr, events);
 
   function show(t: number, text: string, kind: (typeof popups)[number]['kind']) {
     const id = ++popupId;
@@ -180,7 +156,8 @@
     const fighters = lr.fighters ?? [];
     if (!fighters.length) return;
     const seconds = fightSeconds(lr, events);
-    replay = { key, hp: fighters.map((f) => f.maxHp), elements: fighters.map((f) => f.element), clock: 0, end: seconds, idx: 0, attacker: -1, target: -1, done: false };
+    const start = replayStart(lr);
+    replay = { key, hp: start.hp, elements: start.elements, clock: 0, end: seconds, idx: 0, attacker: -1, target: -1, done: false };
     banner = null;
     popups = [];
     marks = {};
@@ -198,22 +175,10 @@
       if (speed === 0) return finish(lr, key, seconds);
       const clock = Math.min(seconds, replay.clock + (now - last) * rate * speed);
       last = now;
-      let { idx, attacker, target } = replay;
-      const hp = [...replay.hp];
-      const elements = [...replay.elements];
-      while (idx < events.length && events[idx]!.at <= clock) {
-        const e = events[idx]!;
-        if (e.kind === 'shift' && e.element) elements[e.t] = e.element;
-        else hp[e.t] = e.hp;
-        if (e.kind === 'status' && e.status) marks = { ...marks, [e.t]: { ...marks[e.t], [e.status]: e.until ?? e.at } };
-        if (!e.kind || e.kind === 'miss' || (e.kind === 'tech' && e.dmg > 0)) {
-          attacker = e.a;
-          target = e.t;
-        }
-        popup(e, elements[e.a] ?? 'fire');
-        idx++;
-      }
-      replay = { ...replay, clock, idx, hp, elements, attacker, target };
+      const { state: next, fired } = advanceReplay({ ...replay, marks }, events, clock);
+      marks = next.marks;
+      for (const f of fired) popup(f.e, f.attackerElement);
+      replay = { ...replay, clock, idx: next.idx, hp: next.hp, elements: next.elements, attacker: next.attacker, target: next.target };
       if (clock >= seconds) return finish(lr, key, seconds);
       frame = requestAnimationFrame(step);
     };
@@ -247,19 +212,6 @@
     { v: 2, label: '2×', title: 'Doppelt so schnell' },
     { v: 0, label: '⏭', title: 'Wiedergabe überspringen – gleich das Ergebnis zeigen' },
   ];
-
-  /** Fill (0…1) of a fighter's action gauge at fight time `clock`. */
-  const gauge = (clock: number, interval: number) => (interval > 0 ? (clock % interval) / interval : 0);
-
-  /** The next actions from `clock` on: fighter indices in order (the turn-order strip). */
-  function upcoming(intervals: number[], alive: boolean[], clock: number, count: number): { i: number; at: number }[] {
-    const out: { i: number; at: number }[] = [];
-    intervals.forEach((iv, i) => {
-      if (!alive[i] || iv <= 0) return;
-      for (let k = Math.floor(clock / iv) + 1; out.length < count * intervals.length && k * iv <= clock + count * 2; k++) out.push({ i, at: k * iv });
-    });
-    return out.sort((a, b) => a.at - b.at).slice(0, count);
-  }
 
   // ---- derived view data -------------------------------------------------
 
@@ -303,7 +255,7 @@
       boss: isBossFloor(game, nextFloor),
       guard: enemy.guard === true,
       // The column shows only a few floors around the team – the next boss may be far above.
-      bossIn: game.balance.tower.bossEvery - (nextFloor % game.balance.tower.bossEvery || game.balance.tower.bossEvery),
+      bossIn: floorsToBoss(game, nextFloor),
       trait: enemy.trait ? content.bossTraits.get(enemy.trait) : null,
       targeting: targetingOf(game, enemy),
       group,
@@ -315,7 +267,7 @@
       milestones: towerMilestones(game),
       veteran: veteranRank(game),
       resolve: resolveInfo(game),
-      nextMilestone: (towerMilestones(game) + 1) * game.balance.tower.milestoneEvery,
+      nextMilestone: nextMilestoneFloor(game),
       reward: floorRewardInfo(game, nextFloor),
       floors,
       aboveBest: tw.best > top,
@@ -361,7 +313,7 @@
 
   const order = $derived.by(() => {
     const alive = arena.units.map((_, i) => (arena.hp[i] ?? 1) > 0);
-    return upcoming(arena.intervals, alive, arena.clock, 8);
+    return upcomingActions(arena.intervals, alive, arena.clock, 8);
   });
   const teamUnits = $derived(arena.units.map((u, i) => ({ u, i })).filter((x) => x.u.team));
   /** Team in two lines: the back row stands further from the enemy. */
@@ -383,6 +335,8 @@
   async function stop() {
     if (await ask('Lauf beenden? Er wird in der Bestenliste eingetragen.', { ok: 'Beenden', danger: true })) act(stopRun(game));
   }
+  /** „+15 % Turm-Schaden, +10 % Nahrung-Ertrag …“ – straight from the balance numbers. */
+  const MILESTONE_BONUS = game.balance.tower.milestoneModifiers.map((m) => describeModifier(game, m)).join(', ');
   const TARGETING = {
     rows: `Greift zu ${formatPercent(game.balance.tower.frontShare, 0)} die vordere Reihe an (wenn beide Reihen besetzt sind).`,
     back: `Greift zu ${formatPercent(game.balance.tower.frontShare, 0)} die hintere Reihe an – schütze deine Angreifer anders.`,
@@ -479,7 +433,7 @@
         <b class="num">💪 +{formatPercent(data.resolve.bonus, 0)}</b><small>Entschlossenheit</small>
       </span>
     {/if}
-    <span class="kpi" title="Alle {game.balance.tower.milestoneEvery} Etagen: einmalig {game.balance.tower.milestoneShards} Äon-Splitter und dauerhaft +15 % Turm-Schaden, +10 % Produktion"><b class="num">🏅 {data.milestones}</b><small>Meilensteine · nächster {data.nextMilestone}</small></span>
+    <span class="kpi" title="Alle {game.balance.tower.milestoneEvery} Etagen: einmalig {game.balance.tower.milestoneShards} Äon-Splitter und dauerhaft {MILESTONE_BONUS}"><b class="num">🏅 {data.milestones}</b><small>Meilensteine · nächster {data.nextMilestone}</small></span>
   </div>
 </header>
 
@@ -533,7 +487,7 @@
         {/if}
       </span>
       {#if arena.mode === 'fight'}
-        <span class="clock num" title="Kampfzeit – kein Zeitlimit, aber ab {game.balance.tower.enrageAfterSec} s werden die Gegner wütend: jede Sekunde +{formatPercent(game.balance.tower.enrageGrowth, 0)} Schaden">⏱ {formatNumber(arena.clock, { decimals: 1 })} s{#if arena.clock > game.balance.tower.enrageAfterSec}<span class="wut"> 😡 ×{formatNumber(1 + game.balance.tower.enrageGrowth * (arena.clock - game.balance.tower.enrageAfterSec), { decimals: 1 })}</span>{/if}</span>
+        <span class="clock num" title="Kampfzeit – kein Zeitlimit, aber ab {game.balance.tower.enrageAfterSec} s werden die Gegner wütend: jede Sekunde +{formatPercent(game.balance.tower.enrageGrowth, 0)} Schaden">⏱ {formatNumber(arena.clock, { decimals: 1 })} s{#if arena.clock > game.balance.tower.enrageAfterSec}<span class="wut"> 😡 ×{formatNumber(enrageFactor(game, arena.clock), { decimals: 1 })}</span>{/if}</span>
       {/if}
       <span class="speed" role="radiogroup" aria-label="Tempo der Wiedergabe">
         {#each SPEEDS as s (s.v)}

@@ -21,11 +21,6 @@ Spiellogik (ungeprüft):
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 Qualität:
-- [ ] Modifier-Text („+25 %“, „×1,25“) einmal in core (`describeModifier` erweitern) statt dreimal in der Oberfläche
-      (`CreatureDetail.svelte` `fmtMod`, `AeonTab.svelte` `effect`, `ResearchTab.svelte`)
-- [ ] Spielregeln aus der Oberfläche nach core: Zahlen im Tooltip `TowerTab.svelte:476`, Wut-Faktor `:530`,
-      `newShards` in `AnomaliesTab`, `lineage` in `BreedingTab`, `canSplice` in `SplicingBench` (besser
-      `spliceBlocker()` mit Grund), Kampf-Wiedergabe aus `TowerTab` nach `towerReport.ts`
 - [ ] Große Dateien teilen: `simulateFight` (314 Zeilen, 40 `!`) in `towerCombat.ts` mit einem Datensatz je Kämpfer,
       `validateContent` als Tabelle, `TowerTab.svelte` und `BreedingTab.svelte` in Teilkomponenten
 - [ ] Tests: `evolution.ts`, ungetestete Exporte in `hybrids.ts` / `infusion.ts` / `recycler.ts`, Sync-Entscheidung

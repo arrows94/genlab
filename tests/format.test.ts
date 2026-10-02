@@ -57,3 +57,15 @@ describe('fixed decimals for live counters', () => {
     expect(formatNumber(250, { decimals: 0, fixed: true })).toBe('250');
   });
 });
+
+describe('formatModifier', () => {
+  it('writes every kind of bonus the same way', async () => {
+    const { formatModifier } = await import('@core/format');
+    expect(formatModifier('pct', 0.25)).toBe('+25 %');
+    expect(formatModifier('pct', -0.1)).toBe('−10 %');
+    expect(formatModifier('mult', 1.25)).toBe('×1,25');
+    expect(formatModifier('mult', 0.73, { reductionPercent: true })).toBe('−27 %');
+    expect(formatModifier('add', 2)).toBe('+2');
+    expect(formatModifier('add', 0.05, { percentAdd: true })).toBe('+5 %');
+  });
+});

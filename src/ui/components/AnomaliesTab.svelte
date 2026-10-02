@@ -3,6 +3,7 @@
   import { conditionProgress } from '@core/conditions';
   import {
     abandonAnomaly, activeAnomalies, anomalyAvailable, anomalyBest, anomalyGoal, anomalyGoalText, anomalyProgress, anomalyScale, maxStartLevel, startAnomalies,
+    recordShards,
   } from '@core/features/anomalies';
   import { formatNumber } from '@core/format';
   import { game, view, act, save, ask } from '../store.svelte';
@@ -37,7 +38,7 @@
       list,
       total,
       record,
-      newShards: Math.max(0, total - record) * game.balance.anomalies.shardsPerRecordPoint,
+      newShards: recordShards(game, total),
       progress: anomalyProgress(game),
       mastered: list.filter((x) => x.best > 0).length,
       aeon: !!game.state.features.aeon,

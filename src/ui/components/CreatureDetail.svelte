@@ -5,7 +5,7 @@
   import { findCreature } from '@core/creatures';
   import type { Creature } from '@core/state';
   import { expressedAppearance } from '@core/genetics';
-  import { formatNumber, formatPercent } from '@core/format';
+  import { formatModifier, formatNumber, formatPercent } from '@core/format';
   import { statBreakdown } from '@core/queries';
   import { dynastyRecord, dynastyTier, lineageBonus, nextTierDepth } from '@core/features/dynasty';
   import { toggleLock } from '@core/actions';
@@ -64,11 +64,7 @@
     if (!cur) return;
     if ((await ask(`${cur.name} zum Gen-Recycler schicken? In der Zerlege-Kammer kannst du es dir bis zuletzt noch anders überlegen.${lastOfSpecies(cur)}`, { ok: 'Zum Recycler', danger: true })) && act(sendToRecycler(game, [cur.id]))) close();
   }
-  function fmtMod(op: string, v: number) {
-    if (op === 'pct') return `${v >= 0 ? '+' : ''}${formatPercent(v, 1)}`;
-    if (op === 'mult') return `×${formatNumber(v, { decimals: 2 })}`;
-    return `${v >= 0 ? '+' : ''}${formatNumber(v)}`;
-  }
+  const fmtMod = (op: string, v: number) => formatModifier(op, v);
 </script>
 
 {#if c && data}

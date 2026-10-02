@@ -5,6 +5,16 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Qualität (zweiter Teil)
+
+- Modifier-Text: `formatModifier` und `CHANCE_TARGET` in `core/format.ts`, genutzt von `describeModifier`,
+  Kreaturen-Details, Forschung und Äon
+- Spielregeln aus der Oberfläche nach core: `enrageFactor`, `floorsToBoss`, `nextMilestoneFloor` (Turm),
+  Meilenstein-Tooltip aus `balance.tower.milestoneModifiers`, `recordShards` (Anomalien), `lineageDepth` in der
+  Brutstation, `spliceBlocker` (Spleiß-Knopf zeigt den Grund als Tooltip)
+- Kampf-Wiedergabe als reine Funktionen in `core/features/towerReplay.ts` (`timedEvents`, `finalState`,
+  `fightSeconds`, `advanceReplay`, `gauge`, `upcomingActions`) mit Tests; im Browser geprüft
+
 ## 2026-10-02 – Schritt 4: Qualität (erster Teil)
 
 - Doppelte Logik: `isOccupied(c)` (`core/creatures.ts`) statt sieben Kopien von „beschäftigt“ (totes `isBusy` weg),

@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { content } from '@content/index';
-  import { canAfford } from '@core/costs';
   import { findCreature } from '@core/creatures';
   import { expressedAppearance, genomeReport, libraryHas } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { describeModifier, sortCreatures, type CreatureSort } from '@core/queries';
-  import { instabilityChance, isFullySpliced, maxSplices, splice, spliceCost, splicePreview, splicesLeft } from '@core/features/splicing';
+  import { instabilityChance, isFullySpliced, maxSplices, splice, spliceBlocker, spliceCost, splicePreview, splicesLeft } from '@core/features/splicing';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
@@ -95,9 +94,13 @@
   });
 
   const showGallery = $derived(choosing || !data.target);
-  const canSplice = $derived(
-    !!data.target && !!data.rung && !!donor && data.used < data.max && !!data.cost && canAfford(game.state, data.cost) && !data.donors.find((d) => d.a.id === donor)?.current,
-  );
+  /** Why the splice button is off (from core, so the reason matches the action). */
+  const blocker = $derived.by(() => {
+    view.frame;
+    if (!data.target || !data.rung || !donor) return 'Wähle ein Gen und ein Allel aus der Bibliothek.';
+    return spliceBlocker(game, data.target.id, data.rung.locus.id, slot, donor);
+  });
+  const canSplice = $derived(blocker === null);
 
   function pickTarget(id: number) {
     targetId = id;
@@ -280,7 +283,7 @@
             </div>
           {/if}
 
-          <button class="primary go" disabled={!canSplice} onclick={doSplice}>
+          <button class="primary go" disabled={!canSplice} title={blocker ?? undefined} onclick={doSplice}>
             ✂️ Splicen {#if data.cost}· <CostLabel cost={data.cost} />{/if}
           </button>
           {#if data.used >= data.max}<p class="small warn">Diese Kreatur verträgt keine weiteren Eingriffe.</p>{/if}

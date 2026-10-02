@@ -1,6 +1,6 @@
 <script lang="ts">
   import { content } from '@content/index';
-  import { formatNumber, formatPercent } from '@core/format';
+  import { CHANCE_TARGET, formatModifier, formatNumber, formatPercent } from '@core/format';
   import {
     buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, resonanceScale, talentAvailable, talentUnlocked, AEON_CURRENCY,
   } from '@core/features/talents';
@@ -53,7 +53,7 @@
     const m = def.modifiers[0];
     if (!m) return '';
     const v = m.value * scale;
-    return m.op === 'add' && m.target === 'breeding.mutation' ? `+${formatPercent(v)}` : m.op === 'mult' ? `×${formatNumber(v, { decimals: 2 })}` : `+${formatPercent(v, 0)}`;
+    return m.op === 'add' && CHANCE_TARGET.test(m.target) ? formatModifier('add', v, { percentAdd: true }) : formatModifier(m.op, v, { decimals: 0, percentAdd: m.op === 'add' });
   }
 
 </script>

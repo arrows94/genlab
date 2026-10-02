@@ -298,6 +298,23 @@ export function towerBestEver(ctx: GameContext): number {
   return Math.max(ctx.state.tower.best, ctx.state.tower.bestEver ?? 0);
 }
 
+/** Wut factor on enemy damage after `seconds` of fighting (1 before `enrageAfterSec`). */
+export function enrageFactor(ctx: GameContext, seconds: number): number {
+  const t = ctx.balance.tower;
+  return seconds > t.enrageAfterSec ? 1 + t.enrageGrowth * (seconds - t.enrageAfterSec) : 1;
+}
+
+/** Floors until the next boss floor (0 = the given floor is one). */
+export function floorsToBoss(ctx: GameContext, floor: number): number {
+  const every = ctx.balance.tower.bossEvery;
+  return every - (floor % every || every);
+}
+
+/** Floor of the next tower milestone. */
+export function nextMilestoneFloor(ctx: GameContext): number {
+  return (towerMilestones(ctx) + 1) * ctx.balance.tower.milestoneEvery;
+}
+
 /** Milestones reached (every `milestoneEvery` floors of the highest record ever). */
 export function towerMilestones(ctx: GameContext): number {
   return Math.floor(towerBestEver(ctx) / ctx.balance.tower.milestoneEvery);
@@ -584,7 +601,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const leader = foes.find((f) => f.boss) ?? foes[foes.length - 1]!;
   // Wut: enemies hit harder with every second after enrageAfterSec (no hard time limit in the tower).
   const enrageOn = opts.enrage ?? true;
-  const wut = (at: number) => (enrageOn && at > cfg.enrageAfterSec ? 1 + cfg.enrageGrowth * (at - cfg.enrageAfterSec) : 1);
+  const wut = (at: number) => (enrageOn ? enrageFactor(ctx, at) : 1);
   let enraged = false;
 
   // Synergies: pairs of one element hit harder; a colourful team against the Wandler.
