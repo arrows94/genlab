@@ -4,6 +4,7 @@ import { buyUpgrade } from '@core/actions';
 import { createCreature } from '@core/creatures';
 import { autoSequenceOnce, setAutoSequence } from '@core/features/automation';
 import { campSlots } from '@core/features/expedition';
+import { potionCost } from '@core/features/market';
 import { grandCost, grandHours, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { sequencerSlots, sequencerUsed } from '@core/features/sequencing';
 import { useTimeCrystal } from '@core/features/timeCrystals';
@@ -42,6 +43,15 @@ describe('Großforschung', () => {
     g.simulateOffline(grandHours(def, 1) * H + 1000);
     expect(grandLevel(g, def.id)).toBe(1);
     expect(campSlots(g)).toBe(camps + 1);
+  });
+
+  it('Handelskontor makes the market cheaper', () => {
+    const g = grandGame();
+    unlockFeature(g, 'market');
+    const before = potionCost(g, 'feast').food!.toNumber();
+    g.state.grandResearch.tradingPost = 3;
+    g.invalidate();
+    expect(potionCost(g, 'feast').food!.toNumber()).toBeCloseTo(before * 0.55, 0);
   });
 
   it('later levels cost and take more, up to the maximum', () => {
