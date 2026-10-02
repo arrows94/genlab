@@ -17,6 +17,8 @@
    * until the player goes back to the lab. All rules live in core/features/rpg.ts; this view only shows state
    * and calls actions.
    */
+  /** The boss door: a fog gate, like the last threshold before a lord of the dungeon. */
+  const FOG_GATE = { name: 'Nebeltor', icon: '🌫️', hint: 'Dahinter wartet der Boss. Kein Zurück, bis einer fällt.' };
   let menuOpen = $state(false);
   const GUARDIAN_INFO = { icon: '🛡️', name: 'Wächter', hint: 'Ein starker Elite-Gegner bewacht die Mitte des Dungeons – an ihm führt kein Weg vorbei.' };
 
@@ -225,16 +227,19 @@
   {:else}
     {#if run.eventResult}<p class="parchment tale told">{run.eventResult}</p>{/if}
     {@const guardian = isGuardianNext(game, run)}
-    <h2 class="fork">{run.choices.includes('boss') ? 'Vor dir liegt der letzte Raum …' : guardian ? 'Ein Wächter versperrt den Weg …' : 'Der Weg teilt sich'}</h2>
+    {@const fog = run.choices.includes('boss')}
+    {@const bonfire = run.choices.includes('bonfire')}
+    <h2 class="fork">{fog ? 'Ein Nebeltor versperrt den letzten Raum …' : guardian ? 'Ein Wächter versperrt den Weg …' : bonfire ? 'Ein Leuchtfeuer brennt in der Dunkelheit' : 'Der Weg teilt sich'}</h2>
+    {#if fog}<p class="parchment tale told">Grauer Nebel wabert im Torbogen. Dahinter wartet der Herr dieses Dungeons – wer hindurchgeht, kommt erst zurück, wenn einer von beiden fällt. Noch kannst du mit deiner Beute umkehren.</p>{/if}
     <div class="doors">
       {#each run.choices as kind, i (kind)}
-        {@const info = guardian ? GUARDIAN_INFO : ROOM_INFO[kind]}
-        <button class="door" class:boss={kind === 'boss' || guardian} onclick={() => act(enterRoom(game, i))}>
+        {@const info = guardian ? GUARDIAN_INFO : kind === 'boss' ? FOG_GATE : ROOM_INFO[kind]}
+        <button class="door" class:boss={kind === 'boss' || guardian} class:bonfire={kind === 'bonfire'} onclick={() => act(enterRoom(game, i))}>
           <span class="c-icon">{info.icon}</span><b>{info.name}</b><span class="c-text">{info.hint}</span>
         </button>
       {/each}
     </div>
-    <div class="leave-bar"><button class="iron" onclick={leave}>🚪 Dungeon verlassen (Beute mitnehmen)</button></div>
+    <div class="leave-bar"><button class="iron" onclick={leave}>🚪 {fog ? 'Umkehren' : 'Dungeon verlassen'} (Beute mitnehmen)</button></div>
   {/if}
 {:else if data.lastResult}
   {@const res = data.lastResult}
@@ -428,6 +433,7 @@
     box-shadow: inset 0 0 24px #000c, 0 6px 14px #000b;
   }
   .door:hover { border-color: var(--brass); box-shadow: inset 0 0 24px #000c, 0 0 16px #ff9a3c44; }
+  .door.bonfire { border-color: #c4965a; background: radial-gradient(ellipse at 50% 75%, #ff9a3c55, transparent 60%), repeating-linear-gradient(90deg, #3a2a1d 0 18px, #33251a 18px 20px), #2d2016; box-shadow: inset 0 0 24px #000c, 0 0 22px #ff9a3c66; }
   .door.boss { border-color: #9a3a30; box-shadow: inset 0 0 24px #000c, 0 0 18px #d9483b66; }
   .door b { font-size: 1.05rem; color: var(--glow); }
   .leave-bar { display: flex; justify-content: center; padding: 0.4rem 0; }

@@ -128,6 +128,7 @@ export interface Balance {
     guardianAt: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
+    bonfireHeal: number;
     /**
      * Loot per room kind: `fixed` × the dungeon's `loot`; each `chance` entry gives one piece with that
      * probability × the dungeon's `loot` (at most 1). Key `alleleSamples` catalogues missing alleles.

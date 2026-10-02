@@ -120,6 +120,29 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 
 # GenLab RPG
 
+## Dark-Souls-Umbau (Oktober 2026)
+
+Ziel: weniger Erholung, schwere Bosse (beim ersten Versuch meist tödlich), mehr Taktik im Kampf. Entscheidungen:
+Bosse sehr hart (1a), mit Ausdauerleiste (2b), mit Blutfleck (3a), Reihenfolge wie unten.
+
+- [ ] Schritt 2: Heiltränke 🧪 (wie Estus) als knappe Ressource – wenige pro Lauf, im Kampf kostet ein Schluck den
+      eigenen Zug, das Leuchtfeuer füllt sie auf
+- [ ] Schritt 3: Ausdauer, Ausweichen und Parieren – jede Aktion kostet Ausdauer, sie kehrt jede Runde zurück;
+      Ausweichen umgeht einen Treffer, Parieren kontert einen normalen Angriff (kritischer Gegenschlag, Gegner setzt
+      aus), misslingt aber gegen schwere Schläge oder ins Leere; „Verschnaufen“ als Zug ohne Kosten
+- [ ] Schritt 4: Gleichgewicht – Treffer füllen eine Wanken-Leiste, voll = der Gegner taumelt (setzt aus, der nächste
+      Schlag ist kritisch); schwere Schläge bringen auch dein Monster ins Wanken
+- [ ] Schritt 5: Echte Bosse – je Dungeon ein eigener Boss mit Namen und Mechanik, zweite Phase ab 50 % KP (neuer
+      Ablauf, schneller), deutlich härter; große Boss-Leiste mit Namen
+- [ ] Schritt 6: Blutfleck – bei einem Tod bleibt die getragene Beute im Raum liegen; im nächsten Lauf im selben
+      Dungeon bis dorthin kommen = zurückholen, vorher sterben = verloren
+- [ ] Schritt 7: Darstellung und Klang – „DU BIST GESTORBEN“, „FEIND GEFÄLLT“, Klänge für Parieren, Taumeln,
+      Phasenwechsel
+- [ ] Schritt 8: Bot lernt Ausweichen, Parieren, Tränke und Ausdauer; Zahlen neu abstimmen (Boss beim ersten
+      Versuch meist tödlich, mit Vorbereitung schaffbar)
+
+## Sonstiges
+
 - [ ] Idee zum Überlegen: Die Stufe hängt an der **Art** statt an der einzelnen Kreatur – dann übersteht sie jeden
       Neustart, und ein neuer Glutwelpe knüpft an den alten an. Frage: Lohnt sich dann noch ein zweites Monster
       derselben Art, und wird der Dex zum „Helden-Buch“? (Durchsicht: Heute löscht jede Vererbung die Stufe, und

@@ -711,7 +711,7 @@ export interface RpgEnemyDef {
 }
 
 /** Room kinds of a dungeon; after each room the player picks the next from 2–3. */
-export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'boss';
+export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'bonfire' | 'boss';
 
 /** A dungeon of the GenLab RPG: element theme, strength and length. */
 export interface RpgDungeonDef {

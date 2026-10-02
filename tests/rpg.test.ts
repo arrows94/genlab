@@ -440,7 +440,7 @@ describe('GenLab RPG – Dungeon', () => {
     r.hp = 1;
     expect(chooseEventOption(g, 2).ok).toBe(false);
     expect(chooseEventOption(g, 0).ok).toBe(true);
-    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * 0.3));
+    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * g.content.rpgEvents.get('shrine').options[0].hp!));
     expect(r.eventResult).toBe(g.content.rpgEvents.get('shrine').options[0].result);
     expect(r.event).toBeNull();
     expect(r.choices.length).toBeGreaterThan(0);
@@ -723,6 +723,39 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
       expect(g.state.rpg.run!.choices).toEqual(['elite']);
       leaveRpgRun(g);
     }
+  });
+
+  it('behind the guardian the Leuchtfeuer heals fully and secures the loot; then the ways split again', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    const c = makeHero(g, 60);
+    g.state.resources['torches'] = D(9);
+    startRpgRun(g, c.id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    const at = guardianRoom(g, 'rootMaze');
+    run.depth = at + 1; // inside the guardian's room
+    run.choices = [];
+    run.room = 'elite';
+    startRpgBattle(g, 'champion', 'sproutle', 1);
+    run.battle!.foe.hp = 1;
+    useRpgSkill(g, 'strike');
+    expect(run.choices).toEqual(['bonfire']);
+    run.offer = [];
+    run.pendingLevels = 0;
+    run.hp = 1;
+    run.loot = { towerTokens: 5 };
+    expect(enterRoom(g, 0).ok).toBe(true);
+    expect(run.hp).toBe(rpgMaxHp(g, c, run.upgrades));
+    expect(run.loot).toEqual({});
+    expect(run.secured['towerTokens']).toBe(5);
+    expect(run.choices.length).toBeGreaterThanOrEqual(2);
+    expect(run.choices).not.toContain('bonfire');
+  });
+
+  it('treasure and camps are rare; the boss waits behind the last room', () => {
+    const w = balance.rpg.roomWeights;
+    const total = Object.values(w).reduce((a, b) => a + b, 0);
+    expect((w.treasure + w.rest) / total).toBeLessThan(0.1);
   });
 
   it('candidates are the free monsters, strongest first', () => {

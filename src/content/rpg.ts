@@ -60,7 +60,7 @@ export const rpgEvents: RpgEventDef[] = [
   { id: 'shrine', name: 'Verlassener Schrein', icon: '⛩️', weight: 3,
     text: 'Ein moosbewachsener Schrein. In der Schale liegen alte Opfergaben.',
     options: [
-      { label: 'Beten', hp: 0.3, result: 'Eine warme Kraft durchströmt dein Monster.' },
+      { label: 'Beten', hp: 0.15, result: 'Eine schwache Wärme durchströmt dein Monster.' },
       { label: 'Opfergaben nehmen', loot: 1.5, hp: -0.15, result: 'Die Gaben gehören jetzt dir – aber der Schrein grollt.' },
     ] },
   { id: 'chest', name: 'Verdächtige Truhe', icon: '🧰', weight: 3,
@@ -73,8 +73,8 @@ export const rpgEvents: RpgEventDef[] = [
   { id: 'spring', name: 'Klare Quelle', icon: '⛲', weight: 2,
     text: 'Klares Wasser sprudelt aus dem Fels. Ein ruhiger Ort.',
     options: [
-      { label: 'Trinken', hp: 0.5, result: 'Das Wasser heilt alle Schrammen.' },
-      { label: 'Beute verstecken', secure: true, hp: 0.15, result: 'Hinter dem Wasserfall ist deine Beute sicher.' },
+      { label: 'Trinken', hp: 0.25, result: 'Das kalte Wasser lindert die schlimmsten Schrammen.' },
+      { label: 'Beute verstecken', secure: true, result: 'Hinter dem Wasserfall ist deine Beute sicher.' },
     ] },
   { id: 'rubble', name: 'Eingestürzter Gang', icon: '🪨', weight: 2,
     text: 'Geröll versperrt einen Seitengang. Dahinter glitzert etwas.',

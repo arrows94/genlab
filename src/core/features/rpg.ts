@@ -515,7 +515,7 @@ export function isGuardianNext(ctx: GameContext, run: RpgRun): boolean {
   return run.depth === guardianRoom(ctx, run.dungeon);
 }
 
-/** Offers the next ways: 2–3 different rooms, the guardian halfway, or the boss after the last room. */
+/** Offers the next ways: 2–3 different rooms, the guardian halfway and the Leuchtfeuer behind it, or the boss after the last room. */
 function offerRooms(ctx: GameContext, run: RpgRun): void {
   const d = ctx.content.rpgDungeons.get(run.dungeon);
   if (run.depth >= d.rooms) {
@@ -524,6 +524,12 @@ function offerRooms(ctx: GameContext, run: RpgRun): void {
   }
   if (isGuardianNext(ctx, run)) {
     run.choices = ['elite'];
+    return;
+  }
+  // Behind the guardian burns the Leuchtfeuer – the one sure place to recover.
+  const guardian = guardianRoom(ctx, run.dungeon);
+  if (guardian >= 0 && run.depth === guardian + 1) {
+    run.choices = ['bonfire'];
     return;
   }
   const [min, max] = ctx.balance.rpg.choices;
@@ -588,9 +594,13 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       return { ok: true };
     }
     case 'rest':
-      run.hp = Math.min(rpgMaxHp(ctx, hero, run.upgrades), run.hp + Math.round(rpgMaxHp(ctx, hero, run.upgrades) * (ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal)));
+    case 'bonfire': {
+      const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+      const heal = kind === 'bonfire' ? ctx.balance.rpg.bonfireHeal : ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal;
+      run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * heal));
       secureLoot(ctx);
       break;
+    }
   }
   roomDone(ctx, run);
   return { ok: true };
@@ -626,7 +636,8 @@ export const ROOM_INFO: Record<RpgRoomKind, { name: string; icon: string; hint: 
   fight: { name: 'Kampf', icon: '⚔️', hint: 'Ein Gegner – Beute und Erfahrung.' },
   elite: { name: 'Elite', icon: '💀', hint: 'Ein starker Gegner – mehr Beute und Erfahrung.' },
   treasure: { name: 'Schatz', icon: '💰', hint: 'Beute ohne Kampf.' },
-  rest: { name: 'Rast', icon: '🏕️', hint: 'Heilen und die Beute sichern.' },
+  rest: { name: 'Lagerplatz', icon: '🏕️', hint: 'Etwas heilen und die Beute sichern.' },
+  bonfire: { name: 'Leuchtfeuer', icon: '🔥', hint: 'Heilt voll und sichert die Beute – der einzige sichere Ort.' },
   event: { name: 'Ereignis', icon: '❔', hint: 'Etwas Unerwartetes – du entscheidest.' },
   boss: { name: 'Boss', icon: '👑', hint: 'Der Herr des Dungeons. Sieg = Dungeon geschafft.' },
 };

@@ -329,6 +329,14 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 1: weniger Erholung, Leuchtfeuer, Nebeltor
+
+- Raumgewichte `fight 56, elite 16, treasure 4, rest 3, event 12` (vorher 50/12/10/12/14): Schatz und Lagerplatz
+  zusammen unter 10 %; Ereignisse heilen weniger (Schrein 15 %, Quelle 25 %, Beute verstecken ohne Heilung)
+- Neuer Raum `bonfire` (Leuchtfeuer 🔥) fest direkt nach dem Wächter: heilt voll (`balance.rpg.bonfireHeal`) und
+  sichert die Beute; der seltene Lagerplatz heilt weiter `restHeal`
+- Vor dem Boss ein Nebeltor 🌫️ mit kurzer Szene und „Umkehren (Beute mitnehmen)“
+
 Isekai-Umbau (Stufe 1 aus den Grundwerten der Art, Stufe bleibt dem Monster, eigene Welt ohne Labor,
 Portal-Animation, dunkles Design, eigene Musik und Kampfmusik), Rundenkampf mit drei Fähigkeiten und Spezialangriff,
 sichtbares Kampfende (Sieg-Zusammenfassung bis „Weiter“, Niederlage mit Verlusten; `run.aftermath`, `lastResult.fight`),

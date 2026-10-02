@@ -90,9 +90,10 @@ export const balance: Balance = {
     // Wut like in the tower: from round enrageAfter on the foe hits enrageGrowth harder every round (no endless fights).
     enrageAfter: 15,
     enrageGrowth: 0.2,
-    // Dungeon: after each room 2–3 ways, drawn by these weights.
+    // Dungeon: after each room 2–3 ways, drawn by these weights. Treasure and camps are rare: recovery is earned
+    // at the Leuchtfeuer behind the guardian.
     choices: [2, 3],
-    roomWeights: { fight: 50, elite: 12, treasure: 10, rest: 12, event: 14 },
+    roomWeights: { fight: 56, elite: 16, treasure: 4, rest: 3, event: 12 },
     // Isekai: in the other world every monster starts at level 1 with its species' base stats – breeding does not
     // count there. The level stays with the monster: XP per won fight, level n → n+1 needs xpBase × xpGrowth^(n − 1);
     // each level adds statsPerLevel of the base stats and heals a little. Every level-up (and every won elite fight)
@@ -111,8 +112,10 @@ export const balance: Balance = {
     eliteUpgrade: true,
     // Halfway through every dungeon a guardian blocks the way: a fixed elite fight.
     guardianAt: 0.5,
-    // A rest heals this share of max HP and secures the carried loot.
+    // A camp (rare room) heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
+    // The Leuchtfeuer right after the guardian heals this share and secures the loot too.
+    bonfireHeal: 1,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
     // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {
