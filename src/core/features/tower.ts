@@ -318,6 +318,7 @@ export function lowerTowerRecord(ctx: GameContext, floor: number): ActionResult 
   tw.best = floor;
   tw.recordAt = ctx.state.lastTickAt;
   tw.resolve = 0;
+  tw.retreat = 0;
   ctx.invalidate();
   return { ok: true };
 }
@@ -867,6 +868,11 @@ export function checkpoint(ctx: GameContext): number {
   return Math.floor(ctx.state.tower.best / every) * every;
 }
 
+/** Where the next auto-restart from the checkpoint begins: the checkpoint, minus the checkpoints it stepped back. */
+export function restartCheckpoint(ctx: GameContext): number {
+  return Math.max(0, checkpoint(ctx) - (ctx.state.tower.retreat ?? 0) * ctx.balance.tower.checkpointEvery);
+}
+
 export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
   if (ctx.state.tower.run) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
@@ -878,7 +884,8 @@ export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   return { ok: true };
 }
 
-export function startRun(ctx: GameContext, fromCheckpoint = true): ActionResult {
+/** `auto`: the auto-restart (it may begin below the checkpoint, see `retreat`); a start by hand tries the real checkpoint. */
+export function startRun(ctx: GameContext, fromCheckpoint = true, auto = false): ActionResult {
   const tw = ctx.state.tower;
   if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
   if (tw.run) return { ok: false, reason: 'Es läuft bereits ein Lauf.' };
@@ -887,7 +894,8 @@ export function startRun(ctx: GameContext, fromCheckpoint = true): ActionResult 
   const busy = team.find((c) => c.job && c.job.kind !== 'building');
   if (busy) return { ok: false, reason: `${busy.name} ist beschäftigt.` };
   for (const c of team) c.job = { kind: 'tower', target: 'team' };
-  const start = fromCheckpoint ? checkpoint(ctx) : 0;
+  if (!auto) tw.retreat = 0;
+  const start = fromCheckpoint ? restartCheckpoint(ctx) : 0;
   tw.restartFromCheckpoint = fromCheckpoint;
   tw.run = { floor: start, team: team.map((c) => c.id), elapsedMs: 0, startFloor: start + 1 };
   ctx.invalidate();
@@ -975,12 +983,18 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   tw.lastResult = { floor, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
     tw.lastDefeat = { floor, at: ctx.state.lastTickAt, fighters: result.fighters, stats: result.stats };
+    // Lost right at the start: the next auto-restart begins one checkpoint lower, so the team keeps winning
+    // floors (and Kampferfahrung) instead of failing at the checkpoint again and again.
+    if (floor === run.startFloor && run.floor > 0) tw.retreat = Math.min((tw.retreat ?? 0) + 1, checkpoint(ctx) / ctx.balance.tower.checkpointEvery);
     ctx.bus.emit('towerFloor', { floor, win: false, rewards: {}, allele: null });
     endRun(ctx);
     return;
   }
   run.floor = floor;
   gainXp(ctx, floor);
+  // A cleared checkpoint floor: the auto-restart climbs back up to it.
+  const every = ctx.balance.tower.checkpointEvery;
+  if (tw.retreat && floor % every === 0) tw.retreat = Math.min(tw.retreat, Math.max(0, (checkpoint(ctx) - floor) / every));
   // First-time rewards follow the highest record ever, so a lowered record does not pay twice.
   const record = floor > towerBestEver(ctx);
   if (floor > tw.best) {
@@ -1020,7 +1034,7 @@ export const towerSystem: System = {
     const interval = fightIntervalMs(ctx);
     if (!tw.run) {
       // Auto-restart (tower upgrade) after a defeat, where the last run started (checkpoint or floor 1).
-      if (tw.autoRestart && ctx.state.features['towerAuto'] && tw.team.length > 0) startRun(ctx, tw.restartFromCheckpoint);
+      if (tw.autoRestart && ctx.state.features['towerAuto'] && tw.team.length > 0) startRun(ctx, tw.restartFromCheckpoint, true);
       return;
     }
     tw.run.elapsedMs += dtMs;

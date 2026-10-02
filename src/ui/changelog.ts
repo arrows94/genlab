@@ -25,12 +25,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: 28,
-    date: '2026-10-01',
+    id: 29,
+    date: '2026-10-02',
     title: 'Nach dem letzten Schlag',
     items: [
       { text: 'Ein Kampf in der anderen Welt endet nicht mehr schlagartig: Du siehst den letzten Schlag, den Besiegten zu Boden gehen und eine Zusammenfassung – Erfahrung, Stufenaufstieg und Beute bei einem Sieg, erst „Weiter“ führt zu den nächsten Wegen.', feature: 'rpg' },
       { text: 'Nach einer Niederlage steht da, wer dich in welcher Runde besiegt hat, was dabei verloren ging und was du behältst.', feature: 'rpg' },
+    ],
+  },
+  {
+    id: 28,
+    date: '2026-10-01',
+    title: 'Turm ohne Leerlauf, fairerer Wochen-Titan',
+    items: [
+      { text: 'Der Auto-Neustart im Turm gibt nicht mehr auf: Verliert ein Lauf gleich die erste Etage – etwa nach einer Vererbung, wenn dein Stall noch klein ist –, beginnt der nächste einen Checkpoint tiefer. So sammelt dein Team weiter Kampferfahrung. Schafft es einen Checkpoint, geht es von dort wieder los.', feature: 'towerAuto' },
+      { text: 'Wochen-Titan: Er schlägt nur noch ein Drittel so hart zu und hat 40 % weniger KP. Dein Team hält dadurch länger durch – jeder Angriff zählt, auch wenn dein Team gerade nicht ganz so stark ist wie bei deinem Rekord.', feature: 'weeklyBoss' },
     ],
   },
   {
