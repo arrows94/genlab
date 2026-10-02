@@ -353,7 +353,7 @@ export interface RpgFoe extends RpgCombatant {
 /** What happened in the latest round (for sounds and hit animations). */
 export interface RpgEvent {
   by: 'hero' | 'foe';
-  kind: 'hit' | 'miss' | 'heal' | 'skill';
+  kind: 'hit' | 'miss' | 'heal' | 'skill' | 'dodge' | 'parry';
   /** Damage of a hit and its element factor (> 1 strong, < 1 weak). */
   dmg?: number;
   m?: number;
@@ -375,6 +375,8 @@ export interface RpgBattle {
   log: string[];
   /** Events of the latest round (missing in fights started before they existed). */
   last?: RpgEvent[];
+  /** The hero's stamina (missing = full). */
+  stamina?: number;
 }
 
 /** How a fight ended, shown until the player moves on: the last round, what it brought and what it cost. */
@@ -428,6 +430,8 @@ export interface RpgRun {
   /** Wall clock of the start. */
   startedAt: number;
   battle: RpgBattle | null;
+  /** Heiltränke left (missing in runs started before they existed = the full number). */
+  flasks?: number;
   /** The fight just won, until the player goes on (missing = nothing to show). */
   aftermath?: RpgAftermath | null;
 }

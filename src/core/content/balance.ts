@@ -128,6 +128,13 @@ export interface Balance {
     guardianAt: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
+    /** Stamina: its maximum, what comes back each round (Verschnaufen: + breathe), and the cost per skill slot. */
+    stamina: { max: number; regen: number; breathe: number; cost: Record<'basic' | 'technique' | 'third' | 'special' | 'defense' | 'item', number> };
+    dodgeChance: number;
+    parryChance: number;
+    parryFailMult: number;
+    riposteMult: number;
+    flasks: number;
     bonfireHeal: number;
     /**
      * Loot per room kind: `fixed` × the dungeon's `loot`; each `chance` entry gives one piece with that

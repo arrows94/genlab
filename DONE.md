@@ -329,6 +329,22 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 3: Ausdauer, Ausweichen, Parieren
+
+- Ausdauer (`battle.stamina`, `balance.rpg.stamina`): max 100, +20 je Runde; Kosten je Slot (Angriff 25,
+  Technik 40, dritte 35, Spezial 45, Abwehr 20, Parieren 15); zu wenig = Zug gesperrt
+- Abwehr-Züge (Slot `defense`, `stance`): Ausweichen (90 % gegen jeden Treffer, auch schwere), Parieren (75 % gegen
+  einen normalen Angriff: Gegner taumelt eine Runde, Gegenschlag ×2,5; gegen schwere Schläge, Techniken oder
+  misslungen ×1,5 Schaden), Verschnaufen (kostenlos, +40 Ausdauer extra)
+- Kampfansicht: zweite Knopfreihe, Ausdauerleiste, Kosten auf den Knöpfen, Trank-Zähler; Bot weicht schweren
+  Schlägen aus, pariert normale Angriffe und trinkt bei wenig KP
+
+## 2026-10-02 – Dark Souls, Schritt 2: Heiltränke
+
+- Heiltränke 🧪 (`rpgSkills` „flask“, Slot `item`): `balance.rpg.flasks` = 3 je Lauf (`run.flasks`), heilen 45 %
+  der KP; im Kampf kostet ein Schluck den Zug (`useRpgSkill(ctx, 'flask')`), zwischen den Räumen
+  `drinkRpgFlask`. Das Leuchtfeuer füllt sie wieder auf
+
 ## 2026-10-02 – Dark Souls, Schritt 1: weniger Erholung, Leuchtfeuer, Nebeltor
 
 - Raumgewichte `fight 56, elite 16, treasure 4, rest 3, event 12` (vorher 50/12/10/12/14): Schatz und Lagerplatz

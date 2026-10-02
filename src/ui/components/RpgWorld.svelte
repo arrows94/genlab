@@ -2,7 +2,7 @@
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
-  import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
+  import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, drinkRpgFlask, enterRoom, giveUpRpgRun, leaveRpgRun, rpgDefense, rpgFlasks, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
   import type { Creature, RpgAftermath, RpgBattle } from '@core/state';
@@ -38,6 +38,8 @@
       /** The dungeon's colour lights the other world. */
       realm: dungeon ? content.elements.get(dungeon.elements[0]!).color : '#9b6bff',
       skills: run ? rpgSkills(game) : [],
+      defense: run ? rpgDefense(game) : [],
+      flasks: rpgFlasks(game),
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
       heroLevel: hero ? rpgLevel(game, hero.id) : null,
@@ -88,6 +90,10 @@
         </div>
       {/key}
       <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
+      {#if !ended}
+        {@const stamina = b.stamina ?? game.balance.rpg.stamina.max}
+        <div class="bar stamina small-bar" title="Ausdauer: jeder Zug kostet etwas, jede Runde kommt {game.balance.rpg.stamina.regen} zurück"><div style="width: {pct(stamina, game.balance.rpg.stamina.max)}"></div><span class="num">{formatNumber(stamina)}</span></div>
+      {/if}
       <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
     </div>
     <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
@@ -145,6 +151,10 @@
       <div class="hero-title"><b>{data.hero.name}</b> <span class="lvl">Stufe {data.heroLevel?.level ?? 1}</span></div>
       <div class="bar blood" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
       <Meter size="sm" tone="gold" value={data.heroLevel && data.heroLevel.need > 0 ? data.heroLevel.into / data.heroLevel.need : 1} title="Erfahrung bis zur nächsten Stufe" />
+      <div class="flasks">
+        <span class="tag" title="Heiltränke: heilen {formatPercent(content.rpgSkills.get('flask').heal ?? 0, 0)} der KP, im Kampf kostet ein Schluck den Zug. Das Leuchtfeuer füllt sie auf.">🧪 {data.flasks} / {game.balance.rpg.flasks}</span>
+        {#if !run.battle && data.flasks > 0 && run.hp < data.maxHp}<button class="iron sip" onclick={() => act(drinkRpgFlask(game))}>Trinken</button>{/if}
+      </div>
       {#if run.upgrades.length > 0}
         <div class="ups" title="Verbesserungen dieses Laufs">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
       {/if}
@@ -172,20 +182,34 @@
     {@const b = run.battle}
     {@render arena(b, data.hero)}
     <ol class="parchment chronicle">{#each b.log as line, i (i)}<li>{line}</li>{/each}</ol>
-    <div class="skills">
-      {#each data.skills as k (k.id)}
-        {@const blocked = skillBlocker(b, k)}
-        {@const cd = b.cooldowns[k.id] ?? 0}
-        <button class="iron skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
-          <span class="k-icon">{k.icon}</span>
-          <span class="k-name">{k.name}</span>
-          {#if k.slot === 'special'}
-            <span class="charge"><Meter size="sm" tone="gold" value={b.charge} title="Aufladung" /></span>
-          {:else if cd > 0}
-            <span class="cd num">{cd}</span>
-          {/if}
-        </button>
-      {/each}
+    <div class="actions">
+      <div class="skills">
+        {#each data.skills as k (k.id)}
+          {@const blocked = skillBlocker(b, k)}
+          {@const cd = b.cooldowns[k.id] ?? 0}
+          <button class="iron skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{blocked ?? k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
+            <span class="k-icon">{k.icon}</span>
+            <span class="k-name">{k.name}</span>
+            {#if k.slot === 'special'}
+              <span class="charge"><Meter size="sm" tone="gold" value={b.charge} title="Aufladung" /></span>
+            {:else if cd > 0}
+              <span class="cd num">{cd}</span>
+            {/if}
+            {#if k.stamina}<span class="cost num" title="Ausdauer">{k.stamina}</span>{/if}
+          </button>
+        {/each}
+      </div>
+      <div class="skills defense">
+        {#each data.defense as k (k.id)}
+          {@const empty = k.slot === 'item' && data.flasks <= 0}
+          {@const blocked = empty ? 'Keine Heiltränke mehr.' : skillBlocker(b, k)}
+          <button class="iron skill guard-move" class:flask={k.slot === 'item'} disabled={!!blocked} title={blocked ?? k.description} onclick={() => useSkill(k.id)}>
+            <span class="k-icon">{k.icon}</span>
+            <span class="k-name">{k.name}{k.slot === 'item' ? ` ×${data.flasks}` : ''}</span>
+            {#if k.stamina}<span class="cost num" title="Ausdauer">{k.stamina}</span>{/if}
+          </button>
+        {/each}
+      </div>
     </div>
   {:else if run.aftermath}
     {@const af = run.aftermath}
@@ -405,7 +429,18 @@
   .chronicle li:nth-last-child(-n + 3) { opacity: 1; }
 
   /* Skill plates at the bottom, in thumb reach on phones. */
-  .skills { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); z-index: 2; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; padding: 0.35rem; border-radius: 8px; background: #0e0a08e6; border: 1px solid #3a2c20; }
+  .actions { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); z-index: 2; display: grid; gap: 0.35rem; padding: 0.35rem; border-radius: 8px; background: #0e0a08e6; border: 1px solid #3a2c20; }
+  .skills { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; }
+  .skills.defense .skill { min-height: 52px; padding: 0.35rem 0.2rem; }
+  .guard-move { border-color: #6a8a9a; }
+  .skill.flask:not(:disabled) { border-color: #b0453a; background: linear-gradient(180deg, #5a2622, #2f1513); }
+  .cost { position: absolute; top: 0.15rem; left: 0.3rem; font-size: 0.65rem; color: #9fe0a0; opacity: 0.85; }
+  .cost::before { content: '⚡'; font-size: 0.6rem; }
+  .bar.stamina { height: 8px; }
+  .bar.stamina > div { background: linear-gradient(180deg, #8fd19e, #3f7d54); }
+  .bar.stamina span { font-size: 0.55rem; line-height: 7px; }
+  .flasks { display: flex; gap: 0.35rem; align-items: center; font-size: 0.8rem; }
+  .sip { padding: 0.1rem 0.6rem; font-size: 0.8rem; }
   .skill { position: relative; display: grid; justify-items: center; gap: 0.1rem; padding: 0.5rem 0.2rem; min-height: 66px; }
   .skill.special:not(:disabled) { border-color: var(--glow); background: linear-gradient(180deg, #6b4a1c, #3a2710); box-shadow: 0 0 12px #ff9a3c66, inset 0 1px 0 #ffffff22; }
   .k-icon { font-size: 1.4rem; }

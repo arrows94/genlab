@@ -9,6 +9,15 @@ import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgGearDef, RpgMetaDef, R
 export const rpgSkills: RpgSkillDef[] = [
   { id: 'strike', slot: 'basic', name: 'Angriff', icon: '⚔️', target: 'enemy', hit: 1, cooldown: 0,
     description: 'Ein normaler Treffer.' },
+  // Defense and the Heiltrank: always there, they cost stamina (or a flask) instead of a cooldown.
+  { id: 'dodge', slot: 'defense', stance: 'dodge', name: 'Ausweichen', icon: '💨', target: 'self', hit: 0, cooldown: 0,
+    description: 'Weicht dem nächsten Treffer dieser Runde fast sicher aus – auch einem schweren Schlag. Kein eigener Angriff.' },
+  { id: 'parry', slot: 'defense', stance: 'parry', name: 'Parieren', icon: '🤺', target: 'self', hit: 0, cooldown: 0, stamina: 15,
+    description: 'Fängt einen normalen Angriff ab und kontert kritisch – der Gegner taumelt und setzt aus. Gegen schwere Schläge und Techniken misslingt es: Du nimmst mehr Schaden.' },
+  { id: 'breathe', slot: 'defense', stance: 'breathe', name: 'Verschnaufen', icon: '🫁', target: 'self', hit: 0, cooldown: 0, stamina: 0,
+    description: 'Holt Luft: deutlich mehr Ausdauer zurück, aber keine Abwehr.' },
+  { id: 'flask', slot: 'item', name: 'Heiltrank', icon: '🧪', target: 'self', hit: 0, heal: 0.45, cooldown: 0, stamina: 0,
+    description: 'Heilt 45 % der KP – kostet aber deinen Zug. Nur wenige pro Lauf, das Leuchtfeuer füllt sie auf.' },
   { id: 'primal', slot: 'special', name: 'Urkraft', icon: '🌟', target: 'enemy', hit: 3, cooldown: 0,
     description: 'Die ganze gesammelte Kraft in einem Schlag: dreifacher Schaden. Lädt sich über Treffer und Runden auf.' },
 

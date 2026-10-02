@@ -8,13 +8,14 @@ const intents = ['attack', 'charge', 'heavy', 'guard', 'heal', 'tech'];
 
 /** RPG skills, plus exactly one basic and one special skill and a third skill per role. */
 export function validateRpgSkills({ data, issues, at, text, ref, num }: ContentChecks): void {
-  const skillSlots = { basic: 0, special: 0 } as Record<string, number>;
+  const skillSlots = { basic: 0, special: 0, item: 0 } as Record<string, number>;
+  const stances = new Set<string>();
   const thirdRoles = new Set<string>();
   for (const k of data.rpgSkills) {
     const w = at('rpgSkills', k.id);
     text(`${w}.name`, k.name);
     text(`${w}.description`, k.description);
-    if (!['basic', 'third', 'special'].includes(k.slot)) issues.push(`${w}.slot: ungültig "${k.slot}"`);
+    if (!['basic', 'third', 'special', 'defense', 'item'].includes(k.slot)) issues.push(`${w}.slot: ungültig "${k.slot}"`);
     else skillSlots[k.slot] = (skillSlots[k.slot] ?? 0) + 1;
     if (!['enemy', 'self'].includes(k.target)) issues.push(`${w}.target: ungültig "${k.target}"`);
     num(`${w}.hit`, k.hit, 0);
@@ -22,6 +23,12 @@ export function validateRpgSkills({ data, issues, at, text, ref, num }: ContentC
     if (k.hits !== undefined) num(`${w}.hits`, k.hits, 1, 10);
     if (k.heal !== undefined) num(`${w}.heal`, k.heal, 0, 1);
     num(`${w}.cooldown`, k.cooldown, 0, 20);
+    if (k.stamina !== undefined) num(`${w}.stamina`, k.stamina, 0, 100);
+    if (k.slot === 'defense') {
+      if (!k.stance || !['dodge', 'parry', 'breathe'].includes(k.stance)) issues.push(`${w}.stance: dodge, parry oder breathe`);
+      else stances.add(k.stance);
+    } else if (k.stance) issues.push(`${w}.stance: nur für Abwehr-Züge (slot "defense")`);
+    if (k.slot === 'item' && !k.heal) issues.push(`${w}.heal: der Heiltrank muss heilen`);
     if (k.status) {
       if (!statusIds.includes(k.status.id)) issues.push(`${w}.status.id: unbekannt "${k.status.id}"`);
       num(`${w}.status.rounds`, k.status.rounds, 1, 20);
@@ -41,6 +48,8 @@ export function validateRpgSkills({ data, issues, at, text, ref, num }: ContentC
   }
   if (skillSlots['basic'] !== 1) issues.push('rpgSkills: genau ein Grundangriff (slot "basic")');
   if (skillSlots['special'] !== 1) issues.push('rpgSkills: genau ein Spezialangriff (slot "special")');
+  if (skillSlots['item'] !== 1) issues.push('rpgSkills: genau ein Heiltrank (slot "item")');
+  for (const stance of ['dodge', 'parry', 'breathe']) if (!stances.has(stance)) issues.push(`rpgSkills: Abwehr-Zug "${stance}" fehlt`);
   for (const role of ['tank', 'attacker', 'fast']) if (!thirdRoles.has(role)) issues.push(`rpgSkills: dritte Fähigkeit für die Rolle "${role}" fehlt`);
 }
 

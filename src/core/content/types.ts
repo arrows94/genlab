@@ -660,7 +660,7 @@ export interface VoyageDecisionDef {
 }
 
 /** GenLab RPG: where a skill sits on the hero. Element techniques are derived from `techniques`. */
-export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special';
+export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special' | 'defense' | 'item';
 
 /** A turn-based skill of the GenLab RPG hero. */
 export interface RpgSkillDef {
@@ -668,8 +668,15 @@ export interface RpgSkillDef {
   name: string;
   icon: string;
   description: string;
-  /** In content only basic, third and special (techniques come from `techniques`). */
+  /**
+   * In content basic, third, special, defense (Ausweichen, Parieren, Verschnaufen) and item (the Heiltrank);
+   * techniques come from `techniques`.
+   */
   slot: RpgSkillSlot;
+  /** Defense moves: dodge (a hit misses), parry (counter a normal attack) or breathe (extra stamina). */
+  stance?: 'dodge' | 'parry' | 'breathe';
+  /** Stamina the move costs (default: `balance.rpg.stamina.cost` of its slot). */
+  stamina?: number;
   /** enemy: hits the foe (statuses land on it) · self: acts on the hero. */
   target: 'enemy' | 'self';
   /** Damage as a multiple of a normal hit (0 = none). */

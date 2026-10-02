@@ -1,5 +1,5 @@
 import { createCreature } from '@core/creatures';
-import { chooseEventOption, chooseUpgrade, enterRoom, leaveRpgRun, rpgSkills, startRpgRun, useRpgSkill } from '@core/features/rpg';
+import { chooseEventOption, chooseUpgrade, closeRpgAftermath, enterRoom, leaveRpgRun, rpgDefense, rpgFlasks, rpgSkills, startRpgRun, useRpgSkill } from '@core/features/rpg';
 import { foeIntent, heroStats, skillBlocker, xpForLevel } from '@core/features/rpgCombat';
 import type { Game } from '@core/game';
 import type { RpgRoomKind } from '@core/content/types';
@@ -8,9 +8,10 @@ import { D } from '@core/num';
 
 /**
  * GenLab RPG balancing bot. In the other world breeding does not count: the
- * hero is a monster of a species at a given level there. Strategy: special
- * when ready, heal when low, protect against a shown heavy blow, otherwise the
- * strongest ready move.
+ * hero is a monster of a species at a given level there. Strategy: a Heiltrank
+ * when low, dodge a shown heavy blow or technique, parry a normal attack when
+ * there is stamina to spare, the special when ready, otherwise the strongest
+ * ready move – and catch breath when nothing else is affordable.
  */
 
 /** A hero of this species at `level` in the other world (no run upgrades, equipment or Runen). */
@@ -35,18 +36,25 @@ function pickRoom(g: Game): number {
 
 export function pickSkill(g: Game): string {
   const b = g.state.rpg.run!.battle!;
-  const ready = rpgSkills(g).filter((k) => !skillBlocker(b, k));
-  const special = ready.find((k) => k.slot === 'special');
-  if (special) return special.id;
+  const attacks = rpgSkills(g).filter((k) => !skillBlocker(b, k));
+  const defense = Object.fromEntries(rpgDefense(g).filter((k) => !skillBlocker(b, k)).map((k) => [k.id, k]));
+  const intent = foeIntent(g, b.foe);
   const low = b.hero.hp < b.hero.maxHp * 0.35;
-  const heal = ready.find((k) => (k.heal ?? 0) > 0);
+  const heal = attacks.find((k) => (k.heal ?? 0) > 0);
   if (low && heal) return heal.id;
-  if (foeIntent(g, b.foe) === 'heavy') {
-    const guard = ready.find((k) => k.status && ['shield', 'armor', 'stun', 'evade'].includes(k.status.id));
+  if (low && defense['flask'] && rpgFlasks(g) > 0) return 'flask';
+  if ((intent === 'heavy' || intent === 'tech') && defense['dodge']) return 'dodge';
+  const stamina = b.stamina ?? Infinity;
+  if (intent === 'attack' && defense['parry'] && stamina >= 60) return 'parry';
+  const special = attacks.find((k) => k.slot === 'special');
+  if (special) return special.id;
+  if (intent === 'heavy') {
+    const guard = attacks.find((k) => k.status && ['shield', 'armor', 'stun', 'evade'].includes(k.status.id));
     if (guard) return guard.id;
   }
-  const score = (k: (typeof ready)[number]) => k.hit * (k.hits ?? 1) + (k.status && ['burn', 'poison'].includes(k.status.id) ? k.status.value * k.status.rounds : 0);
-  return [...ready].sort((a, b) => score(b) - score(a))[0]!.id;
+  const score = (k: (typeof attacks)[number]) => k.hit * (k.hits ?? 1) + (k.status && ['burn', 'poison'].includes(k.status.id) ? k.status.value * k.status.rounds : 0);
+  const best = [...attacks].sort((a, b) => score(b) - score(a))[0];
+  return best?.id ?? 'breathe';
 }
 
 export interface RunReport {
@@ -68,7 +76,8 @@ export function playRun(g: Game, hero: Creature, dungeon: string): RunReport {
     if (run.battle) {
       useRpgSkill(g, pickSkill(g));
       rounds++;
-    } else if (run.offer.length > 0) chooseUpgrade(g, 0);
+    } else if (run.aftermath) closeRpgAftermath(g);
+    else if (run.offer.length > 0) chooseUpgrade(g, 0);
     else if (run.event) chooseEventOption(g, run.hp < 0.3 * heroStats(g, hero, run.upgrades).hp ? 1 : 0);
     else if (run.choices.length > 0) enterRoom(g, pickRoom(g));
     else leaveRpgRun(g);

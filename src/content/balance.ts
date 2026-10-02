@@ -114,8 +114,19 @@ export const balance: Balance = {
     guardianAt: 0.5,
     // A camp (rare room) heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
-    // The Leuchtfeuer right after the guardian heals this share and secures the loot too.
+    // The Leuchtfeuer right after the guardian heals this share, secures the loot and refills the Heiltränke.
     bonfireHeal: 1,
+    // Dark Souls: every move costs stamina, regen comes back each round (Verschnaufen: + breathe on top).
+    stamina: { max: 100, regen: 20, breathe: 40, cost: { basic: 25, technique: 40, third: 35, special: 45, defense: 20, item: 0 } },
+    // Ausweichen: a damaging foe move misses with this chance. Parieren: a normal attack is caught with parryChance –
+    // the foe staggers (skips its next move) and the hero counters with riposteMult; against a heavy blow, a technique
+    // or a failed parry the hit lands × parryFailMult.
+    dodgeChance: 0.9,
+    parryChance: 0.75,
+    parryFailMult: 1.5,
+    riposteMult: 2.5,
+    // Heiltränke per run (like Estus): drinking costs the turn, the Leuchtfeuer refills them.
+    flasks: 3,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
     // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {

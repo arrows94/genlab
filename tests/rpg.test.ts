@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, closeRpgAftermath, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, closeRpgAftermath, drinkRpgFlask, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, speciesProfile, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -355,6 +355,106 @@ describe('GenLab RPG – Rundenkampf', () => {
       return log;
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('GenLab RPG – Ausdauer, Abwehr und Heiltränke', () => {
+  /** A fight against a plain foe; `sure` makes dodging and parrying always work. */
+  function duel(over: Partial<typeof balance.rpg> = {}, enemy = 'brawler') {
+    const g = makeGame(42, { rpg: { ...balance.rpg, ...over } });
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    c.abilities = [];
+    c.latent = null;
+    startRpgRun(g, c.id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    run.room = 'fight';
+    startRpgBattle(g, enemy, 'sproutle', 1);
+    const b = run.battle!;
+    b.foe.hp = b.foe.maxHp = 100_000;
+    return { g, c, run, b };
+  }
+  const cost = balance.rpg.stamina.cost;
+
+  it('every move costs stamina, it comes back each round; when it runs out only lighter moves are left', () => {
+    const { g, b } = duel();
+    expect(b.stamina).toBe(balance.rpg.stamina.max);
+    useRpgSkill(g, 'strike');
+    expect(b.stamina).toBe(balance.rpg.stamina.max - cost.basic + balance.rpg.stamina.regen);
+    b.stamina = cost.basic - 1;
+    const res = useRpgSkill(g, 'strike');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toContain('erschöpft');
+    // Verschnaufen is free and brings extra stamina.
+    expect(useRpgSkill(g, 'breathe').ok).toBe(true);
+    expect(b.stamina).toBe(cost.basic - 1 + balance.rpg.stamina.regen + balance.rpg.stamina.breathe);
+  });
+
+  it('Ausweichen lets a heavy blow miss; it does not attack', () => {
+    const { g, b } = duel({ dodgeChance: 1 });
+    b.foe.step = 3; // brawler: attack, attack, charge, heavy
+    expect(foeIntent(g, b.foe)).toBe('heavy');
+    const hp = b.hero.hp;
+    const foeHp = b.foe.hp;
+    expect(useRpgSkill(g, 'dodge').ok).toBe(true);
+    expect(b.hero.hp).toBe(hp);
+    expect(b.foe.hp).toBe(foeHp);
+    expect(b.last?.some((e) => e.kind === 'dodge')).toBe(true);
+  });
+
+  it('Parieren catches a normal attack: the foe staggers for its next move and takes a counter', () => {
+    const { g, b } = duel({ parryChance: 1 });
+    expect(foeIntent(g, b.foe)).toBe('attack');
+    const hp = b.hero.hp;
+    useRpgSkill(g, 'parry');
+    expect(b.hero.hp).toBe(hp);
+    expect(b.foe.hp).toBeLessThan(100_000);
+    expect(b.last?.some((e) => e.kind === 'parry')).toBe(true);
+    // Next round the foe skips its move.
+    const before = b.hero.hp;
+    useRpgSkill(g, 'breathe');
+    expect(b.hero.hp).toBe(before);
+    expect(b.log.some((l) => l.includes('betäubt'))).toBe(true);
+  });
+
+  it('Parieren fails against a heavy blow: the hit lands harder', () => {
+    const hit = (stance: string) => {
+      const { g, b } = duel({ parryChance: 1 });
+      b.foe.step = 3;
+      b.hero.hp = b.hero.maxHp = 100_000;
+      b.hero.def = 0;
+      useRpgSkill(g, stance);
+      return 100_000 - b.hero.hp;
+    };
+    const plain = hit('breathe');
+    const parried = hit('parry');
+    expect(plain).toBeGreaterThan(0);
+    expect(parried / plain).toBeGreaterThan(1.3);
+  });
+
+  it('a Heiltrank heals in a fight but costs the turn; only a few per run, the Leuchtfeuer refills them', () => {
+    const { g, c, run, b } = duel();
+    expect(run.flasks).toBe(balance.rpg.flasks);
+    b.hero.hp = 1;
+    const foeHp = b.foe.hp;
+    expect(useRpgSkill(g, 'flask').ok).toBe(true);
+    expect(run.flasks).toBe(balance.rpg.flasks - 1);
+    expect(b.hero.hp).toBeGreaterThan(1);
+    expect(b.foe.hp).toBe(foeHp);
+    run.flasks = 0;
+    expect(useRpgSkill(g, 'flask').ok).toBe(false);
+    // Between rooms too.
+    run.battle = null;
+    run.room = null;
+    run.flasks = 1;
+    run.hp = 1;
+    expect(drinkRpgFlask(g).ok).toBe(true);
+    expect(run.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * g.content.rpgSkills.get('flask').heal!));
+    expect(drinkRpgFlask(g).ok).toBe(false);
+    run.choices = ['bonfire'];
+    enterRoom(g, 0);
+    expect(run.flasks).toBe(balance.rpg.flasks);
   });
 });
 

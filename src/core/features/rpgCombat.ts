@@ -67,7 +67,17 @@ export function rpgSkillsFor(ctx: GameContext, c: Creature): RpgSkillDef[] {
     third,
     ...(role.id !== third.id && metaEffects(ctx).roleSkill ? [role] : []),
     skills.find((k) => k.slot === 'special')!,
-  ];
+  ].map((k) => withStamina(ctx, k));
+}
+
+/** Ausweichen, Parieren, Verschnaufen and the Heiltrank – every monster has them. */
+export function rpgDefenseFor(ctx: GameContext): RpgSkillDef[] {
+  return ctx.content.rpgSkills.list.filter((k) => k.slot === 'defense' || k.slot === 'item').map((k) => withStamina(ctx, k));
+}
+
+/** The skill with its stamina cost filled in (its own, or the cost of its slot). */
+function withStamina(ctx: GameContext, k: RpgSkillDef): RpgSkillDef {
+  return { ...k, stamina: k.stamina ?? ctx.balance.rpg.stamina.cost[k.slot] };
 }
 
 // ---- Kampf ------------------------------------------------------------------
@@ -270,9 +280,10 @@ export function statusOf(c: RpgCombatant, id: StatusId): RpgStatus | undefined {
   return c.statuses.find((s) => s.id === id);
 }
 
-/** Why a skill cannot be used now (null = ready). */
+/** Why a skill cannot be used now (null = ready). Its stamina cost must be filled in (`rpgSkillsFor`, `rpgDefenseFor`). */
 export function skillBlocker(battle: RpgBattle, skill: RpgSkillDef): string | null {
   if (skill.slot === 'special' && battle.charge < 1) return `${skill.name} lädt sich noch auf.`;
+  if ((skill.stamina ?? 0) > (battle.stamina ?? Infinity)) return `Zu erschöpft für ${skill.name} – verschnaufe oder wähle einen leichteren Zug.`;
   const cd = battle.cooldowns[skill.id] ?? 0;
   if (cd > 0) return `${skill.name} ist erst in ${cd === 1 ? 'einer Runde' : `${cd} Runden`} wieder bereit.`;
   return null;
@@ -398,20 +409,60 @@ export function enrageFactor(ctx: GameContext, round: number): number {
   return 1 + Math.max(0, round - cfg.enrageAfter) * cfg.enrageGrowth;
 }
 
-/** The foe's move for this round. */
-function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent): void {
+/**
+ * The hero's defense against a damaging foe move: Ausweichen lets it miss, Parieren catches a normal attack and
+ * counters (the foe staggers). Returns the damage factor for the move, or 0 when it does not land at all.
+ */
+function defend(ctx: GameContext, battle: RpgBattle, stance: RpgSkillDef['stance'], intent: RpgIntent, perks: Required<RpgPerks>): number {
+  const cfg = ctx.balance.rpg;
+  const hero = battle.hero;
+  const event = (kind: RpgEvent['kind']) => (battle.last ??= []).push({ by: 'hero', kind, special: true });
+  if (stance === 'dodge') {
+    if (ctx.rng.chance(cfg.dodgeChance)) {
+      battle.log.push(`${hero.name} weicht aus!`);
+      event('dodge');
+      return 0;
+    }
+    battle.log.push(`${hero.name} weicht zu spät aus.`);
+    return 1;
+  }
+  if (stance === 'parry') {
+    if (intent === 'attack' && ctx.rng.chance(cfg.parryChance)) {
+      battle.log.push(`${hero.name} pariert – ${battle.foe.name} taumelt!`);
+      event('parry');
+      // Two rounds, so the stagger outlasts this round's end and costs the foe its next move.
+      addStatus(battle.foe, { id: 'stun', rounds: 2, value: 1 });
+      const basic = ctx.content.rpgSkills.list.find((k) => k.slot === 'basic')!;
+      useSkill(ctx, battle, { self: hero, other: battle.foe, isHero: true, perks }, { ...basic, name: 'Gegenschlag' }, cfg.riposteMult);
+      return 0;
+    }
+    battle.log.push(intent === 'attack' ? 'Die Parade misslingt!' : 'Zu wuchtig zum Parieren!');
+    return cfg.parryFailMult;
+  }
+  return 1;
+}
+
+/** The foe's move for this round (`stance`: the hero's defense this round). */
+function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent, stance?: RpgSkillDef['stance'], perks: Required<RpgPerks> = NO_PERKS): void {
   const foe = battle.foe;
   const side: Side = { self: foe, other: battle.hero, isHero: false, perks: NO_PERKS };
   const cfg = ctx.balance.rpg;
   const basic = ctx.content.rpgSkills.list.find((k) => k.slot === 'basic')!;
   const rage = enrageFactor(ctx, battle.round);
   if (battle.round === cfg.enrageAfter + 1) battle.log.push(`${foe.name} gerät in Wut!`);
+  const tech = intent === 'tech' ? techniqueFor(ctx, foe.element) : undefined;
+  const damaging = intent === 'attack' || intent === 'heavy' || (!!tech && tech.hit > 0 && tech.target === 'enemy');
+  let factor = 1;
+  if (damaging && (stance === 'dodge' || stance === 'parry')) {
+    factor = defend(ctx, battle, stance, intent, perks);
+    if (factor === 0) return;
+  } else if (stance === 'dodge' || stance === 'parry') battle.log.push(`${battle.hero.name} ${stance === 'dodge' ? 'weicht' : 'pariert'} ins Leere.`);
   switch (intent) {
     case 'attack':
-      useSkill(ctx, battle, side, { ...basic, name: 'Angriff' }, rage);
+      useSkill(ctx, battle, side, { ...basic, name: 'Angriff' }, rage * factor);
       break;
     case 'heavy':
-      useSkill(ctx, battle, side, { ...basic, name: 'Schwerer Schlag' }, cfg.heavyMult * rage);
+      useSkill(ctx, battle, side, { ...basic, name: 'Schwerer Schlag' }, cfg.heavyMult * rage * factor);
       break;
     case 'charge':
       battle.log.push(`${foe.name} sammelt Kraft …`);
@@ -425,16 +476,16 @@ function foeAct(ctx: GameContext, battle: RpgBattle, intent: RpgIntent): void {
       battle.log.push(`${foe.name} heilt ${healed} KP.`);
       break;
     }
-    case 'tech': {
-      const tech = techniqueFor(ctx, foe.element);
-      if (tech) useSkill(ctx, battle, side, techniqueSkill(ctx, tech), rage);
+    case 'tech':
+      if (tech) useSkill(ctx, battle, side, techniqueSkill(ctx, tech), rage * factor);
       break;
-    }
   }
 }
 
-/** Burn, poison and regeneration tick; statuses and cooldowns run down. */
-function endRound(ctx: GameContext, battle: RpgBattle, perks: Required<RpgPerks>): void {
+/** Burn, poison and regeneration tick; statuses and cooldowns run down; stamina comes back. */
+function endRound(ctx: GameContext, battle: RpgBattle, perks: Required<RpgPerks>, breathe = false): void {
+  const st = ctx.balance.rpg.stamina;
+  battle.stamina = Math.min(st.max, (battle.stamina ?? st.max) + st.regen + (breathe ? st.breathe : 0));
   if (perks.regen > 0) battle.hero.hp = Math.min(battle.hero.maxHp, battle.hero.hp + Math.round(battle.hero.maxHp * perks.regen));
   for (const c of [battle.hero, battle.foe]) {
     if (c.hp <= 0) continue;
@@ -469,13 +520,19 @@ export function playRound(ctx: GameContext, battle: RpgBattle, skill: RpgSkillDe
     addStatus(battle.foe, { id: 'shield', rounds: 1, value: Math.round(battle.foe.maxHp * ctx.balance.rpg.guardShare) });
     battle.log.push(`${battle.foe.name} geht in Deckung.`);
   }
+  const cfg = ctx.balance.rpg;
+  battle.stamina = Math.max(0, (battle.stamina ?? cfg.stamina.max) - (skill.stamina ?? cfg.stamina.cost[skill.slot]));
+  // A staggered hero cannot defend either.
+  const stance = statusOf(battle.hero, 'stun') ? undefined : skill.stance;
   const heroTurn = () => {
     if (skill.slot === 'special') battle.charge = 0;
     const cd = effectiveCooldown(skill, all);
     if (cd > 0) battle.cooldowns[skill.id] = cd + 1;
-    useSkill(ctx, battle, { self: battle.hero, other: battle.foe, isHero: true, perks: all }, skill);
+    // Ausweichen and Parieren answer the foe's move (see `defend`); Verschnaufen only catches breath.
+    if (stance === 'breathe') battle.log.push(`${battle.hero.name} verschnauft.`);
+    else if (!stance) useSkill(ctx, battle, { self: battle.hero, other: battle.foe, isHero: true, perks: all }, skill);
   };
-  const turns: [RpgCombatant, () => void][] = [[battle.hero, heroTurn], [battle.foe, () => foeAct(ctx, battle, intent)]];
+  const turns: [RpgCombatant, () => void][] = [[battle.hero, heroTurn], [battle.foe, () => foeAct(ctx, battle, intent, stance, all)]];
   if (!heroActsFirst(battle)) turns.reverse();
   for (const [who, act] of turns) {
     if (battle.hero.hp <= 0 || battle.foe.hp <= 0) break;
@@ -487,7 +544,7 @@ export function playRound(ctx: GameContext, battle: RpgBattle, skill: RpgSkillDe
     }
     act();
   }
-  if (battle.hero.hp > 0 && battle.foe.hp > 0) endRound(ctx, battle, all);
+  if (battle.hero.hp > 0 && battle.foe.hp > 0) endRound(ctx, battle, all, stance === 'breathe');
   battle.log = battle.log.slice(-ctx.balance.rpg.logSize);
   if (battle.foe.hp <= 0 && battle.hero.hp > 0) return 'win';
   if (battle.hero.hp <= 0) return 'lose';

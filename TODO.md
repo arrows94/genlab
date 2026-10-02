@@ -125,11 +125,6 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 Ziel: weniger Erholung, schwere Bosse (beim ersten Versuch meist tödlich), mehr Taktik im Kampf. Entscheidungen:
 Bosse sehr hart (1a), mit Ausdauerleiste (2b), mit Blutfleck (3a), Reihenfolge wie unten.
 
-- [ ] Schritt 2: Heiltränke 🧪 (wie Estus) als knappe Ressource – wenige pro Lauf, im Kampf kostet ein Schluck den
-      eigenen Zug, das Leuchtfeuer füllt sie auf
-- [ ] Schritt 3: Ausdauer, Ausweichen und Parieren – jede Aktion kostet Ausdauer, sie kehrt jede Runde zurück;
-      Ausweichen umgeht einen Treffer, Parieren kontert einen normalen Angriff (kritischer Gegenschlag, Gegner setzt
-      aus), misslingt aber gegen schwere Schläge oder ins Leere; „Verschnaufen“ als Zug ohne Kosten
 - [ ] Schritt 4: Gleichgewicht – Treffer füllen eine Wanken-Leiste, voll = der Gegner taumelt (setzt aus, der nächste
       Schlag ist kritisch); schwere Schläge bringen auch dein Monster ins Wanken
 - [ ] Schritt 5: Echte Bosse – je Dungeon ein eigener Boss mit Namen und Mechanik, zweite Phase ab 50 % KP (neuer

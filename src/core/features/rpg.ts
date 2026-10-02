@@ -8,7 +8,7 @@ import type { RpgEventOutcome, RpgGearSlot, RpgIntent, RpgRoomKind, RpgSkillDef 
 import type { System } from '../systems/types';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
+import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgDefenseFor, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
 export { xpToNext } from './rpgCombat';
 
 /**
@@ -136,7 +136,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   ctx.invalidate();
   r.run = {
     creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), startLevel: rpgLevel(ctx, c.id).level, upgrades: [], offer: [], pendingLevels: 0, depth: 0, path: [],
-    loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null,
+    loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null, flasks: ctx.balance.rpg.flasks,
   };
   r.runs++;
   pruneRanks(ctx);
@@ -302,6 +302,7 @@ export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: str
   if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
   run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, level));
   run.battle.charge = Math.min(1, metaEffects(ctx).startCharge);
+  run.battle.stamina = ctx.balance.rpg.stamina.max;
   return { ok: true };
 }
 
@@ -311,15 +312,45 @@ export function rpgSkills(ctx: GameContext): RpgSkillDef[] {
   return hero ? rpgSkillsFor(ctx, hero) : [];
 }
 
+/** Ausweichen, Parieren, Verschnaufen and the Heiltrank (second row of buttons). */
+export function rpgDefense(ctx: GameContext): RpgSkillDef[] {
+  return rpgHero(ctx) ? rpgDefenseFor(ctx) : [];
+}
+
+/** Heiltränke left in the running run. */
+export function rpgFlasks(ctx: GameContext): number {
+  const run = ctx.state.rpg.run;
+  return run ? (run.flasks ?? ctx.balance.rpg.flasks) : 0;
+}
+
+/** Drinks a Heiltrank between rooms (in a fight it is a move: `useRpgSkill(ctx, 'flask')`). */
+export function drinkRpgFlask(ctx: GameContext): ActionResult {
+  const run = ctx.state.rpg.run;
+  const hero = rpgHero(ctx);
+  if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  if (run.battle) return useRpgSkill(ctx, 'flask');
+  if (rpgFlasks(ctx) <= 0) return { ok: false, reason: 'Keine Heiltränke mehr – das Leuchtfeuer füllt sie auf.' };
+  const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+  if (run.hp >= maxHp) return { ok: false, reason: 'Dein Monster ist unverletzt.' };
+  const flask = ctx.content.rpgSkills.list.find((k) => k.slot === 'item')!;
+  run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * (flask.heal ?? 0)));
+  run.flasks = rpgFlasks(ctx) - 1;
+  return { ok: true };
+}
+
 /** The player uses a skill: one round of the fight. A won fight hands back to the dungeon, a lost one ends the run. */
 export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   const run = ctx.state.rpg.run;
   const battle = run?.battle;
   if (!run || !battle) return { ok: false, reason: 'Gerade läuft kein Kampf.' };
-  const skill = rpgSkills(ctx).find((k) => k.id === skillId);
+  const skill = [...rpgSkills(ctx), ...rpgDefense(ctx)].find((k) => k.id === skillId);
   if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
   const blocker = skillBlocker(battle, skill);
   if (blocker) return { ok: false, reason: blocker };
+  if (skill.slot === 'item') {
+    if (rpgFlasks(ctx) <= 0) return { ok: false, reason: 'Keine Heiltränke mehr – das Leuchtfeuer füllt sie auf.' };
+    run.flasks = rpgFlasks(ctx) - 1;
+  }
   const outcome = playRound(ctx, battle, skill, heroPerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
   ctx.bus.emit('rpgRound', { events: battle.last ?? [], outcome, boss: battle.foe.kind === 'boss' });
@@ -598,6 +629,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
       const heal = kind === 'bonfire' ? ctx.balance.rpg.bonfireHeal : ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal;
       run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * heal));
+      if (kind === 'bonfire') run.flasks = ctx.balance.rpg.flasks;
       secureLoot(ctx);
       break;
     }
