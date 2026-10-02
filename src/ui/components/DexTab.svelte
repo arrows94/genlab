@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
+  import { dialog } from '../dialog';
+  import { formatPercent } from '@core/format';
   import { fade, scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { dexKey } from '@core/state';
@@ -15,7 +18,7 @@
   let open = $state<string | null>(null);
 
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const tree = familyTree(game);
     return {
       dex: { ...game.state.dex },
@@ -52,7 +55,7 @@
       <circle cx="27" cy="27" r="22" class="track" />
       <circle cx="27" cy="27" r="22" class="fill" stroke-dasharray="{(share * RING).toFixed(1)} {RING.toFixed(1)}" />
     </svg>
-    <span class="pct num">{Math.floor(share * 100)}%</span>
+    <span class="pct num">{formatPercent(Math.floor(share * 100) / 100, 0)}</span>
     <b class="rlabel">{label}</b>
     <span class="rsub num muted">{sub}</span>
   </div>
@@ -165,7 +168,7 @@
 {#if detail}
   {@const n = detail.node}
   {@const el = content.elements.get(n.species.element)}
-  <div class="backdrop" role="presentation" onclick={() => (open = null)} transition:fade={{ duration: 150 }}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && (open = null)} transition:fade={{ duration: 150 }}>
     <div
       class="modal panel"
       role="dialog"
@@ -173,8 +176,7 @@
       aria-label={name(n)}
       tabindex="-1"
       style="--el: {el.color}; --rc: {detail.best?.color ?? 'var(--line)'}"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.key === 'Escape' && (open = null)}
+      use:dialog={{ onescape: () => (open = null) }}
       in:scale={{ duration: 200, start: 0.92 }}
     >
       <button class="close" aria-label="Schließen" onclick={() => (open = null)}>✕</button>
@@ -211,7 +213,7 @@
             <div class="stats">
               {#each content.stats.list as s (s.id)}
                 <span class="sname small">{s.short}</span>
-                <span class="sbar"><span style="width: {((n.species.baseStats[s.id] ?? 0) / statMax) * 100}%"></span></span>
+                <Meter value={(n.species.baseStats[s.id] ?? 0) / statMax} color="var(--el)" title={s.name} />
                 <span class="num small">{n.species.baseStats[s.id]}</span>
               {/each}
             </div>
@@ -324,8 +326,6 @@
   .perf { display: grid; gap: 0.15rem; margin: 0 0 0.6rem; color: var(--muted); }
   .perf .got { color: var(--gold); }
   .stats { display: grid; grid-template-columns: 2.4rem 1fr 2rem; gap: 0.25rem 0.5rem; align-items: center; }
-  .sbar { height: 7px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .sbar span { display: block; height: 100%; background: linear-gradient(90deg, var(--petrol), var(--el)); }
   .from { display: grid; gap: 0.15rem; padding: 0.45rem 0.55rem; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line); margin-bottom: 0.4rem; }
   .places { display: flex; flex-wrap: wrap; gap: 0.3rem; }
   .place { font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 6px; background: var(--panel-2); }

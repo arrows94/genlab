@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { buyUpgrade } from '@core/actions';
 import { createCreature } from '@core/creatures';
-import { autoSequenceOnce, setAutoSequence } from '@core/features/automation';
+import { autoSequenceOnce, inRecycler, sendToRecycler, setAutoSequence } from '@core/features/automation';
 import { campSlots } from '@core/features/expedition';
 import { grandCost, grandHours, grandLevel, grandSlots, runningGrandResearch, startGrandResearch } from '@core/features/grandResearch';
 import { sequencerSlots, sequencerUsed } from '@core/features/sequencing';
@@ -104,6 +104,18 @@ describe('Sequenzier-Roboter', () => {
     expect(target).toBe(strong.id);
     expect(target).not.toBe(weak.id);
     expect(autoSequenceOnce(g)).toBe(0); // slots full
+  });
+
+  it('leaves creatures sent to the recycler alone', () => {
+    const g = robotGame();
+    unlockFeature(g, 'autoSequence');
+    unlockFeature(g, 'recycler');
+    const doomed = createCreature(g, { speciesId: 'emberpup', source: 'other', stats: { hp: 99, atk: 99, def: 99, spd: 99 }, exactStats: true });
+    expect(sendToRecycler(g, [doomed.id]).ok).toBe(true);
+    expect(inRecycler(g, doomed.id)).toBe(true);
+    autoSequenceOnce(g);
+    const targets = g.state.processes.map((p) => (p.data as { creatureId?: number }).creatureId);
+    expect(targets).not.toContain(doomed.id);
   });
 
   it('runs on its own when switched on', () => {

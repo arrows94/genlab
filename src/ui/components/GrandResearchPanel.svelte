@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { formatDuration } from '@core/format';
@@ -52,7 +53,7 @@
           <span class="icon">{r.def.icon}</span>
           <div class="info">
             <b>{r.def.name} · Stufe {r.level}</b>
-            <div class="bar"><div style="width: {r.progress * 100}%"></div></div>
+            <Meter value={r.progress} title="Forschungsfortschritt" />
             <span class="small num muted">noch {formatDuration(r.remaining)} <CrystalSkip process={r.p} /></span>
           </div>
         {:else}
@@ -104,8 +105,6 @@
   .slot.busy { border-style: solid; border-color: var(--gold); }
   .icon { font-size: 1.4rem; }
   .info { display: grid; gap: 0.25rem; flex: 1; }
-  .bar { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .bar div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--gold)); }
   .projects { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-bottom: 0.3rem; }
   .project { display: grid; gap: 0.35rem; align-content: start; }
   .project.done { opacity: 0.7; }

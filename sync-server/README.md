@@ -67,4 +67,12 @@ Die Server-Logik (`src/handler.ts`) wird zusammen mit dem Client in `tests/sync.
 
 ## Schutz vor Missbrauch
 
-Der Worker lehnt IDs ab, die keine 64 Hex-Zeichen sind, und Spielstände über 512 KB. Für eine öffentliche Instanz empfiehlt sich zusätzlich eine [Rate-Limiting-Regel](https://developers.cloudflare.com/waf/rate-limiting-rules/) für die Worker-Route im Cloudflare-Dashboard (z. B. 60 Anfragen pro Minute und IP).
+- Der Worker lehnt IDs ab, die keine 64 Hex-Zeichen sind, und Spielstände über 512 KB. Den Body liest er höchstens
+  bis zu dieser Grenze, auch ohne oder mit falschem `Content-Length`.
+- Gerätenamen dürfen keine Steuerzeichen enthalten. Ein `savedAt` mehr als einen Tag in der Zukunft wird gekappt.
+- **Rate-Limits** je IP (`[[ratelimits]]` in `wrangler.toml`): 60 Anfragen pro Minute insgesamt, 5 neue Spielstände
+  pro Minute. Darüber antwortet der Worker mit `429`. Ohne die Bindings (z. B. lokal) gibt es keine Grenze.
+- **Optional:** `ALLOWED_ORIGINS` (Worker-Variable, Komma-Liste) beschränkt, welche Web-Ursprünge die API aus dem
+  Browser aufrufen dürfen. Ohne Variable sind alle erlaubt. Das bindet nur Browser – vor Missbrauch schützen die
+  Rate-Limits. Wer es setzt, muss alle Ursprünge der App aufzählen (GitHub Pages, Capacitor, Tauri), sonst geht der
+  Sync dort nicht mehr.

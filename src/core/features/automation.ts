@@ -11,7 +11,8 @@ import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding }
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
-import { canConsume, consumeBlocker, stableFree } from './stable';
+import { missingText } from '../resources';
+import { canConsume, consumeBlocker, isExpendable, stableFree } from './stable';
 import { isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, startSequencing } from './sequencing';
 
 /**
@@ -135,12 +136,16 @@ function abilityScore(ctx: GameContext, c: Creature): number {
   return c.abilities.reduce((sum, id) => sum + (ctx.content.abilities.has(id) ? ctx.content.rarities.get(ctx.content.abilities.get(id).tier).order + 1 : 0), 0);
 }
 
-/** The pair the automaton would breed next, or why it waits. */
-export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
+/**
+ * The pair the automaton would breed next, or why it waits. `ignoreRoom` skips
+ * the nest and stable checks: the Recycling-Automat asks which pair to spare
+ * exactly when the stable is full.
+ */
+export function planAutoBreed(ctx: GameContext, opts: { ignoreRoom?: boolean } = {}): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
-  if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (!opts.ignoreRoom && nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   // Room is made by the Recycling-Automat (or the player) – the only automation that removes creatures.
-  if (stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
+  if (!opts.ignoreRoom && stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
   const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
   let pair: [Creature, Creature] | null = null;
   let none = 'Keine zwei freien Kreaturen.';
@@ -175,17 +180,14 @@ export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
   if (!pair) return { ok: false, reason: none };
   const [a, b] = pair;
   const cost = breedingCost(ctx, offspringGeneration(a, b));
-  if (!canAfford(ctx.state, cost)) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const missing = missingText(ctx, cost);
+  if (missing) return { ok: false, reason: missing };
   for (const [res, amount] of Object.entries(cost)) {
     if (amount.gt((ctx.state.resources[res] ?? D(0)).mul(cfg.budget))) return { ok: false, reason: `Über dem Budget (${Math.round(cfg.budget * 100)} % der Vorräte).` };
   }
   return { ok: true, a, b };
 }
 
-/** Automations may only remove consumable creatures that are not shiny, not infused and at most `maxRarity`. */
-function expendable(ctx: GameContext, c: Creature, maxRarity: string): boolean {
-  return canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && ctx.content.rarities.get(c.rarity).order <= ctx.content.rarities.get(maxRarity).order;
-}
 
 /** Weakest first: lower rarity, then lower power. */
 function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
@@ -218,10 +220,10 @@ export function autoRecycleCandidates(ctx: GameContext): Creature[] {
   const kept = keptPerSpecies(ctx);
   // Never the pair the Zuchtautomat is about to breed.
   if (ctx.state.automation.autoBreed.enabled && ctx.state.features['autoBreed']) {
-    const plan = planAutoBreed(ctx);
+    const plan = planAutoBreed(ctx, { ignoreRoom: true });
     if (plan.ok) kept.add(plan.a.id).add(plan.b.id);
   }
-  const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && expendable(ctx, c, cfg.maxRarity)));
+  const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && isExpendable(ctx, c, cfg.maxRarity)));
   // At least one creature must remain.
   return out.length >= ctx.state.creatures.length ? out.slice(0, -1) : out;
 }
@@ -302,7 +304,7 @@ function nextForChamber(ctx: GameContext): Creature | null {
 /** Cheap per-step check: the player may rescue the creature (favourite, put to work, sequencing …). */
 function stillExpendable(ctx: GameContext, c: Creature | undefined): c is Creature {
   const cfg = ctx.state.automation.autoRecycle;
-  return !!c && expendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
+  return !!c && isExpendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
 }
 
 /** The creature in the Zerlege-Kammer with its progress, or null. `manual`: sent by the player. */
@@ -355,7 +357,8 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
       fillRecycler(ctx, false);
       continue;
     }
-    const need = recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs;
+    // A shorter duration (research bought meanwhile) must not hand out extra time.
+    const need = Math.max(0, recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs);
     if (budget < need) {
       cur.elapsedMs += budget;
       break;
@@ -364,7 +367,10 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
     a.recycling = null;
     // Once inside, it is recycled. The automat's picking rules were checked when it went in;
     // „je Art behalten“ still protects its picks, what the player sent is always taken.
-    if (cur.manual || !keptPerSpecies(ctx).has(cur.creatureId)) recycle(ctx, [cur.creatureId], !cur.manual);
+    if (cur.manual || !keptPerSpecies(ctx).has(cur.creatureId)) {
+      const done = recycle(ctx, [cur.creatureId], !cur.manual);
+      if (!done.ok && cur.manual) ctx.bus.emit('recycleFailed', { creatureId: cur.creatureId, reason: done.reason });
+    }
     fillRecycler(ctx);
   }
 }
@@ -389,7 +395,7 @@ export function autoBreedOnce(ctx: GameContext): boolean {
 export function autoSequenceOnce(ctx: GameContext): number {
   let started = 0;
   const queue = ctx.state.creatures
-    .filter((c) => !c.sequenced && !isBeingSequenced(ctx, c.id))
+    .filter((c) => !c.sequenced && !isBeingSequenced(ctx, c.id) && !inRecycler(ctx, c.id))
     .sort((a, b) => creaturePower(ctx, b) - creaturePower(ctx, a));
   for (const c of queue) {
     if (sequencerUsed(ctx) >= sequencerSlots(ctx)) break;

@@ -1,7 +1,7 @@
 import { D, type Decimal } from './num';
 import { upgradeCost, type Cost } from './costs';
-import { findCreature } from './creatures';
-import { grant, trySpend } from './resources';
+import { findCreature, isOccupied } from './creatures';
+import { grant, spend } from './resources';
 import { checkCondition } from './conditions';
 import { jobCount, jobSlots } from './systems/production';
 import { checkUnlocks, unlockFeature } from './systems/unlocks';
@@ -53,7 +53,8 @@ export function buyUpgrade(ctx: GameContext, id: string): ActionResult {
   if (!upgradeAvailable(ctx, id)) return fail('Noch nicht freigeschaltet.');
   const cost = nextUpgradeCost(ctx, id);
   if (!cost) return fail('Maximale Stufe erreicht.');
-  if (!trySpend(ctx, cost)) return fail('Nicht genug Ressourcen.');
+  const paid = spend(ctx, cost);
+  if (!paid.ok) return paid;
   const level = (ctx.state.upgrades[id] ?? 0) + 1;
   ctx.state.upgrades[id] = level;
   ctx.invalidate();
@@ -75,7 +76,7 @@ export function assignJob(ctx: GameContext, creatureId: number, buildingId: stri
   }
   const b = ctx.content.buildings.get(buildingId);
   if (!ctx.state.features[b.feature]) return fail('Anlage noch nicht freigeschaltet.');
-  if (c.job && c.job.kind !== 'building') return fail('Kreatur ist beschäftigt.');
+  if (isOccupied(c)) return fail('Kreatur ist beschäftigt.');
   if (c.job?.target === buildingId) return ok;
   if (jobCount(ctx, buildingId) >= jobSlots(ctx, buildingId)) return fail('Keine freien Plätze.');
   c.job = { kind: 'building', target: buildingId };

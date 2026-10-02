@@ -1,6 +1,6 @@
 import { D } from '../num';
 import { checkCondition } from '../conditions';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GrandResearchDef } from '../content/types';
@@ -62,7 +62,8 @@ export function startGrandResearch(ctx: GameContext, id: string): ActionResult {
   const level = nextLevel(ctx, def);
   if (level > def.maxLevel) return { ok: false, reason: 'Bereits vollständig erforscht.' };
   if (runningGrandResearch(ctx).length >= grandSlots(ctx)) return { ok: false, reason: 'Der Forschungsplatz ist belegt.' };
-  if (!trySpend(ctx, grandCost(ctx, def, level))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, grandCost(ctx, def, level));
+  if (!paid.ok) return paid;
   const data: GrandResearchData = { project: id, level };
   startProcess(ctx, GRAND_RESEARCH, grandHours(def, level) * 3_600_000, data);
   return { ok: true };

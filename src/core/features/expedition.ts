@@ -1,6 +1,6 @@
 import { D, type Decimal } from '../num';
-import { createCreature, effectiveStats, findCreature } from '../creatures';
-import { grant, trySpend } from '../resources';
+import { createCreature, effectiveStats, findCreature, isOccupied } from '../creatures';
+import { grant, spend } from '../resources';
 import { toCost } from '../costs';
 import { checkCondition } from '../conditions';
 import { rarityWeights, rollRarity } from '../rarity';
@@ -18,11 +18,9 @@ export interface MissionData extends Record<string, unknown> {
   creatureId: number;
 }
 
-/** Missions of at least this length are Tagesreisen: they survive an inheritance. */
-export const JOURNEY_SEC = 12 * 3600;
-
+/** Missions of at least `balance.missions.journeyHours` are Tagesreisen: they survive an inheritance. */
 export function isJourney(ctx: GameContext, missionId: string): boolean {
-  return ctx.content.missions.has(missionId) && ctx.content.missions.get(missionId).durationSec >= JOURNEY_SEC;
+  return ctx.content.missions.has(missionId) && ctx.content.missions.get(missionId).durationSec >= ctx.balance.missions.journeyHours * 3600;
 }
 
 registerResetSurvivor((ctx, p) => p.kind === MISSION && isJourney(ctx, (p.data as MissionData).missionId));
@@ -110,13 +108,14 @@ export function startMission(ctx: GameContext, creatureId: number, missionId: st
   if (!missionAvailable(ctx, missionId)) return { ok: false, reason: 'Dieses Gebiet ist noch nicht erschlossen.' };
   const c = findCreature(ctx, creatureId);
   if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
-  if (c.job && c.job.kind !== 'building') return { ok: false, reason: 'Die Kreatur ist beschäftigt.' };
+  if (isOccupied(c)) return { ok: false, reason: 'Die Kreatur ist beschäftigt.' };
   if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
   const def = ctx.content.missions.get(missionId);
   if (def.maxConcurrent !== undefined && runningMissions(ctx).filter((p) => (p.data as MissionData).missionId === missionId).length >= def.maxConcurrent) {
     return { ok: false, reason: 'Dorthin ist bereits ein Team unterwegs.' };
   }
-  if (!trySpend(ctx, toCost(def.cost))) return { ok: false, reason: 'Nicht genug Nahrung.' };
+  const paid = spend(ctx, toCost(def.cost));
+  if (!paid.ok) return paid;
   const data: MissionData = { missionId, creatureId };
   const proc = startProcess(ctx, MISSION, missionDurationMs(ctx, missionId), data);
   c.job = { kind: 'mission', target: String(proc.id) };

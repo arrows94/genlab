@@ -230,6 +230,11 @@ export interface PotionDef {
   /** Liquid colour of the bottle on the market shelf. */
   color?: string;
   cost: ResourceAmounts;
+  /**
+   * Price follows production: each cost resource costs at least this many minutes of
+   * its current production (the fixed `cost` is the floor early in the game).
+   */
+  costMinutes?: number;
   /** permanentStat: cost growth per use on the same creature. */
   costGrowth?: number;
   durationSec?: number;

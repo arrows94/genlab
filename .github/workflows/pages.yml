@@ -29,6 +29,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Never publish a version whose tests fail.
+      - run: npm test
       - run: npm run build
         env:
           # Device sync server (sync-server/README.md). Unset = no sync in the web app.

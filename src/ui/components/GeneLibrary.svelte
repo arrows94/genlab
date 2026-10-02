@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { activeLoci, libraryHas } from '@core/genetics';
   import { game, view } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
@@ -37,7 +38,7 @@
   <button class="head" onclick={() => (viewState.genome.libraryOpen = !viewState.genome.libraryOpen)} aria-expanded={viewState.genome.libraryOpen}>
     <h3>📚 Genbibliothek</h3>
     <span class="num count">{lib.found}/{lib.total}</span>
-    <span class="bar" title="{lib.found} von {lib.total} Allelen"><span style="width: {(lib.found / Math.max(1, lib.total)) * 100}%"></span></span>
+    <span class="bar"><Meter value={lib.found / Math.max(1, lib.total)} tone="violet" title="{lib.found} von {lib.total} Allelen" /></span>
     <span class="small muted sum">{lib.complete}/{lib.genes} Gene komplett{#if lib.rareMissing}{' · '}{lib.rareMissing} seltene ★ offen{/if}</span>
     <span class="chev" aria-hidden="true">{viewState.genome.libraryOpen ? '▾' : '▸'}</span>
   </button>
@@ -81,8 +82,7 @@
   .head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.7rem; width: 100%; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
   h3 { margin: 0; }
   .count { font-weight: 700; }
-  .bar { flex: 1 1 6rem; max-width: 14rem; height: 7px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
-  .bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); }
+  .bar { display: flex; flex: 1 1 6rem; max-width: 14rem; }
   .small { font-size: 0.78rem; }
   .chev { margin-left: auto; color: var(--muted); }
   .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.8rem; }

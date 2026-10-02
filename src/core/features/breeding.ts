@@ -9,7 +9,7 @@ import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
 import { lineageDepth, recordLineage } from './dynasty';
 import { foundFamily, offspringName } from '../names';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { completeProcesses, isWaiting, registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -194,7 +194,8 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number, ritual
   const check = canBreed(ctx, a, b, ritual);
   if (!check.ok) return check;
   const generation = offspringGeneration(a, b);
-  if (!trySpend(ctx, eggCost(ctx, generation, ritual))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, eggCost(ctx, generation, ritual));
+  if (!paid.ok) return paid;
   const data: EggData = { parents: [aId, bId], generation };
   if (ritual) {
     // A ritual only needs a Keimprobe: the parents stay free for everything else.
@@ -288,7 +289,9 @@ registerProcessHandler(EGG, {
     const rarity = hatchRarity(ctx, ritual);
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
-    if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
+    const profile = (s: StatBlock): StatBlock =>
+      speciesId !== a.speciesId && speciesId !== b.speciesId ? reprofileStats(ctx, s, averageBase(ctx, a.speciesId, b.speciesId), speciesId) : s;
+    stats = profile(stats);
     const family = inheritFamily(ctx, a, b);
     const nameFor = () => offspringName(ctx, a, b, family, ctx.content.species.get(speciesId).name);
     const lineage = lineageDepth(ctx, speciesId, a, b);
@@ -322,7 +325,7 @@ registerProcessHandler(EGG, {
         name: nameFor(),
         generation: data.generation,
         parents: data.parents,
-        stats: inheritStats(ctx, a, b, mutation),
+        stats: profile(inheritStats(ctx, a, b, mutation)),
         exactStats: true,
         appearance: inheritAppearance(ctx, a, b),
         abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
@@ -332,6 +335,7 @@ registerProcessHandler(EGG, {
         family,
         source: 'hatch',
       });
+      recordLineage(ctx, twin);
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
     }
   },

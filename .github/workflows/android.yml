@@ -28,6 +28,7 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - run: npm ci
+      - run: npm test
       - run: npm run build
         env:
           VITE_SYNC_URL: ${{ vars.SYNC_URL }}

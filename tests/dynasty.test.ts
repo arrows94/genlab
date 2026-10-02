@@ -9,7 +9,7 @@ import { planAutoBreed } from '@core/features/automation';
 import { deserialize, serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
 import type { Creature } from '@core/state';
-import { balance, makeGame } from './helpers';
+import { balance, content, makeGame } from './helpers';
 
 function dynastyGame(seed = 11, unlocked = true) {
   const g = makeGame(seed);
@@ -71,6 +71,15 @@ describe('Stammbaum-Dynastien', () => {
     expect(tiers).toEqual([5]);
     recordLineage(g, deep);
     expect(g.state.resources.aeonShards!.toNumber()).toBe(shards);
+  });
+
+  it('all species together pay at most maxShards', () => {
+    const g = dynastyGame();
+    const deepest = balance.dynasty.tiers.at(-1)!;
+    for (const s of content.species.list) recordLineage(g, createCreature(g, { speciesId: s.id, source: 'other', lineage: deepest }));
+    const perSpecies = balance.dynasty.shardsPerTier.reduce((a, b) => a + b, 0);
+    expect(perSpecies * content.species.list.length).toBeGreaterThan(balance.dynasty.maxShards);
+    expect(g.state.resources.aeonShards!.toNumber()).toBe(balance.dynasty.maxShards);
   });
 
   it('nothing counts before the unlock: no line, no record', () => {

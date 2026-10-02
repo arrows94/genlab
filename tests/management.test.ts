@@ -5,7 +5,7 @@ import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/f
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
 import {
-  autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
+  advanceRecycler, autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
   setAutoAssign, setAutoBreed, setAutoRecycle, speciesLostWith, takeBackFromRecycler,
 } from '@core/features/automation';
 import { breedByHand, breedingCost, lastPair, startBreeding } from '@core/features/breeding';
@@ -179,6 +179,9 @@ describe('infusion', () => {
     expect(breakthrough(g, target.id, partner.id).ok).toBe(false);
     target.infusion = { level: 10, ep: 0 };
     expect(breakthrough(g, target.id, wrong.id).ok).toBe(false);
+    expect(breakthrough(g, target.id, target.id).ok).toBe(false); // not its own partner
+    expect(g.state.creatures).toContain(target);
+    expect(target.rarity).toBe('epic');
     expect(breakthrough(g, target.id, partner.id).ok).toBe(true);
     expect(target.rarity).toBe('legendary');
     expect(target.infusion.level).toBe(0);
@@ -244,7 +247,7 @@ describe('gene recycler & capsules', () => {
     const g = richGame(2, { stable: { baseCapacity: 3 } });
     expect(openCapsules(g, 'standard', 5)).toEqual({ ok: false, reason: 'Nicht genug Platz im Stall.' });
     g.state.resources.fragments = D(10);
-    expect(openCapsules(g, 'standard', 1)).toEqual({ ok: false, reason: 'Nicht genug Gen-Fragmente.' });
+    expect(openCapsules(g, 'standard', 1)).toEqual({ ok: false, reason: 'Nicht genug Gen-Fragmente – es fehlen 5.' });
   });
 
   it('mythics are far rarer from capsules than from breeding with a maxed ancestor lab', () => {
@@ -369,7 +372,7 @@ describe('automation', () => {
       make(g, 'pebblit', { generation: 10 });
       setAutoBreed(g, { rule: 'power', budget: 0.1 });
       g.state.resources.food = D(1);
-      expect(pair(g)).toBe('Nicht genug Ressourcen.');
+      expect(pair(g)).toMatch(/^Nicht genug Nahrung – es fehlen /);
       g.state.resources.food = D(1e9);
       expect(planAutoBreed(g).ok).toBe(true);
       g.state.resources.food = breedingCost(g, 11).food!.mul(5); // affordable, but more than 10 %
@@ -511,6 +514,51 @@ describe('automation', () => {
       // The next one goes in right away.
       expect(recyclingNow(g)?.creature).toBe(weak);
       expect(recyclingNow(g)!.progress).toBeLessThan(0.1);
+    });
+
+    it('spares the pair the Zuchtautomat wants even when the stable is full', () => {
+      const { g, mk } = setup();
+      const a = mk('pebblit', 1, { generation: 1 });
+      const b = mk('pebblit', 2, { generation: 1 });
+      for (let i = 0; stableFree(g) > 0; i++) mk('pebblit', 50 + i, { generation: 9 });
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1, when: 'full' });
+      expect(planAutoBreed(g).ok).toBe(false); // stable full – the automat waits for room
+      const ids = autoRecycleCandidates(g).map((c) => c.id);
+      expect(ids.length).toBeGreaterThan(0);
+      expect(ids).not.toContain(a.id);
+      expect(ids).not.toContain(b.id);
+    });
+
+    it('tells the player when a creature sent to the chamber cannot be recycled', () => {
+      const { g, mk } = setup();
+      const a = mk('pebblit', 1);
+      mk('pebblit', 2);
+      expect(sendToRecycler(g, [a.id]).ok).toBe(true);
+      g.state.creatures = [a]; // the other one is gone – „Mindestens eine Kreatur muss bleiben“
+      const failed: string[] = [];
+      g.bus.on('recycleFailed', (e) => failed.push(e.reason));
+      g.advance(recycleDurationMs(g, true) + 1000);
+      expect(g.state.creatures).toContain(a);
+      expect(failed.length).toBe(1);
+    });
+
+    it('a shorter duration (research bought meanwhile) hands out no extra time', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      const b = mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(recyclingNow(g)?.creature).toBe(a);
+      g.state.automation.recycling!.elapsedMs = 60_000;
+      g.state.upgrades['recyclerSpeed'] = content.upgrades.get('recyclerSpeed').maxLevel!;
+      g.invalidate();
+      expect(recycleDurationMs(g)).toBeLessThan(60_000);
+      advanceRecycler(g, 1);
+      expect(g.state.creatures).not.toContain(a);
+      expect(recyclingNow(g)?.creature).toBe(b);
+      expect(g.state.automation.recycling!.elapsedMs).toBeLessThanOrEqual(1);
     });
 
     it('starts at minutes and research brings it down to seconds', () => {

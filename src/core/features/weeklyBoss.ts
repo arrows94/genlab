@@ -55,6 +55,18 @@ export function bossFighter(ctx: GameContext): Fighter {
   };
 }
 
+/**
+ * Floor the titan is built from: the record, but never below what the team
+ * reached in its recent runs. Lowering the record (options) thus fits the boss
+ * to a team that really is stuck, but a strong team cannot shrink the titan
+ * to an easy floor and collect every tier at once.
+ */
+function titanFloor(ctx: GameContext): number {
+  const tw = ctx.state.tower;
+  const recent = tw.history.reduce((m, h) => Math.max(m, h.floor), 0);
+  return Math.max(ctx.balance.weeklyBoss.minFloor, tw.best, recent);
+}
+
 /** New week → new boss; new day → more attempts. Runs every tick (cheap). */
 /** Attacks per day and the stock limit (Äon talent „Titanenjäger“ raises both). */
 export function bossAttempts(ctx: GameContext): { perDay: number; max: number } {
@@ -70,7 +82,7 @@ export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt
   const week = weekIndex(ctx.balance.weekly.epoch, nowMs);
   if (b.week !== week) {
     const element = voyageDestination(ctx, nowMs).element;
-    const floor = Math.max(cfg.minFloor, ctx.state.tower.best);
+    const floor = titanFloor(ctx);
     Object.assign(b, {
       week,
       element,
@@ -85,7 +97,9 @@ export function refreshWeeklyBoss(ctx: GameContext, nowMs = ctx.state.lastTickAt
   const day = contractDay(ctx, nowMs);
   if (b.day !== day) {
     const { perDay, max } = bossAttempts(ctx);
-    b.attempts = Math.min(max, b.attempts + perDay);
+    // Every day that passed counts (a long absence refills the stock up to the cap).
+    const days = b.day < 0 ? 1 : Math.max(1, day - b.day);
+    b.attempts = Math.min(max, b.attempts + perDay * days);
     b.day = day;
   }
 }
@@ -98,7 +112,8 @@ export function adaptWeeklyBoss(ctx: GameContext): void {
   const b = ctx.state.weeklyBoss;
   if (!ctx.state.features['weeklyBoss'] || b.maxHp <= 0) return;
   const cfg = ctx.balance.weeklyBoss;
-  const floor = Math.max(cfg.minFloor, ctx.state.tower.best);
+  const floor = titanFloor(ctx);
+  if (floor >= b.floor) return; // only ever eases the boss
   const maxHp = Math.round(titanBase(ctx, floor).maxHp * cfg.hpMult);
   b.damage = Math.round((b.damage / b.maxHp) * maxHp);
   b.floor = floor;

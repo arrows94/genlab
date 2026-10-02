@@ -24,7 +24,7 @@
   const activeFilters = $derived(activeListFilters());
 
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const [locus, allele] = list.alleleKey ? list.alleleKey.split(':') : [];
     const f = { ...list.filter, allele: locus && allele ? { locus, allele } : null };
     const sorted = sortCreatures(game, filterCreatures(game, f), list.sort);
@@ -45,7 +45,7 @@
   });
 
   const perClick = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return Object.entries(collectAmounts(game));
   });
 

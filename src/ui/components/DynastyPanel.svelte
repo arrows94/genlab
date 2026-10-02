@@ -4,6 +4,7 @@
   import { dynastyTier, nextTierDepth, totalDynastyTiers } from '@core/features/dynasty';
   import { game, view } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * Stammbaum-Dynastien: the deepest pure line per species. The record stays
@@ -53,7 +54,7 @@
           <span class="name">{r.species.name}</span>
           <span class="stars" title="Stufe {r.tier} von {data.maxTier}" aria-label="Stufe {r.tier} von {data.maxTier}">{'★'.repeat(r.tier)}<span class="off">{'★'.repeat(data.maxTier - r.tier)}</span></span>
           <span class="rec num" title="Tiefste reine Linie, die je geschlüpft ist">Rekord {r.depth}</span>
-          <span class="bar" title={r.next === null ? 'Höchste Stufe erreicht' : `Noch ${r.next - r.depth} Generationen bis Stufe ${r.tier + 1}`}><span style="width: {r.progress * 100}%"></span></span>
+          <div class="bar"><Meter value={r.progress} tone="gold" title={r.next === null ? 'Höchste Stufe erreicht' : `Noch ${r.next - r.depth} Generationen bis Stufe ${r.tier + 1}`} /></div>
           <span class="small muted info">
             {#if r.tier > 0}+{formatPercent(r.tier * data.b.statPerTier, 0)} Werte{/if}
             {#if r.next !== null}{r.tier > 0 ? ' · ' : ''}nächste ab {r.next}{/if}
@@ -80,8 +81,7 @@
   .stars { color: var(--gold); letter-spacing: 1px; white-space: nowrap; }
   .stars .off { color: var(--line); }
   .rec { font-weight: 700; white-space: nowrap; }
-  .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-  .bar span { display: block; height: 100%; background: var(--gold); }
+  .bar { display: flex; }
   .info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   @media (max-width: 760px) {

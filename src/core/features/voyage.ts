@@ -1,13 +1,14 @@
 import { D, type Decimal } from '../num';
-import { createCreature, findCreature } from '../creatures';
+import { createCreature, findCreature, isOccupied } from '../creatures';
 import { catalogueSamples } from '../genetics';
-import { grant, trySpend } from '../resources';
+import { grant, spend } from '../resources';
 import { hashSeed } from '../rng';
 import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import { toCost } from '../costs';
 import type { VoyageDecisionDef, VoyageDestinationDef, VoyageEventDef } from '../content/types';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import { maxStatBoost } from './market';
 import type { Process } from '../state';
 import { campSlots, campsUsed, missionRewardFactor, registerCampProcess, rollMinRarity } from './expedition';
 import { revealHint } from './hybrids';
@@ -82,11 +83,12 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
   const team = ids.map((id) => findCreature(ctx, id));
   for (const c of team) {
     if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
-    if (c.job && c.job.kind !== 'building') return { ok: false, reason: `${c.name} ist beschäftigt.` };
+    if (isOccupied(c)) return { ok: false, reason: `${c.name} ist beschäftigt.` };
   }
   if (ids.length >= ctx.state.creatures.length) return { ok: false, reason: 'Mindestens eine Kreatur muss im Labor bleiben.' };
   if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
-  if (!trySpend(ctx, toCost(ctx.balance.voyage.cost))) return { ok: false, reason: 'Nicht genug Vorräte.' };
+  const paid = spend(ctx, toCost(ctx.balance.voyage.cost));
+  if (!paid.ok) return paid;
 
   const pool = [...ctx.content.voyageEvents.list];
   const events: string[] = [];
@@ -172,7 +174,8 @@ export function resolveVoyage(ctx: GameContext, option: 0 | 1): ActionResult {
     for (const id of p.team) {
       const c = findCreature(ctx, id);
       if (!c) continue;
-      for (const stat of ctx.content.stats.list) c.boosts[stat.id] = (c.boosts[stat.id] ?? 0) + o.teamBoost;
+      // Same cap as Kraftfutter, so a creature that keeps travelling does not stack it forever.
+      for (const stat of ctx.content.stats.list) c.boosts[stat.id] = Math.min(maxStatBoost(ctx), (c.boosts[stat.id] ?? 0) + o.teamBoost);
     }
   }
   ctx.state.voyage.nextBonus += o.nextBonus ?? 0;

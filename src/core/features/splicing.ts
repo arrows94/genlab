@@ -1,7 +1,7 @@
 import { D } from '../num';
 import { checkPerfection, effectiveStats, findCreature } from '../creatures';
 import { activeLoci, alleleDef, isPerfectGenome, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
-import { trySpend } from '../resources';
+import { missingText, spend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -36,21 +36,32 @@ export function isFullySpliced(ctx: GameContext, c: Creature): boolean {
 }
 
 export function instabilityChance(ctx: GameContext): number {
-  return Math.min(1, Math.max(0, ctx.mods().apply('splicing.instability', ctx.balance.genetics.splicing.instability)));
+  const cfg = ctx.balance.genetics.splicing;
+  // Reductions never make splicing risk-free (Stabilisator 5 + „Lebendes Archiv“ would reach 0).
+  const floor = Math.min(cfg.minInstability, cfg.instability);
+  return Math.min(1, Math.max(floor, ctx.mods().apply('splicing.instability', cfg.instability)));
+}
+
+/** Why this splice cannot happen right now (null = it can, including the cost). */
+export function spliceBlocker(ctx: GameContext, creatureId: number, locusId: string, slot: 0 | 1, alleleId: string): string | null {
+  if (!ctx.state.features['splicing']) return 'Gen-Splicing ist noch nicht freigeschaltet.';
+  const c = findCreature(ctx, creatureId);
+  if (!c) return 'Kreatur nicht gefunden.';
+  if (!c.sequenced) return 'Nur sequenzierte Kreaturen können verändert werden.';
+  if (!activeLoci(ctx).some((l) => l.id === locusId)) return 'Unbekanntes Gen.';
+  const locus = ctx.content.genes.get(locusId);
+  if (!alleleDef(locus, alleleId)) return 'Unbekanntes Allel.';
+  if (!libraryHas(ctx, locusId, alleleId)) return 'Dieses Allel fehlt in der Genbibliothek.';
+  if (c.genome[locusId]?.[slot] === alleleId) return 'Das Allel ist bereits vorhanden.';
+  if ((c.splices ?? 0) >= maxSplices(ctx)) return 'Keine Splicing-Versuche mehr für diese Kreatur.';
+  return missingText(ctx, spliceCost(ctx, c));
 }
 
 export function splice(ctx: GameContext, creatureId: number, locusId: string, slot: 0 | 1, alleleId: string): ActionResult {
-  if (!ctx.state.features['splicing']) return { ok: false, reason: 'Gen-Splicing ist noch nicht freigeschaltet.' };
-  const c = findCreature(ctx, creatureId);
-  if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
-  if (!c.sequenced) return { ok: false, reason: 'Nur sequenzierte Kreaturen können verändert werden.' };
-  if (!activeLoci(ctx).some((l) => l.id === locusId)) return { ok: false, reason: 'Unbekanntes Gen.' };
-  const locus = ctx.content.genes.get(locusId);
-  if (!alleleDef(locus, alleleId)) return { ok: false, reason: 'Unbekanntes Allel.' };
-  if (!libraryHas(ctx, locusId, alleleId)) return { ok: false, reason: 'Dieses Allel fehlt in der Genbibliothek.' };
-  if (c.genome[locusId]?.[slot] === alleleId) return { ok: false, reason: 'Das Allel ist bereits vorhanden.' };
-  if ((c.splices ?? 0) >= maxSplices(ctx)) return { ok: false, reason: 'Keine Splicing-Versuche mehr für diese Kreatur.' };
-  if (!trySpend(ctx, spliceCost(ctx, c))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const blocker = spliceBlocker(ctx, creatureId, locusId, slot, alleleId);
+  if (blocker) return { ok: false, reason: blocker };
+  const c = findCreature(ctx, creatureId)!;
+  spend(ctx, spliceCost(ctx, c));
 
   c.splices = (c.splices ?? 0) + 1;
   let success = true;

@@ -61,7 +61,7 @@
 <style>
   .daily { margin-bottom: 0.75rem; display: grid; gap: 0.5rem; padding: 0.4rem 0.6rem; }
   .daily.open { padding: 0.6rem; }
-  .daily.ready { border-color: var(--gold); box-shadow: 0 0 14px #f2c14e33; }
+  .daily.ready { border-color: var(--gold); box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 20%, transparent); }
   .bar { display: flex; align-items: center; gap: 0.5rem; }
   .toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.5rem; padding: 0.15rem 0.2rem; border: 0; background: none; text-align: left; }
   .gift { font-size: 1.3rem; display: inline-block; }

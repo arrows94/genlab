@@ -89,19 +89,19 @@
   .small { font-size: 0.78rem; }
   .list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0.45rem; }
   .relic { display: grid; grid-template-columns: 2rem 1fr; grid-template-rows: auto auto; gap: 0.3rem 0.5rem; padding: 0.5rem; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); }
-  .relic.owned { border-color: color-mix(in srgb, #ffb74d 50%, var(--line)); }
-  .relic.worn { box-shadow: 0 0 10px #ffb74d44; }
+  .relic.owned { border-color: color-mix(in srgb, var(--relic) 50%, var(--line)); }
+  .relic.worn { box-shadow: 0 0 10px color-mix(in srgb, var(--relic) 27%, transparent); }
   .icon { font-size: 1.5rem; grid-row: span 2; align-self: center; text-align: center; }
   .info { display: grid; gap: 0.15rem; min-width: 0; }
-  .where { color: #ffb74d; font-weight: 400; }
+  .where { color: var(--relic); font-weight: 400; }
   .pips { display: flex; gap: 2px; }
   .pip { width: 9px; height: 5px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
-  .pip.on { background: #ffb74d; border-color: #ffb74d; }
+  .pip.on { background: var(--relic); border-color: var(--relic); }
   .buy { grid-column: 2; font-size: 0.8rem; padding: 0.3rem 0.5rem; }
   .max { grid-column: 2; color: var(--gold); }
   .places { display: grid; gap: 0.35rem; }
   .place { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; padding: 0.3rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
   .choices { display: flex; flex-wrap: wrap; gap: 0.25rem; }
   .choice { min-width: 2.2rem; padding: 0.2rem 0.4rem; font-size: 1rem; line-height: 1.2; }
-  .choice.on { border-color: #ffb74d; background: color-mix(in srgb, #ffb74d 18%, var(--panel-2)); }
+  .choice.on { border-color: var(--relic); background: color-mix(in srgb, var(--relic) 18%, var(--panel-2)); }
 </style>

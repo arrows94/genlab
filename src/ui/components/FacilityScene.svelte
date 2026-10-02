@@ -85,7 +85,7 @@
 
   .crop { transform: scaleY(var(--h)); animation: sway 3s ease-in-out infinite; transform-box: view-box; }
   @keyframes sway { 0%, 100% { transform: scaleY(var(--h)) skewX(-4deg); } 50% { transform: scaleY(var(--h)) skewX(4deg); } }
-  .sun { filter: drop-shadow(0 0 8px #f2c14e); animation: pulse 4s ease-in-out infinite; }
+  .sun { filter: drop-shadow(0 0 8px var(--gold)); animation: pulse 4s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: 0.8; } }
 
   .cart { animation: roll 7s ease-in-out infinite; }

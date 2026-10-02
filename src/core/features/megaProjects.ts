@@ -31,10 +31,6 @@ export function megaAvailable(ctx: GameContext, def: MegaProjectDef): boolean {
   return !!ctx.state.features['megaProjects'] && (!def.requires || checkCondition(ctx.state, def.requires));
 }
 
-export function megaDone(ctx: GameContext, def: MegaProjectDef): boolean {
-  return megaState(ctx, def.id).stage >= def.stages.length;
-}
-
 /** The stage currently paid into or built (null when finished). */
 export function currentStage(ctx: GameContext, def: MegaProjectDef): MegaProjectStageDef | null {
   return def.stages[megaState(ctx, def.id).stage] ?? null;

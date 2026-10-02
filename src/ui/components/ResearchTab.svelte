@@ -1,6 +1,7 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { buyUpgrade } from '@core/actions';
-  import { formatDuration, formatNumber, formatPercent } from '@core/format';
+  import { CHANCE_TARGET, formatDuration, formatModifier, formatNumber, formatPercent } from '@core/format';
   import { researchEffect, researchTree, type ResearchNode } from '@core/research';
   import type { UpgradeDef } from '@core/content/types';
   import { game, view, act } from '../store.svelte';
@@ -39,10 +40,8 @@
     const e = researchEffect(def, level);
     if (!e) return '';
     const target = def.modifiers[0]!.target;
-    if (e.op === 'mult') return e.value >= 1 ? `×${formatNumber(e.value, { decimals: 2 })}` : `−${formatPercent(1 - e.value, 0)}`;
-    if (e.op === 'pct') return `${e.value >= 0 ? '+' : '−'}${formatPercent(Math.abs(e.value), 0)}`;
-    if (/mutation|instability|Chance/.test(target)) return `${e.value >= 0 ? '+' : '−'}${formatPercent(Math.abs(e.value), 0)}`;
-    return `+${formatNumber(e.value, { decimals: 1 })}${target.startsWith('production.') ? '/s' : ''}`;
+    if (e.op === 'add' && !CHANCE_TARGET.test(target)) return `${formatModifier('add', e.value)}${target.startsWith('production.') ? '/s' : ''}`;
+    return formatModifier(e.op, e.value, { decimals: 0, percentAdd: CHANCE_TARGET.test(target), reductionPercent: true });
   }
 
   function buy(x: ResearchNode) {
@@ -85,7 +84,7 @@
     </span>
   {:else}
     <span class="lvlbar" title="Stufe {x.level} von {x.def.maxLevel}">
-      <span class="track"><span style="width: {(x.level / x.def.maxLevel) * 100}%"></span></span>
+      <span class="track"><Meter value={x.level / x.def.maxLevel} /></span>
       <span class="num">{x.level}/{x.def.maxLevel}</span>
     </span>
   {/if}
@@ -185,7 +184,7 @@
     content: ''; position: absolute; left: -0.8rem; top: -0.45rem; width: 0.7rem; height: calc(50% + 0.45rem);
     border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); border-bottom-left-radius: 6px;
   }
-  .node.affordable { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e33; background: color-mix(in srgb, #f2c14e 6%, var(--bg-2)); }
+  .node.affordable { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 20%, transparent); background: color-mix(in srgb, var(--gold) 6%, var(--bg-2)); }
   .node.maxed { opacity: 0.6; }
   .node.locked { border-style: dashed; opacity: 0.75; background: transparent; }
   .main { display: grid; gap: 0.15rem; min-width: 0; }
@@ -199,8 +198,7 @@
   .pip { width: 12px; height: 6px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line); }
   .pip.on { background: var(--teal); border-color: var(--teal); }
   .lvlbar { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .track { flex: 1; max-width: 10rem; height: 6px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
-  .track span { display: block; height: 100%; background: var(--teal); }
+  .track { display: flex; flex: 1; max-width: 10rem; }
   .lvl { font-size: 0.75rem; color: var(--muted); }
 
   .act { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; }
@@ -214,7 +212,7 @@
   .intro { margin: 0.2rem 0 0.6rem; }
   .inf-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
   .inf { display: flex; flex-direction: column; gap: 0.3rem; }
-  .inf.affordable { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e33; }
+  .inf.affordable { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 20%, transparent); }
 
   @media (max-width: 560px) {
     .node { grid-template-columns: 1fr; }

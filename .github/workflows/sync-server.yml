@@ -22,12 +22,20 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      WRANGLER: npx --yes wrangler@4
+      # Pinned: a new wrangler release must not change a deploy unnoticed.
+      WRANGLER: npx --yes wrangler@4.146.0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Tests (Server-Logik in tests/sync.test.ts)
+        working-directory: .
+        run: |
+          npm ci
+          npm test
 
       - name: Zugangsdaten prüfen
         run: |

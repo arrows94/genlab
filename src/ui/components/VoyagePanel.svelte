@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { canAfford, toCost } from '@core/costs';
   import { effectiveStats, findCreature } from '@core/creatures';
@@ -15,6 +17,7 @@
   import CostLabel from './CostLabel.svelte';
   import CrystalSkip from './CrystalSkip.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
 
   /**
    * Wochenexpedition: plan (destination of the week + team), follow the
@@ -110,7 +113,7 @@
   </button>
 
   {#if !open}
-    {#if data.running}<div class="track mini"><div class="fill" style="width: {data.running.progress * 100}%"></div></div>{/if}
+    {#if data.running}<Meter size="sm" value={data.running.progress} />{/if}
   {:else if data.pending}
     <!-- Return: events + decision -->
     <div class="back">
@@ -145,7 +148,7 @@
       <span class="small num muted">noch {formatDuration(data.running.remaining)}</span>
       <CrystalSkip process={data.running.proc} />
     </div>
-    <div class="track" title="{formatPercent(data.running.progress, 0)} der Reise">
+    <div class="track" title="{formatPercent(data.running.progress, 0)} der Reise" use:meter={data.running.progress}>
       <div class="fill" style="width: {data.running.progress * 100}%"></div>
       {#each Array.from({ length: data.cfg.days }, (_, i) => i + 1) as d (d)}
         <span class="mark" class:reached={data.running.progress * data.cfg.days >= d} style="left: {(d / data.cfg.days) * 100}%">{d}</span>
@@ -190,11 +193,13 @@
       <div class="tiles">
         {#each data.idle as t (t.c.id)}
           {@const sp = content.species.get(t.c.speciesId)}
-          <button class="tile" class:on={team.includes(t.c.id)} style="--rar: {content.rarities.get(t.c.rarity).color}" title="{t.c.name} · {sp.name}" onclick={() => toggle(t.c.id)}>
-            <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={38} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
-            <span class="tiny num">💨 {formatNumber(t.spd)} · ×{formatNumber(t.f, { decimals: 2 })}</span>
-          </button>
+          <CreatureTile
+            creature={t.c}
+            info="💨 {formatNumber(t.spd)} · ×{formatNumber(t.f, { decimals: 2 })}"
+            selected={team.includes(t.c.id)}
+            title="{t.c.name} · {sp.name}"
+            onclick={() => toggle(t.c.id)}
+          />
         {/each}
       </div>
       <button class="primary go" disabled={data.chosen.length === 0 || !data.affordable} onclick={start}>
@@ -207,7 +212,7 @@
 <style>
   .voyage { margin-top: 0.75rem; border-color: color-mix(in srgb, var(--el) 45%, var(--line)); display: grid; gap: 0.6rem; }
   .voyage.closed { padding: 0.5rem 0.8rem; gap: 0.4rem; }
-  .voyage.alert { border-color: var(--gold); box-shadow: 0 0 14px #f2c14e33; }
+  .voyage.alert { border-color: var(--gold); box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 20%, transparent); }
   .vhead { display: flex; gap: 0.7rem; align-items: center; width: 100%; padding: 0; border: 0; background: none; text-align: left; }
   .vhead:disabled { opacity: 1; cursor: default; }
   .vtitle { flex: 1; min-width: 0; }
@@ -217,7 +222,6 @@
   .closed .dicon { font-size: 1.4rem; width: 2.2rem; height: 2.2rem; }
   .dicon { flex: none; font-size: 2rem; width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--el) 20%, var(--bg-2)); border: 1px solid var(--el); }
   .small { font-size: 0.8rem; }
-  .tiny { font-size: 0.66rem; }
   .facts, .loot, .natives, .team-row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
   .fact, .chip { padding: 0.15rem 0.55rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
   .fact.bonus { border-color: var(--gold); color: var(--gold); }
@@ -226,7 +230,6 @@
   .member small { font-size: 0.66rem; }
 
   .track { position: relative; height: 10px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); margin: 0.6rem 0 1rem; }
-  .track.mini { height: 5px; margin: 0; }
   .track .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--petrol), var(--el)); }
   .mark { position: absolute; top: 12px; transform: translateX(-50%); font-size: 0.65rem; color: var(--muted); }
   .mark.reached { color: var(--text); font-weight: 700; }
@@ -242,10 +245,7 @@
   .option:hover { box-shadow: 0 0 12px color-mix(in srgb, var(--el) 40%, transparent); }
   .sample { color: var(--teal); }
 
-  .tiles { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-  .tile { display: flex; flex-direction: column; align-items: center; width: 5.2rem; padding: 0.25rem; border: 1px solid var(--line); border-top: 2px solid var(--rar); border-radius: 10px; background: var(--bg-2); }
-  .tile.on { border-color: var(--el); box-shadow: 0 0 10px color-mix(in srgb, var(--el) 45%, transparent); }
-  .tname { font-size: 0.68rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 19rem; overflow-y: auto; padding: 2px; }
   .go { width: 100%; }
   .bonus + .bonus { margin-left: 0.35rem; }
 </style>

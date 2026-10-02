@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { formatReleaseDate, hiddenText } from '../changelog';
   import { closeNews, news } from '../news.svelte';
   import { view } from '../store.svelte';
@@ -7,8 +8,8 @@
 </script>
 
 {#if news.open && !view.offline}
-  <div class="backdrop" role="presentation" onclick={closeNews}>
-    <div class="panel modal" role="dialog" aria-modal="true" aria-labelledby="news-title" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeNews()}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && closeNews()}>
+    <div class="panel modal" role="dialog" aria-modal="true" aria-labelledby="news-title" tabindex="-1" use:dialog={{ onescape: closeNews }}>
       <h2 id="news-title">✨ Was ist neu?</h2>
       <div class="entries">
         {#each news.entries as e (e.id)}

@@ -1,6 +1,7 @@
 import type { GameState } from '@core/state';
 import { createStorage, deviceLabel } from './platform/storage';
-import { SYNC_URL, SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyncCode, syncAvailable, type PutMeta, type PutResult, type RemoteMeta } from './platform/sync';
+import { errorText } from './errors';
+import { SYNC_URL, SyncClient, SyncError, decidePull, newSyncCode, newWriterId, normalizeSyncCode, syncAvailable, type PutMeta, type PutResult, type RemoteMeta } from './platform/sync';
 
 /**
  * Device sync: keeps the save of all linked devices in step through the sync
@@ -114,7 +115,7 @@ async function attempt(fn: () => Promise<void>, report: boolean): Promise<boolea
     sync.error = '';
     return true;
   } catch (err) {
-    const message = err instanceof SyncError ? err.message : `Abgleich fehlgeschlagen: ${(err as Error).message}`;
+    const message = err instanceof SyncError ? err.message : `Abgleich fehlgeschlagen: ${errorText(err)}`;
     sync.error = message;
     if (report) host?.notify(message, 'error');
     return false;
@@ -173,24 +174,22 @@ async function doPull(timeoutMs?: number): Promise<void> {
     if (sync.link !== link) return;
     if (!remote) return remoteGone();
     link.syncedAt = Date.now();
-    if (remote.rev === link.rev || remote.writer === link.writer) {
-      // Up to date – or the newest cloud save is our own upload whose answer got lost (page closed):
-      // the local save is at least as far, keep it and upload again later.
-      if (remote.rev !== link.rev) link.dirty = true;
+    const decision = decidePull(link, remote);
+    if (decision.kind === 'keep') {
+      // Up to date – or our own upload whose answer got lost: keep the local save, upload again later.
+      if (decision.reupload) link.dirty = true;
       link.rev = remote.rev;
       link.sentBlind = null;
       return persist();
     }
-    if (remote.rev < link.rev) {
+    if (decision.kind === 'restore') {
       // The server lost revisions: restore it from here.
       link.rev = remote.rev;
       link.dirty = true;
       return persist();
     }
     const { state } = await host!.read(remote.text);
-    // Our upload from closing the page arrived and another device continued from it.
-    const landed = link.sentBlind != null && remote.recent.some((e) => e.rev === link.sentBlind && e.writer === link.writer);
-    if (!link.dirty || landed) {
+    if (decision.kind === 'adopt') {
       adopt(link, state, remote);
       host!.notify(`☁️ Spielstand von „${remote.device}“ übernommen.`);
     } else {

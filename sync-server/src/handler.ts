@@ -9,6 +9,8 @@
  *   GET    /v1/saves/:id  → 200 { rev, savedAt, device, writer, recent, data } | 404
  *   PUT    /v1/saves/:id  { baseRev, savedAt, device, writer, data } → 200 { rev } | 409 { rev, savedAt, device, writer } | 404
  *   DELETE /v1/saves/:id  → 204
+ *
+ * Every route can answer 429 when the optional rate limits are configured.
  */
 
 export interface SaveRow {
@@ -52,19 +54,70 @@ const ID = /^[0-9a-f]{64}$/;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 const WRITER = /^[0-9a-z]{4,16}$/;
 
-const CORS = {
-  // No cookies or other credentials: the secret id in the path is the only key.
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Max-Age': '86400',
-};
+/** Upper bound for a PUT body: the save plus the small JSON envelope around it. */
+const MAX_BODY_BYTES = MAX_DATA_CHARS + 1024;
+/** How far `savedAt` may lie in the future (device clocks drift); later values are clamped. */
+export const MAX_CLOCK_SKEW_MS = 24 * 3600 * 1000;
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+/** Cloudflare's Workers rate limiting binding (only the part used here). */
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
-const error = (status: number, message: string) => json({ error: message }, status);
+export interface HandleOptions {
+  /** Every request, per client IP. */
+  limiter?: RateLimiter;
+  /** Creating a new save (`baseRev: 0`), per client IP – stricter, rows cost storage. */
+  createLimiter?: RateLimiter;
+  /**
+   * Origins that may call the API from a browser (comma list in the Worker's
+   * `ALLOWED_ORIGINS`). Empty = every origin. CORS only binds browsers; the
+   * rate limits are the real protection.
+   */
+  allowedOrigins?: readonly string[];
+}
+
+function corsFor(request: Request, opts: HandleOptions): Record<string, string> {
+  const origin = request.headers.get('Origin');
+  const allowed = opts.allowedOrigins ?? [];
+  // No cookies or other credentials: the secret id in the path is the only key.
+  const allowOrigin = allowed.length === 0 ? '*' : origin && allowed.includes(origin) ? origin : allowed[0]!;
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+    ...(allowed.length > 0 ? { Vary: 'Origin' } : {}),
+  };
+}
+
+/** Reads the body as text, but stops at `max` bytes (a missing or wrong Content-Length does not help). */
+async function readLimited(request: Request, max: number): Promise<string | null> {
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) {
+    all.set(c, at);
+    at += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
+/** Device labels are shown to the player: printable text only. */
+const DEVICE = /^[^\u0000-\u001f\u007f]*$/;
 
 interface PutBody {
   baseRev: number;
@@ -79,14 +132,21 @@ function parsePut(body: unknown): PutBody | null {
   const b = body as Record<string, unknown>;
   if (!Number.isSafeInteger(b.baseRev) || (b.baseRev as number) < 0) return null;
   if (!Number.isSafeInteger(b.savedAt) || (b.savedAt as number) < 0) return null;
-  if (typeof b.device !== 'string' || b.device.length > 40) return null;
+  if (typeof b.device !== 'string' || b.device.length > 40 || !DEVICE.test(b.device)) return null;
   if (typeof b.writer !== 'string' || !WRITER.test(b.writer)) return null;
   if (typeof b.data !== 'string' || b.data.length === 0 || !BASE64.test(b.data)) return null;
   return { baseRev: b.baseRev as number, savedAt: b.savedAt as number, device: b.device, writer: b.writer, data: b.data };
 }
 
-export async function handle(request: Request, store: SaveStore, now = Date.now()): Promise<Response> {
+export async function handle(request: Request, store: SaveStore, now = Date.now(), opts: HandleOptions = {}): Promise<Response> {
+  const CORS = corsFor(request, opts);
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const error = (status: number, message: string) => json({ error: message }, status);
+
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'local';
+  if (opts.limiter && !(await opts.limiter.limit({ key: ip })).success) return error(429, 'too many requests');
   const url = new URL(request.url);
   const match = /^\/v1\/saves\/([^/]+)$/.exec(url.pathname);
   if (!match) return error(404, 'not found');
@@ -106,9 +166,9 @@ export async function handle(request: Request, store: SaveStore, now = Date.now(
 
   if (request.method === 'PUT') {
     const length = Number(request.headers.get('Content-Length') ?? 0);
-    if (length > MAX_DATA_CHARS + 1024) return error(413, 'too large');
-    const text = await request.text();
-    if (text.length > MAX_DATA_CHARS + 1024) return error(413, 'too large');
+    if (length > MAX_BODY_BYTES) return error(413, 'too large');
+    const text = await readLimited(request, MAX_BODY_BYTES);
+    if (text === null) return error(413, 'too large');
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
@@ -120,8 +180,10 @@ export async function handle(request: Request, store: SaveStore, now = Date.now(
     if (body.data.length > MAX_DATA_CHARS) return error(413, 'too large');
     const conflict = (row: SaveRow) => json({ rev: row.rev, savedAt: row.savedAt, device: row.device, writer: row.writer }, 409);
     const rev = body.baseRev + 1;
-    const fields = { id, rev, savedAt: body.savedAt, device: body.device, writer: body.writer, data: body.data, updatedAt: now };
+    const savedAt = Math.min(body.savedAt, now + MAX_CLOCK_SKEW_MS);
+    const fields = { id, rev, savedAt, device: body.device, writer: body.writer, data: body.data, updatedAt: now };
     if (body.baseRev === 0) {
+      if (opts.createLimiter && !(await opts.createLimiter.limit({ key: ip })).success) return error(429, 'too many requests');
       if (await store.insert({ ...fields, history: [{ rev, writer: body.writer }] })) return json({ rev });
     } else {
       const current = await store.get(id);

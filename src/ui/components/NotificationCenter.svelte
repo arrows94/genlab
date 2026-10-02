@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { fade, fly } from 'svelte/transition';
   import { view } from '../store.svelte';
   import { clearInbox, inbox, openInbox, type InboxEntry } from '../inbox.svelte';
@@ -41,7 +42,7 @@
 
 {#if inbox.open}
   <div class="backdrop" transition:fade={{ duration: 150 }} onclick={() => openInbox(false)} role="presentation"></div>
-  <div class="center panel" role="dialog" aria-modal="true" aria-label="Nachrichten" transition:fly={{ x: 40, duration: 180 }}>
+  <div class="center panel" use:dialog role="dialog" aria-modal="true" aria-label="Nachrichten" transition:fly={{ x: 40, duration: 180 }}>
     <header>
       <h2>🔔 Nachrichten</h2>
       <button class="close" onclick={() => openInbox(false)} aria-label="Schließen">✕</button>

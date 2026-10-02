@@ -12,6 +12,7 @@
   import { game, view } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import CreatureTile from './CreatureTile.svelte';
   import GenomeView from './GenomeView.svelte';
   import CreatureSortSelect from './CreatureSortSelect.svelte';
   import { sortCreatures, type CreatureSort } from '@core/queries';
@@ -103,18 +104,14 @@
       <div class="tiles">
         {#each gallery.list.slice(0, shown) as t (t.c.id)}
           {@const sp = species(t.c)}
-          <button
-            class="tile"
-            class:on={inspect === t.c.id}
-            class:unknown={!t.c.sequenced}
-            style="--el: {content.elements.get(sp.element).color}; --rarity: {content.rarities.get(t.c.rarity).color}"
-            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name}"
+          <CreatureTile
+            creature={t.c}
+            info={t.c.sequenced ? `✦ ${t.top}` : 'unbekannt'}
+            selected={inspect === t.c.id}
+            dim={!t.c.sequenced}
+            title="{t.c.name} · {sp.name} · {content.rarities.get(t.c.rarity).name} · {t.c.sequenced ? `✦ ${t.top} Gene reinerbig mit dem besten Allel` : 'Genom noch nicht sequenziert'}"
             onclick={() => pick(t.c.id)}
-          >
-            <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={40} shiny={t.c.shiny} />
-            <span class="tname">{t.c.name}</span>
-            <span class="small num muted" title={t.c.sequenced ? 'Gene reinerbig mit dem besten Allel' : 'Genom noch nicht sequenziert'}>{t.c.sequenced ? `✦ ${t.top}` : 'unbekannt'}</span>
-          </button>
+          />
         {:else}
           <p class="small muted empty">Keine Kreatur passt zu Suche und Filter.</p>
         {/each}
@@ -169,15 +166,7 @@
   .toggle { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; padding: 0.25rem 0.55rem; border-radius: 8px; border: 1px solid var(--line); }
   .toggle.on { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); }
   .count { margin-left: auto; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); gap: 0.4rem; padding: 2px; }
-  .tile {
-    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem; border-radius: 10px;
-    border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--el) 14%, transparent), var(--panel) 70%);
-  }
-  .tile:hover { border-color: var(--teal); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e66; }
-  .tile.unknown { opacity: 0.7; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; padding: 2px; }
   .empty { grid-column: 1 / -1; margin: 0.3rem 0; }
   .more { justify-self: center; font-size: 0.82rem; }
 

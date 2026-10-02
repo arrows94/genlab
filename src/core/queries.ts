@@ -1,9 +1,10 @@
+import { CHANCE_TARGET, formatModifier } from './format';
 import { canAfford } from './costs';
 import { nextUpgradeCost, upgradeAvailable } from './actions';
 import type { GameContext } from './context';
 import type { ContentDB, UpgradeDef } from './content/types';
 import type { Creature, GameState } from './state';
-import { creatureModifiers, creaturePower, effectiveStats } from './creatures';
+import { creatureModifiers, creaturePower, effectiveStats, isOccupied } from './creatures';
 import { genomeReport } from './genetics';
 
 /** Read-only helpers for the UI (keeps rules out of components). */
@@ -93,7 +94,7 @@ export function filterCreatures(ctx: GameContext, f: CreatureFilter): Creature[]
     if (f.rarity && c.rarity !== f.rarity) return false;
     if (f.status === 'idle' && c.job !== null) return false;
     if (f.status === 'working' && c.job?.kind !== 'building') return false;
-    if (f.status === 'busy' && !(c.job && c.job.kind !== 'building')) return false;
+    if (f.status === 'busy' && !isOccupied(c)) return false;
     if (f.status === 'locked' && !c.locked) return false;
     if (f.hideAway && f.status !== 'busy' && c.job?.kind === 'mission') return false;
     if (f.allele && !(c.sequenced && c.genome[f.allele.locus]?.includes(f.allele.allele))) return false;
@@ -210,10 +211,7 @@ export function describeModifier(ctx: GameContext, m: { target: string; op: stri
     };
     return known[m.target] ?? m.target;
   })();
-  const pct = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v * 1000) / 10} %`.replace('.', ',');
-  if (m.op === 'pct') return `${pct(m.value)} ${label}`;
-  if (m.op === 'mult') return `${label} ×${String(Math.round(m.value * 100) / 100).replace('.', ',')}`;
-  if (m.target === 'breeding.mutation' || m.target === 'tower.crit' || m.target === 'tower.thorns') return `${pct(m.value)} ${label}`;
   if (m.target === 'tower.firstStrike') return 'Erstschlag im Turm';
-  return `${m.value >= 0 ? '+' : ''}${m.value} ${label}`;
+  if (m.op === 'mult') return `${label} ${formatModifier('mult', m.value)}`;
+  return `${formatModifier(m.op, m.value, { percentAdd: CHANCE_TARGET.test(m.target), decimals: m.op === 'add' && !CHANCE_TARGET.test(m.target) ? 2 : 1 })} ${label}`;
 }

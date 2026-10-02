@@ -48,6 +48,12 @@ export function totalDynastyTiers(ctx: GameContext): number {
   return Object.values(ctx.state.dynasties).reduce((n, d) => n + dynastyTier(ctx, d), 0);
 }
 
+/** Äon-Splitter the dynasty records have paid so far (before the cap). */
+export function dynastyShardsEarned(ctx: GameContext): number {
+  const per = ctx.balance.dynasty.shardsPerTier;
+  return Object.values(ctx.state.dynasties).reduce((n, d) => n + per.slice(0, dynastyTier(ctx, d)).reduce((a, s) => a + s, 0), 0);
+}
+
 /** Stat bonus of the creature's own line (fraction, 0.12 = +12 %). */
 export function lineageBonus(ctx: GameContext, c: Creature): number {
   const b = ctx.balance.dynasty;
@@ -75,10 +81,13 @@ export function recordLineage(ctx: GameContext, c: Creature): void {
   const depth = c.lineage ?? 0;
   if (!ctx.state.features[DYNASTY_FEATURE] || depth <= dynastyRecord(ctx, c.speciesId)) return;
   const before = dynastyTier(ctx, dynastyRecord(ctx, c.speciesId));
+  const paid = Math.min(ctx.balance.dynasty.maxShards, dynastyShardsEarned(ctx));
   ctx.state.dynasties[c.speciesId] = depth;
   const tier = dynastyTier(ctx, depth);
   if (tier > before) {
-    const shards = ctx.balance.dynasty.shardsPerTier.slice(before, tier).reduce((n, s) => n + s, 0);
+    const raw = ctx.balance.dynasty.shardsPerTier.slice(before, tier).reduce((n, s) => n + s, 0);
+    // All species together pay at most `maxShards`.
+    const shards = Math.max(0, Math.min(raw, ctx.balance.dynasty.maxShards - paid));
     if (shards > 0) grant(ctx, 'aeonShards', D(shards), 'dynasty');
     ctx.bus.emit('dynastyTier', { species: c.speciesId, tier, depth, shards });
   }

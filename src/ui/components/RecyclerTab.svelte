@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
+  import { dialog } from '../dialog';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { formatNumber, formatPercent } from '@core/format';
@@ -219,7 +221,7 @@
       <div class="pity" title="Spätestens jede {cap.def.pity.threshold}. Kapsel ist mindestens {guaranteed.name}.">
         <span class="small">🎯 Garantie <b style="color: {guaranteed.color}">{guaranteed.name}</b></span>
         <span class="small num" class:soon={left <= 3}>{left <= 1 ? 'nächste Kapsel!' : `spätestens in ${left}`}</span>
-        <div class="pitybar"><div style="width: {(cap.pity / (cap.def.pity.threshold - 1)) * 100}%"></div></div>
+        <Meter value={cap.pity / (cap.def.pity.threshold - 1)} tone="violet" title="Garantie-Zähler {cap.pity}/{cap.def.pity.threshold}" />
       </div>
       <div class="row">
         <button class="primary" disabled={!canAfford(game.state, cap.cost1) || data.free < 1} onclick={() => open(cap.def.id, 1)}>Öffnen · <CostLabel cost={cap.cost1} /></button>
@@ -233,7 +235,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="backdrop" role="presentation" onclick={onBackdrop}>
     <div class="reveal {phase}" class:instant role="dialog" aria-modal="true" aria-label="Kapsel-Ergebnis" tabindex="-1"
-      onkeydown={(e) => e.key === 'Escape' && close()} style="--best: {best?.color ?? opened.color}">
+      use:dialog={{ onescape: close }} style="--best: {best?.color ?? opened.color}">
       {#if phase !== 'reveal'}
         <div class="stage">
           <div class="rays"></div>
@@ -279,7 +281,7 @@
   .small { font-size: 0.8rem; }
   .chamber-wrap { margin-bottom: 0.75rem; }
   .auto { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
-  .auto.on { border-color: var(--teal); box-shadow: 0 0 12px #2fd3c433; }
+  .auto.on { border-color: var(--teal); box-shadow: 0 0 12px color-mix(in srgb, var(--teal) 20%, transparent); }
   .auto-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
   .auto-status { margin: 0; display: flex; flex-direction: column; gap: 0.2rem; }
   .auto-status .hit { color: var(--gold); }
@@ -300,8 +302,6 @@
   .odds b { margin-left: auto; font-weight: 600; }
   .pity { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.5rem; padding: 0.4rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
   .pity .soon { color: var(--gold); font-weight: 700; }
-  .pitybar { width: 100%; height: 6px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
-  .pitybar div { height: 100%; background: linear-gradient(90deg, var(--violet), var(--gold)); transition: width 0.4s; }
   .row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: auto; }
   .row button { flex: 1; }
 

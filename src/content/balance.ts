@@ -15,6 +15,10 @@ export const balance: Balance = {
     capHours: 12,
     summaryMinSec: 60,
   },
+  rewards: {
+    // Bonuses such as `contracts.reward` never multiply these (rare currencies stay fixed).
+    unscaled: ['aeonShards', 'timeCrystals', 'catalyst'],
+  },
   contracts: {
     offersPerDay: 3,
     rerollsPerDay: 1,
@@ -204,6 +208,8 @@ export const balance: Balance = {
       costGrowth: 2.5,
       maxPerCreature: 3,
       instability: 0.25,
+      // Research and achievements lower the risk, but never below this.
+      minInstability: 0.05,
     },
   },
   hybrids: {
@@ -360,6 +366,8 @@ export const balance: Balance = {
     tiers: [5, 10, 20, 35, 50],
     statPerTier: 0.05,
     shardsPerTier: [0, 0, 0, 2, 3],
+    // At most this many Äon-Splitter from dynasties in total (5 per species would add up to ~165).
+    maxShards: 25,
     modifiersPerTier: [
       { target: 'production.food', op: 'pct', value: 0.01 },
       { target: 'production.gold', op: 'pct', value: 0.01 },
@@ -369,9 +377,15 @@ export const balance: Balance = {
   missions: {
     baseCamps: 1,
     statScaling: 0.02,
+    // Missions at least this long are Tagesreisen: they survive an inheritance.
+    journeyHours: 12,
   },
   market: {
     maxBoostsPerStat: 10,
+    // Zeittrank: its price (minutes of production, `costMinutes` on the potion) doubles for
+    // every further one within the window.
+    timeSkipGrowth: 2,
+    timeSkipWindowHours: 1,
   },
   appearance: {
     patterns: ['none', 'spots', 'stripes', 'rings'],
