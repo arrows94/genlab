@@ -163,10 +163,12 @@ Monster-Dex mit Sammlung und Detailkarte, Sequenzierer und Genbibliothek, einhei
 
 # Komfort
 
-## 2026-10-02 – Anlagen auf dem Handy
+## 2026-10-02 – Namen auf dem Handy
 
 - Arbeiterplätze in den Anlagen mindestens 6,2 rem breit (Handy: drei statt fünf je Reihe), Namen auf bis zu zwei
-  Zeilen mit Silbentrennung statt abgeschnitten, Werte und Ertrag in einer Zeile. Bei 390 px im Browser geprüft
+  Zeilen mit Silbentrennung statt abgeschnitten, Werte und Ertrag in einer Zeile
+- Dasselbe für alle Auswahlfenster (`CreatureTile`) und die Turm-Teamplätze (Handy: drei je Reihe, gesperrte Plätze
+  ausgeblendet, „Vorne/Hinten“ passt). Bei 390 px im Browser geprüft, alle Tabs ohne Überlauf
 
 ## 2026-10-02 – Update-Anzeige
 

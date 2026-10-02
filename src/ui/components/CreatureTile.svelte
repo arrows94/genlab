@@ -69,7 +69,11 @@
     display: grid; place-items: center; border-radius: 50%; padding: 0.15rem;
     background: radial-gradient(circle, color-mix(in srgb, var(--el) 35%, transparent), transparent 70%);
   }
-  .n { font-size: 0.75rem; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Long names wrap to a second line (with hyphenation) instead of being cut after a few letters. */
+  .n {
+    font-size: 0.75rem; font-weight: 600; line-height: 1.2; max-width: 100%; hyphens: auto; overflow-wrap: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
   .s { font-size: 0.68rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tl, .tr { position: absolute; top: 4px; font-size: 0.7rem; font-weight: 700; line-height: 1; }
   .tl { left: 7px; }
