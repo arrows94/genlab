@@ -149,6 +149,7 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 Erledigt: Isekai-Umbau (Stufe 1 aus den Grundwerten der Art, Stufe bleibt dem Monster, eigene Welt ohne Labor,
 Portal-Animation, dunkles Design, eigene Musik und Kampfmusik), Rundenkampf mit drei Fähigkeiten und Spezialangriff,
+sichtbares Kampfende (Sieg-Zusammenfassung bis „Weiter“, Niederlage mit Verlusten; `run.aftermath`, `lastResult.fight`),
 Dungeons aus Räumen mit Wegwahl, Ereignissen und Stufen-Verbesserungen, Fackeln 🔥 als Eintritt (Nachfüllen nach
 echter Uhr, Tagesbelohnung, Gen-Aufträge, Wochenexpedition), Beute mit Wochen-Deckel, Ausrüstung (wirkt nicht im
 Turm), Runen 🪬 und dauerhafte Verbesserungen, Test-Bot `tests/rpgBot.ts`, Debug-Werkzeuge (`?debug=1`).

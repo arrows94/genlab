@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, closeRpgAftermath, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, speciesProfile, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -298,6 +298,48 @@ describe('GenLab RPG – Rundenkampf', () => {
     expect(c.job).toBeNull();
   });
 
+  it('a won fight stays on screen with its XP and loot until the player goes on', () => {
+    const { g, c } = fight();
+    const run = g.state.rpg.run!;
+    run.room = 'fight';
+    startRpgBattle(g, 'brawler', 'sproutle', 1);
+    run.battle!.foe.hp = 1;
+    const level = rpgLevel(g, c.id).level;
+    useRpgSkill(g, 'strike');
+    const after = run.aftermath!;
+    expect(after.win).toBe(true);
+    expect(after.battle.foe.hp).toBe(0);
+    expect(after.xp).toBeGreaterThan(0);
+    expect(after.levelFrom).toBe(level);
+    expect(after.levelTo).toBe(rpgLevel(g, c.id).level);
+    for (const [res, n] of Object.entries(after.loot)) expect(run.loot[res]).toBeGreaterThanOrEqual(n);
+    expect(run.choices.length).toBeGreaterThan(0); // the ways are already open
+    expect(closeRpgAftermath(g).ok).toBe(true);
+    expect(run.aftermath).toBeNull();
+    expect(closeRpgAftermath(g).ok).toBe(false);
+    // Going on through a door clears it too.
+    run.aftermath = after;
+    enterRoom(g, 0);
+    expect(run.aftermath).toBeNull();
+  });
+
+  it('a lost fight ends the run with the last round and what was lost', () => {
+    const { g } = fight();
+    const run = g.state.rpg.run!;
+    run.loot = { towerTokens: 10 };
+    const item = rollItem(g, 'rootMaze');
+    run.gear = [item];
+    startRpgBattle(g, 'warden', 'sproutle', 60);
+    for (let i = 0; i < 200 && g.state.rpg.run; i++) useRpgSkill(g, 'strike');
+    const res = g.state.rpg.lastResult!;
+    expect(res.win).toBe(false);
+    expect(res.fight?.win).toBe(false);
+    expect(res.fight?.battle.hero.hp).toBe(0);
+    expect(res.fight?.battle.foe.name).toBeTruthy();
+    expect(res.lost).toEqual({ towerTokens: 10 - Math.floor(10 * balance.rpg.defeatKeep) });
+    expect(res.lostGear?.map((x) => x.id)).toEqual([item.id]);
+  });
+
   it('is deterministic with the game RNG', () => {
     const play = () => {
       const { g } = fight(7);
@@ -437,6 +479,8 @@ describe('GenLab RPG – Dungeon', () => {
     expect(g.state.rpg.cleared['rootMaze']).toBe(1);
     expect(g.state.rpg.best['rootMaze']).toBe(rooms + 1);
     expect(g.state.rpg.lastResult).toMatchObject({ win: true, cleared: true, dungeon: 'rootMaze' });
+    expect(g.state.rpg.lastResult!.fight).toMatchObject({ win: true, battle: { foe: { kind: 'boss', hp: 0 } } });
+    expect(g.state.rpg.lastResult!.lost).toBeUndefined();
     expect(c.job).toBeNull();
     expect(dungeonUnlocked(g, 'emberCaves')).toBe(true);
   });
