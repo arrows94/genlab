@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature, effectiveStats, findCreature } from '@core/creatures';
 import { breedingCost, breedingTimeMs, mutationChance, nestKeepers, nestSlots, setNestKeeper, startBreeding, inheritStats } from '@core/features/breeding';
-import { abilityInheritChance, inheritAbilities } from '@core/abilities';
+import { abilityInheritChance, inheritAbilities, inheritAbilityLevels } from '@core/abilities';
 import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
 import { balance, content, makeGame } from './helpers';
@@ -206,6 +206,40 @@ describe('ability inheritance', () => {
     }
     expect(shared / 2000).toBeCloseTo(balance.breeding.abilityInheritBoth, 1);
     expect(single / 2000).toBeCloseTo(balance.breeding.abilityInheritChance, 1);
+  });
+});
+
+describe('ability levels in pure lines', () => {
+  const pair = (levelA: number, levelB: number | null) => {
+    const g = makeGame();
+    const a = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer'] });
+    const b = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: levelB === null ? [] : ['nurturer'] });
+    a.abilityLevels = { nurturer: levelA };
+    if (levelB !== null) b.abilityLevels = { nurturer: levelB };
+    return { g, a, b };
+  };
+  const { lineageKeepDepth: keep, lineageRaiseDepth: raise } = balance.abilities;
+
+  it('an ordinary child inherits one level less, at least level I', () => {
+    const { g, a, b } = pair(3, 1);
+    expect(inheritAbilityLevels(g, ['nurturer'], a, b, 0)).toEqual({ nurturer: 2 });
+    const low = pair(2, null);
+    expect(inheritAbilityLevels(low.g, ['nurturer'], low.a, low.b, 0)).toBeUndefined();
+  });
+
+  it('a pure line keeps the level from the first dynasty tier on', () => {
+    const { g, a, b } = pair(2, null);
+    expect(inheritAbilityLevels(g, ['nurturer'], a, b, keep - 1)).toBeUndefined();
+    expect(inheritAbilityLevels(g, ['nurturer'], a, b, keep)).toEqual({ nurturer: 2 });
+  });
+
+  it('a deep pure line raises an ability both parents have, up to the highest level', () => {
+    const both = pair(1, 1);
+    expect(inheritAbilityLevels(both.g, ['nurturer'], both.a, both.b, raise)).toEqual({ nurturer: 2 });
+    const one = pair(2, null);
+    expect(inheritAbilityLevels(one.g, ['nurturer'], one.a, one.b, raise)).toEqual({ nurturer: 2 });
+    const top = pair(3, 3);
+    expect(inheritAbilityLevels(top.g, ['nurturer'], top.a, top.b, raise)).toEqual({ nurturer: 3 });
   });
 });
 

@@ -229,6 +229,10 @@ export interface Balance {
     max: number;
     /** Strength of an ability per level (index 0 = level 1); the length is the highest level. */
     levelMults: number[];
+    /** From this pure-line depth a child keeps the parents' ability level (else it drops one level). */
+    lineageKeepDepth: number;
+    /** From this depth an ability both parents have rises one level in the child. */
+    lineageRaiseDepth: number;
   };
   breeding: {
     baseTimeSec: number;

@@ -1,5 +1,5 @@
 import { D } from '../num';
-import { inheritAbilities } from '../abilities';
+import { inheritAbilities, inheritAbilityLevels } from '../abilities';
 import { createCreature, creatureModifiers, creaturePower, findCreature, inheritLatent } from '../creatures';
 import { inheritGenome } from '../genetics';
 import { checkCondition } from '../conditions';
@@ -377,6 +377,7 @@ registerProcessHandler(EGG, {
       family,
       source: 'hatch',
     });
+    child.abilityLevels = inheritAbilityLevels(ctx, child.abilities, a, b, lineage);
     recordLineage(ctx, child);
     ctx.bus.emit('eggHatched', { creatureId: child.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
 
@@ -400,6 +401,7 @@ registerProcessHandler(EGG, {
         family,
         source: 'hatch',
       });
+      twin.abilityLevels = inheritAbilityLevels(ctx, twin.abilities, a, b, lineage);
       recordLineage(ctx, twin);
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
     }

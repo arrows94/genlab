@@ -189,6 +189,9 @@ export const balance: Balance = {
     max: 3,
     // Fähigkeits-Elixier: level II ×1,5, level III ×2 (Brutpfleger −10 / −15 / −20 %).
     levelMults: [1, 1.5, 2],
+    // Pure lines carry ability levels: kept from the 1st dynasty tier (depth 5), raised from the 2nd (depth 10).
+    lineageKeepDepth: 5,
+    lineageRaiseDepth: 10,
   },
   breeding: {
     baseTimeSec: 60,

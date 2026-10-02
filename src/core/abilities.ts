@@ -14,6 +14,26 @@ export function abilityName(c: Creature, def: AbilityDef): string {
   return level > 1 ? `${def.name} ${['I', 'II', 'III', 'IV', 'V'][level - 1] ?? level}` : def.name;
 }
 
+/**
+ * Levels of the inherited abilities: an ordinary child gets one level less than the better parent (at least I),
+ * a pure line keeps it (depth ≥ `lineageKeepDepth`) and raises an ability both parents have (depth ≥
+ * `lineageRaiseDepth`). Only levels above I are listed.
+ */
+export function inheritAbilityLevels(ctx: GameContext, abilities: readonly string[], a: Creature, b: Creature, lineage: number): Record<string, number> | undefined {
+  const cfg = ctx.balance.abilities;
+  const out: Record<string, number> = {};
+  for (const id of abilities) {
+    const has = [a, b].filter((p) => p.abilities.includes(id));
+    if (has.length === 0) continue; // a new ability from a mutation starts at level I
+    const best = Math.max(...has.map((p) => abilityLevel(p, id)));
+    let level = lineage >= cfg.lineageKeepDepth ? best : best - 1;
+    if (lineage >= cfg.lineageRaiseDepth && has.length === 2) level++;
+    level = Math.min(maxAbilityLevel(ctx), Math.max(1, level));
+    if (level > 1) out[id] = level;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /** Highest level an ability can reach with the Fähigkeits-Elixier. */
 export function maxAbilityLevel(ctx: GameContext): number {
   return ctx.balance.abilities.levelMults.length;

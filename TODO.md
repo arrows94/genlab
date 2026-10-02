@@ -61,7 +61,6 @@ Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung,
 
 Nestwärter, gezieltere Vererbung und das Fähigkeits-Elixier mit Keimöl sind umgesetzt.
 
-- [ ] Optional: reine Linie (Dynastie) vererbt eine Fähigkeit eine Stufe höher (Fähigkeitsstufen gibt es jetzt)
 - [ ] Keimöl-Menge beobachten: Ritual 30 %, Auftrag 4★ 1 / 5★ 2, Wochenexpedition selten – Elixier II kostet 2,
       Elixier III 6 Keimöl
 

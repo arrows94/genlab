@@ -5,6 +5,13 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Reine Linie vererbt Fähigkeitsstufen
+
+- `inheritAbilityLevels`: ein gewöhnliches Kind erbt eine Stufe weniger als der bessere Elternteil (mindestens I),
+  eine reine Linie ab Tiefe 5 behält die Stufe, ab Tiefe 10 steigt eine Fähigkeit beider Eltern um eine Stufe (bis
+  III) – Zahlen in `balance.abilities.lineageKeepDepth` / `lineageRaiseDepth` (= 1. und 2. Dynastie-Stufe).
+  Ohne Keimöl führt der Weg zu Stufe III nur über zehn reinrassige Generationen. Erklärt im Dynastie-Panel
+
 ## 2026-10-02 – Fähigkeits-Elixier und Keimöl
 
 - Fähigkeiten haben Stufen (`Creature.abilityLevels`, `balance.abilities.levelMults` [1; 1,5; 2]); Anzeige
