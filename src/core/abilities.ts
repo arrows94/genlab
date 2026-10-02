@@ -1,4 +1,31 @@
 import type { GameContext } from './context';
+import type { AbilityDef } from './content/types';
+import type { ModifierDef } from './modifiers';
+import type { Creature } from './state';
+
+/** Level of an ability on a creature (1 … `abilities.levelMults.length`). */
+export function abilityLevel(c: Creature, abilityId: string): number {
+  return c.abilityLevels?.[abilityId] ?? 1;
+}
+
+/** „Brutpfleger II“: the name with its level from level II on. */
+export function abilityName(c: Creature, def: AbilityDef): string {
+  const level = abilityLevel(c, def.id);
+  return level > 1 ? `${def.name} ${['I', 'II', 'III', 'IV', 'V'][level - 1] ?? level}` : def.name;
+}
+
+/** Highest level an ability can reach with the Fähigkeits-Elixier. */
+export function maxAbilityLevel(ctx: GameContext): number {
+  return ctx.balance.abilities.levelMults.length;
+}
+
+/** The ability's modifiers at the creature's level: add/pct scale, mult moves away from 1. */
+export function abilityModifiers(ctx: GameContext, def: AbilityDef, c: Creature): ModifierDef[] {
+  const mults = ctx.balance.abilities.levelMults;
+  const k = mults[Math.min(mults.length, abilityLevel(c, def.id)) - 1] ?? 1;
+  if (k === 1) return def.modifiers;
+  return def.modifiers.map((m) => ({ ...m, value: m.op === 'mult' ? 1 + (m.value - 1) * k : m.value * k }));
+}
 
 /** Rolls a random ability not in `exclude` (tier by balance weights). */
 export function rollAbility(ctx: GameContext, exclude: readonly string[] = []): string | null {

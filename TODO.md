@@ -59,13 +59,11 @@ Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung,
 
 # Zucht: Fähigkeiten stärken
 
-Nestwärter und die gezieltere Vererbung sind umgesetzt; als nächster Schritt geplant:
+Nestwärter, gezieltere Vererbung und das Fähigkeits-Elixier mit Keimöl sind umgesetzt.
 
-- [ ] Fähigkeits-Elixier im Markt: stärkt eine Fähigkeit *einer* Kreatur um eine Stufe (z. B. Brutpfleger I–III,
-      −10/−15/−20 %), höchstens 3 Stufen, jede Stufe deutlich teurer (Muster wie Kraftfutter)
-- [ ] Seltene Zutat „Keimöl“ für das Elixier: nur aus Brutritualen (kleine Chance), Gen-Aufträgen ab 4★ und
-      gelegentlich der Wochenexpedition – damit nur wenige Kreaturen über Wochen verbessert werden
-- [ ] Optional: reine Linie (Dynastie) vererbt eine Fähigkeit eine Stufe höher (braucht Fähigkeitsstufen)
+- [ ] Optional: reine Linie (Dynastie) vererbt eine Fähigkeit eine Stufe höher (Fähigkeitsstufen gibt es jetzt)
+- [ ] Keimöl-Menge beobachten: Ritual 30 %, Auftrag 4★ 1 / 5★ 2, Wochenexpedition selten – Elixier II kostet 2,
+      Elixier III 6 Keimöl
 
 # Tester-Feedback (Oktober 2026)
 

@@ -202,3 +202,23 @@ describe('Besondere Brut', () => {
     expect(mutationChance(g, content.breedingRituals.get('master'))).toBeCloseTo(mutationChance(g) + 0.15);
   });
 });
+
+describe('Keimöl from Brutrituale', () => {
+  it('a ritual sometimes leaves Keimöl, but only once the Fähigkeits-Elixier is known', () => {
+    const count = (elixir: boolean) => {
+      const g = ritualGame();
+      if (elixir) unlockFeature(g, 'abilityElixir');
+      const [a, b] = g.state.creatures;
+      for (let i = 0; i < 40; i++) {
+        hatch(g, a!.id, b!.id, 'crossing');
+        g.state.creatures = [a!, b!]; // keep the stable from filling up
+      }
+      return g.state.resources['germOil']?.toNumber() ?? 0;
+    };
+    expect(count(false)).toBe(0);
+    const got = count(true);
+    // About `ritualGermOilChance` of the rituals (0,3 × 40 = 12).
+    expect(got).toBeGreaterThan(4);
+    expect(got).toBeLessThan(22);
+  });
+});

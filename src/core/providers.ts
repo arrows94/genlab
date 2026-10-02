@@ -2,6 +2,7 @@ import { D } from './num';
 import { ModifierSet } from './modifiers';
 import type { GameContext } from './context';
 import { activeLatent } from './creatures';
+import { abilityModifiers } from './abilities';
 import { resonanceProvider, talentProvider } from './features/talents';
 import { anomalyProvider } from './features/anomalies';
 import { weeklyProvider } from './features/weekly';
@@ -65,7 +66,7 @@ export const globalAbilityProvider: ModifierProvider = (ctx, into) => {
     if (c.job?.kind !== 'building') continue;
     for (const id of c.abilities) {
       const def = ctx.content.abilities.has(id) ? ctx.content.abilities.get(id) : null;
-      if (def?.scope === 'global') into.addAll(`ability:${id}#${c.id}`, def.modifiers);
+      if (def?.scope === 'global') into.addAll(`ability:${id}#${c.id}`, abilityModifiers(ctx, def, c));
     }
     const latent = activeLatent(ctx, c);
     if (latent?.scope === 'global') into.addAll(`latent:${latent.id}#${c.id}`, latent.modifiers);

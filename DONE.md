@@ -5,6 +5,17 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Fähigkeits-Elixier und Keimöl
+
+- Fähigkeiten haben Stufen (`Creature.abilityLevels`, `balance.abilities.levelMults` [1; 1,5; 2]); Anzeige
+  „Brutpfleger II“ in Karte und Details. Neue Trankart `abilityLevel`: das Fähigkeits-Elixier im Markt hebt eine
+  Fähigkeit einer Kreatur um eine Stufe (20 000 Gold + 2 Keimöl, die nächste Stufe ×3), höchstens Stufe III
+- Neue Ressource „Keimöl“ (🌰, `germOil`, nicht von Belohnungs-Boni vervielfacht): 30 % je Brutritual, 1 aus
+  Gen-Aufträgen 4★, 2 aus 5★, selten aus der Wochenexpedition (Ereignis „Keimquelle“) – jeweils erst nach der
+  Freischaltung
+- Freischaltung: Forschung „Elixierkunde“ nach der ersten Vererbung und dem Nestwärter (600 Essenz + 3
+  Evolutionskristalle) – dann bringen Rituale und 4★-Aufträge das Keimöl
+
 ## 2026-10-02 – Nestwärter und gezieltere Vererbung
 
 - Forschung „Nestwärter“ (nach 20 geschlüpften Eiern, 1 200 Gold + 40 Essenz; im Bot ≈ 15 min, nach Bio-Labor und

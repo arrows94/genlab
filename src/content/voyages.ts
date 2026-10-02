@@ -64,6 +64,7 @@ export const voyageEvents: VoyageEventDef[] = [
   { id: 'caravan', text: 'Eine Karawane fahrender Händler. Für ein paar Lieder gibt es eine Handvoll Gold.', weight: 2, effect: { resources: { gold: 2000 } } },
   { id: 'molting', text: 'Ein Teammitglied häutet sich über Nacht. Die alte Haut steckt voller Genfragmente.', weight: 2, effect: { resources: { fragments: 30 } } },
   { id: 'lullaby', text: 'Aus einem hohlen Baum summt etwas eine Melodie, die alle Kreaturen schläfrig macht.', weight: 1, effect: {} },
+  { id: 'germSpring', text: 'Aus einer Felsspalte perlt ein öliger Keimsaft. Das Team füllt vorsichtig eine Phiole ab.', weight: 1, effect: { resources: { germOil: 1 } } },
   { id: 'oldBreeder', text: 'Ein alter Züchter erkennt die Linie eines Teammitglieds wieder und erzählt von dessen Urahnen.', weight: 1, effect: {} },
 
   // Only on the way to one destination.

@@ -123,7 +123,11 @@ registerProcessHandler(VOYAGE, {
     for (const [res, [min, max]] of Object.entries(dest.rewards)) loot[res] = D(Math.floor(ctx.rng.range(min, max) * factor));
     for (const [res, amount] of Object.entries(voyageBonus(ctx))) loot[res] = (loot[res] ?? D(0)).add(amount);
     for (const e of events) {
-      for (const [res, amount] of Object.entries(e.effect.resources ?? {})) loot[res] = (loot[res] ?? D(0)).add(amount);
+      for (const [res, amount] of Object.entries(e.effect.resources ?? {})) {
+        // Resources of systems not yet unlocked (Keimöl before the Fähigkeits-Elixier) stay behind.
+        const feature = ctx.content.resources.get(res).feature;
+        if (!feature || ctx.state.features[feature]) loot[res] = (loot[res] ?? D(0)).add(amount);
+      }
       if (e.effect.hint && ctx.state.features['hybrids']) revealHint(ctx);
     }
     const decisions: Record<string, number> = {};

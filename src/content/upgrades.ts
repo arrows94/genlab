@@ -91,6 +91,14 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [], unlocksFeatures: ['nestKeeper'],
   },
   {
+    id: 'elixirLore', theme: 'breeding', name: 'Elixierkunde', category: 'research',
+    // After the first inheritance: then Brutrituale and 4★ contracts bring the Keimöl it needs.
+    requires: { type: 'all', of: [{ type: 'prestigeCount', layer: 'inheritance', count: 1 }, { type: 'upgradeLevel', upgrade: 'nestKeeper', level: 1 }] },
+    description: 'Der Markt braut Fähigkeits-Elixiere: Sie stärken eine Fähigkeit einer Kreatur um eine Stufe.',
+    cost: { essence: 600, catalyst: 3 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['abilityElixir'],
+  },
+  {
     id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research',
     // Same moment as "Besondere Brut" (first inheritance), without waiting on a long feature.
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },

@@ -64,19 +64,19 @@ export const contracts: ContractTemplateDef[] = [
     id: 'eliteLine', name: 'Eliteblut', client: 'Akademie der Genkunde', level: 4, weight: 3,
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
     requirements: [{ kind: 'topLoci', count: 3, homozygous: true }],
-    reward: { minutes: 90, resources: { essence: 200, fragments: 30, timeCrystals: 1 }, alleleSamples: 1 },
+    reward: { minutes: 90, resources: { germOil: 1, essence: 200, fragments: 30, timeCrystals: 1 }, alleleSamples: 1 },
   },
   {
     id: 'rareHybrid', name: 'Meisterkreuzung', client: 'Kuriositätenkabinett Kessel', level: 4, weight: 2,
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
     requirements: [{ kind: 'minTier', tier: 'rareHybrid' }, { kind: 'genotype' }],
-    reward: { minutes: 90, resources: { essence: 200, catalyst: 2, timeCrystals: 1 } },
+    reward: { minutes: 90, resources: { germOil: 1, essence: 200, catalyst: 2, timeCrystals: 1 } },
   },
   {
     id: 'epicPure', name: 'Turmrekrut', client: 'Wächter des Genom-Turms', level: 4, weight: 2,
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
     requirements: [{ kind: 'minRarity', rarity: 'epic' }, { kind: 'element' }, { kind: 'topLoci', count: 2, homozygous: true }],
-    reward: { minutes: 90, resources: { essence: 200, towerTokens: 20, timeCrystals: 1 } },
+    reward: { minutes: 90, resources: { germOil: 1, essence: 200, towerTokens: 20, timeCrystals: 1 } },
   },
 
   // Stufe 5 – Äon: fast perfekte Genome
@@ -84,19 +84,19 @@ export const contracts: ContractTemplateDef[] = [
     id: 'masterwork', name: 'Meisterwerk', client: 'Der Zeitlose Sammler', level: 5, weight: 3,
     requires: { type: 'feature', feature: 'aeon' },
     requirements: [{ kind: 'topLoci', count: 4, homozygous: true }, { kind: 'minGeneration', generation: 8 }],
-    reward: { minutes: 180, resources: { aeonShards: 1, essence: 400, timeCrystals: 2 } },
+    reward: { minutes: 180, resources: { germOil: 2, aeonShards: 1, essence: 400, timeCrystals: 2 } },
   },
   {
     id: 'mythicOrder', name: 'Mythische Bestellung', client: 'Der Zeitlose Sammler', level: 5, weight: 2,
     requires: { type: 'feature', feature: 'aeon' },
     requirements: [{ kind: 'minTier', tier: 'mythic' }, { kind: 'topLoci', count: 2, homozygous: true }],
-    reward: { minutes: 180, resources: { aeonShards: 1, catalyst: 3, timeCrystals: 2 } },
+    reward: { minutes: 180, resources: { germOil: 2, aeonShards: 1, catalyst: 3, timeCrystals: 2 } },
   },
   {
     id: 'primalOrder', name: 'Urblut', client: 'Hüter der Urgene', level: 5, weight: 2,
     requires: { type: 'talent', talent: 'ancientGenes' },
     requirements: [{ kind: 'genotype', locus: 'primal', allele: 'U' }, { kind: 'topLoci', count: 3, homozygous: true }],
-    reward: { minutes: 180, resources: { aeonShards: 2, timeCrystals: 2 }, alleleSamples: 1 },
+    reward: { minutes: 180, resources: { germOil: 2, aeonShards: 2, timeCrystals: 2 }, alleleSamples: 1 },
   },
   // Aus der anderen Welt und auf Zeit: Ausrüstung statt Kreatur, Leihgaben statt Abgabe.
   {
@@ -133,12 +133,12 @@ export const contracts: ContractTemplateDef[] = [
     id: 'masterGear', name: 'Meisterstück', client: 'Waffenmeisterin Kael', level: 4, weight: 2,
     requires: { type: 'feature', feature: 'rpg' }, delivery: 'item',
     requirements: [{ kind: 'item', minRarity: 'epic' }],
-    reward: { minutes: 90, resources: { runes: 45, timeCrystals: 1 } },
+    reward: { minutes: 90, resources: { germOil: 1, runes: 45, timeCrystals: 1 } },
   },
   {
     id: 'mentor', name: 'Lehrmeister auf Zeit', client: 'Akademie der Genkunde', level: 4, weight: 2,
     requires: { type: 'feature', feature: 'rpg' }, delivery: 'loan', loanHours: 12,
     requirements: [{ kind: 'rpgLevel', level: 25 }],
-    reward: { minutes: 60, resources: { essence: 150, runes: 15 } },
+    reward: { minutes: 60, resources: { germOil: 1, essence: 150, runes: 15 } },
   },
 ];

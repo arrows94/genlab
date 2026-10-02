@@ -242,3 +242,18 @@ describe('reset impact text', () => {
     expect(resetImpactText(g)).toContain('Eine Reise läuft weiter');
   });
 });
+
+describe('Keimöl on the way', () => {
+  it('the Keimöl spring only fills a vial once the Fähigkeits-Elixier is known', () => {
+    const loot = (elixir: boolean) => {
+      const g = voyageGame();
+      if (elixir) unlockFeature(g, 'abilityElixir');
+      expect(startVoyage(g, [g.state.creatures[1]!.id]).ok).toBe(true);
+      (runningVoyage(g)!.data as { events: string[] }).events = ['germSpring'];
+      g.simulateOffline(voyageDurationMs(g) + 1000);
+      return g.state.voyage.pending!.loot['germOil']?.toNumber() ?? 0;
+    };
+    expect(loot(false)).toBe(0);
+    expect(loot(true)).toBe(1);
+  });
+});

@@ -4,6 +4,7 @@
   import { creaturePower, findCreature } from '@core/creatures';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
   import { potionCost, potionNeedsCreature, usePotion } from '@core/features/market';
+  import { abilityLevel, abilityName, maxAbilityLevel } from '@core/abilities';
   import { ruleActive } from '@core/features/anomalies';
   import { workerRate } from '@core/systems/production';
   import type { Creature } from '@core/state';
@@ -16,8 +17,20 @@
   let picking = $state<string | null>(null);
   let target = $state<number | null>(null);
   let stat = $state('atk');
+  /** Fähigkeits-Elixier: the chosen ability of the target (null = its first one that can still grow). */
+  let ability = $state<string | null>(null);
 
   const maxBoosts = game.balance.market.maxBoostsPerStat;
+
+  const maxLevel = maxAbilityLevel(game);
+  /** The ability the elixir would raise: the picked one, else the creature's first that is not at the top. */
+  const chosenAbility = $derived.by(() => {
+    view.frame;
+    const c = target !== null ? findCreature(game, target) : undefined;
+    if (!c) return null;
+    if (ability && c.abilities.includes(ability)) return ability;
+    return c.abilities.find((id) => abilityLevel(c, id) < maxLevel) ?? c.abilities[0] ?? null;
+  });
 
   const data = $derived.by(() => {
     view.frame;
@@ -26,7 +39,7 @@
       .filter((p) => game.state.features[p.feature])
       .map((p) => {
         const needs = potionNeedsCreature(game, p.id);
-        const cost = potionCost(game, p.id, needs ? (target ?? null) : null);
+        const cost = potionCost(game, p.id, needs ? (target ?? null) : null, p.kind === 'abilityLevel' ? chosenAbility : null);
         const active = game.state.buffs.filter((b) => b.source === p.id).length;
         return { def: p, needs, cost, affordable: canAfford(game.state, cost), active };
       });
@@ -50,8 +63,13 @@
     view.slowFrame;
     if (!data.pick) return [];
     const turbo = data.pick.def.kind === 'creatureBuff';
+    const elixir = data.pick.def.kind === 'abilityLevel';
     return game.state.creatures
-      .map((c) => ({ c, rate: turbo ? workerRate(game, c) : null, power: creaturePower(game, c), boost: c.boosts[stat] ?? 0 }))
+      .filter((c) => !elixir || c.abilities.length > 0)
+      .map((c) => ({
+        c, rate: turbo ? workerRate(game, c) : null, power: creaturePower(game, c), boost: c.boosts[stat] ?? 0,
+        abilities: elixir ? c.abilities.filter((id) => content.abilities.has(id)).map((id) => abilityName(c, content.abilities.get(id))).join(', ') : '',
+      }))
       .sort((a, b) => (turbo ? b.rate!.cmp(a.rate!) : 0) || b.power - a.power);
   });
 
@@ -66,7 +84,8 @@
 
   function give() {
     if (!data.pick || target === null) return;
-    act(usePotion(game, data.pick.def.id, target, data.pick.def.kind === 'permanentStat' ? stat : null));
+    const kind = data.pick.def.kind;
+    act(usePotion(game, data.pick.def.id, target, kind === 'permanentStat' ? stat : kind === 'abilityLevel' ? chosenAbility : null));
   }
 
   /** Kraftfutter limit per stat (same rule as `usePotion`). */
@@ -95,7 +114,7 @@
         </button>
         <b class="pname">{p.def.name}</b>
         <span class="desc small">{p.def.description}</span>
-        <span class="tag">{#if p.def.kind === 'permanentStat'}ab&nbsp;{/if}<CostLabel cost={p.cost} /></span>
+        <span class="tag">{#if p.def.kind === 'permanentStat' || p.def.kind === 'abilityLevel'}ab&nbsp;{/if}<CostLabel cost={p.cost} /></span>
         <button class="buy" class:primary={!p.needs && p.affordable} disabled={data.banned || (!p.needs && !p.affordable)} onclick={() => choose(p.def.id)}>
           {p.needs ? (picking === p.def.id ? 'Auswahl schließen' : 'Kreatur wählen') : 'Kaufen'}
         </button>
@@ -110,7 +129,7 @@
   <article class="panel picker">
     <div class="phead">
       <PotionBottle kind={pk.def.kind} color={pk.def.color} size={30} />
-      <h3>Wer bekommt {pk.def.kind === 'permanentStat' ? 'das' : 'den'} {pk.def.name}?</h3>
+      <h3>Wer bekommt {pk.def.kind === 'permanentStat' || pk.def.kind === 'abilityLevel' ? 'das' : 'den'} {pk.def.name}?</h3>
     </div>
 
     {#if pk.def.kind === 'permanentStat'}
@@ -124,6 +143,22 @@
           </button>
         {/each}
       </div>
+    {:else if pk.def.kind === 'abilityLevel'}
+      {#if data.creature}
+        <div class="stats">
+          {#each data.creature.abilities.filter((id) => content.abilities.has(id)) as id (id)}
+            {@const def = content.abilities.get(id)}
+            {@const lvl = abilityLevel(data.creature, id)}
+            <button class="stat" class:on={chosenAbility === id} disabled={lvl >= maxLevel} title={def.description} onclick={() => (ability = id)}>
+              <b>{def.name}</b>
+              <span class="pips">{#each Array.from({ length: maxLevel }, (_, i) => i) as i (i)}<span class="pip" class:full={i < lvl}></span>{/each}</span>
+              <span class="small num muted">{lvl >= maxLevel ? 'höchste Stufe' : `Stufe ${lvl} → ${lvl + 1}`}</span>
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <p class="small muted hint">Nur Kreaturen mit Fähigkeiten. Jede Stufe macht eine Fähigkeit stärker (×1,5, dann ×2) und kostet mehr Keimöl.</p>
+      {/if}
     {:else}
       <p class="small muted hint">Wirkt nur, solange die Kreatur in einer Anlage arbeitet – Arbeiter stehen vorne.</p>
     {/if}
@@ -132,7 +167,7 @@
       {#each tiles as t (t.c.id)}
         <CreatureTile
           creature={t.c}
-          info={t.rate ? (t.rate.gt(0) ? `+${formatNumber(t.rate)}/s` : 'arbeitet nicht') : `${content.stats.get(stat).short} +${formatPercent(t.boost, 0)}`}
+          info={t.abilities || (t.rate ? (t.rate.gt(0) ? `+${formatNumber(t.rate)}/s` : 'arbeitet nicht') : `${content.stats.get(stat).short} +${formatPercent(t.boost, 0)}`)}
           selected={target === t.c.id}
           onclick={() => (target = target === t.c.id ? null : t.c.id)}
         >
@@ -145,11 +180,11 @@
 
     <div class="confirm">
       {#if data.creature}
-        <span class="small">Für <b>{data.creature.name}</b>{#if pk.def.kind === 'permanentStat'} · {content.stats.get(stat).name} +{formatPercent(pk.def.statBonus ?? 0, 0)}{/if}</span>
+        <span class="small">Für <b>{data.creature.name}</b>{#if pk.def.kind === 'permanentStat'} · {content.stats.get(stat).name} +{formatPercent(pk.def.statBonus ?? 0, 0)}{:else if pk.def.kind === 'abilityLevel' && chosenAbility && content.abilities.has(chosenAbility)} · {content.abilities.get(chosenAbility).name} Stufe {abilityLevel(data.creature, chosenAbility) + 1}{/if}</span>
       {:else}
         <span class="small muted">Wähle eine Kreatur.</span>
       {/if}
-      <button class="primary" disabled={!data.creature || !pk.affordable || (pk.def.kind === 'permanentStat' && boostFull(data.creature, stat, pk.def.statBonus ?? 0))} onclick={give}>
+      <button class="primary" disabled={!data.creature || !pk.affordable || (pk.def.kind === 'permanentStat' && boostFull(data.creature, stat, pk.def.statBonus ?? 0)) || (pk.def.kind === 'abilityLevel' && (!chosenAbility || abilityLevel(data.creature, chosenAbility) >= maxLevel))} onclick={give}>
         Geben · <CostLabel cost={pk.cost} />
       </button>
     </div>

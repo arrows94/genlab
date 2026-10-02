@@ -220,7 +220,7 @@ export interface ResearchThemeDef {
   icon: string;
 }
 
-export type PotionKind = 'permanentStat' | 'creatureBuff' | 'globalBuff' | 'timeSkip';
+export type PotionKind = 'permanentStat' | 'creatureBuff' | 'globalBuff' | 'timeSkip' | 'abilityLevel';
 
 export interface PotionDef {
   id: string;
@@ -235,7 +235,7 @@ export interface PotionDef {
    * its current production (the fixed `cost` is the floor early in the game).
    */
   costMinutes?: number;
-  /** permanentStat: cost growth per use on the same creature. */
+  /** permanentStat: cost growth per use on the same creature; abilityLevel: per level the ability already has. */
   costGrowth?: number;
   durationSec?: number;
   /** permanentStat: bonus per use on the chosen stat (0.05 = +5 %). */

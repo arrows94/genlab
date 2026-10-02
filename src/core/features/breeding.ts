@@ -14,6 +14,7 @@ import { completeProcesses, isWaiting, registerProcessHandler, startProcess } fr
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import { grant } from '../resources';
 import type { AncestorInfo, Appearance, Creature, StatBlock } from '../state';
 
 export const EGG = 'egg';
@@ -345,6 +346,8 @@ registerProcessHandler(EGG, {
     const [a, b] = data.sample ?? live;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
     const ritual = data.ritual && ctx.content.breedingRituals.has(data.ritual) ? ctx.content.breedingRituals.get(data.ritual) : undefined;
+    // A ritual sometimes leaves a drop of Keimöl for the Fähigkeits-Elixier (only once the elixir is known).
+    if (ritual && ctx.state.features['abilityElixir'] && ctx.rng.chance(ctx.balance.breeding.ritualGermOilChance)) grant(ctx, 'germOil', 1, `ritual:${ritual.id}`);
     const mutation = mutationChance(ctx, ritual, [a, b]);
     const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1, ritual?.guaranteedHybrid ?? false);
     // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.

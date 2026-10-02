@@ -227,6 +227,8 @@ export interface Balance {
     /** Tier (rarity id) weights when rolling a new ability. */
     tierWeights: Record<string, number>;
     max: number;
+    /** Strength of an ability per level (index 0 = level 1); the length is the highest level. */
+    levelMults: number[];
   };
   breeding: {
     baseTimeSec: number;
@@ -249,6 +251,8 @@ export interface Balance {
     abilityInheritBoth: number;
     /** Places for a Nestwärter (`slots.nestKeeper`): its breeding bonuses count for every egg. */
     nestKeepers: number;
+    /** Chance that a finished Brutritual leaves one Keimöl (once the Fähigkeits-Elixier is known). */
+    ritualGermOilChance: number;
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
     /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */

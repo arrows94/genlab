@@ -17,7 +17,7 @@ export const balance: Balance = {
   },
   rewards: {
     // Bonuses such as `contracts.reward` never multiply these (rare currencies stay fixed).
-    unscaled: ['aeonShards', 'timeCrystals', 'catalyst'],
+    unscaled: ['aeonShards', 'timeCrystals', 'catalyst', 'germOil'],
   },
   contracts: {
     offersPerDay: 3,
@@ -187,6 +187,8 @@ export const balance: Balance = {
     slotChances: [0.35, 0.15, 0.05],
     tierWeights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 },
     max: 3,
+    // Fähigkeits-Elixier: level II ×1,5, level III ×2 (Brutpfleger −10 / −15 / −20 %).
+    levelMults: [1, 1.5, 2],
   },
   breeding: {
     baseTimeSec: 60,
@@ -203,6 +205,7 @@ export const balance: Balance = {
     abilityInheritChance: 0.35,
     abilityInheritBoth: 0.85,
     nestKeepers: 1,
+    ritualGermOilChance: 0.3,
     baseNests: 1,
     ritualNests: 1,
     autoNests: 1,

@@ -45,6 +45,8 @@ export interface Creature {
   boosts: Record<string, number>;
   /** Number of permanent boosts used on this creature (drives their cost). */
   boostUses: number;
+  /** Fähigkeits-Elixier: level per ability id (missing = level 1). */
+  abilityLevels?: Record<string, number>;
   sequenced: boolean;
   /** Erbanlage (latent trait id) – hidden until `deepSequenced`; null = none. */
   latent: string | null;

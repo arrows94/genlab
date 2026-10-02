@@ -13,6 +13,7 @@
   import { fragmentValue } from '@core/features/recycler';
   import { inRecycler, sendToRecycler, speciesLostWith, takeBackFromRecycler } from '@core/features/automation';
   import { rpgLevel } from '@core/features/rpgCombat';
+  import { abilityLevel, abilityName } from '@core/abilities';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import GenomeView from './GenomeView.svelte';
@@ -115,7 +116,7 @@
             <ul class="plain">
               {#each c.abilities as id (id)}
                 {@const a = content.abilities.get(id)}
-                <li><b style="color: {content.rarities.get(a.tier).color}">{a.name}</b> <span class="muted small">{a.description}</span></li>
+                <li><b style="color: {content.rarities.get(a.tier).color}">{abilityName(c, a)}</b> <span class="muted small">{a.description}{abilityLevel(c, id) > 1 ? ` (Stufe ${abilityLevel(c, id)}: ×${formatNumber(game.balance.abilities.levelMults[abilityLevel(c, id) - 1] ?? 1)})` : ''}</span></li>
               {/each}
             </ul>
           {/if}

@@ -1,5 +1,6 @@
 import { D } from '../num';
 import { findCreature } from '../creatures';
+import { abilityLevel, maxAbilityLevel } from '../abilities';
 import { spend } from '../resources';
 import { scaleCost, type Cost } from '../costs';
 import { addBuff } from '../systems/buffs';
@@ -21,10 +22,18 @@ export function recentTimeSkips(ctx: GameContext): number {
   return ctx.state.timeSkips.filter((t) => t > since).length;
 }
 
-export function potionCost(ctx: GameContext, potionId: string, creatureId: number | null = null): Cost {
+/**
+ * Price of a potion. Kraftfutter grows with the boosts the creature already has; the Fähigkeits-Elixier with
+ * the level of the chosen `ability` (I → II is the base price, II → III costs `costGrowth` times as much).
+ */
+export function potionCost(ctx: GameContext, potionId: string, creatureId: number | null = null, ability: string | null = null): Cost {
   const def = ctx.content.potions.get(potionId);
   const discount = ctx.mods().factor('cost.potion');
   let growth = D(1);
+  if (def.kind === 'abilityLevel' && creatureId !== null && ability) {
+    const c = findCreature(ctx, creatureId);
+    growth = D(def.costGrowth ?? 1).pow(c ? abilityLevel(c, ability) - 1 : 0);
+  }
   if (def.kind === 'permanentStat' && creatureId !== null) {
     const c = findCreature(ctx, creatureId);
     growth = D(def.costGrowth ?? 1).pow(c?.boostUses ?? 0);
@@ -47,12 +56,12 @@ export function potionCost(ctx: GameContext, potionId: string, creatureId: numbe
 
 export function potionNeedsCreature(ctx: GameContext, potionId: string): boolean {
   const kind = ctx.content.potions.get(potionId).kind;
-  return kind === 'permanentStat' || kind === 'creatureBuff';
+  return kind === 'permanentStat' || kind === 'creatureBuff' || kind === 'abilityLevel';
 }
 
 /**
- * Uses a potion. `creatureId` is required for creature potions, `stat` for
- * permanent stat potions (Kraftfutter).
+ * Uses a potion. `creatureId` is required for creature potions; `stat` is the stat for Kraftfutter and the
+ * ability id for the Fähigkeits-Elixier.
  */
 export function usePotion(ctx: GameContext, potionId: string, creatureId: number | null = null, stat: string | null = null): ActionResult {
   const def = ctx.content.potions.get(potionId);
@@ -66,9 +75,13 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
     const bonus = def.statBonus ?? 0;
     if ((c!.boosts[stat] ?? 0) + bonus > maxStatBoost(ctx) + 1e-9) return { ok: false, reason: 'Dieser Wert ist bereits voll gestärkt.' };
   }
+  if (def.kind === 'abilityLevel') {
+    if (!stat || !c!.abilities.includes(stat)) return { ok: false, reason: 'Wähle eine Fähigkeit der Kreatur.' };
+    if (abilityLevel(c!, stat) >= maxAbilityLevel(ctx)) return { ok: false, reason: 'Diese Fähigkeit ist bereits auf der höchsten Stufe.' };
+  }
   const shortMs = ctx.balance.timeCrystals.longProjectHours * 3_600_000;
   if (def.kind === 'timeSkip' && !ctx.state.processes.some((p) => p.durationMs < shortMs)) return { ok: false, reason: 'Es laufen keine kurzen Vorgänge – lange Projekte brauchen Zeitkristalle.' };
-  const paid = spend(ctx, potionCost(ctx, potionId, creatureId));
+  const paid = spend(ctx, potionCost(ctx, potionId, creatureId, def.kind === 'abilityLevel' ? stat : null));
   if (!paid.ok) return paid;
 
   switch (def.kind) {
@@ -79,6 +92,10 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
       break;
     case 'creatureBuff':
       addBuff(ctx, def.id, def.modifiers ?? [], (def.durationSec ?? 0) * 1000, c!.id);
+      break;
+    case 'abilityLevel':
+      c!.abilityLevels = { ...c!.abilityLevels, [stat!]: abilityLevel(c!, stat!) + 1 };
+      ctx.invalidate();
       break;
     case 'globalBuff':
       addBuff(ctx, def.id, def.modifiers ?? [], (def.durationSec ?? 0) * 1000);
