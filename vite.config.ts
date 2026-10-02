@@ -73,5 +73,12 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
+    // `npm run coverage`: game logic only (core, content, sync server); the UI is checked in the browser.
+    coverage: {
+      provider: 'v8',
+      include: ['src/core/**/*.ts', 'src/content/**/*.ts', 'sync-server/src/**/*.ts'],
+      reporter: ['text-summary', 'html'],
+      reportsDirectory: 'coverage',
+    },
   },
 });

@@ -5,6 +5,15 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Tests und Coverage
+
+- Sync: Entscheidung beim Herunterladen als reine Funktion `decidePull` (`ui/platform/sync.ts`) mit Tests für alle
+  Fälle (behalten, wiederherstellen, übernehmen, Konflikt, verlorene Antwort beim Schließen)
+- Neue Testdateien `evolutionHybrids.test.ts` (11) und `infusionRecycler.test.ts` (13): alle bisher ungetesteten
+  Exporte von `evolution.ts`, `hybrids.ts`, `infusion.ts`, `recycler.ts`; keine Fehler gefunden
+- `npm run coverage` (`@vitest/coverage-v8`, nur core, content und Sync-Server): 92 % Anweisungen, 80 % Zweige,
+  94 % Funktionen, 96 % Zeilen
+
 ## 2026-10-02 – Schritt 4: Qualität (zweiter Teil)
 
 - Modifier-Text: `formatModifier` und `CHANCE_TARGET` in `core/format.ts`, genutzt von `describeModifier`,

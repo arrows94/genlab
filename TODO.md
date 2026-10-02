@@ -23,8 +23,6 @@ Spiellogik (ungeprüft):
 Qualität:
 - [ ] Große Dateien teilen: `simulateFight` (314 Zeilen, 40 `!`) in `towerCombat.ts` mit einem Datensatz je Kämpfer,
       `validateContent` als Tabelle, `TowerTab.svelte` und `BreedingTab.svelte` in Teilkomponenten
-- [ ] Tests: `evolution.ts`, ungetestete Exporte in `hybrids.ts` / `infusion.ts` / `recycler.ts`, Sync-Entscheidung
-      aus `doPull` als reine Funktion testen, Coverage-Report
 - [ ] Gestaltung: feste Hex-Farben (~90) durch Tokens ersetzen (Glow, Relikt, Kristall), gemeinsame `<Meter>`- und
       `<CreatureTile>`-Komponenten
 

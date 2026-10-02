@@ -12,6 +12,7 @@ npm test             # all Vitest tests (tests/**/*.test.ts)
 npx vitest run tests/management.test.ts        # one file
 npx vitest run tests/management.test.ts -t "infusion"   # tests matching a name
 npm run check        # svelte-check / tsc – the only "lint" step
+npm run coverage     # tests with coverage of core, content and sync server (HTML report in coverage/)
 npm run build        # check + production build to dist/ (incl. PWA service worker)
 ```
 

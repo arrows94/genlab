@@ -181,3 +181,24 @@ describe('sync server + client', () => {
     expect(store.rows.size).toBe(1);
   });
 });
+
+describe('decidePull (what a device does with a downloaded cloud save)', () => {
+  it('covers every case of the sync rules', async () => {
+    const { decidePull } = await import('@ui/platform/sync');
+    const link = { rev: 5, writer: 'me', dirty: false, sentBlind: null as number | null };
+    const remote = (rev: number, writer = 'other', recent: { rev: number; writer: string }[] = []) => ({ rev, writer, recent });
+    // Same revision: nothing to do.
+    expect(decidePull(link, remote(5))).toEqual({ kind: 'keep', reupload: false });
+    // Our own upload whose answer got lost: keep the local save, upload again.
+    expect(decidePull(link, remote(6, 'me'))).toEqual({ kind: 'keep', reupload: true });
+    // The server lost revisions: restore it from here.
+    expect(decidePull(link, remote(3))).toEqual({ kind: 'restore' });
+    // Another device continued, this one was not played: take it.
+    expect(decidePull(link, remote(7))).toEqual({ kind: 'adopt' });
+    // Both were played: the player decides – never overwrite silently.
+    expect(decidePull({ ...link, dirty: true }, remote(7))).toEqual({ kind: 'conflict' });
+    // Played, but the upload from closing the page landed and was continued: take it.
+    expect(decidePull({ ...link, dirty: true, sentBlind: 6 }, remote(7, 'other', [{ rev: 6, writer: 'me' }, { rev: 7, writer: 'other' }]))).toEqual({ kind: 'adopt' });
+    expect(decidePull({ ...link, dirty: true, sentBlind: 6 }, remote(7, 'other', [{ rev: 6, writer: 'other' }]))).toEqual({ kind: 'conflict' });
+  });
+});
