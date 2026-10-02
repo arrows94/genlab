@@ -36,6 +36,27 @@
     const next = nextLevelAt(game);
     const prev = game.balance.contracts.levelThresholds[level - 1] ?? 0;
     const hasMissing = missingAlleles(game).length > 0;
+    const offers = board.offers.map((offer, slot) => {
+      const t = content.contracts.get(offer.template);
+      const { ready, maybe } = contractCandidates(game, offer);
+      const pick = chosen[slot] !== undefined && chosen[slot] !== null ? ready.find((c) => c.id === chosen[slot]) : undefined;
+      return {
+        slot,
+        offer,
+        t,
+        reward: contractReward(game, offer),
+        samples: hasMissing ? (t.reward.alleleSamples ?? 0) : 0,
+        ready: ready.map((c) => ({ c, blocker: consumeBlocker(game, c) })),
+        maybe: maybe.length,
+        pick,
+        lines: offer.requirements.map((r) => ({ r, text: requirementText(game, r), status: pick ? requirementStatus(game, pick, r) : null })),
+      };
+    });
+    // The board grows with the Ruf: one row per star level, easiest first.
+    const groups = [...new Set(offers.map((o) => o.t.level))].sort((a, b) => a - b).map((star) => {
+      const list = offers.filter((o) => o.t.level === star);
+      return { star, offers: list, done: list.filter((o) => o.offer.done).length };
+    });
     return {
       level,
       completed: board.completed,
@@ -43,22 +64,7 @@
       progress: next === null ? 1 : (board.completed - prev) / Math.max(1, next - prev),
       renewIn: nextContractDay(game, now) - now,
       rerollsLeft: game.balance.contracts.rerollsPerDay - board.rerolls,
-      offers: board.offers.map((offer, slot) => {
-        const t = content.contracts.get(offer.template);
-        const { ready, maybe } = contractCandidates(game, offer);
-        const pick = chosen[slot] !== undefined && chosen[slot] !== null ? ready.find((c) => c.id === chosen[slot]) : undefined;
-        return {
-          slot,
-          offer,
-          t,
-          reward: contractReward(game, offer),
-          samples: hasMissing ? (t.reward.alleleSamples ?? 0) : 0,
-          ready: ready.map((c) => ({ c, blocker: consumeBlocker(game, c) })),
-          maybe: maybe.length,
-          pick,
-          lines: offer.requirements.map((r) => ({ r, text: requirementText(game, r), status: pick ? requirementStatus(game, pick, r) : null })),
-        };
-      }),
+      groups,
     };
   });
 
@@ -68,7 +74,7 @@
     if (act(deliverContract(game, slot, c.id))) {
       chosen[slot] = null;
       toast('Auftrag erfüllt! Die Belohnung ist da.', 'unlock');
-      if (contractLevel(game) > level) toast(`Auftragsstufe ${contractLevel(game)} erreicht – ab dem nächsten Tag gibt es anspruchsvollere Aufträge.`, 'rare', 6000);
+      if (contractLevel(game) > level) toast(`Ruf ${contractLevel(game)} erreicht – ab dem nächsten Tag gibt es mehr und anspruchsvollere Aufträge.`, 'rare', 6000);
     }
   }
 </script>
@@ -76,9 +82,9 @@
 <header class="tab-head">
   <h2>📋 Gen-Aufträge</h2>
   <div class="kpis">
-    <span class="kpi" title="Höhere Stufen bringen schwierigere Aufträge mit besseren Belohnungen.">
-      <b class="num">Stufe {data.level}</b>
-      <small>{data.next === null ? 'Höchste Stufe' : `${data.completed}/${data.next} erfüllt`}</small>
+    <span class="kpi" title="Mehr Ruf bringt mehr Aufträge am Tag – und schwierigere mit besseren Belohnungen.">
+      <b class="num">Ruf {data.level}</b>
+      <small>{data.next === null ? 'Höchster Ruf' : `${data.completed}/${data.next} erfüllt`}</small>
       <span class="mini"><span style="width: {Math.min(100, data.progress * 100)}%"></span></span>
     </span>
     <span class="kpi"><b class="num">{formatDuration(data.renewIn)}</b><small>bis zu neuen Aufträgen</small></span>
@@ -87,14 +93,16 @@
 </header>
 
 <p class="muted small intro">
-  Züchter suchen Kreaturen mit bestimmten Genen. Gene zählen erst, wenn das Genom sequenziert ist. Die abgegebene Kreatur verlässt dein Labor.
+  Züchter suchen Kreaturen mit bestimmten Genen. Gene zählen erst, wenn das Genom sequenziert ist. Die abgegebene Kreatur verlässt dein Labor. Jeder erfüllte Auftrag bringt Ruf – mit mehr Ruf gibt es mehr Aufträge und mehr Sterne.
 </p>
 
+{#each data.groups as grp (grp.star)}
+<h3 class="stars-head"><span class="level">{'★'.repeat(grp.star)}</span> <span class="muted small">{grp.done}/{grp.offers.length} erledigt</span></h3>
 <div class="board">
-  {#each data.offers as o (o.slot)}
+  {#each grp.offers as o (o.slot)}
     <article class="panel card" class:done={o.offer.done} style="--lv: {o.t.level}">
       <div class="top">
-        <span class="level" title="Auftragsstufe {o.t.level}">{'★'.repeat(o.t.level)}</span>
+        <span class="level" title="{o.t.level} {o.t.level === 1 ? 'Stern' : 'Sterne'}">{'★'.repeat(o.t.level)}</span>
         {#if !o.offer.done && data.rerollsLeft > 0}
           <button class="reroll" title="Diesen Auftrag gegen einen anderen tauschen" onclick={() => act(rerollContract(game, o.slot))}>🎲 Tauschen</button>
         {/if}
@@ -154,10 +162,11 @@
         {/if}
       {/if}
     </article>
-  {:else}
-    <p class="muted">Heute gibt es keine Aufträge.</p>
   {/each}
 </div>
+{:else}
+  <p class="muted">Heute gibt es keine Aufträge.</p>
+{/each}
 
 <style>
   .small { font-size: 0.8rem; }
@@ -165,6 +174,8 @@
   .mini span { display: block; height: 100%; background: var(--teal); }
   .intro { margin: 0 0 0.8rem; }
 
+  .stars-head { display: flex; align-items: baseline; gap: 0.5rem; margin: 1rem 0 0.5rem; font-size: 1rem; }
+  .stars-head:first-of-type { margin-top: 0; }
   .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0.8rem; }
   .card { position: relative; display: flex; flex-direction: column; gap: 0.45rem; border-color: color-mix(in srgb, var(--gold) calc(var(--lv) * 12%), var(--line)); }
   .card.done { opacity: 0.6; }

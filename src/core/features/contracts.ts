@@ -21,7 +21,8 @@ import { consumeBlocker } from './stable';
  * they are stable over reloads and need no server. Open parameters come from
  * what the player knows (gene library, dex), so every contract is reachable
  * with the breeding planner, sequencing and splicing. Completed contracts
- * raise the contract level, which unlocks harder templates.
+ * raise the contract level („Ruf“), which unlocks harder templates and a
+ * bigger board: at Ruf N there are N 1★ offers, N−1 2★ … down to one N★.
  */
 const DAY_MS = 86_400_000;
 const TIER_ORDER: Record<string, number> = { base: 0, hybrid: 1, rareHybrid: 2, mythic: 3 };
@@ -46,6 +47,17 @@ export function contractLevel(ctx: GameContext): number {
 /** Completed contracts needed for the next level, or null at the top. */
 export function nextLevelAt(ctx: GameContext): number | null {
   return ctx.balance.contracts.levelThresholds[contractLevel(ctx)] ?? null;
+}
+
+/**
+ * Star levels of the day's board, easiest first: at Ruf N, N× 1★, (N−1)× 2★ … 1× N★.
+ * Short boards are filled up with 1★ to `offersPerDay`.
+ */
+export function boardLevels(level: number, minOffers: number): number[] {
+  const out: number[] = [];
+  for (let star = 1; star <= level; star++) for (let i = 0; i < level - star + 1; i++) out.push(star);
+  while (out.length < minOffers) out.unshift(1);
+  return out;
 }
 
 function eligibleTemplates(ctx: GameContext): ContractTemplateDef[] {
@@ -135,25 +147,28 @@ function makeOffer(ctx: GameContext, t: ContractTemplateDef, rng: Rng): Contract
   return { template: t.id, requirements, done: false };
 }
 
+const offerKey = (o: ContractOffer) => JSON.stringify([o.template, o.requirements]);
+
 /**
- * One offer for a board slot. The last slot prefers the highest level
- * available, so there is always one challenging contract.
+ * One offer of `star` level for a board slot (the nearest lower level when
+ * none is available). Templates not yet on the board come first; once all
+ * are used a template may repeat, but never with the same genes (`avoid`).
  */
-function rollOffer(ctx: GameContext, day: number, slot: number, variant: number, exclude: Set<string>): ContractOffer | null {
+function rollOffer(ctx: GameContext, day: number, slot: number, variant: number, star: number, usedTemplates: Set<string>, avoid: Set<string>): ContractOffer | null {
   const rng = Rng.fromSeed(`contracts:${ctx.state.createdAt}:${day}:${slot}:${variant}`);
-  let pool = eligibleTemplates(ctx).filter((t) => !exclude.has(t.id));
-  if (slot === ctx.balance.contracts.offersPerDay - 1) {
-    const top = Math.max(0, ...pool.map((t) => t.level));
-    const hard = pool.filter((t) => t.level === top);
-    if (hard.length > 0) pool = hard;
-  }
-  while (pool.length > 0) {
+  const eligible = eligibleTemplates(ctx);
+  const level = Math.max(0, ...eligible.filter((t) => t.level <= star).map((t) => t.level));
+  const atLevel = eligible.filter((t) => t.level === level);
+  const fresh = atLevel.filter((t) => !usedTemplates.has(t.id));
+  let pool = fresh.length > 0 ? fresh : atLevel;
+  let tries = 8;
+  while (pool.length > 0 && tries-- > 0) {
     const weights: Record<string, number> = {};
     for (const t of pool) weights[t.id] = t.weight;
     const t = ctx.content.contracts.get(rng.weighted(weights));
     const offer = makeOffer(ctx, t, rng);
-    if (offer) return offer;
-    pool = pool.filter((x) => x.id !== t.id);
+    if (!offer) pool = pool.filter((x) => x.id !== t.id);
+    else if (!avoid.has(offerKey(offer))) return offer;
   }
   return null;
 }
@@ -166,10 +181,12 @@ export function refreshContracts(ctx: GameContext, nowMs = ctx.state.lastTickAt)
   if (board.day === day) return;
   const offers: ContractOffer[] = [];
   const used = new Set<string>();
-  for (let slot = 0; slot < ctx.balance.contracts.offersPerDay; slot++) {
-    const offer = rollOffer(ctx, day, slot, 0, used);
+  const avoid = new Set<string>();
+  for (const [slot, star] of boardLevels(contractLevel(ctx), ctx.balance.contracts.offersPerDay).entries()) {
+    const offer = rollOffer(ctx, day, slot, 0, star, used, avoid);
     if (!offer) continue;
     used.add(offer.template);
+    avoid.add(offerKey(offer));
     offers.push(offer);
   }
   board.day = day;
@@ -192,13 +209,13 @@ export function rerollContract(ctx: GameContext, slot: number): ActionResult {
   if (!offer) return { ok: false, reason: 'Auftrag nicht gefunden.' };
   if (offer.done) return { ok: false, reason: 'Der Auftrag ist bereits erledigt.' };
   if (board.rerolls >= ctx.balance.contracts.rerollsPerDay) return { ok: false, reason: 'Heute kein Tausch mehr möglich.' };
-  // Other templates of the board stay excluded; the same template with other genes is fine.
+  // Same star level; templates of the other offers come last, and no offer of the board is repeated.
   const others = new Set(board.offers.filter((_, i) => i !== slot).map((o) => o.template));
-  const same = JSON.stringify(offer);
+  const avoid = new Set(board.offers.map(offerKey));
+  const star = ctx.content.contracts.get(offer.template).level;
   let next: ContractOffer | null = null;
   for (let attempt = 1; attempt <= 8 && !next; attempt++) {
-    const candidate = rollOffer(ctx, board.day, slot, (board.rerolls + 1) * 100 + attempt, others);
-    if (candidate && JSON.stringify(candidate) !== same) next = candidate;
+    next = rollOffer(ctx, board.day, slot, (board.rerolls + 1) * 100 + attempt, star, others, avoid);
   }
   if (!next) return { ok: false, reason: 'Gerade gibt es keinen anderen Auftrag.' };
   board.offers[slot] = next;

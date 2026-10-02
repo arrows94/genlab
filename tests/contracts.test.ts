@@ -13,6 +13,7 @@ import {
   requirementStatus,
   requirementText,
   rerollContract,
+  boardLevels,
 } from '@core/features/contracts';
 import { activeLoci, libraryHas, missingAlleles } from '@core/genetics';
 import { deserialize, serialize } from '@core/save';
@@ -27,6 +28,12 @@ function contractGame(seed = 42) {
   unlockFeature(g, 'contracts');
   refreshContracts(g);
   return g;
+}
+
+/** Opens the 4★ and 5★ templates (one Vererbung, Äon). */
+function endgame(g: ReturnType<typeof makeGame>) {
+  g.state.prestige['inheritance'] = { count: 1 };
+  unlockFeature(g, 'aeon');
 }
 
 /** Plain genome: the most common allele everywhere, with overrides. */
@@ -79,17 +86,43 @@ describe('contract board', () => {
     expect(nextContractDay(g, start - 1)).toBe(start);
   });
 
-  it('offers only unlocked levels and puts the hardest one last', () => {
+  it('grows the board with the Ruf: N× 1★, (N−1)× 2★ … 1× N★, easiest first', () => {
     const g = contractGame();
     expect(contractLevel(g)).toBe(1);
-    expect(g.state.contracts.offers.every((o) => content.contracts.get(o.template).level === 1)).toBe(true);
+    // Ruf 1 is filled up to the minimum with 1★.
+    expect(g.state.contracts.offers.map((o) => content.contracts.get(o.template).level)).toEqual([1, 1, 1]);
 
     g.state.contracts.completed = balance.contracts.levelThresholds[2]!;
     expect(contractLevel(g)).toBe(3);
     refreshContracts(g, NOW + DAY);
-    const levels = g.state.contracts.offers.map((o) => content.contracts.get(o.template).level);
-    expect(Math.max(...levels)).toBeLessThanOrEqual(3);
-    expect(levels[levels.length - 1]).toBe(Math.max(...levels));
+    expect(g.state.contracts.offers.map((o) => content.contracts.get(o.template).level)).toEqual([1, 1, 1, 2, 2, 3]);
+
+    // Without Äon there are no 5★ templates yet: that slot takes the next lower level.
+    g.state.contracts.completed = balance.contracts.levelThresholds[4]!;
+    refreshContracts(g, NOW + 2 * DAY);
+    expect(g.state.contracts.offers.map((o) => content.contracts.get(o.template).level).at(-1)).toBe(3);
+
+    endgame(g);
+    refreshContracts(g, NOW + 3 * DAY);
+    const offers = g.state.contracts.offers;
+    expect(offers.map((o) => content.contracts.get(o.template).level)).toEqual(boardLevels(5, balance.contracts.offersPerDay));
+    expect(offers).toHaveLength(15);
+    // Templates repeat once a level has more offers than templates, but never with the same genes.
+    expect(new Set(offers.map((o) => JSON.stringify([o.template, o.requirements]))).size).toBe(offers.length);
+  });
+
+  it('exchanges an offer for one of the same star level', () => {
+    const g = contractGame();
+    endgame(g);
+    g.state.contracts.completed = balance.contracts.levelThresholds[4]!;
+    refreshContracts(g, NOW + DAY);
+    const before = structuredClone(g.state.contracts.offers);
+    const slot = before.findIndex((o) => content.contracts.get(o.template).level === 3);
+    expect(rerollContract(g, slot).ok).toBe(true);
+    const after = g.state.contracts.offers;
+    expect(after[slot]).not.toEqual(before[slot]);
+    expect(content.contracts.get(after[slot]!.template).level).toBe(3);
+    expect(new Set(after.map((o) => JSON.stringify([o.template, o.requirements]))).size).toBe(after.length);
   });
 
   it('rolls reachable requirements: rare alleles, known to the library when possible', () => {

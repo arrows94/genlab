@@ -22,7 +22,7 @@ export interface Balance {
     summaryMinSec: number;
   };
   contracts: {
-    /** Offers on the board per (UTC) day. */
+    /** Least offers on the board per day (the board grows with the Ruf, see `boardLevels`). */
     offersPerDay: number;
     /** Free exchanges of an open offer per day. */
     rerollsPerDay: number;
