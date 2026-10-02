@@ -138,11 +138,12 @@ describe('GenLab RPG – Lauf', () => {
     g.state.rpg.run!.loot = { towerTokens: 10 };
     startRpgBattle(g, 'brawler', 'sproutle', 1);
     expect(giveUpRpgRun(g).ok).toBe(true);
-    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: Math.floor(10 * balance.rpg.defeatKeep) } });
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: {}, lost: { towerTokens: 10 } });
+    expect(g.state.rpg.bloodstain).toMatchObject({ dungeon: 'rootMaze', loot: { towerTokens: 10 } });
     expect(c.job).toBeNull();
   });
 
-  it('a defeat keeps secured loot and only a share of the carried loot', () => {
+  it('a defeat keeps secured loot; the carried loot stays behind as a Blutfleck', () => {
     const g = rpgGame();
     startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     const run = g.state.rpg.run!;
@@ -153,7 +154,38 @@ describe('GenLab RPG – Lauf', () => {
     finishRpgRun(g, false);
     const kept = Math.floor(10 * balance.rpg.defeatKeep);
     expect(g.state.resources['towerTokens']!.toNumber()).toBe(10 + kept);
-    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: 10 + kept } });
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: 10 + kept }, stain: 1 });
+    expect(g.state.rpg.bloodstain).toMatchObject({ depth: 1, loot: { towerTokens: 10 - kept } });
+  });
+
+  it('the next run takes the Blutfleck back in its room; dying first loses it', () => {
+    const g = rpgGame();
+    g.state.resources['torches'] = D(9);
+    const id = g.state.creatures[0]!.id;
+    const item = rollItem(g, 'rootMaze');
+    g.state.rpg.bloodstain = { dungeon: 'rootMaze', depth: 2, loot: { towerTokens: 7 }, gear: [item] };
+    startRpgRun(g, id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    run.choices = ['treasure'];
+    enterRoom(g, 0); // room 1: not yet
+    expect(g.state.rpg.bloodstain).not.toBeNull();
+    run.choices = ['rest'];
+    run.loot = {};
+    enterRoom(g, 0); // room 2: the stain – picked up, then the camp secures it
+    expect(g.state.rpg.bloodstain).toBeNull();
+    expect(run.secured['towerTokens']).toBe(7);
+    expect(run.securedGear.map((x) => x.id)).toContain(item.id);
+    leaveRpgRun(g);
+    // Dying before reaching it replaces it (the old loot is gone).
+    g.state.rpg.bloodstain = { dungeon: 'rootMaze', depth: 5, loot: { towerTokens: 7 }, gear: [] };
+    startRpgRun(g, id, 'rootMaze');
+    g.state.rpg.run!.loot = { towerTokens: 1 };
+    finishRpgRun(g, false);
+    expect(g.state.rpg.bloodstain).toMatchObject({ depth: 1, loot: { towerTokens: 1 } });
+    // Dying with nothing carried leaves no stain at all.
+    startRpgRun(g, id, 'rootMaze');
+    finishRpgRun(g, false);
+    expect(g.state.rpg.bloodstain).toBeNull();
   });
 
   it('survives save and load; a prestige ends the run', () => {

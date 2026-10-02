@@ -72,7 +72,8 @@ export const balance: Balance = {
     // Every fulfilled Gen-Auftrag brings a Fackel too.
     contractTorches: 1,
     // A defeat keeps this share of the carried loot (secured loot is always safe).
-    defeatKeep: 0.5,
+    // Share of the carried loot a defeat keeps – the rest stays as a Blutfleck in the dungeon.
+    defeatKeep: 0,
     // Element techniques in the dungeon: tower seconds become rounds (2 s = 1 round), then a cooldown.
     secondsPerRound: 2,
     techniqueCooldown: 3,

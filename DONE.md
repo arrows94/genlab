@@ -329,6 +329,14 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 6: Blutfleck
+
+- `balance.rpg.defeatKeep` 0,5 → 0: eine Niederlage behält nichts von der getragenen Beute; sie bleibt mit der
+  getragenen Ausrüstung als Blutfleck (`rpg.bloodstain`: Dungeon, Raum, Beute, Ausrüstung) liegen
+- Der nächste Lauf im selben Dungeon nimmt ihn beim Betreten dieses Raums wieder auf (getragen – erst ein
+  Leuchtfeuer, Lagerplatz oder der Heimweg sichert ihn); eine neue Niederlage ersetzt ihn, ohne Beute bleibt keiner
+- 🩸 auf dem Pfad, in der Lobby am Dungeon und auf dem Ergebnisschirm; Debug-Reset „Blutfleck entfernen“
+
 ## 2026-10-02 – Dark Souls, Schritt 5: Bosse mit Namen und zweiter Phase
 
 - Je Dungeon ein eigener Boss (`rpgEnemies` mit `dungeon`, `species`, `onHit`, `phase2`): Morgrin die Wurzelmutter

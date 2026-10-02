@@ -471,9 +471,20 @@ export interface RpgResult {
   /** What a defeat cost: carried loot left behind and carried equipment lost. */
   lost?: Record<string, number>;
   lostGear?: RpgItem[];
+  /** Room where a defeat left it as a Blutfleck (missing = nothing was carried). */
+  stain?: number;
   /** The fight that ended the run (boss won or fight lost). */
   fight?: RpgAftermath;
   at: number;
+}
+
+/** Blutfleck: what a defeat left lying in a dungeon room, until the next run gets there (or dies first). */
+export interface RpgBloodstain {
+  dungeon: string;
+  /** Room number (1 = first room) where the hero fell. */
+  depth: number;
+  loot: Record<string, number>;
+  gear: RpgItem[];
 }
 
 /** GenLab RPG: a single monster in an active, turn-based dungeon (see `features/rpg.ts`). */
@@ -498,6 +509,8 @@ export interface RpgState {
   nextItemId: number;
   /** Lasting progress bought with Runen (`rpgMeta` id → level). */
   meta: Record<string, number>;
+  /** The loot of the last defeat, waiting where the hero fell (only one at a time). */
+  bloodstain: RpgBloodstain | null;
 }
 
 export interface GameState {
@@ -627,7 +640,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     relics: {},
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
-    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {} },
+    rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {}, bloodstain: null },
     collect: { spent: 0, nextFindAt: 0 },
   };
 }

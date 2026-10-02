@@ -242,7 +242,8 @@ export function secureLoot(ctx: GameContext): void {
 
 /**
  * Ends the run. Leaving (win) brings all carried loot home, a defeat keeps
- * `defeatKeep` of it. Secured loot was paid out already.
+ * `defeatKeep` of it and leaves the rest with the carried equipment as a
+ * Blutfleck where the hero fell (an older one is lost). Secured loot was paid out already.
  */
 export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false, fight?: RpgAftermath): void {
   const r = ctx.state.rpg;
@@ -265,6 +266,9 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false, fi
   if (!win) {
     r.lastResult.lost = lost;
     r.lastResult.lostGear = [...run.gear];
+    const carried = Object.keys(lost).length > 0 || run.gear.length > 0;
+    r.bloodstain = carried ? { dungeon: run.dungeon, depth: Math.max(1, run.depth), loot: lost, gear: [...run.gear] } : null;
+    if (carried) r.lastResult.stain = Math.max(1, run.depth);
   }
   if (fight) r.lastResult.fight = fight;
   r.run = null;
@@ -593,6 +597,16 @@ function foeSpecies(ctx: GameContext, run: RpgRun, boss: boolean): string {
   return ctx.rng.pick(pool.filter((sp) => (order[sp.tier] ?? 0) === top)).id;
 }
 
+/** Reaching the room of the last defeat takes the Blutfleck back: its loot is carried again. */
+function pickUpBloodstain(ctx: GameContext, run: RpgRun): void {
+  const stain = ctx.state.rpg.bloodstain;
+  if (!stain || stain.dungeon !== run.dungeon || stain.depth !== run.depth) return;
+  addLoot(run.loot, stain.loot);
+  run.gear.push(...stain.gear);
+  ctx.state.rpg.bloodstain = null;
+  run.eventResult = 'Du findest deinen Blutfleck – die verlorene Beute gehört wieder dir. Bring sie diesmal heim!';
+}
+
 /** Goes into one of the offered rooms. Fights start at once; treasure and rest take effect right away. */
 export function enterRoom(ctx: GameContext, index: number): ActionResult {
   const run = ctx.state.rpg.run;
@@ -607,6 +621,7 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
   run.room = kind;
   (run.path ??= []).push(kind);
   run.eventResult = null;
+  pickUpBloodstain(ctx, run);
   const hero = rpgHero(ctx)!;
   switch (kind) {
     case 'fight':

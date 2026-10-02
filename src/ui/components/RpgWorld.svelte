@@ -40,6 +40,7 @@
       skills: run ? rpgSkills(game) : [],
       defense: run ? rpgDefense(game) : [],
       flasks: rpgFlasks(game),
+      stain: r.bloodstain ? structuredClone(r.bloodstain) : null,
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
       heroLevel: hero ? rpgLevel(game, hero.id) : null,
@@ -60,7 +61,7 @@
     menuOpen = false;
     const fighting = !!data.run?.battle;
     const text = fighting
-      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${formatPercent(game.balance.rpg.defeatKeep, 0)} der getragenen bleiben.`
+      ? 'Mitten im Kampf aufgeben? Das zählt als Niederlage: Deine getragene Beute bleibt als Blutfleck hier liegen.'
       : 'Aufgeben und zurückkehren? Du nimmst alle Beute mit, der Lauf ist dann vorbei.';
     if (await ask(text, { ok: 'Aufgeben', danger: fighting })) act(giveUpRpgRun(game));
   }
@@ -185,8 +186,9 @@
       {@const kind = path[i]}
       {@const here = i === run.depth - 1 && (!!run.battle || !!run.event)}
       {@const guard = i === guardianRoom(game, run.dungeon)}
-      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} class:guard title={guard ? 'Wächter' : kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
-        {kind ? ROOM_INFO[kind].icon : i === d.rooms ? '👑' : guard ? '🛡️' : ''}
+      {@const stain = data.stain?.dungeon === run.dungeon && data.stain.depth === i + 1}
+      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} class:guard class:stain title={stain ? 'Dein Blutfleck – hier liegt deine verlorene Beute' : guard ? 'Wächter' : kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
+        {kind ? ROOM_INFO[kind].icon : stain ? '🩸' : i === d.rooms ? '👑' : guard ? '🛡️' : ''}
       </li>
     {/each}
   </ol>
@@ -299,13 +301,13 @@
     </p>
     {#if !res.win}
       <div class="ledger">
-        <span class="ledger-head">Verloren</span>
+        <span class="ledger-head">{res.stain ? `🩸 Liegt im Blutfleck (Raum ${res.stain})` : 'Verloren'}</span>
         <div class="pouch">
           {#each lootList(res.lost ?? {}) as l (l.name)}<span class="tag lost">{l.icon} −{formatNumber(l.amount)} {l.name}</span>{/each}
           {#each res.lostGear ?? [] as item (item.id)}<span class="tag lost" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name}</span>{/each}
           {#if lootList(res.lost ?? {}).length === 0 && !(res.lostGear ?? []).length}<span class="c-text">Nichts – du hattest nichts Ungesichertes dabei.</span>{/if}
         </div>
-        <span class="c-text">Bei einer Niederlage bleiben gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen, getragene Ausrüstung geht verloren. Rastplätze sichern alles.</span>
+        <span class="c-text">{res.stain ? `Erreichst du im nächsten Lauf durch diesen Dungeon Raum ${res.stain}, gehört alles wieder dir – stirbst du vorher, ist es verloren.` : ''} Leuchtfeuer und Lagerplätze sichern deine Beute.</span>
       </div>
     {/if}
     <div class="ledger">
@@ -400,6 +402,7 @@
   .trail li + li::before { content: ''; position: absolute; right: 100%; top: 50%; width: 14px; border-top: 2px dotted #6a5236; }
   .trail li.done { border-style: solid; border-color: var(--brass); background: #3a2a1c; opacity: 1; }
   .trail li.here { border: 2px solid var(--glow); background: #5a3a1a; opacity: 1; box-shadow: 0 0 10px #ff9a3c99; }
+  .trail li.stain { border: 2px solid #a3262a; background: #3a1414; opacity: 1; box-shadow: 0 0 8px #a3262a99; }
   .trail li.boss { border-color: #b0453a; opacity: 0.9; }
   .trail li.guard { border-color: #c9a227; }
 
