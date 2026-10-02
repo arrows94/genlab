@@ -247,6 +247,8 @@ export interface Balance {
     baseNests: number;
     /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */
     ritualNests: number;
+    /** Places in the Automatennest: the Zuchtautomat only breeds there (`slots.autoNest`). */
+    autoNests: number;
   };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */
@@ -321,6 +323,8 @@ export interface Balance {
   };
   automation: {
     intervalSec: number;
+    /** Eggs of the Zuchtautomat take this many times as long as a hand-bred egg. */
+    autoBreedTimeMult: number;
   };
   tower: {
     fightIntervalSec: number;

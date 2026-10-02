@@ -25,6 +25,8 @@ export interface EggData extends Record<string, unknown> {
   ritual?: string;
   /** Ritual eggs: Keimprobe – the parents as they were when the ritual began (they stay free). */
   sample?: [Creature, Creature];
+  /** Laid by the Zuchtautomat in its own nest. */
+  auto?: boolean;
 }
 
 export function nestSlots(ctx: GameContext): number {
@@ -36,6 +38,11 @@ export function ritualNestSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.ritualNest', ctx.balance.breeding.ritualNests));
 }
 
+/** Places in the Automatennest: the Zuchtautomat breeds only there, slower than by hand. */
+export function autoNestSlots(ctx: GameContext): number {
+  return Math.floor(ctx.mods().apply('slots.autoNest', ctx.balance.breeding.autoNests));
+}
+
 /** Every egg, normal and ritual. */
 export function eggs(ctx: GameContext) {
   return ctx.state.processes.filter((p) => p.kind === EGG);
@@ -43,7 +50,12 @@ export function eggs(ctx: GameContext) {
 
 /** Eggs in the normal nests. */
 export function nestEggs(ctx: GameContext) {
-  return eggs(ctx).filter((p) => !(p.data as EggData).ritual);
+  return eggs(ctx).filter((p) => !(p.data as EggData).ritual && !(p.data as EggData).auto);
+}
+
+/** Eggs in the Automatennest. */
+export function autoEggs(ctx: GameContext) {
+  return eggs(ctx).filter((p) => !!(p.data as EggData).auto);
 }
 
 /** Eggs in the Ritualnest. */
@@ -155,13 +167,15 @@ export function eggTimeMs(ctx: GameContext, generation: number, parents: (Creatu
   return ritual ? ritual.hours * 3_600_000 : breedingTimeMs(ctx, generation, parents);
 }
 
-export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined, ritual?: BreedingRitualDef): ActionResult {
+export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature | undefined, ritual?: BreedingRitualDef, auto = false): ActionResult {
   if (!ctx.state.features['breeding']) return { ok: false, reason: 'Die Brutstation ist noch nicht freigeschaltet.' };
   if (!a || !b) return { ok: false, reason: 'Wähle zwei Kreaturen.' };
   if (a.id === b.id) return { ok: false, reason: 'Wähle zwei verschiedene Kreaturen.' };
   // Working creatures are pulled from their building automatically.
   if ((a.job && a.job.kind !== 'building') || (b.job && b.job.kind !== 'building')) return { ok: false, reason: 'Beide Kreaturen müssen frei sein.' };
-  if (ritual) {
+  if (auto) {
+    if (autoEggs(ctx).length >= autoNestSlots(ctx)) return { ok: false, reason: 'Das Automatennest ist belegt.' };
+  } else if (ritual) {
     if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: ritualNestSlots(ctx) > 1 ? 'Alle Ritualnester sind belegt.' : 'Das Ritualnest ist belegt.' };
   } else if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0) return { ok: false, reason: 'Der Stall ist voll.' };
@@ -186,12 +200,13 @@ export function lastPair(ctx: GameContext): { a: Creature; b: Creature; ritual: 
   return { a, b, ritual };
 }
 
-export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string): ActionResult {
+/** Starts an egg. `auto`: the Zuchtautomat's egg in the Automatennest (no rituals, takes longer). */
+export function startBreeding(ctx: GameContext, aId: number, bId: number, ritualId?: string, auto = false): ActionResult {
   const a = findCreature(ctx, aId);
   const b = findCreature(ctx, bId);
-  const ritual = ritualId ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
+  const ritual = ritualId && !auto ? availableRituals(ctx).find((r) => r.id === ritualId) : undefined;
   if (ritualId && !ritual) return { ok: false, reason: 'Dieses Brutritual ist nicht verfügbar.' };
-  const check = canBreed(ctx, a, b, ritual);
+  const check = canBreed(ctx, a, b, ritual, auto);
   if (!check.ok) return check;
   const generation = offspringGeneration(a, b);
   const paid = spend(ctx, eggCost(ctx, generation, ritual));
@@ -202,7 +217,9 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number, ritual
     data.ritual = ritual.id;
     data.sample = [structuredClone(a!), structuredClone(b!)];
   }
-  const proc = startProcess(ctx, EGG, eggTimeMs(ctx, generation, [a, b], ritual), data);
+  if (auto) data.auto = true;
+  const time = eggTimeMs(ctx, generation, [a, b], ritual) * (auto ? ctx.balance.automation.autoBreedTimeMult : 1);
+  const proc = startProcess(ctx, EGG, time, data);
   if (!ritual) {
     a!.job = { kind: 'nest', target: String(proc.id) };
     b!.job = { kind: 'nest', target: String(proc.id) };

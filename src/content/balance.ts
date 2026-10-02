@@ -189,7 +189,7 @@ export const balance: Balance = {
     max: 3,
   },
   breeding: {
-    baseTimeSec: 20,
+    baseTimeSec: 25,
     timePerGeneration: 0.15,
     costs: [
       { resource: 'food', base: 30, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 2 },
@@ -200,6 +200,7 @@ export const balance: Balance = {
     abilityInheritChance: 0.5,
     baseNests: 1,
     ritualNests: 1,
+    autoNests: 1,
   },
   genetics: {
     alleleMutationFactor: 0.5,
@@ -266,6 +267,8 @@ export const balance: Balance = {
   },
   automation: {
     intervalSec: 5,
+    // The Zuchtautomat breeds in its own nest, but slowly – the normal nests stay free for breeding by hand.
+    autoBreedTimeMult: 3,
   },
   tower: {
     // Three small floors per former floor: 4 s each (in former floors 1.5× as long as the old 8 s; see TODO.md).

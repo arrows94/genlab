@@ -61,8 +61,6 @@ Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung,
 
 Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).
 
-- [ ] Zuchtautomat bremsen („Brutbot verlangsamen / Brüten verlängern“) – beim Tester nachfragen, was genau stört;
-      denkbar: „höchstens X Nester nutzen“ oder ein Intervall
 - [ ] „Markt“ – beim Tester nachfragen, was gemeint ist
 - [ ] Animierte Szenen für die großen Erkundungen (Wolkengrat, Nebelmoor, Wochenexpedition), nach dem Vorbild des
       Großprojekts

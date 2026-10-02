@@ -6,7 +6,7 @@
   import { creaturePower, effectiveStats, findCreature } from '@core/creatures';
   import { activeLoci, expressedAppearance, libraryHas } from '@core/genetics';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
-  import { availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, openRitualEgg, type EggData } from '@core/features/breeding';
+  import { autoEggs, autoNestSlots, availableRituals, eggCost, eggTimeMs, mutationChance, nestEggs, nestSlots, offspringGeneration, ritualEggs, ritualNestSlots, breedByHand, lastPair, openRitualEgg, type EggData } from '@core/features/breeding';
   import { isWaiting, processRemainingMs } from '@core/systems/processes';
   import { planAutoBreed } from '@core/features/automation';
   import { stableCapacity, stableFree } from '@core/features/stable';
@@ -91,6 +91,7 @@
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
       ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
+      autoSlots: game.state.features['autoBreed'] ? autoNestSlots(game) : 0,
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -121,15 +122,16 @@
   /** Eggs in the nests with their progress bars (fast tick). */
   const nests = $derived.by(() => {
     view.frame;
-    return { eggs: nestEggs(game).map(eggView), ritualEggs: ritualEggs(game).map(eggView) };
+    return { eggs: nestEggs(game).map(eggView), ritualEggs: ritualEggs(game).map(eggView), autoEggs: autoEggs(game).map(eggView) };
   });
 
   const nestsFull = $derived(nests.eggs.length >= data.slots);
   const ritualFull = $derived(nests.ritualEggs.length >= data.ritualSlots);
-  /** Normal nests first, then the Ritualnest (Besondere Brut). */
+  /** Normal nests first, then the Ritualnest (Besondere Brut) and the Automatennest (Zuchtautomat). */
   const nestList = $derived([
-    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: nests.eggs[i], ritual: false })),
-    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: nests.ritualEggs[i], ritual: true })),
+    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: nests.eggs[i], ritual: false, auto: false })),
+    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: nests.ritualEggs[i], ritual: true, auto: false })),
+    ...Array.from({ length: data.autoSlots }, (_, i) => ({ key: `a${i}`, egg: nests.autoEggs[i], ritual: false, auto: true })),
   ]);
 
   function eggView(p: Process) {
@@ -266,7 +268,7 @@
 <!-- Nests -->
 <div class="nests">
   {#each nestList as n (n.key)}
-    <NestCard egg={n.egg} ritual={n.ritual} {opening} onopen={openEgg} />
+    <NestCard egg={n.egg} ritual={n.ritual} auto={n.auto} {opening} onopen={openEgg} />
   {/each}
 </div>
 

@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Zuchtautomat mit eigenem Nest
+
+- Der Zuchtautomat brütet nur noch im eigenen Automatennest (`slots.autoNest`, Grundwert 1) – wie Sequenzer und
+  Recycler mit festem Platz; die normalen Nester bleiben für die Zucht von Hand frei
+- Seine Eier brauchen das Dreifache der Brutzeit (`balance.automation.autoBreedTimeMult`)
+- Grund-Brutzeit 20 → 25 s. 30 s wurde verworfen: der Bot gab weniger für Eier aus, kam schneller voran und der Markt
+  öffnete vor 15 Minuten; mit 25 s bleibt die Freischalt-Zeitleiste der ersten Stunde wie vorher
+
 ## 2026-10-02 – Erkundungskarte als Wegenetz
 
 - Statt acht Kurven vom Camp hängt jedes Ziel an seinem Vorgänger (`PARENT` in `ExpeditionTab.svelte`), jeder

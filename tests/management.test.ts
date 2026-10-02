@@ -8,7 +8,7 @@ import {
   advanceRecycler, autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
   setAutoAssign, setAutoBreed, setAutoRecycle, speciesLostWith, takeBackFromRecycler,
 } from '@core/features/automation';
-import { breedByHand, breedingCost, lastPair, startBreeding } from '@core/features/breeding';
+import { autoEggs, breedByHand, breedingCost, breedingTimeMs, lastPair, nestEggs, startBreeding } from '@core/features/breeding';
 import { startMission, missionDurationMs } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
 import { rarityChances, rarityWeights } from '@core/rarity';
@@ -286,6 +286,23 @@ describe('automation', () => {
     expect(best.job?.kind).toBe('nest');
     expect(second.job?.kind).toBe('nest');
     expect(setAutoBreed(g, { rule: 'nonsense' }).ok).toBe(false);
+  });
+
+  it('breeds only in its own Automatennest, slower than by hand, and leaves the normal nests free', () => {
+    const g = richGame();
+    const pair = [0, 1].map(() => createCreature(g, { speciesId: 'zephyrix', rarity: 'common', abilities: [], genome: normal() }));
+    expect(setAutoBreed(g, { enabled: true, rule: 'spd' }).ok).toBe(true);
+    g.advance(balance.automation.intervalSec * 1000 + 100);
+    expect(autoEggs(g)).toHaveLength(1);
+    expect(nestEggs(g)).toHaveLength(0);
+    const egg = autoEggs(g)[0]!;
+    const [a, b] = (egg.data as { parents: [number, number] }).parents.map((id) => g.state.creatures.find((c) => c.id === id)!);
+    expect(egg.durationMs).toBe(breedingTimeMs(g, 2, [a, b]) * balance.automation.autoBreedTimeMult);
+    // The automaton waits for its nest; the player still breeds by hand next to it.
+    expect(planAutoBreed(g)).toEqual({ ok: false, reason: 'Das Automatennest ist belegt.' });
+    const free = g.state.creatures.filter((c) => c.job === null && !pair.includes(c) && c !== a && c !== b);
+    expect(startBreeding(g, free[0]!.id, free[1]!.id).ok).toBe(true);
+    expect(nestEggs(g)).toHaveLength(1);
   });
 
   describe('breeding goals', () => {
