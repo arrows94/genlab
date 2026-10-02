@@ -54,3 +54,12 @@ describe('gene content', () => {
     expect(validateContent(data).join('\n')).toContain('achievements[impossible].condition.count: 999 liegt nicht in');
   });
 });
+
+describe('perfection achievements', () => {
+  it('"all species" goals match the number of species', () => {
+    for (const id of ['perfectGenomeAll', 'shinyAll']) {
+      const a = contentData.achievements.find((x) => x.id === id)!;
+      expect(a.condition.type === 'statistic' && a.condition.amount, id).toBe(contentData.species.length);
+    }
+  });
+});

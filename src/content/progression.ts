@@ -146,6 +146,15 @@ export const achievements: AchievementDef[] = [
   { id: 'tower100', name: 'Turmspitze?', description: 'Etage 300 im Genom-Turm.', condition: { type: 'towerFloor', floor: 300 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.1 }] },
   { id: 'perfectGenome', name: 'Makellos', description: 'Ein perfektes Genom entdeckt.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 1 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'shinyFound', name: 'Schillernd!', description: 'Eine schillernde Kreatur gefunden.', condition: { type: 'statistic', statistic: 'shinies', amount: 1 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
+  // Perfection hunt: both statistics count species (the first perfect / shiny one of each), 33 at most.
+  { id: 'perfectGenome5', name: 'Feinschliff', description: 'Perfekte Genome von 5 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 5 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
+  { id: 'perfectGenome15', name: 'Genmeister', description: 'Perfekte Genome von 15 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 15 }, modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.03 }] },
+  { id: 'perfectGenomeAll', name: 'Vollkommenheit', description: 'Perfekte Genome aller 33 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 33 }, modifiers: [{ target: 'production.essence', op: 'pct', value: 0.5 }] },
+  { id: 'shiny3', name: 'Glanzsammler', description: 'Schillernde Kreaturen von 3 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 3 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
+  { id: 'shiny10', name: 'Schimmerzucht', description: 'Schillernde Kreaturen von 10 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 10 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.5 }] },
+  { id: 'shinyAll', name: 'Regenbogenchronik', description: 'Schillernde Kreaturen aller 33 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 33 }, modifiers: [
+    { target: 'stat.hp', op: 'pct', value: 0.05 }, { target: 'stat.atk', op: 'pct', value: 0.05 }, { target: 'stat.def', op: 'pct', value: 0.05 }, { target: 'stat.spd', op: 'pct', value: 0.05 },
+  ] },
   { id: 'anomalist', name: 'Anomalist', description: 'Alle Anomalien gemeistert.', condition: { type: 'all', of: [
     { type: 'anomaly', anomaly: 'broodFever' }, { type: 'anomaly', anomaly: 'ascetic' }, { type: 'anomaly', anomaly: 'famine' }, { type: 'anomaly', anomaly: 'cramped' },
   ] }, modifiers: [{ target: 'prestige.inheritance.gain', op: 'pct', value: 0.25 }] },
