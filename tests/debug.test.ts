@@ -5,6 +5,7 @@ import { refreshContracts } from '@core/features/contracts';
 import { refreshTorches, startRpgRun, torches } from '@core/features/rpg';
 import { rpgLevel, xpForLevel } from '@core/features/rpgCombat';
 import { startMission } from '@core/features/expedition';
+import { stamina, staminaMax } from '@core/features/collect';
 import { unlockFeature } from '@core/systems/unlocks';
 import { NOW, makeGame } from './helpers';
 import { D } from '@core/num';
@@ -16,6 +17,14 @@ describe('Debug-Werkzeuge', () => {
       const g = makeGame();
       expect(() => debugReset(g, r.id)).not.toThrow();
     }
+  });
+
+  it('fills the Ausdauer for collecting and ends the wait for a Fundstück', () => {
+    const g = makeGame();
+    g.state.collect = { spent: 30, nextFindAt: 999_999 };
+    debugReset(g, 'collect');
+    expect(stamina(g)).toBe(staminaMax(g));
+    expect(g.state.collect.nextFindAt).toBe(0);
   });
 
   it('opens the daily gift and the contract board again', () => {

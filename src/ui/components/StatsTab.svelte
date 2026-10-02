@@ -5,6 +5,7 @@
 
   const LABELS: Record<string, string> = {
     clicks: 'Sammel-Klicks',
+    collectFinds: 'Fundstücke beim Sammeln',
     creaturesObtained: 'Kreaturen erhalten',
     hatched: 'Geschlüpft',
     wildFound: 'Wilde Kreaturen gefunden',
