@@ -5,6 +5,12 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Markt: Tränke folgen der Produktion
+
+- Trank-Preise aus Minuten der aktuellen Produktion (`costMinutes` am Trank, der feste Preis ist die Untergrenze):
+  Festmahl 6 min Nahrung, Turbo 3 min Gold, Zeittrank 20 min Essenz (dieser weiterhin ×2 je weiterem Trank
+  innerhalb einer Stunde). `balance.market.timeSkipMinutes` entfällt
+
 ## 2026-10-02 – Schritt 4: Inhaltsprüfung aufgeteilt
 
 - `validateContent` (615 → 141 Zeilen in `validate.ts`): Tabelle `CONTENT_VALIDATORS` mit 43 Prüfern

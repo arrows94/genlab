@@ -141,6 +141,7 @@ export function validatePotions({ data, issues, at, ref, amounts, mods }: Conten
     if ((p.kind === 'creatureBuff' || p.kind === 'globalBuff') && !(p.durationSec! > 0)) issues.push(`${w}: Buff braucht durationSec > 0`);
     if (p.kind === 'timeSkip' && !(p.skipSec! > 0)) issues.push(`${w}: timeSkip braucht skipSec > 0`);
     if (p.kind === 'permanentStat' && !(p.statBonus! > 0)) issues.push(`${w}: permanentStat braucht statBonus > 0`);
+    if (p.costMinutes !== undefined && !(p.costMinutes > 0)) issues.push(`${w}: costMinutes muss > 0 sein`);
   }
 }
 

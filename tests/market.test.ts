@@ -6,7 +6,7 @@ import { startProcess } from '@core/systems/processes';
 import { productionRates } from '@core/systems/production';
 import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
-import { balance, makeGame } from './helpers';
+import { balance, content, makeGame } from './helpers';
 
 function marketGame() {
   const g = makeGame();
@@ -64,6 +64,18 @@ describe('market potions', () => {
     expect(p.elapsedMs).toBe(900_000);
   });
 
+  it('Festmahl and Turbo cost minutes of production (never less than their base price)', () => {
+    const g = marketGame();
+    const feast = content.potions.get('feast');
+    const turbo = content.potions.get('turbo');
+    expect(potionCost(g, 'feast').food!.toNumber()).toBe(Math.ceil(Math.max(feast.cost.food!, (productionRates(g).food?.toNumber() ?? 0) * 60 * feast.costMinutes!)));
+    addBuff(g, 'test', [{ target: 'production.food', op: 'add', value: 1e4 }, { target: 'production.gold', op: 'add', value: 1e4 }], 1e9);
+    const food = productionRates(g).food!.toNumber();
+    const gold = productionRates(g).gold!.toNumber();
+    expect(potionCost(g, 'feast').food!.toNumber()).toBe(Math.ceil(food * 60 * feast.costMinutes!));
+    expect(potionCost(g, 'turbo').gold!.toNumber()).toBe(Math.ceil(gold * 60 * turbo.costMinutes!));
+  });
+
   it('Zeittrank costs minutes of essence production and doubles when drunk again within the hour', () => {
     const g = marketGame();
     expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBeGreaterThanOrEqual(10); // base price early on
@@ -71,7 +83,7 @@ describe('market potions', () => {
     const rate = productionRates(g).essence!.toNumber();
     expect(rate).toBeGreaterThan(0);
     const first = potionCost(g, 'timeCrystal').essence!.toNumber();
-    expect(first).toBe(Math.ceil(Math.max(10, rate * 60 * balance.market.timeSkipMinutes)));
+    expect(first).toBe(Math.ceil(Math.max(10, rate * 60 * content.potions.get('timeCrystal').costMinutes!)));
     startProcess(g, 'test-crystal', 3_000_000);
     expect(usePotion(g, 'timeCrystal').ok).toBe(true);
     expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBe(Math.ceil(first * balance.market.timeSkipGrowth));

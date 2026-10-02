@@ -382,9 +382,8 @@ export const balance: Balance = {
   },
   market: {
     maxBoostsPerStat: 10,
-    // Zeittrank: costs this many minutes of essence production (at least its base price),
-    // and doubles for every further potion within the window.
-    timeSkipMinutes: 20,
+    // Zeittrank: its price (minutes of production, `costMinutes` on the potion) doubles for
+    // every further one within the window.
     timeSkipGrowth: 2,
     timeSkipWindowHours: 1,
   },

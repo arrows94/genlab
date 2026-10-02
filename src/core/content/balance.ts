@@ -446,8 +446,6 @@ export interface Balance {
   market: {
     /** Per-creature cost growth for permanent stat potions is on the potion; this caps uses. */
     maxBoostsPerStat: number;
-    /** Zeittrank price: minutes of production of its cost resource (at least the base price). */
-    timeSkipMinutes: number;
     /** Price factor per Zeittrank already drunk within `timeSkipWindowHours`. */
     timeSkipGrowth: number;
     timeSkipWindowHours: number;

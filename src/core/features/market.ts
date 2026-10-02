@@ -29,13 +29,13 @@ export function potionCost(ctx: GameContext, potionId: string, creatureId: numbe
     const c = findCreature(ctx, creatureId);
     growth = D(def.costGrowth ?? 1).pow(c?.boostUses ?? 0);
   }
-  if (def.kind === 'timeSkip') {
-    // Follows production, so it stays a real choice late in the game; repeats in a row cost more.
-    const m = ctx.balance.market;
-    growth = D(m.timeSkipGrowth).pow(recentTimeSkips(ctx));
+  // Zeittrank: every further one within the window costs more.
+  if (def.kind === 'timeSkip') growth = D(ctx.balance.market.timeSkipGrowth).pow(recentTimeSkips(ctx));
+  if (def.costMinutes) {
+    // Follows production, so the potion stays a real choice late in the game.
     const cost: Cost = {};
     for (const [res, base] of Object.entries(def.cost)) {
-      const perMinutes = (productionRates(ctx)[res] ?? D(0)).mul(60 * m.timeSkipMinutes);
+      const perMinutes = (productionRates(ctx)[res] ?? D(0)).mul(60 * def.costMinutes);
       cost[res] = D(base).max(perMinutes).mul(growth).mul(discount).ceil();
     }
     return cost;

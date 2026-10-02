@@ -12,8 +12,6 @@ wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, v
 ## Schritt 4 – Balancing und Qualität
 
 Spiellogik (ungeprüft):
-- [ ] Festmahl und Turbo-Trank haben feste Preise und werden im späten Spiel bedeutungslos billig
-      (`content/potions.ts`) – wie beim Zeittrank an die Produktion koppeln?
 - [ ] Trank-Buffs blähen die „Minuten Produktion“ in Belohnungen auf (Festmahl kurz vor dem Abgeben eines Auftrags,
       `core/rewards.ts`). Braucht Produktionsraten ohne Buffs (`computeRates` mit gefilterten Modifiern, auch
       Kreatur-Buffs in `creatureModifiers`)
