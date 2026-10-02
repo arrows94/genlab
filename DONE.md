@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Turm-Kampf aufgeteilt
+
+- Kampf-Engine aus `tower.ts` (1 077 → 559 Zeilen) nach `core/features/towerCombat.ts`: ein Datensatz je Kämpfer
+  (`Combatant`) statt paralleler Listen, `simulateFight` von 314 auf 61 Zeilen, Teilschritte als eigene Funktionen,
+  `!` von 63 auf 4. `tower.ts` exportiert alles weiter, kein Aufrufer musste sich ändern
+- Verhalten byte-gleich geprüft (Referenz-Lauf vorher/nachher: 420 Kämpfe in drei Balance-Varianten, Etagen 1–160,
+  Bosse, Wächter, Techniken, Wut, Wochen-Boss und echte Turm-Läufe, inklusive RNG-Endstand)
+
 ## 2026-10-02 – Schritt 4: Oberfläche aufgeräumt
 
 - Brutstation geteilt (709 → 537 Zeilen): `BreedingAutomat`, `NestCard`, `RitualReveal` (die Enthüllung ist jetzt

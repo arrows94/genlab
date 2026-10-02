@@ -21,8 +21,7 @@ Spiellogik (ungeprüft):
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 Qualität:
-- [ ] Große Dateien teilen: `simulateFight` (314 Zeilen, 40 `!`) in `towerCombat.ts` mit einem Datensatz je Kämpfer,
-      `validateContent` als Tabelle, `TowerTab.svelte` und `BreedingTab.svelte` in Teilkomponenten
+- [ ] `validateContent` (574 Zeilen) als Tabelle von Prüfern je Inhaltsart, ohne `as unknown as ContentDB`
 - [ ] Gestaltung: einheitliche Optik für Fortschrittsbalken (`<Meter>`) und Kreaturen-Kacheln (`<CreatureTile>`,
       Kachel-CSS in 11 Komponenten kopiert) – Designentscheidung, weil sich das Aussehen ändert
 - [ ] `TowerTab.svelte` (1 015 Zeilen): Arena und Team-Auswahl als eigene Komponenten (Arena hängt eng am
