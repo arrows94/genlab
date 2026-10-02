@@ -266,15 +266,12 @@
   <BreedingAutomat auto={data.autoBreed} plan={autoPlan} hybrids={data.hybrids} dynasties={data.dynasties} knownAlleles={data.knownAlleles} ownedSpecies={data.ownedSpecies} recycler={data.recycler} recycleAuto={data.recycleAuto} recycleAutoOn={data.recycleAutoOn} />
 {/if}
 
-{#if game.state.features['nestKeeper']}
-  <NestKeeperPanel />
-{/if}
-
-<!-- Nests -->
+<!-- Nests (and the Nestwärter next to them) -->
 <div class="nests">
   {#each nestList as n (n.key)}
     <NestCard egg={n.egg} ritual={n.ritual} auto={n.auto} {opening} onopen={openEgg} />
   {/each}
+  {#if game.state.features['nestKeeper']}<NestKeeperPanel />{/if}
 </div>
 
 {#if revealed}
