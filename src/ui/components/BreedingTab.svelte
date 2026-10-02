@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { meter } from '../meter';
   import { lineageDepth } from '@core/features/dynasty';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
@@ -25,6 +24,8 @@
   import BreedingAutomat from './BreedingAutomat.svelte';
   import NestCard from './NestCard.svelte';
   import RitualReveal from './RitualReveal.svelte';
+  import CreatureTile from './CreatureTile.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * Brutstation: a row of nests with eggs tinted by both parents (cracking
@@ -252,7 +253,7 @@
     <span class="kpi"><b class="num">{nests.eggs.length}/{data.slots}</b><small>Nester</small></span>
     <span class="kpi" class:warn={data.stableFull}>
       <b class="num">{data.stableUsed}/{data.stableCap}</b><small>Stall</small>
-      <span class="mini" use:meter={(data.stableUsed / Math.max(1, data.stableCap))}><span style="width: {Math.min(100, (data.stableUsed / Math.max(1, data.stableCap)) * 100)}%"></span></span>
+      <Meter size="sm" value={data.stableUsed / Math.max(1, data.stableCap)} low={data.stableFull} title="Stall-Belegung" />
     </span>
     <span class="kpi"><b class="num">{formatPercent(data.mutation, 1)}</b><small>Mutation</small></span>
   </div>
@@ -293,23 +294,19 @@
   <div class="tiles" class:half={!!side}>
     {#each list as t (t.c.id)}
       {@const sp = content.species.get(t.c.speciesId)}
-      {@const rar = content.rarities.get(t.c.rarity)}
-      <button
-        class="tile"
-        class:a={parentA === t.c.id}
-        class:b={parentB === t.c.id}
-        style="--el: {content.elements.get(sp.element).color}; --rc: {rar.color}"
-        title="{t.c.name} · {sp.name} · {rar.name}"
+      <CreatureTile
+        creature={t.c}
+        mark={parentA === t.c.id ? 1 : parentB === t.c.id ? 2 : null}
+        info="Gen {t.c.generation} · {viewState.breeding.sort.startsWith('stat:') ? `${content.stats.get(viewState.breeding.sort.slice(5)).short} ${formatNumber(t.key)}` : `Σ ${formatNumber(t.power)}`}"
         onclick={() => (side ? pickSide(t.c.id, side) : pick(t.c.id))}
       >
-        <CreatureSvg appearance={look(t.c)} shape={sp.shape} tier={sp.tier} size={42} shiny={t.c.shiny} />
-        <span class="tname">{t.c.name}</span>
+        {#snippet corner()}
+          {#if t.c.sequenced}<span title="Sequenziert">🧬</span>{/if}
+          {#if t.c.job?.kind === 'building'}<span title="Arbeitet gerade" class="muted">⚒</span>{/if}
+        {/snippet}
         {#if t.c.name !== sp.name}<span class="tiny muted sp">{sp.name}</span>{/if}
-        <span class="tiny num muted">Gen {t.c.generation} · {#if viewState.breeding.sort.startsWith('stat:')}{content.stats.get(viewState.breeding.sort.slice(5)).short} {formatNumber(t.key)}{:else}Σ {formatNumber(t.power)}{/if}</span>
         {#if data.dynasties && t.c.lineage > 0}<span class="tiny num lin" title="Reine Linie">👑 {t.c.lineage}</span>{/if}
-        {#if t.c.sequenced}<span class="seq" title="Sequenziert">🧬</span>{/if}
-        {#if t.c.job?.kind === 'building'}<span class="work" title="Arbeitet gerade">⚒</span>{/if}
-      </button>
+      </CreatureTile>
     {:else}
       <p class="muted small">Keine freien Kreaturen.</p>
     {/each}
@@ -459,9 +456,6 @@
   @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
 
   .kpi.warn { border-color: var(--danger); }
-  .mini { width: 100%; height: 3px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }
-  .mini span { display: block; height: 100%; background: var(--teal); }
-  .kpi.warn .mini span { background: var(--danger); }
 
 
   /* Nests */
@@ -511,17 +505,8 @@
   .sortgroup { display: flex; gap: 0.3rem; }
   .lin { color: var(--gold); font-weight: 700; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
-  .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.2rem; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 40%, var(--line)); background: var(--bg-2); }
-  .tile.a { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); }
-  .tile.b { border-color: #ff7ad9; box-shadow: 0 0 12px #ff7ad988; }
-  .tile.a::after, .tile.b::after { position: absolute; top: 2px; left: 6px; font-weight: 800; font-size: 0.75rem; }
-  .tile.a::after { content: '1'; color: var(--gold); }
-  .tile.b::after { content: '2'; color: #ff7ad9; }
-  .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
   .sp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .more { margin: 0.3rem 0 0; text-align: center; }
-  .seq { position: absolute; top: 2px; right: 5px; font-size: 0.7rem; }
-  .work { position: absolute; top: 18px; right: 6px; font-size: 0.7rem; color: var(--muted); }
   .hint { margin-top: 1rem; }
 
   @media (max-width: 600px) {
