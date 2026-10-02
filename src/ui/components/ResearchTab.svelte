@@ -22,9 +22,12 @@
       // Filtered lists lose their parents, so they are shown flat.
       .map((b) => ({ ...b, affordable: b.nodes.filter((x) => x.affordable).length, nodes: f.affordableOnly ? b.nodes.filter((x) => x.affordable).map((x) => ({ ...x, depth: 0 })) : b.nodes }))
       .filter((b) => b.nodes.length > 0);
+    // Everything in view is researched to the max (unlocked or not): the empty list says so instead of „nicht bezahlbar“.
+    const done = branches.filter((b) => !f.theme || b.theme.id === f.theme).every((b) => b.nodes.every((x) => x.status === 'maxed'));
     return {
       branches,
       shown,
+      done,
       infinite: f.affordableOnly ? infinite.filter((x) => x.affordable) : infinite,
       affordable: all.filter((x) => x.affordable).length,
       infiniteAffordable: infinite.filter((x) => x.affordable).length,
@@ -130,7 +133,11 @@
       </ol>
     </article>
   {:else}
-    <p class="muted">Gerade ist keine Forschung bezahlbar.</p>
+    <p class="muted">
+      {#if !data.done}Gerade ist keine Forschung bezahlbar.
+      {:else if viewState.research.theme}Alle Forschungen in diesem Bereich sind abgeschlossen.
+      {:else}Alle Forschungen sind abgeschlossen.{/if}
+    </p>
   {/each}
 </div>
 
