@@ -33,6 +33,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Leihgaben: Manche Kunden leihen sich eine Kreatur nur für ein paar Stunden – danach kommt sie zurück. Auch Favoriten dürfen mit.', feature: 'contracts' },
       { text: 'Der Zuchtautomat hat sein eigenes Automatennest: Er brütet dort gemächlicher, und deine Nester bleiben frei für die Zucht von Hand.', feature: 'autoBreed' },
       { text: 'Eier brauchen länger zum Schlüpfen (Grundzeit eine Minute) und nie weniger als ein Viertel davon.', feature: 'breeding' },
+      { text: 'Neue Forschung „Nestwärter“: Setze eine Kreatur an die Nester – ihre Brut-Fähigkeiten wie Brutpfleger oder Mutagen gelten dann für jedes Ei.', feature: 'breeding' },
+      { text: 'Fähigkeiten vererben sich gezielter: Haben beide Eltern dieselbe Fähigkeit, bekommt das Kind sie fast immer – hat sie nur ein Elternteil, seltener als bisher.', feature: 'breeding' },
       { text: 'Fähigkeiten wirken nur noch, wenn ihre Kreatur selbst aktiv ist: Brutpfleger und Mutagen bei den eigenen Eiern, Goldherz, solange es arbeitet. Ein Stall voller untätiger Spezialisten zählt nicht mehr.', feature: 'breeding' },
       { text: 'Die Erkundungskarte ist aufgeräumt: Die Wege verzweigen sich von Ziel zu Ziel, statt sich alle am Camp zu kreuzen.', feature: 'expedition' },
       { text: 'Neue Forschung „Ritualkammer“: bis zu zwei weitere Ritualnester für Brutrituale.', feature: 'specialBreeding' },

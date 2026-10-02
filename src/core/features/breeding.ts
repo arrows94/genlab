@@ -38,6 +38,45 @@ export function ritualNestSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.ritualNest', ctx.balance.breeding.ritualNests));
 }
 
+/** Places for a Nestwärter at the Brutstation. */
+export function nestKeeperSlots(ctx: GameContext): number {
+  return Math.floor(ctx.mods().apply('slots.nestKeeper', ctx.balance.breeding.nestKeepers));
+}
+
+/** Creatures watching the nests: their own breeding bonuses (Brutpfleger, Mutagen, genes …) count for every egg. */
+export function nestKeepers(ctx: GameContext): Creature[] {
+  if (!ctx.state.features['nestKeeper']) return [];
+  return ctx.state.creatures.filter((c) => c.job?.kind === 'keeper');
+}
+
+/** Breeding-time factor and extra mutation chance a creature would give as Nestwärter. */
+export function keeperBonus(ctx: GameContext, c: Creature): { time: number; mutation: number } {
+  const own = creatureModifiers(ctx, c);
+  return { time: own.factor('breeding.time'), mutation: own.apply('breeding.mutation', 0) };
+}
+
+/**
+ * Makes a creature the Nestwärter (a working creature leaves its building). A full place is handed over:
+ * the previous keeper is free again. `null` frees every place.
+ */
+export function setNestKeeper(ctx: GameContext, creatureId: number | null): ActionResult {
+  if (!ctx.state.features['nestKeeper']) return { ok: false, reason: 'Der Nestwärter ist noch nicht erforscht.' };
+  const keepers = nestKeepers(ctx);
+  if (creatureId === null) {
+    for (const k of keepers) k.job = null;
+    ctx.invalidate();
+    return { ok: true };
+  }
+  const c = findCreature(ctx, creatureId);
+  if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
+  if (c.job?.kind === 'keeper') return { ok: true };
+  if (c.job && c.job.kind !== 'building') return { ok: false, reason: `${c.name} ist beschäftigt.` };
+  if (keepers.length >= nestKeeperSlots(ctx)) keepers[0]!.job = null;
+  c.job = { kind: 'keeper', target: 'nest' };
+  ctx.invalidate();
+  return { ok: true };
+}
+
 /** Places in the Automatennest: the Zuchtautomat breeds only there, slower than by hand. */
 export function autoNestSlots(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.autoNest', ctx.balance.breeding.autoNests));
@@ -111,6 +150,7 @@ export function breedingTimeMs(ctx: GameContext, generation: number, parents: (C
     // creatureModifiers only carries global stat.* targets, so this is the parent's own share.
     seconds *= creatureModifiers(ctx, p).factor('breeding.time');
   }
+  for (const k of nestKeepers(ctx)) seconds *= keeperBonus(ctx, k).time;
   return Math.max(1000, Math.max(seconds, base * b.minTimeShare) * 1000);
 }
 
@@ -118,6 +158,7 @@ export function breedingTimeMs(ctx: GameContext, generation: number, parents: (C
 export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef, parents: (Creature | undefined)[] = []): number {
   let chance = ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0);
   for (const p of parents) if (p) chance += creatureModifiers(ctx, p).apply('breeding.mutation', 0);
+  for (const k of nestKeepers(ctx)) chance += keeperBonus(ctx, k).mutation;
   return Math.min(1, Math.max(0, chance));
 }
 

@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Nestwärter und gezieltere Vererbung
+
+- Forschung „Nestwärter“ (nach 20 geschlüpften Eiern, 1 200 Gold + 40 Essenz; im Bot ≈ 15 min, nach Bio-Labor und
+  Markt): eine Kreatur sitzt an den Nestern (Job `keeper`), ihre eigenen Brut-Boni (Brutpfleger, Nesthüter, Mutagen,
+  Genweber, Gen „Fruchtbar“) gelten für jedes Ei. Ein Platz (`slots.nestKeeper`), ein neuer löst den alten ab
+- Vererbung: eine Fähigkeit eines Elternteils 35 % (vorher 50 %), eine beider Eltern 85 %; gemeinsame Fähigkeiten
+  zuerst, damit sie nicht am Platzlimit scheitern. Talent „Starke Blutlinie“ macht weiter beides sicher
+
 ## 2026-10-02 – Fähigkeiten wirken nur bei der eigenen Tätigkeit
 
 - Brutpfleger, Nesthüter (Brutzeit) und Mutagen, Genweber (Mutation) zählen nur noch bei Eiern, deren Elternteil die

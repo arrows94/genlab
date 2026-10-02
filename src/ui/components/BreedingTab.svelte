@@ -22,6 +22,7 @@
   import SortToggle from './SortToggle.svelte';
   import DynastyPanel from './DynastyPanel.svelte';
   import BreedingAutomat from './BreedingAutomat.svelte';
+  import NestKeeperPanel from './NestKeeperPanel.svelte';
   import NestCard from './NestCard.svelte';
   import RitualReveal from './RitualReveal.svelte';
   import CreatureTile from './CreatureTile.svelte';
@@ -263,6 +264,10 @@
 
 {#if data.automaton}
   <BreedingAutomat auto={data.autoBreed} plan={autoPlan} hybrids={data.hybrids} dynasties={data.dynasties} knownAlleles={data.knownAlleles} ownedSpecies={data.ownedSpecies} recycler={data.recycler} recycleAuto={data.recycleAuto} recycleAutoOn={data.recycleAutoOn} />
+{/if}
+
+{#if game.state.features['nestKeeper']}
+  <NestKeeperPanel />
 {/if}
 
 <!-- Nests -->

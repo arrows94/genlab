@@ -199,7 +199,10 @@ export const balance: Balance = {
     ],
     mutationChance: 0.08,
     mutationStatRange: [1.05, 1.25],
-    abilityInheritChance: 0.5,
+    // An ability one parent has passes on now and then; one both parents share almost always.
+    abilityInheritChance: 0.35,
+    abilityInheritBoth: 0.85,
+    nestKeepers: 1,
     baseNests: 1,
     ritualNests: 1,
     autoNests: 1,

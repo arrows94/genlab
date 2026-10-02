@@ -16,7 +16,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg';
+  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg' | 'keeper';
   target: string;
 }
 

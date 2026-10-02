@@ -40,6 +40,7 @@ export const features: FeatureDef[] = [
   { id: 'autoAssign', name: 'Arbeitsplaner', hint: 'Der Arbeitsplaner verteilt Kreaturen automatisch auf die Anlagen.' },
   { id: 'autoSequence', name: 'Sequenzier-Roboter', hint: 'Der Sequenzier-Roboter ist bereit: Im Genlabor einschalten, dann entschlüsselt er neue Genome von selbst.' },
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter – in seinem eigenen Automatennest, etwas gemächlicher als du von Hand.' },
+  { id: 'nestKeeper', name: 'Nestwärter', hint: 'Nestwärter: In der Brutstation kannst du eine Kreatur an die Nester setzen. Ihre Brut-Fähigkeiten wie Brutpfleger oder Mutagen gelten dann für jedes Ei.' },
   { id: 'breedRepeat', name: 'Zuchtbuch', hint: 'Zuchtbuch: In der Brutstation wählt der Knopf ↻ zwischen den Eltern dein letztes Paar wieder aus.' },
   { id: 'breedSplit', name: 'Zwei Zuchtlisten', hint: 'Zwei Zuchtlisten: In der Brutstation hat jetzt jedes Elternteil seine eigene Kandidatenliste. Unter Optionen lässt sich wieder eine Liste einstellen.' },
   { id: 'autoRecycle', name: 'Recycling-Automat', hint: 'Der Recycling-Automat zerlegt überzählige Kreaturen nach deinen Regeln (Gen-Recycler).' },

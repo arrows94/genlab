@@ -57,6 +57,16 @@ Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung,
 - [ ] Ruf-Schwellen prüfen: Mit dem wachsenden Brett erreicht der Langzeit-Bot Ruf 4 an Tag 11 (vorher nie);
       `balance.contracts.levelThresholds` ggf. anheben
 
+# Zucht: Fähigkeiten stärken
+
+Nestwärter und die gezieltere Vererbung sind umgesetzt; als nächster Schritt geplant:
+
+- [ ] Fähigkeits-Elixier im Markt: stärkt eine Fähigkeit *einer* Kreatur um eine Stufe (z. B. Brutpfleger I–III,
+      −10/−15/−20 %), höchstens 3 Stufen, jede Stufe deutlich teurer (Muster wie Kraftfutter)
+- [ ] Seltene Zutat „Keimöl“ für das Elixier: nur aus Brutritualen (kleine Chance), Gen-Aufträgen ab 4★ und
+      gelegentlich der Wochenexpedition – damit nur wenige Kreaturen über Wochen verbessert werden
+- [ ] Optional: reine Linie (Dynastie) vererbt eine Fähigkeit eine Stufe höher (braucht Fähigkeitsstufen)
+
 # Tester-Feedback (Oktober 2026)
 
 Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).

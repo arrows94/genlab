@@ -245,6 +245,10 @@ export interface Balance {
     mutationStatRange: [number, number];
     /** Chance each parent ability is passed on. */
     abilityInheritChance: number;
+    /** Chance for an ability both parents have (`breeding.abilityInherit` raises both). */
+    abilityInheritBoth: number;
+    /** Places for a Nestwärter (`slots.nestKeeper`): its breeding bonuses count for every egg. */
+    nestKeepers: number;
     /** Base nest slots (modified by `slots.nest`). */
     baseNests: number;
     /** Ritualnest places for the Besondere Brut (next to the normal nests, `slots.ritualNest`). */

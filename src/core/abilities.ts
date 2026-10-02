@@ -24,16 +24,22 @@ export function rollStartingAbilities(ctx: GameContext): string[] {
   return out;
 }
 
-/** Offspring abilities: each parent ability may pass on, plus a mutation chance for a new one. */
+/** Chance that an ability passes on: higher when both parents have it. */
+export function abilityInheritChance(ctx: GameContext, both: boolean): number {
+  const b = ctx.balance.breeding;
+  // Äon talent „Starke Blutlinie“ raises the chance up to a sure inheritance.
+  return Math.min(1, ctx.mods().apply('breeding.abilityInherit', both ? b.abilityInheritBoth : b.abilityInheritChance));
+}
+
+/** Offspring abilities: each parent ability may pass on (shared ones likely), plus a mutation chance for a new one. */
 export function inheritAbilities(ctx: GameContext, a: readonly string[], b: readonly string[], mutationChance: number): string[] {
   const { balance, rng } = ctx;
-  const pool = [...new Set([...a, ...b])];
+  // Shared abilities first: they are the likely ones and should not lose their place to the slot limit.
+  const pool = [...new Set([...a, ...b])].sort((x, y) => Number(b.includes(y) && a.includes(y)) - Number(b.includes(x) && a.includes(x)));
   const out: string[] = [];
-  // Äon talent „Starke Blutlinie“ raises the chance up to a sure inheritance.
-  const inherit = Math.min(1, ctx.mods().apply('breeding.abilityInherit', balance.breeding.abilityInheritChance));
   for (const id of pool) {
     if (out.length >= balance.abilities.max) break;
-    if (ctx.content.abilities.has(id) && rng.chance(inherit)) out.push(id);
+    if (ctx.content.abilities.has(id) && rng.chance(abilityInheritChance(ctx, a.includes(id) && b.includes(id)))) out.push(id);
   }
   if (out.length < balance.abilities.max && rng.chance(mutationChance)) {
     const id = rollAbility(ctx, out);

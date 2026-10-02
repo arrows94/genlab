@@ -83,6 +83,14 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
+    id: 'nestKeeper', theme: 'breeding', name: 'Nestwärter', category: 'research',
+    // After some breeding experience, when the first abilities show up in the stable.
+    requires: { type: 'statistic', statistic: 'hatched', amount: 20 },
+    description: 'Eine Kreatur wacht an den Nestern: Ihre Brut-Fähigkeiten gelten für jedes Ei.',
+    cost: { gold: 1200, essence: 40 }, costGrowth: 1, maxLevel: 1,
+    modifiers: [], unlocksFeatures: ['nestKeeper'],
+  },
+  {
     id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research',
     // Same moment as "Besondere Brut" (first inheritance), without waiting on a long feature.
     requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
