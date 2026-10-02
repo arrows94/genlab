@@ -31,6 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       { text: 'Lässt du Genlab offen, sieht das Spiel jetzt regelmäßig und beim Zurückkehren nach einer neuen Version – dann erscheint oben „Eine neue Version von Genlab ist da“.' },
       { text: 'Das Hinweisfeld lässt sich mit „Später“ ausblenden; in den Optionen unter „Info“ kannst du jederzeit nach Updates suchen und sie installieren.' },
+      { text: 'Anlagen auf dem Handy: Die Plätze der Arbeiter sind breiter – Namen werden nicht mehr abgeschnitten, und der Ertrag passt in eine Zeile.', feature: 'farm' },
     ],
   },
   {

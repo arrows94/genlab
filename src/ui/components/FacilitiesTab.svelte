@@ -241,10 +241,11 @@
   .socket.fit { box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 30%, transparent); }
   .fitc { color: var(--gold); text-shadow: 0 0 6px color-mix(in srgb, var(--gold) 70%, transparent); }
 
-  .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.8rem, 1fr)); gap: 0.4rem; }
+  /* Wide enough for a name and „+25,7 Tsd./s“ on one line each (on a phone: three per row instead of five). */
+  .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); gap: 0.45rem; }
   .socket {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem;
-    min-height: 6rem; border-radius: 12px; border: 2px dashed var(--line); background: var(--bg-2); color: var(--muted); padding: 0.3rem;
+    min-height: 6.4rem; min-width: 0; border-radius: 12px; border: 2px dashed var(--line); background: var(--bg-2); color: var(--muted); padding: 0.4rem 0.35rem 0.5rem;
   }
   .socket.filled { border: 2px solid var(--el); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--el) 18%, transparent), var(--bg-2) 70%); color: var(--text); }
   .socket.filled::after { content: ''; position: absolute; left: 18%; right: 18%; bottom: 3px; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--el) 50%, transparent); }
@@ -255,7 +256,12 @@
   @media (max-width: 720px) { .socket.locked { display: none; } }
   .plus { font-size: 1.4rem; line-height: 1; }
   .art { padding: 0; border: 0; background: none; line-height: 0; }
-  .sname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 0.8rem; }
+  /* Long names wrap to a second line instead of being cut after a few letters. */
+  .sname {
+    max-width: 100%; font-weight: 600; font-size: 0.8rem; line-height: 1.2; text-align: center; hyphens: auto; overflow-wrap: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .socket.filled .small { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .yield { color: var(--rc); }
   .x { position: absolute; top: 2px; right: 3px; padding: 0 0.35rem; border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1.2; }
   .x:hover { color: var(--danger); }
