@@ -504,11 +504,26 @@ export function equipItem(ctx: GameContext, slot: RpgGearSlot, itemId: number | 
   return { ok: true };
 }
 
-/** Offers the next ways: 2–3 different rooms, or the boss after the last room. */
+/** Index of the guardian's room on the way (0 = first room), or -1 without a guardian. */
+export function guardianRoom(ctx: GameContext, dungeonId: string): number {
+  const at = ctx.balance.rpg.guardianAt;
+  return at > 0 ? Math.round(ctx.content.rpgDungeons.get(dungeonId).rooms * at) : -1;
+}
+
+/** The next room is the dungeon's guardian: an elite fight halfway down, with no way around it. */
+export function isGuardianNext(ctx: GameContext, run: RpgRun): boolean {
+  return run.depth === guardianRoom(ctx, run.dungeon);
+}
+
+/** Offers the next ways: 2–3 different rooms, the guardian halfway, or the boss after the last room. */
 function offerRooms(ctx: GameContext, run: RpgRun): void {
   const d = ctx.content.rpgDungeons.get(run.dungeon);
   if (run.depth >= d.rooms) {
     run.choices = ['boss'];
+    return;
+  }
+  if (isGuardianNext(ctx, run)) {
+    run.choices = ['elite'];
     return;
   }
   const [min, max] = ctx.balance.rpg.choices;

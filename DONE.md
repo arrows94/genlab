@@ -3,6 +3,17 @@
 Was aus `TODO.md` fertig ist, steht hier als kurze Zusammenfassung – je Bereich, neueste Einträge oben. Einzelheiten,
 Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 
+# Tester-Feedback (Oktober 2026)
+
+## 2026-10-02 – Längere Dungeons mit Wächter
+
+- Etwa 1,5-mal so viele Räume (12–18 statt 8–12), Stufenanstieg pro Raum so gesenkt, dass Start- und Boss-Stufe
+  gleich bleiben; zur Hälfte versperrt ein Wächter (fester Elite-Kampf, `balance.rpg.guardianAt`) den Weg
+- Beute-Faktor der Dungeons −20 %, damit die Beute pro Fackel nur leicht steigt (Runen laufen ohnehin über)
+- RPG-Bot vorher → nachher: Kämpfe pro Lauf +30–50 %, Beute pro Lauf etwa gleich (Wurzellabyrinth 🗼68 → 68,
+  Schattengruft Stufe 60 🗼394 → 472); Abschluss Kristallkern Stufe 40 75 % → 33 %, Flutgewölbe Stufe 20 8 % → 50 %
+  (mehr Erfahrung im Lauf); Stufe beim ersten Abschluss je Dungeon etwa gleich
+
 # Code-Durchsicht (Oktober 2026)
 
 ## 2026-10-02 – `cost.potion` hat eine Quelle

@@ -61,8 +61,6 @@ Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung,
 
 Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).
 
-- [ ] Dungeons länger und härter: mehr Räume, Zwischenboss oder Elite-Räume (`content/rpg.ts` `rooms`), danach mit
-      dem RPG-Bot Abschlussrate und Beute pro Fackel prüfen
 - [ ] Zuchtautomat bremsen („Brutbot verlangsamen / Brüten verlängern“) – beim Tester nachfragen, was genau stört;
       denkbar: „höchstens X Nester nutzen“ oder ein Intervall
 - [ ] „Markt“ – beim Tester nachfragen, was gemeint ist

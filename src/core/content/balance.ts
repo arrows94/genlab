@@ -124,6 +124,8 @@ export interface Balance {
     upgradeChoices: number;
     /** A won elite fight offers upgrades too. */
     eliteUpgrade: boolean;
+    /** A guardian (elite fight, no other way) waits after this share of the rooms; 0 = none. */
+    guardianAt: number;
     /** Share of max HP a rest heals. */
     restHeal: number;
     /**

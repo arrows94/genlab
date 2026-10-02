@@ -109,6 +109,8 @@ export const balance: Balance = {
     levelHeal: 0.15,
     upgradeChoices: 3,
     eliteUpgrade: true,
+    // Halfway through every dungeon a guardian blocks the way: a fixed elite fight.
+    guardianAt: 0.5,
     // A rest heals this share of max HP and secures the carried loot.
     restHeal: 0.4,
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
