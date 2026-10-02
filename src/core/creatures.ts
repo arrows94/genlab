@@ -7,7 +7,7 @@ import { epithetFor } from './names';
 import type { GameContext } from './context';
 import type { LatentTraitDef } from './content/types';
 import { Rng } from './rng';
-import { dexKey, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
+import { dexKey, pruneCreatureRefs, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
 export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
 
@@ -236,7 +236,7 @@ export function isBusy(c: Creature): boolean {
 export function removeCreature(ctx: GameContext, id: number, reason: string): void {
   ctx.state.creatures = ctx.state.creatures.filter((c) => c.id !== id);
   // Drop stale references (e.g. an infused creature must not stay in the tower team).
-  ctx.state.tower.team = ctx.state.tower.team.filter((t) => t !== id);
+  pruneCreatureRefs(ctx.state, (t) => t !== id);
   ctx.invalidate();
   ctx.bus.emit('creatureRemoved', { creatureId: id, reason });
 }

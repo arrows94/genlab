@@ -302,6 +302,26 @@ describe('Äon prestige and talents', () => {
     expect(g.state.creatures.length).toBe(before + 2);
     expect(g.state.creatures.at(-1)!.generation).toBe(2);
   });
+
+  it('a hybrid twin gets the hybrid stat profile like its sibling', () => {
+    const g = endgame();
+    unlockFeature(g, 'hybrids');
+    g.state.talents.twinBirth = true;
+    addBuff(g, 'test', [
+      { target: 'breeding.twinChance', op: 'add', value: 1 },
+      { target: 'breeding.hybridChance', op: 'add', value: 1 },
+    ], 1e9);
+    const a = createCreature(g, { speciesId: 'pebblit', rarity: 'common', stats: { hp: 28, atk: 5, def: 8, spd: 2 }, exactStats: true });
+    const b = createCreature(g, { speciesId: 'sproutle', rarity: 'common', stats: { hp: 22, atk: 4, def: 6, spd: 4 }, exactStats: true });
+    startBreeding(g, a.id, b.id);
+    g.advance(120_000);
+    const [child, twin] = g.state.creatures.slice(-2);
+    expect(child!.speciesId).toBe('mossgolem');
+    expect(twin!.speciesId).toBe('mossgolem');
+    // Moosgolem profile (34 KP) vs parent average (25 KP): both children are tougher than the parents' mean.
+    expect(twin!.stats.hp!).toBeGreaterThan(30);
+    expect(Math.abs(twin!.stats.hp! - child!.stats.hp!)).toBeLessThan(child!.stats.hp! * 0.3);
+  });
 });
 
 describe('perfection hunt', () => {

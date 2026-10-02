@@ -616,3 +616,10 @@ export function dexKey(species: string, rarity: string): string {
 export function resource(state: GameState, id: string): Decimal {
   return state.resources[id] ?? D(0);
 }
+
+/** Drops references to creatures that no longer exist (tower rows, the RPG hero). */
+export function pruneCreatureRefs(state: GameState, exists: (id: number) => boolean): void {
+  state.tower.team = state.tower.team.filter(exists);
+  state.tower.back = state.tower.back.filter(exists);
+  if (state.rpg.run && !exists(state.rpg.run.creatureId)) state.rpg.run = null;
+}

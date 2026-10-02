@@ -1,0 +1,110 @@
+# Erledigt
+
+Was aus `TODO.md` fertig ist, steht hier als kurze Zusammenfassung – je Bereich, neueste Einträge oben. Einzelheiten,
+Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
+
+# Code-Durchsicht (Oktober 2026)
+
+## 2026-10-02 – Schritt 1: bestätigte Fehler
+
+- Sequenzier-Roboter nimmt keine Kreaturen mehr, die auf dem Weg in den Gen-Recycler sind (`autoSequenceOnce`)
+- Wochen-Boss: Jeder verpasste Tag bringt seine Angriffe (bis zur Obergrenze), nicht nur der letzte
+- Wochen-Boss-Exploit geschlossen: „Turm-Rekord senken“ baut den Titan nie unter den Etagen der letzten Turm-Läufe
+  (`titanFloor` aus `tower.history`), auch nicht zum Wochenwechsel
+- Zwillingsgeburten: Ein Hybrid-Zwilling bekommt das Werteprofil seiner Art (`reprofileStats`) und zählt für die
+  Dynastie (`recordLineage`)
+- Recycler: Eine kürzere Dauer (Forschung während eine Kreatur in der Kammer liegt) gibt keine Gratis-Zeit mehr
+- `removeCreature` und `repairReferences` räumen über dasselbe `pruneCreatureRefs` auf (auch `tower.back`, `rpg.run`)
+- Kreaturen-Karte liest Favorit, Job, Recycler-Status, Name, Linie und Fähigkeiten jeden Frame neu (`live` in
+  `CreatureCard.svelte`)
+
+# Visuelle Überarbeitung
+
+Anlagen als Szenen mit arbeitenden Kreaturen, Forschungsbaum nach Themen (Pips, Abhängigkeiten, „nur bezahlbare“),
+Vererbungs-Übersicht mit Zeitleiste (`prestigeLog`, auch im Äon-Tab über `PrestigeOverview.svelte`), Markt-Tresen,
+Monster-Dex mit Sammlung und Detailkarte, Sequenzierer und Genbibliothek, einheitliche Kopfzeilen (`.tab-head` /
+`.kpis` / `.kpi`), Seltenheit am Kartenrahmen, Anomalien mit Fortschritt (`conditionProgress`).
+
+# Komfort
+
+Zuchtbuch ↻ (`state.lastPair`), zwei Zuchtlisten (`prefs.breedingSplit`), Warnung, wenn eine Art aus dem Stall
+verschwindet (`speciesLostWith`; kein fester Schutz im Recycling-Automaten – „je Art behalten“ regelt das), Reiter in
+Bereichen (`GROUPS`, `viewState.nav`), Fortschrittsleiste am Reiter (`core/tabActivity.ts`), Handy-Dock (`--dock-h`).
+Fehler behoben: Spielstand als Svelte-Proxy (jetzt `$state.raw`), `.maxed` verbreiterte die Seite.
+
+# Endgame
+
+Vorhanden: Vererbung + Äon mit Talentbaum (5 Stufen + Resonanz), endloser Genom-Turm mit Relikten und Meilensteinen,
+3 unendliche Forschungen, Anomalien mit Stufen I–V, 12 Wochen-Mutationen, Perfektions-Jagd im Dex, Urgen,
+Gen-Aufträge, Stammbaum-Dynastien.
+
+Erledigt: Gen-Aufträge (Auftragspool mit Stufen, Äon-Splitter und Genproben), Talentstufe 4/5 und Resonanz
+(Stufe^0,7), Splitter-Tempo über fünf 28-Tage-Läufe abgestimmt (zuletzt 6 Äonen, 12 Talente, Resonanz 8, an Tag 28
+nichts übrig), Boss-Eigenheiten, Relikte (×2,2 je Stufe), Turm-Meilensteine, Anomalien mit Stufen, Kombinationen und
+Rekord-Bonus (Ziele wachsen mit dem Produktionsbonus), Dynastien (`lineage`, `dynasties`, Äon-Talent).
+
+Idee „Isekai mit einem ausgewählten Monster“ → umgesetzt als „GenLab RPG“.
+
+# Langzeitmotivation (Idle über Tage und Wochen)
+
+Zeitskalen gestaffelt statt alles verlängert – lange Projekte nach echter Uhr (Offline-Grenze nur für die
+Produktion), Benachrichtigungen (Capacitor, optional PWA), Tagesreise, Wochenexpedition, Besondere Brut,
+Tiefensequenzierung, Gen-Tagesaufträge, Treue-Kalender, Zeitkristalle, Großforschung, Sequenzier-Roboter,
+Wochen-Boss, Großprojekt Äon-Observatorium. Leitplanken in `tests/guardrails.test.ts` (alles über 1 h braucht eine
+Vererbung, lange Projekte sind nie Sperre), Langzeit-Bot in `tests/longrun.ts`.
+
+# Sound
+
+Sound-Modul `ui/sound.ts` (Rezepte in `SOUNDS`, Drosselung, stumm offline und im Hintergrund), Zuordnung in
+`ui/soundEvents.ts`, Klänge für alle Bereiche (Zucht, Genetik, Wirtschaft, Erkundung, Turm, Endgame), Optionen mit
+Lautstärke und einzeln abschaltbaren Klängen, Hintergrundmusik je Bereich (`ui/music.ts`).
+
+# Kampfsystem
+
+Aktionsleiste statt Runden (Tempo zählt, Ausweichen), Wut ab 30 s statt Zeitlimit, skalenfreie Verteidigung
+(1 + `defWeight` × VER/ANG), Reihen und Rollen (`roleOf`), Element-Techniken und Zustände, Team-Synergien,
+Kampf-Eigenschaften aus der Genetik, mehrere Gegner und Boss-Begleiter, Wochen-Boss auf derselben Kampf-Logik
+(der Bot spart seine Angriffe bis vor Vererbung/Äon), Arena mit Wiedergabe-Tempo, Kampfprotokoll und
+Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben deterministisch und offline schnell.
+
+# Turm: Stillstand abbauen, feinere Etagen
+
+- **Schritt 1 – Etagen ×3** (Etage 3n = alte Etage n, Kampfpause 4 s, Migration `SAVE_VERSION` 9 → 10, Wächter
+  alle 10 Etagen, drei kleine Etagen teilen Element und Gruppengröße, Offline-Kämpfe ohne Wiedergabe-Daten)
+- **Schritt 2 – Boss-Mauer abflachen**: Boss kostet jetzt Ø 3,7 frühere Etagen statt 9,9 (Schild ohne Vorteil 5,4–7,0),
+  Mauer-Test `tests/towerCurve.test.ts` (`GENLAB_CURVE=1`)
+- **Schritt 3 – Kampferfahrung** 🎖 (`tower.xp`, je Etage proportional zur Höhe, Boss ×10; Rang n → n + 1 kostet
+  100 × (1 + 9n), je Rang +2 % KP und Schaden, Modifier-Ziel `tower.hp`, `towerVeteranProvider`) und
+  **Entschlossenheit** 💪 (+15 % je Tag ohne neuen Rekord, höchstens +60 %), Anzeige in der Kopfzeile und in
+  „Warum verloren?“
+- **Rückzug beim Auto-Neustart** (`tower.retreat`, `restartCheckpoint`): Verliert ein Lauf gleich die erste Etage,
+  beginnt der nächste Auto-Neustart einen Checkpoint tiefer; eine geschaffte Checkpoint-Etage holt ihn wieder hoch,
+  ein Start von Hand versucht den echten Checkpoint. Befund vorher (Äon-Bot, Seed 2024): Nach jeder Vererbung verlor
+  das Team am Checkpoint sofort – an Stillstands-Tagen bis zu 17 000 Läufe ohne einen Sieg und ohne Erfahrung,
+  Rang 34 an Tag 28. Nachher: jeden Tag 13 000–40 000 gewonnene Etagen, Rang 61 an Tag 28
+- **Wochen-Titan nachgestellt**: ANG ×0,5 statt ×1,5, KP ×15 statt ×25. Vorher warf er ein Team in 7–8 s um, der
+  Schaden je Angriff fiel zwischen Titan-Etage 120 und 175 auf ein 85stel (gleiches Team); mit ×0,5 hält ein Team
+  nahe am Rekord fast die ganzen 30 s durch, der Abfall ist halb so steil. Äon-Bot je Woche ab Woche 2:
+  Seed 2024 100 / 100 / 81 % (vorher 100 / 51 / 5 %), Seed 7 92 % (74 %), Seed 99 100 % (36 %)
+
+Verworfen (vorerst): Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs – wächst in groben Sprüngen
+(1–2 Vererbungen am Tag) und belohnt nicht, dass man an einer Mauer weiterkämpft.
+
+# Brut
+
+Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`ProcessHandler.waitsForPlayer`,
+`openRitualEgg`, Enthüllungs-Animation, Zähler am Reiter); der Zuchtautomat öffnet sie nicht, der Test-Bot schon.
+
+# GenLab RPG
+
+Isekai-Umbau (Stufe 1 aus den Grundwerten der Art, Stufe bleibt dem Monster, eigene Welt ohne Labor,
+Portal-Animation, dunkles Design, eigene Musik und Kampfmusik), Rundenkampf mit drei Fähigkeiten und Spezialangriff,
+sichtbares Kampfende (Sieg-Zusammenfassung bis „Weiter“, Niederlage mit Verlusten; `run.aftermath`, `lastResult.fight`),
+Dungeons aus Räumen mit Wegwahl, Ereignissen und Stufen-Verbesserungen, Fackeln 🔥 als Eintritt (Nachfüllen nach
+echter Uhr, Tagesbelohnung, Gen-Aufträge, Wochenexpedition), Beute mit Wochen-Deckel, Ausrüstung (wirkt nicht im
+Turm), Runen 🪬 und dauerhafte Verbesserungen, Test-Bot `tests/rpgBot.ts`, Debug-Werkzeuge (`?debug=1`).
+Freischaltung ab Turm-Etage 20. Leitplanken: freiwillig, deterministisch, alte Spielstände ohne Migration.
+
+Bot-Stand (ohne Ausrüstung und Runen): Glutwelpe schafft alle Dungeons in 45–70 Läufen (Stufe ~50), Zephyrix in
+120–165, Magmaulwurf (Hybrid) in 20–47; die Stufe beim Sieg liegt nahe der Boss-Stufe (Glutgrotten 17, Flutgewölbe 24,
+Sturmspitze 32, Schattengruft ~42). 60–800 Turm-Marken je Fackel.

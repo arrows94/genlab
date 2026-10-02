@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 30,
+    date: '2026-10-02',
+    title: 'Kleine Reparaturen im Labor',
+    items: [
+      { text: 'Kreaturen-Karten zeigen sofort, ob eine Kreatur Favorit ist, arbeitet oder auf den Recycler wartet.' },
+      { text: 'Der Sequenzier-Roboter lässt Kreaturen in Ruhe, die auf dem Weg in den Gen-Recycler sind.', feature: 'autoSequence' },
+      { text: 'Wird der Recycler schneller, während eine Kreatur in der Kammer liegt, springt die nächste nicht mehr vor.', feature: 'autoRecycle' },
+      { text: 'Wochen-Boss: Jeder verpasste Tag bringt seine Angriffe (bis zur Obergrenze), nicht nur der letzte.', feature: 'weeklyBoss' },
+      { text: 'Wochen-Boss: Senkst du den Turm-Rekord, wird der Titan nie schwächer als die Etagen, die dein Team zuletzt erreicht hat.', feature: 'weeklyBoss' },
+      { text: 'Zwillinge, die als Hybrid schlüpfen, bekommen die Werte ihrer neuen Art wie ihr Geschwister.', feature: 'aeon' },
+    ],
+  },
+  {
     id: 29,
     date: '2026-10-02',
     title: 'Nach dem letzten Schlag',

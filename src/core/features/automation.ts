@@ -355,7 +355,8 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
       fillRecycler(ctx, false);
       continue;
     }
-    const need = recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs;
+    // A shorter duration (research bought meanwhile) must not hand out extra time.
+    const need = Math.max(0, recycleDurationMs(ctx, !!cur.manual) - cur.elapsedMs);
     if (budget < need) {
       cur.elapsedMs += budget;
       break;
@@ -389,7 +390,7 @@ export function autoBreedOnce(ctx: GameContext): boolean {
 export function autoSequenceOnce(ctx: GameContext): number {
   let started = 0;
   const queue = ctx.state.creatures
-    .filter((c) => !c.sequenced && !isBeingSequenced(ctx, c.id))
+    .filter((c) => !c.sequenced && !isBeingSequenced(ctx, c.id) && !inRecycler(ctx, c.id))
     .sort((a, b) => creaturePower(ctx, b) - creaturePower(ctx, a));
   for (const c of queue) {
     if (sequencerUsed(ctx) >= sequencerSlots(ctx)) break;

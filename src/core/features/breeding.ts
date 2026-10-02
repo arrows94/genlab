@@ -288,7 +288,9 @@ registerProcessHandler(EGG, {
     const rarity = hatchRarity(ctx, ritual);
     let stats = inheritStats(ctx, a, b, mutation);
     // A new species (hybrid) takes on its own stat profile.
-    if (speciesId !== a.speciesId && speciesId !== b.speciesId) stats = reprofileStats(ctx, stats, averageBase(ctx, a.speciesId, b.speciesId), speciesId);
+    const profile = (s: StatBlock): StatBlock =>
+      speciesId !== a.speciesId && speciesId !== b.speciesId ? reprofileStats(ctx, s, averageBase(ctx, a.speciesId, b.speciesId), speciesId) : s;
+    stats = profile(stats);
     const family = inheritFamily(ctx, a, b);
     const nameFor = () => offspringName(ctx, a, b, family, ctx.content.species.get(speciesId).name);
     const lineage = lineageDepth(ctx, speciesId, a, b);
@@ -322,7 +324,7 @@ registerProcessHandler(EGG, {
         name: nameFor(),
         generation: data.generation,
         parents: data.parents,
-        stats: inheritStats(ctx, a, b, mutation),
+        stats: profile(inheritStats(ctx, a, b, mutation)),
         exactStats: true,
         appearance: inheritAppearance(ctx, a, b),
         abilities: inheritAbilities(ctx, a.abilities, b.abilities, mutation),
@@ -332,6 +334,7 @@ registerProcessHandler(EGG, {
         family,
         source: 'hatch',
       });
+      recordLineage(ctx, twin);
       ctx.bus.emit('eggHatched', { creatureId: twin.id, parents: data.parents, ...(ritual ? { ritual: ritual.id } : {}) });
     }
   },

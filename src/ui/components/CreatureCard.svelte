@@ -43,16 +43,32 @@
     return creature.sequenced;
   });
 
-  const jobLabel = $derived.by(() => {
-    const job = creature.job;
-    if (!job) return '';
+  /**
+   * Fields that change in place (favourite, job, recycler, name …). The list
+   * passes the same object every frame, so they must be re-read on the tick.
+   */
+  const live = $derived.by(() => {
+    view.frame;
+    const a = game.state.automation;
+    return {
+      locked: creature.locked,
+      name: creature.name,
+      epithet: creature.epithet,
+      lineage: creature.lineage,
+      abilities: [...creature.abilities],
+      job: creature.job ? jobText(creature.job) : '',
+      recycler: a.recycling?.creatureId === creature.id ? 'chamber' : a.recycleQueue.includes(creature.id) ? 'queue' : null,
+    };
+  });
+
+  function jobText(job: NonNullable<Creature['job']>): string {
     if (job.kind === 'building') return `Arbeitet: ${content.buildings.get(job.target).name}`;
     if (job.kind === 'nest') return '🥚 Brütet';
     if (job.kind === 'mission') return '🧭 Auf Erkundung';
     if (job.kind === 'tower') return '🗼 Im Genom-Turm';
     if (job.kind === 'rpg') return '🔥 Im Dungeon';
     return 'Beschäftigt';
-  });
+  }
 
   const TIER_LABELS: Record<string, string> = { hybrid: 'Hybrid', rareHybrid: 'Seltener Hybrid', mythic: 'Mythisch' };
   /** Rarity order from which the frame shimmers (3 = Episch); one step higher also glows. */
@@ -87,8 +103,8 @@
     {/if}
     <span class="rarity">{rarity.name}</span>
     {#if isNew}<span class="new">NEU</span>{/if}
-    <button class="lock" title={creature.locked ? 'Favorit – geschützt vor Verkauf, Recycling und Infusion, nicht vor einer Vererbung' : 'Als Favorit sperren (schützt vor Verkauf, Recycling und Infusion)'} onclick={() => act(toggleLock(game, creature.id))}>
-      {creature.locked ? '★' : '☆'}
+    <button class="lock" title={live.locked ? 'Favorit – geschützt vor Verkauf, Recycling und Infusion, nicht vor einer Vererbung' : 'Als Favorit sperren (schützt vor Verkauf, Recycling und Infusion)'} onclick={() => act(toggleLock(game, creature.id))}>
+      {live.locked ? '★' : '☆'}
     </button>
   </header>
   <button class="art" title="Details" onclick={() => (view.detail = creature.id)}><CreatureSvg appearance={look} shape={species.shape} tier={species.tier} shiny={creature.shiny} /></button>
@@ -98,8 +114,8 @@
       <input bind:value={draft} maxlength={game.balance.creature.maxNameLength} autofocus onblur={commit} title="Mit Nachnamen („Kiko Sonnenschein“) erbt der Nachwuchs diesen Familiennamen." />
     </form>
   {:else}
-    <button class="name" onclick={startEdit} title="Umbenennen">{creature.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
-    {#if creature.epithet}<span class="epithet" title="Beiname">„{creature.epithet}“</span>{/if}
+    <button class="name" onclick={startEdit} title="Umbenennen">{live.name}{#if infusion > 0}<span class="plus num"> +{infusion}</span>{/if}</button>
+    {#if live.epithet}<span class="epithet" title="Beiname">„{live.epithet}“</span>{/if}
   {/if}
   <div class="meta">
     <span class="element">{element.name}</span>
@@ -107,9 +123,9 @@
     {#if species.tier !== 'base'}<span class="tier">{TIER_LABELS[species.tier]}</span>{/if}
     {#if creature.shiny}<span class="shiny">✦ Schillernd</span>{/if}
     <span class="num">Gen {creature.generation}</span>
-    {#if game.state.automation.recycling?.creatureId === creature.id}<span class="recy" title="Wird gerade im Gen-Recycler zerlegt – zurückholen in der Detailansicht oder im Recycler">♻ in der Zerlege-Kammer</span>
-    {:else if game.state.automation.recycleQueue.includes(creature.id)}<span class="recy" title="Wartet auf die Zerlege-Kammer – zurückholen in der Detailansicht oder im Recycler">♻ wartet auf den Recycler</span>{/if}
-    {#if creature.lineage > 0 && game.state.features['dynasties']}<span class="lineage num" title="Reine Linie: {creature.lineage} Generationen in Folge dieselbe Art">👑 {creature.lineage}</span>{/if}
+    {#if live.recycler === 'chamber'}<span class="recy" title="Wird gerade im Gen-Recycler zerlegt – zurückholen in der Detailansicht oder im Recycler">♻ in der Zerlege-Kammer</span>
+    {:else if live.recycler === 'queue'}<span class="recy" title="Wartet auf die Zerlege-Kammer – zurückholen in der Detailansicht oder im Recycler">♻ wartet auf den Recycler</span>{/if}
+    {#if live.lineage > 0 && game.state.features['dynasties']}<span class="lineage num" title="Reine Linie: {live.lineage} Generationen in Folge dieselbe Art">👑 {live.lineage}</span>{/if}
   </div>
   <dl class="stats">
     {#each content.stats.list as s (s.id)}
@@ -118,16 +134,16 @@
     {/each}
   </dl>
   <div class="dna"><DnaSequence genome={creature.genome} known={sequenced} /></div>
-  {#if creature.abilities.length > 0}
+  {#if live.abilities.length > 0}
     <ul class="abilities">
-      {#each creature.abilities as id (id)}
+      {#each live.abilities as id (id)}
         {@const a = content.abilities.get(id)}
         <li style="--t: {content.rarities.get(a.tier).color}" title={a.description}>{a.name}</li>
       {/each}
     </ul>
   {/if}
-  {#if creature.job}
-    <div class="job">{jobLabel}</div>
+  {#if live.job}
+    <div class="job">{live.job}</div>
   {/if}
   {@render children?.()}
 </article>

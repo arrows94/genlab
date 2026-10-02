@@ -5,7 +5,7 @@ import { canConsume, sell, sellValue, stableCapacity, stableFree } from '@core/f
 import { applyEp, breakthrough, epForLevel, infuse, infusionEp, infusionPreview, pickInfusionVictims } from '@core/features/infusion';
 import { capsuleOdds, fragmentValue, openCapsules, pityCounter, recycle } from '@core/features/recycler';
 import {
-  autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
+  advanceRecycler, autoAssign, automationSystem, autoRecycleCandidates, inRecycler, planAutoBreed, recycleDurationMs, recyclerQueue, recyclingNow, sendToRecycler,
   setAutoAssign, setAutoBreed, setAutoRecycle, speciesLostWith, takeBackFromRecycler,
 } from '@core/features/automation';
 import { breedByHand, breedingCost, lastPair, startBreeding } from '@core/features/breeding';
@@ -511,6 +511,24 @@ describe('automation', () => {
       // The next one goes in right away.
       expect(recyclingNow(g)?.creature).toBe(weak);
       expect(recyclingNow(g)!.progress).toBeLessThan(0.1);
+    });
+
+    it('a shorter duration (research bought meanwhile) hands out no extra time', () => {
+      const { g, mk } = setup();
+      mk('pebblit', 90);
+      const a = mk('pebblit', 1);
+      const b = mk('pebblit', 2);
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1 });
+      g.advance(balance.automation.intervalSec * 1000 + 100);
+      expect(recyclingNow(g)?.creature).toBe(a);
+      g.state.automation.recycling!.elapsedMs = 60_000;
+      g.state.upgrades['recyclerSpeed'] = content.upgrades.get('recyclerSpeed').maxLevel!;
+      g.invalidate();
+      expect(recycleDurationMs(g)).toBeLessThan(60_000);
+      advanceRecycler(g, 1);
+      expect(g.state.creatures).not.toContain(a);
+      expect(recyclingNow(g)?.creature).toBe(b);
+      expect(g.state.automation.recycling!.elapsedMs).toBeLessThanOrEqual(1);
     });
 
     it('starts at minutes and research brings it down to seconds', () => {

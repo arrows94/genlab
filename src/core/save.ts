@@ -1,5 +1,5 @@
 import { D, isDecimal } from './num';
-import { createEmptyState, type GameState } from './state';
+import { createEmptyState, pruneCreatureRefs, type GameState } from './state';
 
 /**
  * Versioned save format. Bump `SAVE_VERSION` and add a migration
@@ -168,9 +168,7 @@ export function mergeDefaults<T>(defaults: T, loaded: unknown): T {
 /** Removes references to creatures that no longer exist (older saves could keep them). */
 function repairReferences(state: GameState): void {
   const ids = new Set(state.creatures.map((c) => c.id));
-  state.tower.team = state.tower.team.filter((id) => ids.has(id));
-  state.tower.back = state.tower.back.filter((id) => ids.has(id));
-  if (state.rpg.run && !ids.has(state.rpg.run.creatureId)) state.rpg.run = null;
+  pruneCreatureRefs(state, (id) => ids.has(id));
   if (state.rpg.run && typeof state.rpg.run.startLevel !== 'number') state.rpg.run.startLevel = 1;
   const items = new Set(state.rpg.items.map((i) => i.id));
   for (const slot of ['weapon', 'armor', 'charm'] as const) if (state.rpg.equipped[slot] !== null && !items.has(state.rpg.equipped[slot]!)) state.rpg.equipped[slot] = null;

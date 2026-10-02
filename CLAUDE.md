@@ -76,3 +76,12 @@ Before a release, add a new entry at the **top** of `src/ui/changelog.ts` and in
 - Player-visible strings are German, with typographic quotes „…“ and `–` dashes. Numbers are formatted via `core/format.ts` (`formatNumber`, `formatDuration`, `formatPercent`).
 - Use `D()` / `Decimal` from `core/num.ts` for resources. Stats are plain numbers.
 - `README.md` has the full feature/architecture table and platform packaging notes. `TODO.md` tracks planned work, and `genlab-neubau-prompt.md` is the original project brief.
+
+## TODO and DONE
+
+- `TODO.md` holds **only open work**. The section "Code-Durchsicht (Oktober 2026)" is the review backlog. Work through it step by step, in the order given there.
+- Whenever you finish an item from `TODO.md`, do both of these in the same commit:
+  - delete the item from `TODO.md`;
+  - add a short summary of it to `DONE.md` under the matching area, newest entries first, with the date (`## YYYY-MM-DD – …`).
+- Never tick an item (`- [x]`) or cross it out (`~~…~~`), and don't leave "Erledigt:" paragraphs in `TODO.md`.
+- `tests/todo.test.ts` enforces this rule.

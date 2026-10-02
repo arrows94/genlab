@@ -117,6 +117,14 @@ describe('Wochen-Boss', () => {
     expect(b.damage).toBe(0);
   });
 
+  it('counts every missed day, up to the cap', () => {
+    const g = bossGame();
+    const b = g.state.weeklyBoss;
+    b.attempts = 0;
+    refreshWeeklyBoss(g, NOW + 2 * DAY);
+    expect(b.attempts).toBe(Math.min(balance.weeklyBoss.maxAttempts, 2 * balance.weeklyBoss.attemptsPerDay));
+  });
+
   it('needs a tower team and survives a save', () => {
     const g = bossGame();
     g.state.tower.team = [];
@@ -148,6 +156,22 @@ describe('Turm-Rekord senken (Hilfe für festgefahrene Spielstände)', () => {
     // Milestones and floor conditions follow the highest record ever.
     expect(towerMilestones(g)).toBe(Math.floor(120 / balance.tower.milestoneEvery));
     expect(checkpoint(g)).toBe(30);
+  });
+
+  it('does not shrink the titan below what the team reached in recent runs', () => {
+    const g = bossGame();
+    g.state.tower.best = 120;
+    g.state.tower.history = [{ floor: 118, startFloor: 90, team: [], at: NOW }];
+    g.state.weeklyBoss.week = -1;
+    refreshWeeklyBoss(g, NOW);
+    const b = g.state.weeklyBoss;
+    expect(lowerRecordAndBoss(g, 30).ok).toBe(true);
+    expect(g.state.tower.best).toBe(30);
+    expect(b.floor).toBe(118);
+    expect(b.maxHp).toBe(Math.round(normalHp(g, 118) * balance.weeklyBoss.hpMult));
+    // A new week builds the titan from the recent runs too.
+    refreshWeeklyBoss(g, NOW + 8 * DAY);
+    expect(b.floor).toBe(118);
   });
 
   it('only lowers, never during a run, and pays first-time rewards only once', () => {
