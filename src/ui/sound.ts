@@ -342,6 +342,33 @@ const SOUNDS = {
     for (let i = 0; i < 6; i++) s.noise(i * 0.24, 0.32, into ? 0.08 + i * 0.03 : 0.23 - i * 0.03, 700 + i * 450);
     s.note(33, 1.6, 1.3, 'sine', 0.4, 260);
   },
+  /** GenLab RPG: a parry – a bright metal clang. */
+  parry: (s: Synth) => {
+    s.noise(0, 0.04, 0.3, 6000);
+    s.note(88, 0, 0.35, 'triangle', 0.22, 7000);
+    s.note(95, 0, 0.25, 'sine', 0.12, 7000);
+  },
+  /** GenLab RPG: someone staggers – a dull, wobbling thud. */
+  stagger: (s: Synth) => {
+    s.slide(50, 38, 0, 0.25, 'sine', 0.45, 500);
+    s.noise(0, 0.12, 0.15, 900);
+  },
+  /** GenLab RPG: a boss enters its second phase – a deep roar and a rising swell. */
+  bossPhase: (s: Synth) => {
+    s.slide(31, 43, 0, 1.1, 'sawtooth', 0.22, 700);
+    s.slide(30, 42, 0.05, 1.1, 'sawtooth', 0.18, 600);
+    s.note(26, 0, 1.4, 'sine', 0.5, 200);
+  },
+  /** GenLab RPG: DU BIST GESTORBEN – a slow, falling minor toll. */
+  youDied: (s: Synth) => {
+    s.note(38, 0, 2.2, 'sine', 0.5, 300);
+    for (const [m, at] of [[62, 0], [61, 0.5], [57, 1]] as const) s.note(m, at, 1.2, 'triangle', 0.16, 1400);
+  },
+  /** GenLab RPG: FEIND GEFÄLLT – a low brass swell. */
+  felled: (s: Synth) => {
+    for (const m of [50, 57, 62]) s.slide(m - 2, m, 0, 1.1, 'sawtooth', 0.12, 1300);
+    s.note(38, 0, 1.2, 'sine', 0.35, 300);
+  },
   /** Anomaly starts: a warped tone. */
   anomalyStart: (s: Synth) => {
     s.slide(60, 54, 0, 0.8, 'sawtooth', 0.2, 900);
@@ -394,7 +421,10 @@ export const SOUND_GROUPS: { name: string; sounds: { id: SoundKey; name: string 
     { id: 'milestone', name: 'Meilenstein' }, { id: 'relic', name: 'Relikt gekauft' }, { id: 'bossHit', name: 'Wochen-Boss: Angriff' },
     { id: 'bossTier', name: 'Wochen-Boss: Belohnungsstufe' },
   ] },
-  { name: 'GenLab RPG', sounds: [{ id: 'portal', name: 'Portal in die andere Welt' }] },
+  { name: 'GenLab RPG', sounds: [
+    { id: 'portal', name: 'Portal in die andere Welt' }, { id: 'parry', name: 'Parieren' }, { id: 'stagger', name: 'Wanken' },
+    { id: 'bossPhase', name: 'Boss: zweite Phase' }, { id: 'felled', name: 'Feind gefällt' }, { id: 'youDied', name: 'Du bist gestorben' },
+  ] },
   { name: 'Endgame', sounds: [
     { id: 'prestige', name: 'Vererbung' }, { id: 'aeon', name: 'Äon' }, { id: 'talent', name: 'Talent, Resonanz, Heilung im Turm' },
     { id: 'construction', name: 'Großprojekt' }, { id: 'anomalyStart', name: 'Anomalie beginnt' }, { id: 'anomalyDone', name: 'Anomalie gemeistert' },

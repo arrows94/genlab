@@ -121,6 +121,11 @@
   {/if}
 {/snippet}
 
+{#snippet banner(text: string, tone: 'gold' | 'blood')}
+  <!-- Big words across the screen after a fight, fading in and away (they never block a tap). -->
+  <div class="banner {tone}" aria-live="assertive"><span>{text}</span></div>
+{/snippet}
+
 {#snippet poise(c: RpgCombatant)}
   <div class="bar poise small-bar" class:broken={c.exposed} title={c.exposed ? 'Taumelt – der nächste Treffer ist kritisch' : 'Gleichgewicht: voll = gerät ins Wanken'}><div style="width: {c.exposed ? '100%' : pct(c.poise ?? 0, maxPoise(game, c))}"></div>{#if c.exposed}<span>🎯 taumelt</span>{/if}</div>
 {/snippet}
@@ -229,6 +234,7 @@
   {:else if run.aftermath}
     {@const af = run.aftermath}
     {@const foe = af.battle.foe}
+    {#key `${run.depth}-${af.battle.round}`}{@render banner(foe.kind === 'normal' ? 'FEIND GEFÄLLT' : 'STARKER FEIND GEFÄLLT', 'gold')}{/key}
     {@render arena(af.battle, data.hero, 'win')}
     <ol class="parchment chronicle">{#each af.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
     <section class="parchment scroll verdict won">
@@ -283,6 +289,9 @@
 {:else if data.lastResult}
   {@const res = data.lastResult}
   {@const fight = res.fight}
+  {#if fight}
+    {#key res.at}{@render banner(fight.win ? 'GROSSER FEIND GEFÄLLT' : 'DU BIST GESTORBEN', fight.win ? 'gold' : 'blood')}{/key}
+  {/if}
   {#if fight && data.resultHero}
     {@render arena(fight.battle, data.resultHero, fight.win ? 'win' : 'lose')}
     <ol class="parchment chronicle">{#each fight.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
@@ -452,6 +461,12 @@
   .skill.flask:not(:disabled) { border-color: #b0453a; background: linear-gradient(180deg, #5a2622, #2f1513); }
   .cost { position: absolute; top: 0.15rem; left: 0.3rem; font-size: 0.65rem; color: #9fe0a0; opacity: 0.85; }
   .cost::before { content: '⚡'; font-size: 0.6rem; }
+  .banner { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none; animation: banner 3.4s ease-in-out forwards; }
+  .banner span { width: 100%; padding: 1.1rem 0.5rem; text-align: center; font-size: clamp(1.2rem, 6vw, 3rem); letter-spacing: 0.08em; font-weight: 400; white-space: nowrap;
+    background: linear-gradient(90deg, #000a, #000f 15%, #000f 85%, #000a); }
+  .banner.gold span { color: #f0d080; text-shadow: 0 0 18px #ffcf7a88, 0 2px 4px #000; }
+  .banner.blood span { color: #c0392b; text-shadow: 0 0 22px #a3262aaa, 0 2px 4px #000; letter-spacing: 0.12em; }
+  @keyframes banner { 0% { opacity: 0; } 18% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
   .boss-bar { display: grid; gap: 0.2rem; margin: -0.3rem 0 0.7rem; padding: 0 0.3rem; }
   .boss-name { font-size: 0.95rem; letter-spacing: 0.06em; color: var(--parch); text-shadow: 0 1px 3px #000; }
   .boss-hp { height: 12px; border-color: #7a5a2a; }

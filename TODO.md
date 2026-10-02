@@ -125,8 +125,6 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 Ziel: weniger Erholung, schwere Bosse (beim ersten Versuch meist tödlich), mehr Taktik im Kampf. Entscheidungen:
 Bosse sehr hart (1a), mit Ausdauerleiste (2b), mit Blutfleck (3a), Reihenfolge wie unten.
 
-- [ ] Schritt 7: Darstellung und Klang – „DU BIST GESTORBEN“, „FEIND GEFÄLLT“, Klänge für Parieren, Taumeln,
-      Phasenwechsel
 - [ ] Schritt 8: Bot lernt Ausweichen, Parieren, Tränke und Ausdauer; Zahlen neu abstimmen (Boss beim ersten
       Versuch meist tödlich, mit Vorbereitung schaffbar)
 

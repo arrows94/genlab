@@ -329,6 +329,13 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 7: Einblendungen und Klänge
+
+- Große Einblendungen nach einem Kampf (blockieren keinen Tipp): „FEIND GEFÄLLT“ / „STARKER FEIND GEFÄLLT“
+  (Elite) / „GROSSER FEIND GEFÄLLT“ (Boss) in Gold, „DU BIST GESTORBEN“ in Blutrot
+- Neue Klänge (einzeln abschaltbar unter „GenLab RPG“): Parieren (Metallklang), Wanken, Boss-Phase (tiefes
+  Grollen), Feind gefällt, Du bist gestorben; eine Niederlage spielt nur noch den Totenklang
+
 ## 2026-10-02 – Dark Souls, Schritt 6: Blutfleck
 
 - `balance.rpg.defeatKeep` 0,5 → 0: eine Niederlage behält nichts von der getragenen Beute; sie bleibt mit der
