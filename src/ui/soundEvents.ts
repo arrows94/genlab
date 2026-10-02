@@ -97,7 +97,7 @@ export function wireSounds(g: Game, currentTab: () => string): void {
   // ---- GenLab RPG: the hero's move, then the foe's answer a moment later ----
   g.bus.on('rpgRound', (e) => {
     const sound = (ev: (typeof e.events)[number]) =>
-      ev.kind === 'miss' || ev.kind === 'dodge' ? 'whoosh' : ev.kind === 'parry' ? 'hitCrit' : ev.kind === 'heal' ? 'talent' : ev.kind === 'skill' ? 'technique' : ev.crit || (ev.m ?? 1) > 1 ? 'hitCrit' : (ev.m ?? 1) < 1 ? 'hitWeak' : ev.special ? 'technique' : 'hit';
+      ev.kind === 'miss' || ev.kind === 'dodge' ? 'whoosh' : ev.kind === 'parry' || ev.kind === 'stagger' ? 'hitCrit' : ev.kind === 'heal' ? 'talent' : ev.kind === 'skill' ? 'technique' : ev.crit || (ev.m ?? 1) > 1 ? 'hitCrit' : (ev.m ?? 1) < 1 ? 'hitWeak' : ev.special ? 'technique' : 'hit';
     const hero = e.events.find((ev) => ev.by === 'hero');
     const foe = e.events.find((ev) => ev.by === 'foe');
     if (hero) play(sound(hero));

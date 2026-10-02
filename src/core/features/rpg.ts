@@ -347,7 +347,7 @@ export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
   const blocker = skillBlocker(battle, skill);
   if (blocker) return { ok: false, reason: blocker };
-  if (skill.slot === 'item') {
+  if (skill.slot === 'item' && !battle.hero.statuses.some((s) => s.id === 'stun')) {
     if (rpgFlasks(ctx) <= 0) return { ok: false, reason: 'Keine Heiltränke mehr – das Leuchtfeuer füllt sie auf.' };
     run.flasks = rpgFlasks(ctx) - 1;
   }

@@ -127,6 +127,10 @@ export const balance: Balance = {
     riposteMult: 2.5,
     // Heiltränke per run (like Estus): drinking costs the turn, the Leuchtfeuer refills them.
     flasks: 3,
+    // Gleichgewicht: every hit fills the target's poise by perHit × its strength (a heavy blow 2.2×, the special 3×).
+    // Full = staggered: it skips its next move and the next hit against it is critical. A round without a hit
+    // takes regen off. Your monster can be staggered too.
+    poise: { perHit: 20, hero: 70, normal: 50, elite: 90, boss: 150, regen: 20 },
     // Loot per room: fixed amounts × the dungeon's loot factor, plus chances (× loot factor, at most 1) for one piece.
     // `alleleSamples` is no resource: each one catalogues an allele missing in the gene library.
     loot: {

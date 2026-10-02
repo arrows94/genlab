@@ -433,6 +433,42 @@ describe('GenLab RPG – Ausdauer, Abwehr und Heiltränke', () => {
     expect(parried / plain).toBeGreaterThan(1.3);
   });
 
+  it('Gleichgewicht: hits fill the poise; full = the foe staggers, skips its move and takes a critical hit', () => {
+    const { g, b } = duel();
+    const p = balance.rpg.poise;
+    useRpgSkill(g, 'strike');
+    expect(b.foe.poise).toBe(p.perHit);
+    b.foe.poise = p.normal - 1;
+    useRpgSkill(g, 'strike');
+    expect(b.foe.exposed).toBe(true);
+    expect(b.foe.poise).toBe(0);
+    expect(b.last?.some((e) => e.kind === 'stagger')).toBe(true);
+    expect(b.log.at(-1)).toContain('betäubt'); // it skipped its move right away
+    // The next hit is critical and ends the stagger.
+    useRpgSkill(g, 'strike');
+    expect(b.foe.exposed).toBe(false);
+    expect(b.last?.some((e) => e.by === 'hero' && e.crit)).toBe(true);
+  });
+
+  it('poise recovers in a round without a hit', () => {
+    const { g, b } = duel({ dodgeChance: 1 });
+    b.foe.poise = 40;
+    b.foe.step = 2; // charge: nobody is hit
+    useRpgSkill(g, 'breathe');
+    expect(b.foe.poise).toBe(40 - balance.rpg.poise.regen);
+  });
+
+  it('a staggered hero loses its move – without paying stamina or a Heiltrank', () => {
+    const { g, run, b } = duel();
+    b.hero.statuses.push({ id: 'stun', rounds: 2, value: 1 });
+    const stamina = b.stamina!;
+    const foeHp = b.foe.hp;
+    useRpgSkill(g, 'flask');
+    expect(run.flasks).toBe(balance.rpg.flasks);
+    expect(b.foe.hp).toBe(foeHp);
+    expect(b.stamina).toBe(Math.min(balance.rpg.stamina.max, stamina + balance.rpg.stamina.regen));
+  });
+
   it('a Heiltrank heals in a fight but costs the turn; only a few per run, the Leuchtfeuer refills them', () => {
     const { g, c, run, b } = duel();
     expect(run.flasks).toBe(balance.rpg.flasks);

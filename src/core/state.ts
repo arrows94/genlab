@@ -338,6 +338,12 @@ export interface RpgCombatant {
   def: number;
   spd: number;
   statuses: RpgStatus[];
+  /** Gleichgewicht: poise damage taken (full = staggered); missing = 0. */
+  poise?: number;
+  /** Round of the last hit taken (poise only recovers in a round without one). */
+  hitAt?: number;
+  /** Staggered: the next hit against it is critical. */
+  exposed?: boolean;
 }
 
 export interface RpgFoe extends RpgCombatant {
@@ -353,7 +359,7 @@ export interface RpgFoe extends RpgCombatant {
 /** What happened in the latest round (for sounds and hit animations). */
 export interface RpgEvent {
   by: 'hero' | 'foe';
-  kind: 'hit' | 'miss' | 'heal' | 'skill' | 'dodge' | 'parry';
+  kind: 'hit' | 'miss' | 'heal' | 'skill' | 'dodge' | 'parry' | 'stagger';
   /** Damage of a hit and its element factor (> 1 strong, < 1 weak). */
   dmg?: number;
   m?: number;

@@ -329,6 +329,15 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 4: Gleichgewicht
+
+- Gleichgewicht (`RpgCombatant.poise`, `balance.rpg.poise`): jeder Treffer füllt die Leiste um 20 × seine Stärke
+  (schwerer Schlag 2,2×, Spezial 3×, Gegenschlag 2,5×); Grenze Held 70, Gegner 50 / Elite 90 / Boss 150
+- Voll = Wanken: der Getroffene setzt seinen nächsten Zug aus, der nächste Treffer gegen ihn ist kritisch
+  (`exposed`); eine Runde ohne Treffer baut 20 ab. Ein taumelnder Held verliert den Zug, zahlt aber weder Ausdauer
+  noch Heiltrank
+- Wanken-Leisten unter den KP in der Arena, Klang beim Wanken
+
 ## 2026-10-02 – Dark Souls, Schritt 3: Ausdauer, Ausweichen, Parieren
 
 - Ausdauer (`battle.stamina`, `balance.rpg.stamina`): max 100, +20 je Runde; Kosten je Slot (Angriff 25,

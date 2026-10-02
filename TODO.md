@@ -125,8 +125,6 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 Ziel: weniger Erholung, schwere Bosse (beim ersten Versuch meist tödlich), mehr Taktik im Kampf. Entscheidungen:
 Bosse sehr hart (1a), mit Ausdauerleiste (2b), mit Blutfleck (3a), Reihenfolge wie unten.
 
-- [ ] Schritt 4: Gleichgewicht – Treffer füllen eine Wanken-Leiste, voll = der Gegner taumelt (setzt aus, der nächste
-      Schlag ist kritisch); schwere Schläge bringen auch dein Monster ins Wanken
 - [ ] Schritt 5: Echte Bosse – je Dungeon ein eigener Boss mit Namen und Mechanik, zweite Phase ab 50 % KP (neuer
       Ablauf, schneller), deutlich härter; große Boss-Leiste mit Namen
 - [ ] Schritt 6: Blutfleck – bei einem Tod bleibt die getragene Beute im Raum liegen; im nächsten Lauf im selben

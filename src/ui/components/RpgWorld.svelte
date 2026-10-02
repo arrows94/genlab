@@ -3,9 +3,9 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
   import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, drinkRpgFlask, enterRoom, giveUpRpgRun, leaveRpgRun, rpgDefense, rpgFlasks, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
-  import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
+  import { foeIntent, heroPerks, heroStats, maxPoise, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
-  import type { Creature, RpgAftermath, RpgBattle } from '@core/state';
+  import type { Creature, RpgAftermath, RpgBattle, RpgCombatant } from '@core/state';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { STATUS_ICON, STATUS_NAME, gearOf, itemText, lootList, pct, rarityOf, speciesLook } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -90,6 +90,7 @@
         </div>
       {/key}
       <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
+      {@render poise(b.hero)}
       {#if !ended}
         {@const stamina = b.stamina ?? game.balance.rpg.stamina.max}
         <div class="bar stamina small-bar" title="Ausdauer: jeder Zug kostet etwas, jede Runde kommt {game.balance.rpg.stamina.regen} zurück"><div style="width: {pct(stamina, game.balance.rpg.stamina.max)}"></div><span class="num">{formatNumber(stamina)}</span></div>
@@ -106,9 +107,14 @@
       {/key}
       <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
       <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
+      {@render poise(b.foe)}
       <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
     </div>
   </section>
+{/snippet}
+
+{#snippet poise(c: RpgCombatant)}
+  <div class="bar poise small-bar" class:broken={c.exposed} title={c.exposed ? 'Taumelt – der nächste Treffer ist kritisch' : 'Gleichgewicht: voll = gerät ins Wanken'}><div style="width: {c.exposed ? '100%' : pct(c.poise ?? 0, maxPoise(game, c))}"></div>{#if c.exposed}<span>🎯 taumelt</span>{/if}</div>
 {/snippet}
 
 {#snippet gains(af: RpgAftermath)}
@@ -436,6 +442,12 @@
   .skill.flask:not(:disabled) { border-color: #b0453a; background: linear-gradient(180deg, #5a2622, #2f1513); }
   .cost { position: absolute; top: 0.15rem; left: 0.3rem; font-size: 0.65rem; color: #9fe0a0; opacity: 0.85; }
   .cost::before { content: '⚡'; font-size: 0.6rem; }
+  .bar.poise { height: 5px; border-color: #4a3a1a; }
+  .bar.poise > div { background: linear-gradient(90deg, #b8860b, #ffcf7a); }
+  .bar.poise.broken { height: 12px; }
+  .bar.poise.broken > div { background: linear-gradient(90deg, #d9483b, #ffcf7a); animation: pulse 0.6s ease-in-out infinite alternate; }
+  .bar.poise.broken span { font-size: 0.6rem; line-height: 10px; }
+  @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
   .bar.stamina { height: 8px; }
   .bar.stamina > div { background: linear-gradient(180deg, #8fd19e, #3f7d54); }
   .bar.stamina span { font-size: 0.55rem; line-height: 7px; }

@@ -355,8 +355,10 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
         continue;
       }
       let dmg = damage(ctx, att, def, ctx.rng);
-      const crit = side.perks.crit > 0 && ctx.rng.chance(side.perks.crit);
+      // A staggered target takes a critical hit.
+      const crit = !!other.exposed || (side.perks.crit > 0 && ctx.rng.chance(side.perks.crit));
       if (crit) dmg = Math.round(dmg * ctx.balance.tower.critMult);
+      other.exposed = false;
       const shield = statusOf(other, 'shield');
       if (shield) {
         const absorbed = Math.min(shield.value, dmg);
@@ -366,6 +368,7 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
       }
       other.hp = Math.max(0, other.hp - dmg);
       landed++;
+      shake(ctx, battle, other, skill.hit * mult, side.isHero);
       const m = elementMultiplier(ctx, self.element, other.element);
       event({ kind: 'hit', dmg, m, special, ...(crit ? { crit: true } : {}) });
       log(`${self.name}: ${skill.name} trifft${crit ? ' kritisch' : ''} für ${dmg}${m > 1 ? ' – sehr effektiv!' : m < 1 ? ' – wenig effektiv.' : '.'}`);
@@ -401,6 +404,25 @@ function useSkill(ctx: GameContext, battle: RpgBattle, side: Side, skill: RpgSki
     event({ kind: 'skill', special });
   }
   return landed;
+}
+
+/** Poise limit of a combatant: the hero's, or the foe's by its kind. */
+export function maxPoise(ctx: GameContext, c: RpgCombatant): number {
+  const p = ctx.balance.rpg.poise;
+  return 'kind' in c ? p[(c as RpgFoe).kind] : p.hero;
+}
+
+/** A hit of `strength` fills the target's poise; full = it staggers (skips its next move, the next hit is critical). */
+function shake(ctx: GameContext, battle: RpgBattle, target: RpgCombatant, strength: number, byHero: boolean): void {
+  if (target.hp <= 0) return;
+  target.hitAt = battle.round;
+  target.poise = (target.poise ?? 0) + ctx.balance.rpg.poise.perHit * strength;
+  if (target.poise < maxPoise(ctx, target)) return;
+  target.poise = 0;
+  target.exposed = true;
+  addStatus(target, { id: 'stun', rounds: 2, value: 1 });
+  battle.log.push(`${target.name} gerät ins Wanken!`);
+  (battle.last ??= []).push({ by: byHero ? 'hero' : 'foe', kind: 'stagger', special: true });
 }
 
 /** Wut: the foe's damage factor in this round (1 before `enrageAfter`). */
@@ -489,6 +511,8 @@ function endRound(ctx: GameContext, battle: RpgBattle, perks: Required<RpgPerks>
   if (perks.regen > 0) battle.hero.hp = Math.min(battle.hero.maxHp, battle.hero.hp + Math.round(battle.hero.maxHp * perks.regen));
   for (const c of [battle.hero, battle.foe]) {
     if (c.hp <= 0) continue;
+    // Poise only recovers in a round without a hit taken.
+    if (c.hitAt !== battle.round) c.poise = Math.max(0, (c.poise ?? 0) - ctx.balance.rpg.poise.regen);
     for (const st of c.statuses) {
       if (st.id === 'burn' || st.id === 'poison') {
         c.hp = Math.max(0, c.hp - st.value);
@@ -521,9 +545,10 @@ export function playRound(ctx: GameContext, battle: RpgBattle, skill: RpgSkillDe
     battle.log.push(`${battle.foe.name} geht in Deckung.`);
   }
   const cfg = ctx.balance.rpg;
-  battle.stamina = Math.max(0, (battle.stamina ?? cfg.stamina.max) - (skill.stamina ?? cfg.stamina.cost[skill.slot]));
-  // A staggered hero cannot defend either.
-  const stance = statusOf(battle.hero, 'stun') ? undefined : skill.stance;
+  // A staggered hero loses the move (it costs nothing) and cannot defend either.
+  const staggered = !!statusOf(battle.hero, 'stun');
+  if (!staggered) battle.stamina = Math.max(0, (battle.stamina ?? cfg.stamina.max) - (skill.stamina ?? cfg.stamina.cost[skill.slot]));
+  const stance = staggered ? undefined : skill.stance;
   const heroTurn = () => {
     if (skill.slot === 'special') battle.charge = 0;
     const cd = effectiveCooldown(skill, all);
