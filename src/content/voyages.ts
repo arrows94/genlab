@@ -56,6 +56,29 @@ export const voyageEvents: VoyageEventDef[] = [
   { id: 'nomads', text: 'Wandernde Züchter tauschen Essenz gegen Geschichten.', weight: 2, effect: { resources: { essence: 150 } } },
   { id: 'lost', text: 'Das Team verläuft sich im Nebel und findet erst spät den Weg zurück.', weight: 2, effect: { lootPct: -0.05 } },
   { id: 'feast', text: 'Eine reiche Ernte am Wegesrand – alle sind satt und guter Dinge.', weight: 2, effect: { lootPct: 0.05, resources: { food: 5000 } } },
+  { id: 'campfire', text: 'Am Lagerfeuer erzählt sich das Team Geschichten von den ersten Züchtern.', weight: 2, effect: {} },
+  { id: 'fieldLab', text: 'Ein verlassenes Feldlabor, die Petrischalen längst vertrocknet. Ein paar Notizen sind noch lesbar.', weight: 1, effect: { hint: true } },
+  { id: 'tracks', text: 'Fremde Spuren im Schlamm – größer als die jeder bekannten Art. Das Team folgt ihnen lieber nicht.', weight: 2, effect: {} },
+  { id: 'starNight', text: 'Eine klare Nacht. Die Sterne stehen so, wie sie auf alten Brutkalendern eingezeichnet sind.', weight: 2, effect: {} },
+  { id: 'brokenBridge', text: 'Eine Hängebrücke ist eingestürzt. Der Umweg kostet Zeit und Proviant.', weight: 2, effect: { lootPct: -0.05 } },
+  { id: 'caravan', text: 'Eine Karawane fahrender Händler. Für ein paar Lieder gibt es eine Handvoll Gold.', weight: 2, effect: { resources: { gold: 2000 } } },
+  { id: 'molting', text: 'Ein Teammitglied häutet sich über Nacht. Die alte Haut steckt voller Genfragmente.', weight: 2, effect: { resources: { fragments: 30 } } },
+  { id: 'lullaby', text: 'Aus einem hohlen Baum summt etwas eine Melodie, die alle Kreaturen schläfrig macht.', weight: 1, effect: {} },
+  { id: 'oldBreeder', text: 'Ein alter Züchter erkennt die Linie eines Teammitglieds wieder und erzählt von dessen Urahnen.', weight: 1, effect: {} },
+
+  // Only on the way to one destination.
+  { id: 'frozenEgg', destinations: ['glacierSea'], text: 'Im Eis eingeschlossen liegt ein Ei, älter als jede Aufzeichnung. Es lässt sich nicht befreien.', weight: 2, effect: {} },
+  { id: 'aurora', destinations: ['glacierSea'], text: 'Polarlichter über dem Gletschermeer. Die Eis-Kreaturen leuchten mit ihnen um die Wette.', weight: 2, effect: { lootPct: 0.05 } },
+  { id: 'ashRain', destinations: ['emberWastes'], text: 'Ascheregen. Das Team wickelt sich in nasse Tücher und wartet ab.', weight: 2, effect: { lootPct: -0.05 } },
+  { id: 'obsidian', destinations: ['emberWastes'], text: 'Ein Feld aus Obsidian, glatt wie ein Spiegel. Darunter glimmen Kristalle in der Glut.', weight: 2, effect: { resources: { catalyst: 2 } } },
+  { id: 'windRiver', destinations: ['skyArchipelago'], text: 'Ein Windstrom trägt das Team von Insel zu Insel – schneller als jeder Weg zu Fuß.', weight: 2, effect: { lootPct: 0.1 } },
+  { id: 'stormNest', destinations: ['skyArchipelago'], text: 'Ein Nest auf einer Blitzklippe. Wer hier brütet, hat keine Angst vor Gewittern.', weight: 2, effect: {} },
+  { id: 'ancientRoots', destinations: ['verdantDeep'], text: 'Wurzeln so dick wie Häuser. In ihren Ringen steht die Geschichte der ersten Gene.', weight: 2, effect: { alleleSamples: 1 } },
+  { id: 'spores', destinations: ['verdantDeep'], text: 'Eine Sporenwolke lässt alle niesen. Danach ist der Pfad kaum wiederzufinden.', weight: 2, effect: { lootPct: -0.05 } },
+  { id: 'wisps', destinations: ['twilightMarsh'], text: 'Irrlichter locken vom Pfad. Das Team bindet sich mit Seilen aneinander.', weight: 2, effect: { lootPct: -0.05 } },
+  { id: 'stiltHut', destinations: ['twilightMarsh'], text: 'Eine Hütte auf Stelzen. Wer dort wohnt, hat einen Korb mit Essenz vor die Tür gestellt.', weight: 2, effect: { resources: { essence: 200 } } },
+  { id: 'refraction', destinations: ['prismSpire'], text: 'Im Prismenturm bricht sich das Licht in hundert Farben – jede Farbe ein anderes Gen.', weight: 2, effect: { resources: { fragments: 40 } } },
+  { id: 'echoHall', destinations: ['prismSpire'], text: 'Eine Halle, in der jedes Geräusch siebenfach zurückkommt. Das Team schweigt den ganzen Tag.', weight: 2, effect: {} },
 ];
 
 export const voyageDecisions: VoyageDecisionDef[] = [

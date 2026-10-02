@@ -88,7 +88,8 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
   if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
   if (!trySpend(ctx, toCost(ctx.balance.voyage.cost))) return { ok: false, reason: 'Nicht genug Vorräte.' };
 
-  const pool = [...ctx.content.voyageEvents.list];
+  const destination = voyageDestination(ctx).id;
+  const pool = ctx.content.voyageEvents.list.filter((e) => !e.destinations || e.destinations.includes(destination));
   const events: string[] = [];
   for (let i = 0; i < ctx.balance.voyage.events && pool.length > 0; i++) {
     const weights: Record<string, number> = {};
@@ -97,7 +98,7 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
     events.push(id);
     pool.splice(pool.findIndex((e) => e.id === id), 1);
   }
-  const data: VoyageData = { destination: voyageDestination(ctx).id, team: ids, events, bonus: ctx.state.voyage.nextBonus };
+  const data: VoyageData = { destination, team: ids, events, bonus: ctx.state.voyage.nextBonus };
   ctx.state.voyage.nextBonus = 0;
   const proc = startProcess(ctx, VOYAGE, voyageDurationMs(ctx), data);
   for (const c of team) c!.job = { kind: 'mission', target: String(proc.id) };

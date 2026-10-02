@@ -610,6 +610,8 @@ export interface VoyageEventDef {
   id: string;
   text: string;
   weight: number;
+  /** Only on the way to these destinations (omitted = everywhere). */
+  destinations?: string[];
   effect: {
     /** Loot change, e.g. -0.1 = −10 %. */
     lootPct?: number;

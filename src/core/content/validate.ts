@@ -305,6 +305,7 @@ export function validateContent(data: ContentData): string[] {
     text(`${w}.text`, e.text);
     num(`${w}.weight`, e.weight, 0);
     amounts(`${w}.effect.resources`, e.effect.resources);
+    (e.destinations ?? []).forEach((d) => ref(`${w}.destinations`, 'voyageDestinations', d));
   }
   for (const d of data.voyageDecisions) {
     const w = at('voyageDecisions', d.id);
