@@ -363,7 +363,7 @@
     🥚 Brüten · <CostLabel cost={data.cost} />
   </button>
   <p class="small muted note">
-    {#if data.ritual && ritualFull}Das Ritualnest ist belegt.{:else if !data.ritual && nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else if data.ritual}Die Eltern arbeiten weiter.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
+    {#if data.ritual && ritualFull}{data.ritualSlots > 1 ? 'Alle Ritualnester sind belegt.' : 'Das Ritualnest ist belegt.'}{:else if !data.ritual && nestsFull}Alle Nester sind belegt.{:else if data.stableFull}Der Stall ist voll.{:else if data.ritual}Die Eltern arbeiten weiter.{:else}Arbeitende Eltern werden von ihrer Anlage abgezogen.{/if}
   </p>
 
   {#if data.a && data.b}

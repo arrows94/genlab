@@ -76,6 +76,21 @@ describe('Besondere Brut', () => {
     expect(startBreeding(g, c!.id, d!.id, 'crossing')).toEqual({ ok: false, reason: 'Das Ritualnest ist belegt.' });
   });
 
+  it('the Ritualkammer opens a second Ritualnest', () => {
+    const g = ritualGame();
+    g.state.upgrades['ritualChamber'] = 1;
+    g.invalidate();
+    const [a, b] = g.state.creatures;
+    const c = createCreature(g, { speciesId: 'emberpup', source: 'other' });
+    const d = createCreature(g, { speciesId: 'bubbloon', source: 'other' });
+    const e = createCreature(g, { speciesId: 'emberpup', source: 'other' });
+    const f = createCreature(g, { speciesId: 'bubbloon', source: 'other' });
+    expect(startBreeding(g, a!.id, b!.id, 'noble').ok).toBe(true);
+    expect(startBreeding(g, c.id, d.id, 'crossing').ok).toBe(true);
+    expect(ritualEggs(g)).toHaveLength(2);
+    expect(startBreeding(g, e.id, f.id, 'crossing')).toEqual({ ok: false, reason: 'Alle Ritualnester sind belegt.' });
+  });
+
   it('hatches from its Keimprobe even if the parents are gone', () => {
     const g = ritualGame();
     const a = createCreature(g, { speciesId: 'emberpup', source: 'other' });

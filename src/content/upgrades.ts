@@ -83,6 +83,12 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
+    id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research', requires: { type: 'feature', feature: 'specialBreeding' },
+    description: '+1 Ritualnest: ein weiteres Brutritual gleichzeitig.',
+    cost: { essence: 300, catalyst: 3 }, costGrowth: 4, maxLevel: 2,
+    modifiers: [{ target: 'slots.ritualNest', op: 'add', value: 1 }],
+  },
+  {
     id: 'breedBook', theme: 'breeding', name: 'Zuchtbuch', category: 'research', requires: { type: 'feature', feature: 'hybrids' },
     description: 'Die Brutstation merkt sich dein letztes Paar und wählt es mit einem Tipp wieder aus.',
     cost: { gold: 1500, essence: 60 }, costGrowth: 1, maxLevel: 1,

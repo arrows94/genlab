@@ -5,6 +5,11 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Mehr Ritualnester
+
+- Statt Nester umzuwandeln: Forschung „Ritualkammer“ (+1 Ritualnest, bis zu zwei Stufen). Damit hat
+  `slots.ritualNest` eine Quelle
+
 ## 2026-10-02 – Längere Dungeons mit Wächter
 
 - Etwa 1,5-mal so viele Räume (12–18 statt 8–12), Stufenanstieg pro Raum so gesenkt, dass Start- und Boss-Stufe

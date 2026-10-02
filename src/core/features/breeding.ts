@@ -162,7 +162,7 @@ export function canBreed(ctx: GameContext, a: Creature | undefined, b: Creature 
   // Working creatures are pulled from their building automatically.
   if ((a.job && a.job.kind !== 'building') || (b.job && b.job.kind !== 'building')) return { ok: false, reason: 'Beide Kreaturen müssen frei sein.' };
   if (ritual) {
-    if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: 'Das Ritualnest ist belegt.' };
+    if (ritualEggs(ctx).length >= ritualNestSlots(ctx)) return { ok: false, reason: ritualNestSlots(ctx) > 1 ? 'Alle Ritualnester sind belegt.' : 'Das Ritualnest ist belegt.' };
   } else if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   if (stableFree(ctx) <= 0) return { ok: false, reason: 'Der Stall ist voll.' };
   return { ok: true };
