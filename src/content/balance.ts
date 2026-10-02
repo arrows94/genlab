@@ -158,6 +158,10 @@ export const balance: Balance = {
   },
   collect: {
     amounts: { food: 1 },
+    // Clicking at the refill rate adds about +25 % food production for an active player.
+    productionSeconds: 0.1,
+    stamina: { max: 50, perSec: 2.5 },
+    finds: { chance: 0.01, cooldownSec: 180, clicks: 10, productionSeconds: 30 },
   },
   production: {
     statScaling: 0.02,

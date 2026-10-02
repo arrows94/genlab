@@ -558,6 +558,8 @@ export interface GameState {
   prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
   rpg: RpgState;
+  /** Sammeln: Ausdauer spent (refills over time, see features/collect.ts) and when the next Fundstück can turn up (sim time). */
+  collect: { spent: number; nextFindAt: number };
 }
 
 export function createEmptyState(now: number, seed: number): GameState {
@@ -609,6 +611,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
     rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {} },
+    collect: { spent: 0, nextFindAt: 0 },
   };
 }
 

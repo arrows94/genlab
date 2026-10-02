@@ -187,6 +187,11 @@ function wireEvents(g: Game): void {
       toast(`📖 Neu im Dex: ${content.species.get(e.species).name} (${content.rarities.get(e.rarity).name})`, 'info');
   });
   g.bus.on('prestige', () => toast('🧬 Vererbung abgeschlossen!', 'rare'));
+  g.bus.on('collected', (e) => {
+    if (!e.find) return;
+    const r = content.resources.get(e.find.resource);
+    toast(`✨ Fundstück beim Sammeln: +${formatNumber(e.find.amount)} ${r.icon} ${r.name}`, 'rare');
+  });
   const markUnseen = (tab: string) => {
     if (view.tab !== tab) view.unseen = { ...view.unseen, [tab]: (view.unseen[tab] ?? 0) + 1 };
   };

@@ -4,7 +4,8 @@ import type { RpgEvent } from './state';
 /** All game events. Add new events here; listeners are fully typed. */
 export interface GameEvents {
   resourceGained: { resource: string; amount: Decimal; source: string };
-  collected: { amounts: Record<string, Decimal> };
+  /** `find`: a Fundstück turned up with this click (already granted). */
+  collected: { amounts: Record<string, Decimal>; find: { resource: string; amount: Decimal } | null };
   featureUnlocked: { feature: string; silent: boolean };
   upgradeBought: { upgrade: string; level: number };
   creatureAdded: { creatureId: number; source: 'start' | 'hatch' | 'wild' | 'capsule' | 'other' };

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 32,
+    date: '2026-10-02',
+    title: 'Sammeln mit Ausdauer und Fundstücken',
+    items: [
+      { text: 'Sammeln kostet jetzt Ausdauer – die DNA-Helix neben dem Knopf zeigt, wie viel noch da ist: Jeder Klick kostet einen Punkt, sie füllt sich von selbst wieder. Ist sie leer, bringt schnelleres Klicken nichts extra – eine kurze Pause lohnt sich mehr als Dauerklicken.' },
+      { text: 'Sammeln wächst mit: Jeder Klick bringt zusätzlich einen Teil deiner aktuellen Nahrungsproduktion.' },
+      { text: 'Mit etwas Glück stößt du beim Sammeln auf ein Fundstück – einen Schwung Nahrung oder anderer Rohstoffe, die du gerade herstellst.' },
+    ],
+  },
+  {
     id: 31,
     date: '2026-10-02',
     title: 'Updates sofort bemerken',
