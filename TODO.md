@@ -9,20 +9,6 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
 wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
 
-## Schritt 1 – weitere Fehler (ungeprüft)
-
-- [ ] Zuchtpaar ist im Recycling-Modus „voll“ nicht geschützt: `planAutoBreed` bricht bei vollem Stall ab, bevor es
-      ein Paar wählt, also schützt `autoRecycleCandidates` das Paar nie (`features/automation.ts:219`, `:140`)
-- [ ] Offline-Nachholen rechnet mit der Uhrzeit vom Ende der Abwesenheit (`game.ts:141` setzt `lastTickAt = now`
-      vorher): Wochen-Mutation und Entschlossenheit gelten für die ganze nachgeholte Zeit; live wird der
-      Modifier-Cache beim Wochenwechsel nicht ungültig
-- [ ] `breakthrough` nimmt die Ziel-Kreatur auch als Partner an (`features/infusion.ts:139`, kein
-      `partnerId !== targetId`; über die Oberfläche nicht erreichbar)
-- [ ] Startressourcen aus Talenten und RPG-Beute beim Neustart zählen als „in diesem Lauf verdient“
-      (`prestige.ts:37`, `:47`, `:58`) – Vererbungs-Gewinn und Anomalie-Ziele
-- [ ] Manuelles Recyceln, das an „Mindestens eine Kreatur muss bleiben“ scheitert, bricht ohne Meldung ab
-      (`features/automation.ts:364`)
-
 ## Schritt 2 – Sync-Server und CI absichern
 
 - [ ] Sync-Server: Rate-Limit (Workers-Binding, strenger für neue Zeilen), CORS auf die eigenen Ursprünge statt `*`

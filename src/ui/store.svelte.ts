@@ -212,6 +212,10 @@ function wireEvents(g: Game): void {
     Object.entries(v).map(([r, a]) => `+${formatNumber(a.toString())} ${content.resources.get(r).icon}`).join(' ');
   g.bus.on('sold', (e) => !e.auto && toast(`💰 ${e.count} verkauft: ${amounts(e.value)}`));
   g.bus.on('recycled', (e) => !e.auto && toast(`♻️ ${e.count} recycelt: +${formatNumber(e.fragments)} 🧩`));
+  g.bus.on('recycleFailed', (e) => {
+    const c = g.state.creatures.find((x) => x.id === e.creatureId);
+    toast(`♻️ ${c?.name ?? 'Kreatur'} wurde nicht recycelt: ${e.reason}`, 'error');
+  });
   g.bus.on('stableFull', (e) => toast(`🏠 Stall voll – wilde Kreatur freigelassen (${amounts(e.value)})`, 'error'));
   g.bus.on('infused', (e) => {
     const parts = [`🔮 Infusion: +${formatNumber(e.ep)} EP`];

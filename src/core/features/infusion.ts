@@ -144,6 +144,7 @@ export function breakthrough(ctx: GameContext, targetId: number, partnerId: numb
   if (!ctx.state.features['infusion']) return { ok: false, reason: 'Infusion ist noch nicht freigeschaltet.' };
   const target = findCreature(ctx, targetId);
   if (!target) return { ok: false, reason: 'Kreatur nicht gefunden.' };
+  if (partnerId === targetId) return { ok: false, reason: 'Der Partner muss eine andere Kreatur sein.' };
   if (target.infusion.level < maxInfusionLevel(ctx)) return { ok: false, reason: `Erst Infusionsstufe +${maxInfusionLevel(ctx)} erreichen.` };
   const next = nextRarity(ctx, target.rarity);
   if (!next) return { ok: false, reason: 'Höher geht es per Durchbruch nicht – Mythisch gibt es nur durch Zucht.' };

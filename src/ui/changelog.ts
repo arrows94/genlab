@@ -35,6 +35,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Wochen-Boss: Jeder verpasste Tag bringt seine Angriffe (bis zur Obergrenze), nicht nur der letzte.', feature: 'weeklyBoss' },
       { text: 'Wochen-Boss: Senkst du den Turm-Rekord, wird der Titan nie schwächer als die Etagen, die dein Team zuletzt erreicht hat.', feature: 'weeklyBoss' },
       { text: 'Zwillinge, die als Hybrid schlüpfen, bekommen die Werte ihrer neuen Art wie ihr Geschwister.', feature: 'aeon' },
+      { text: 'Der Recycling-Automat lässt das Paar in Ruhe, das der Zuchtautomat als Nächstes verpaaren will – auch wenn der Stall voll ist.', feature: 'autoRecycle' },
+      { text: 'Schickst du eine Kreatur in den Recycler, die am Ende doch bleiben muss, sagt dir eine Nachricht warum.', feature: 'recycler' },
+      { text: 'Nach einer langen Pause wechselt die Wochen-Mutation beim Aufholen zur richtigen Zeit, und die Entschlossenheit im Turm wächst Stunde für Stunde statt sofort voll.', feature: 'weekly' },
+      { text: 'Startvorräte aus Talenten zählen nicht mehr als „in diesem Lauf verdient“.', feature: 'aeon' },
     ],
   },
   {

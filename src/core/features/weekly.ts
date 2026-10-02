@@ -2,6 +2,7 @@ import { hashSeed } from '../rng';
 import type { WeeklyMutationDef } from '../content/types';
 import type { GameContext } from '../context';
 import type { ModifierProvider } from '../providers';
+import type { System } from '../systems/types';
 
 /**
  * Weekly mutation: a date-based seed picks one rule change per week. No
@@ -39,4 +40,18 @@ export function nextWeekStart(ctx: GameContext, nowMs: number): number {
 export const weeklyProvider: ModifierProvider = (ctx, into) => {
   const m = activeMutation(ctx);
   if (m) into.addAll(`weekly:${m.id}`, m.modifiers);
+};
+
+/** Week each game last saw; the cached modifiers must follow the mutation when the week turns. */
+const seenWeek = new WeakMap<GameContext, number>();
+
+export const weeklySystem: System = {
+  id: 'weekly',
+  update(ctx) {
+    if (!ctx.state.features['weekly']) return;
+    const week = weekIndex(ctx.balance.weekly.epoch, ctx.state.lastTickAt);
+    const seen = seenWeek.get(ctx);
+    if (seen !== undefined && seen !== week) ctx.invalidate();
+    seenWeek.set(ctx, week);
+  },
 };

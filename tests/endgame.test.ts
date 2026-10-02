@@ -278,6 +278,8 @@ describe('Äon prestige and talents', () => {
     expect(g.state.features.autoSequence).toBe(true);
     expect(g.state.features.autoRecycle).toBe(true);
     expect(g.state.resources.food!.toNumber()).toBeGreaterThanOrEqual(1000);
+    // Start resources are no income of the new run (inheritance gain, anomaly goals).
+    expect(g.state.earned.food?.toNumber() ?? 0).toBe(0);
   });
 
   it('"Urgene" activates an extra gene locus in every creature', () => {

@@ -5,6 +5,17 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 1: weitere Fehler (bestätigt und behoben)
+
+- Recycling-Automat schont das Paar des Zuchtautomaten auch bei vollem Stall (`planAutoBreed(ctx, { ignoreRoom })`)
+- Offline-Nachholen: Die Uhr (`lastTickAt`) läuft während der Schritte vom Beginn bis zum Ende der Abwesenheit mit
+  (über die gedeckelte Spanne verteilt) – Wochen-Mutation, Entschlossenheit, Tage und Wochen wechseln zur richtigen
+  Zeit; `simulateOffline` lässt die Uhr wie bisher. Neues `weeklySystem` macht den Modifier-Cache beim Wochenwechsel
+  ungültig
+- `breakthrough` lehnt die Ziel-Kreatur als eigenen Partner ab
+- `resetLayer` leert `earned` erst am Ende: RPG-Beute und Talent-Startvorräte zählen nicht als Einkommen des neuen Laufs
+- Scheitert das Recyceln einer vom Spieler geschickten Kreatur, meldet das Ereignis `recycleFailed` den Grund (Toast)
+
 ## 2026-10-02 – Schritt 1: bestätigte Fehler
 
 - Sequenzier-Roboter nimmt keine Kreaturen mehr, die auf dem Weg in den Gen-Recycler sind (`autoSequenceOnce`)

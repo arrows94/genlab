@@ -135,12 +135,16 @@ function abilityScore(ctx: GameContext, c: Creature): number {
   return c.abilities.reduce((sum, id) => sum + (ctx.content.abilities.has(id) ? ctx.content.rarities.get(ctx.content.abilities.get(id).tier).order + 1 : 0), 0);
 }
 
-/** The pair the automaton would breed next, or why it waits. */
-export function planAutoBreed(ctx: GameContext): AutoBreedPlan {
+/**
+ * The pair the automaton would breed next, or why it waits. `ignoreRoom` skips
+ * the nest and stable checks: the Recycling-Automat asks which pair to spare
+ * exactly when the stable is full.
+ */
+export function planAutoBreed(ctx: GameContext, opts: { ignoreRoom?: boolean } = {}): AutoBreedPlan {
   const cfg = ctx.state.automation.autoBreed;
-  if (nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
+  if (!opts.ignoreRoom && nestEggs(ctx).length >= nestSlots(ctx)) return { ok: false, reason: 'Alle Nester sind belegt.' };
   // Room is made by the Recycling-Automat (or the player) – the only automation that removes creatures.
-  if (stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
+  if (!opts.ignoreRoom && stableFree(ctx) <= 0) return { ok: false, reason: recyclerRunning(ctx) ? 'Der Stall ist voll – der Recycling-Automat schafft Platz.' : 'Der Stall ist voll.' };
   const pool = ctx.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !inRecycler(ctx, c.id) && (cfg.rule === 'hybrid' || !cfg.species || c.speciesId === cfg.species));
   let pair: [Creature, Creature] | null = null;
   let none = 'Keine zwei freien Kreaturen.';
@@ -218,7 +222,7 @@ export function autoRecycleCandidates(ctx: GameContext): Creature[] {
   const kept = keptPerSpecies(ctx);
   // Never the pair the Zuchtautomat is about to breed.
   if (ctx.state.automation.autoBreed.enabled && ctx.state.features['autoBreed']) {
-    const plan = planAutoBreed(ctx);
+    const plan = planAutoBreed(ctx, { ignoreRoom: true });
     if (plan.ok) kept.add(plan.a.id).add(plan.b.id);
   }
   const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && expendable(ctx, c, cfg.maxRarity)));
@@ -365,7 +369,10 @@ export function advanceRecycler(ctx: GameContext, dtMs: number): void {
     a.recycling = null;
     // Once inside, it is recycled. The automat's picking rules were checked when it went in;
     // „je Art behalten“ still protects its picks, what the player sent is always taken.
-    if (cur.manual || !keptPerSpecies(ctx).has(cur.creatureId)) recycle(ctx, [cur.creatureId], !cur.manual);
+    if (cur.manual || !keptPerSpecies(ctx).has(cur.creatureId)) {
+      const done = recycle(ctx, [cur.creatureId], !cur.manual);
+      if (!done.ok && cur.manual) ctx.bus.emit('recycleFailed', { creatureId: cur.creatureId, reason: done.reason });
+    }
     fillRecycler(ctx);
   }
 }

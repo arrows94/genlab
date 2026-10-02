@@ -3,7 +3,10 @@ import { checkCondition, dexCounts } from '@core/conditions';
 import { createCreature } from '@core/creatures';
 import { serialize } from '@core/save';
 import { unlockFeature } from '@core/systems/unlocks';
-import { content, makeGame } from './helpers';
+import { Game } from '@core/game';
+import { DEFAULT_SYSTEMS } from '@core/systems';
+import { nextWeekStart } from '@core/features/weekly';
+import { NOW, balance, content, makeGame } from './helpers';
 
 const HOUR = 3_600_000;
 
@@ -85,5 +88,32 @@ describe('offline catch-up', () => {
     g.loadState(other);
     expect(g.catchingUp).toBeNull();
     expect(g.update(other.lastTickAt + 1000)).toBeNull();
+  });
+});
+
+describe('wall clock during a catch-up', () => {
+  it('walks from the start of the absence to its end, spread over the capped span', () => {
+    const seen: number[] = [];
+    const probe = { id: 'probe', update: (ctx: Game) => void seen.push(ctx.state.lastTickAt) };
+    const g = new Game({ content, balance, now: NOW, seed: 1, systems: [...DEFAULT_SYSTEMS, probe] });
+    const start = g.state.lastTickAt;
+    const away = 40 * 24 * HOUR; // far beyond the offline cap
+    g.update(start + away);
+    expect(seen.length).toBeGreaterThan(1);
+    expect(seen[0]!).toBeGreaterThan(start);
+    expect(seen[0]!).toBeLessThan(start + away / 2);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]!).toBeGreaterThanOrEqual(seen[i - 1]!);
+    expect(seen.at(-1)).toBe(start + away);
+    expect(g.state.lastTickAt).toBe(start + away);
+  });
+
+  it('a new week refreshes the cached bonuses (weekly mutation)', () => {
+    const g = makeGame();
+    unlockFeature(g, 'weekly');
+    const turn = nextWeekStart(g, g.state.lastTickAt);
+    g.update(turn - 1000);
+    const before = g.mods();
+    g.update(turn + 1000);
+    expect(g.mods()).not.toBe(before);
   });
 });

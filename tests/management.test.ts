@@ -179,6 +179,9 @@ describe('infusion', () => {
     expect(breakthrough(g, target.id, partner.id).ok).toBe(false);
     target.infusion = { level: 10, ep: 0 };
     expect(breakthrough(g, target.id, wrong.id).ok).toBe(false);
+    expect(breakthrough(g, target.id, target.id).ok).toBe(false); // not its own partner
+    expect(g.state.creatures).toContain(target);
+    expect(target.rarity).toBe('epic');
     expect(breakthrough(g, target.id, partner.id).ok).toBe(true);
     expect(target.rarity).toBe('legendary');
     expect(target.infusion.level).toBe(0);
@@ -511,6 +514,33 @@ describe('automation', () => {
       // The next one goes in right away.
       expect(recyclingNow(g)?.creature).toBe(weak);
       expect(recyclingNow(g)!.progress).toBeLessThan(0.1);
+    });
+
+    it('spares the pair the Zuchtautomat wants even when the stable is full', () => {
+      const { g, mk } = setup();
+      const a = mk('pebblit', 1, { generation: 1 });
+      const b = mk('pebblit', 2, { generation: 1 });
+      for (let i = 0; stableFree(g) > 0; i++) mk('pebblit', 50 + i, { generation: 9 });
+      setAutoBreed(g, { enabled: true, rule: 'cheap' });
+      setAutoRecycle(g, { enabled: true, keepPerSpecies: 1, when: 'full' });
+      expect(planAutoBreed(g).ok).toBe(false); // stable full – the automat waits for room
+      const ids = autoRecycleCandidates(g).map((c) => c.id);
+      expect(ids.length).toBeGreaterThan(0);
+      expect(ids).not.toContain(a.id);
+      expect(ids).not.toContain(b.id);
+    });
+
+    it('tells the player when a creature sent to the chamber cannot be recycled', () => {
+      const { g, mk } = setup();
+      const a = mk('pebblit', 1);
+      mk('pebblit', 2);
+      expect(sendToRecycler(g, [a.id]).ok).toBe(true);
+      g.state.creatures = [a]; // the other one is gone – „Mindestens eine Kreatur muss bleiben“
+      const failed: string[] = [];
+      g.bus.on('recycleFailed', (e) => failed.push(e.reason));
+      g.advance(recycleDurationMs(g, true) + 1000);
+      expect(g.state.creatures).toContain(a);
+      expect(failed.length).toBe(1);
     });
 
     it('a shorter duration (research bought meanwhile) hands out no extra time', () => {

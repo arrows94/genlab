@@ -34,7 +34,6 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   const s = ctx.state;
   const r = layer.resets;
   for (const res of r.resources) s.resources[res] = D(ctx.balance.start.resources[res] ?? 0);
-  s.earned = {};
   // Travellers (Tagesreisen, Wochenexpedition) are not at home: they and their journey survive.
   const kept = s.processes.filter((p) => survivesReset(ctx, p));
   const away = new Set(kept.map((p) => String(p.id)));
@@ -59,6 +58,8 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   if (s.creatures.every((c) => c.job?.kind === 'mission')) {
     createCreature(ctx, { speciesId: ctx.balance.start.species, rarity: ctx.balance.start.rarity, source: 'start' });
   }
+  // Last: RPG loot and talent start resources are no income of the new run.
+  s.earned = {};
 }
 
 /**
