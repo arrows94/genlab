@@ -259,7 +259,7 @@
   .switch button { font-size: 0.85rem; padding: 0.35rem 0.7rem; }
   .switch button.active { border-color: var(--teal); background: color-mix(in srgb, var(--petrol) 45%, var(--panel-2)); }
 
-  .rings { display: flex; flex-wrap: wrap; gap: 0.9rem 1.4rem; align-items: center; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
+  .rings { display: flex; flex-wrap: wrap; gap: 0.9rem 1.4rem; align-items: flex-start; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
   .ring { position: relative; display: grid; justify-items: center; gap: 0.05rem; width: 6.2rem; }
   .ring svg { width: 58px; height: 58px; transform: rotate(-90deg); }
   .track { fill: none; stroke: var(--bg-2); stroke-width: 6; }
@@ -267,7 +267,7 @@
   .pct { position: absolute; top: 19px; font-size: 0.78rem; font-weight: 700; }
   .rlabel { font-size: 0.75rem; text-align: center; }
   .rsub { font-size: 0.68rem; }
-  .perfection { display: grid; gap: 0.2rem; font-size: 0.82rem; margin-left: auto; }
+  .perfection { display: grid; gap: 0.2rem; font-size: 0.82rem; margin-left: auto; align-self: center; }
 
   .tier { margin-bottom: 1rem; }
   .tier h3 { margin: 0 0 0.45rem; }
