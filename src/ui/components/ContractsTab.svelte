@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { content } from '@content/index';
   import { formatDuration } from '@core/format';
   import { missingAlleles } from '@core/genetics';
@@ -80,7 +80,7 @@
     <span class="kpi" title="Höhere Stufen bringen schwierigere Aufträge mit besseren Belohnungen.">
       <b class="num">Stufe {data.level}</b>
       <small>{data.next === null ? 'Höchste Stufe' : `${data.completed}/${data.next} erfüllt`}</small>
-      <span class="mini" use:meter={data.progress}><span style="width: {Math.min(100, data.progress * 100)}%"></span></span>
+      <Meter size="sm" tone="gold" value={data.progress} />
     </span>
     <span class="kpi"><b class="num">{formatDuration(data.renewIn)}</b><small>bis zu neuen Aufträgen</small></span>
     <span class="kpi"><b class="num">{data.rerollsLeft}</b><small>Tausch übrig</small></span>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { content } from '@content/index';
   import { D } from '@core/num';
   import { formatDuration, formatNumber } from '@core/format';
@@ -116,14 +116,14 @@
           <b>Bauphase {x.done + 1}: {x.stage.name}</b>
           <p class="small muted">{x.stage.description}</p>
           {#if x.building}
-            <div class="bar build" use:meter={x.building.progress}><div style="width: {x.building.progress * 100}%"></div></div>
+            <Meter value={x.building.progress} title="Bauphase im Bau" />
             <span class="small num muted">🏗️ Im Bau · noch {formatDuration(x.building.remaining)} <CrystalSkip process={x.proc} /></span>
           {:else}
             <div class="rows">
               {#each x.rows as r (r.res)}
                 <div class="row" title={r.name}>
                   <span class="ricon">{r.icon}</span>
-                  <div class="bar" use:meter={r.share}><div style="width: {r.share * 100}%" class:full={r.share >= 1}></div></div>
+                  <Meter value={r.share} tone={r.share >= 1 ? 'gold' : 'teal'} />
                   <span class="small num">{formatNumber(r.paid)} / {formatNumber(r.total)}</span>
                 </div>
               {/each}
@@ -183,10 +183,6 @@
   .rows { display: grid; gap: 0.3rem; }
   .row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; gap: 0.5rem; }
   .ricon { text-align: center; }
-  .bar { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .bar div { height: 100%; background: linear-gradient(90deg, var(--violet), var(--teal)); transition: width 0.4s; }
-  .bar div.full { background: var(--gold); }
-  .bar.build div { background: repeating-linear-gradient(45deg, var(--gold) 0 8px, #d9a93a 8px 16px); }
   .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .actions button { flex: 1 1 12rem; font-size: 0.85rem; }
   .finished { color: var(--gold); margin: 0; }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { fade } from 'svelte/transition';
   import { content } from '@content/index';
   import { canAfford, toCost } from '@core/costs';
@@ -291,7 +291,7 @@
       {#if data.minRarity}<span class="fact" style="color: {data.minRarity.color}">✦ mindestens {data.minRarity.name}</span>{/if}
       {#if data.hint > 0}<span class="fact">📜 <b class="num">{formatPercent(data.hint, 0)}</b> Rezepthinweis</span>{/if}
     </div>
-    <div class="meter" title="Chance auf eine wilde Kreatur" use:meter={data.wild}><div style="width: {data.wild * 100}%"></div></div>
+    <Meter tone="violet" value={data.wild} title="Chance auf eine wilde Kreatur" />
     {#if data.minRarity}<p class="small muted">Garantierter Fund – er findet auch in einem vollen Stall Platz.{#if data.def.maxConcurrent} Nur {data.def.maxConcurrent === 1 ? 'ein Team' : `${data.def.maxConcurrent} Teams`} gleichzeitig.{/if}</p>{/if}
 
     <h4>Beute {#if data.chosenCreature}<span class="small muted">mit {data.chosenCreature.name} (×{formatNumber(data.factor, { decimals: 2 })})</span>{/if}</h4>
@@ -425,8 +425,6 @@
   .facts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .fact { padding: 0.15rem 0.55rem; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); font-size: 0.8rem; }
   .fact.journey { border-color: var(--violet); color: #d7c6ff; }
-  .meter { height: 6px; border-radius: 99px; background: var(--bg-2); overflow: hidden; margin: 0.45rem 0 0.2rem; }
-  .meter div { height: 100%; background: linear-gradient(90deg, var(--petrol), var(--rc)); }
   h4 { margin: 0.7rem 0 0.35rem; font-size: 0.9rem; }
   .loot { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .loot-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c) 60%, var(--line)); background: color-mix(in srgb, var(--c) 10%, var(--bg-2)); }

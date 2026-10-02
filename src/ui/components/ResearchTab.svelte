@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { buyUpgrade } from '@core/actions';
   import { CHANCE_TARGET, formatDuration, formatModifier, formatNumber, formatPercent } from '@core/format';
   import { researchEffect, researchTree, type ResearchNode } from '@core/research';
@@ -84,7 +84,7 @@
     </span>
   {:else}
     <span class="lvlbar" title="Stufe {x.level} von {x.def.maxLevel}">
-      <span class="track" use:meter={(x.level / x.def.maxLevel)}><span style="width: {(x.level / x.def.maxLevel) * 100}%"></span></span>
+      <span class="track"><Meter value={x.level / x.def.maxLevel} /></span>
       <span class="num">{x.level}/{x.def.maxLevel}</span>
     </span>
   {/if}
@@ -198,8 +198,7 @@
   .pip { width: 12px; height: 6px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line); }
   .pip.on { background: var(--teal); border-color: var(--teal); }
   .lvlbar { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .track { flex: 1; max-width: 10rem; height: 6px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
-  .track span { display: block; height: 100%; background: var(--teal); }
+  .track { display: flex; flex: 1; max-width: 10rem; }
   .lvl { font-size: 0.75rem; color: var(--muted); }
 
   .act { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; }

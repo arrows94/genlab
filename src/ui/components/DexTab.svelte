@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { dialog } from '../dialog';
   import { formatPercent } from '@core/format';
   import { fade, scale } from 'svelte/transition';
@@ -213,7 +213,7 @@
             <div class="stats">
               {#each content.stats.list as s (s.id)}
                 <span class="sname small">{s.short}</span>
-                <span class="sbar" use:meter={((n.species.baseStats[s.id] ?? 0) / statMax)}><span style="width: {((n.species.baseStats[s.id] ?? 0) / statMax) * 100}%"></span></span>
+                <Meter value={(n.species.baseStats[s.id] ?? 0) / statMax} color="var(--el)" title={s.name} />
                 <span class="num small">{n.species.baseStats[s.id]}</span>
               {/each}
             </div>
@@ -326,8 +326,6 @@
   .perf { display: grid; gap: 0.15rem; margin: 0 0 0.6rem; color: var(--muted); }
   .perf .got { color: var(--gold); }
   .stats { display: grid; grid-template-columns: 2.4rem 1fr 2rem; gap: 0.25rem 0.5rem; align-items: center; }
-  .sbar { height: 7px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .sbar span { display: block; height: 100%; background: linear-gradient(90deg, var(--petrol), var(--el)); }
   .from { display: grid; gap: 0.15rem; padding: 0.45rem 0.55rem; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line); margin-bottom: 0.4rem; }
   .places { display: flex; flex-wrap: wrap; gap: 0.3rem; }
   .place { font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 6px; background: var(--panel-2); }

@@ -8,6 +8,7 @@
   import { sync } from '../sync.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import DnaHelix from './DnaHelix.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * „Dein Labor holt auf“: shown while a long absence is computed in slices, and before that
@@ -141,9 +142,7 @@
         <div class="bar waiting" role="progressbar" aria-busy="true"><div class="fill"></div></div>
         <p class="line">{#key view.waitFor}<span>{WAIT_TEXT[view.waitFor ?? 'sync']}</span>{/key}</p>
       {:else}
-        <div class="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(done * 100)}>
-          <div class="fill" style:width="{done * 100}%"></div>
-        </div>
+        <div class="bar"><Meter value={done} title="Aufholen" /></div>
         <p class="line">{#key line}<span>{lines[line % Math.max(1, lines.length)]?.text}</span>{/key}<span class="num pct">{Math.floor(done * 100)} %</span></p>
       {/if}
     </div>
@@ -212,8 +211,10 @@
   @keyframes carry-there { 0%, 3% { opacity: 0; } 6%, 44% { opacity: 1; } 48%, 100% { opacity: 0; } }
   @keyframes carry-back { 0%, 52% { opacity: 0; } 56%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
 
-  .bar { width: min(320px, 100%); height: 8px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
-  .fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); transition: width 0.2s linear; }
+  .bar { display: flex; width: min(320px, 100%); }
+  /* Indeterminate bar while waiting: same track and fill as Meter. */
+  .bar.waiting { height: 8px; border-radius: 99px; background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+  .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--teal) 72%, #000), var(--teal)); }
   .bar.waiting .fill { width: 35%; animation: sweep 1.3s ease-in-out infinite alternate; }
   @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
   .line { margin: 0; display: flex; gap: 0.6rem; align-items: baseline; font-size: 0.9rem; min-height: 1.4em; }

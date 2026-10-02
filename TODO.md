@@ -19,8 +19,6 @@ Spiellogik (ungeprüft):
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 Qualität:
-- [ ] Gestaltung: einheitliche Optik für Fortschrittsbalken (`<Meter>`) und Kreaturen-Kacheln (`<CreatureTile>`,
-      Kachel-CSS in 11 Komponenten kopiert) – Designentscheidung, weil sich das Aussehen ändert
 - [ ] `TowerTab.svelte` (1 015 Zeilen): Arena und Team-Auswahl als eigene Komponenten (Arena hängt eng am
       Wiedergabe-Zustand)
 

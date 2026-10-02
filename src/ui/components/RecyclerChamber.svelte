@@ -11,6 +11,7 @@
   import { expressedAppearance } from '@core/genetics';
   import { game, view, act, toast } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
+  import Meter from './Meter.svelte';
 
   /**
    * Zerlege-Kammer of the Gen-Recycler: the creature being taken apart right
@@ -118,7 +119,7 @@
         <span class="small" style="color: {now.rarity.color}">{now.rarity.name}</span>
         <span class="small muted">{now.species.name} · Gen {now.creature.generation}</span>
       </div>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(now.progress * 100)}><span style="width: {now.progress * 100}%"></span></div>
+      <Meter value={now.progress} title="Zerlege-Fortschritt" />
       <div class="row">
         <span class="small num">noch {formatDuration(now.remainingMs)} · ≈ {formatNumber(now.fragments)} 🧩</span>
         {#if now.manual}
@@ -196,8 +197,6 @@
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
   .label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.68rem; }
   .who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
-  .bar { height: 8px; border-radius: 99px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); }
-  .bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); transition: width 0.2s linear; }
   .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; }
   .rescue { font-size: 0.8rem; padding: 0.2rem 0.6rem; }
   .queue { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; }

@@ -29,6 +29,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-10-02',
     title: 'Kleine Reparaturen im Labor',
     items: [
+      { text: 'Neuer einheitlicher Look: Fortschrittsbalken und Kreaturen-Kacheln sehen überall gleich aus – mit Element-Schein, Seltenheitsleiste und klarer Auswahl.' },
       { text: 'Der Zeittrank kostet jetzt 20 Minuten deiner Essenz-Produktion – wer mehrere in einer Stunde trinkt, zahlt jedes Mal das Doppelte.', feature: 'market' },
       { text: 'Festmahl und Turbo-Trank kosten jetzt ein paar Minuten deiner Produktion statt eines festen Preises – so bleiben sie auch später eine echte Entscheidung.', feature: 'market' },
       { text: 'Boni auf Auftrags- und Tagesbelohnungen gelten nicht mehr für Äon-Splitter, Zeit- und Evolutionskristalle.', feature: 'contracts' },

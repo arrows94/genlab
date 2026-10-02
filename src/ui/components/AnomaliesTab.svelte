@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { content } from '@content/index';
   import { conditionProgress } from '@core/conditions';
   import {
@@ -86,7 +86,7 @@
       <button onclick={abandon}>Abbrechen</button>
     </div>
     {#if data.progress !== null}
-      <div class="goal big" title="Fortschritt – das langsamste Ziel zählt" use:meter={data.progress}><div style="width: {data.progress * 100}%"></div><span class="num">{Math.floor(data.progress * 100)} %</span></div>
+      <div class="goal"><Meter size="lg" value={data.progress} label="{Math.floor(data.progress * 100)} %" title="Fortschritt – das langsamste Ziel zählt" /></div>
     {/if}
   </article>
 {/if}
@@ -113,7 +113,7 @@
 
       <p class="small"><b>Ziel{x.level > 0 ? ` (Stufe ${ROMAN[x.level]})` : ''}:</b> {x.goal}{#if x.scale > 1.05}{' '}<span class="muted" title="Das Ziel wächst mit deinem Produktionsbonus. Es wird beim Start des Laufs festgelegt.">(×{formatNumber(x.scale)} Fortschritt)</span>{/if}</p>
       {#if x.progress !== null}
-        <div class="goal" use:meter={x.progress}><div style="width: {x.progress * 100}%"></div><span class="num">{Math.floor(x.progress * 100)} %</span></div>
+        <div class="goal"><Meter size="lg" value={x.progress} label="{Math.floor(x.progress * 100)} %" /></div>
       {/if}
       <p class="small reward"><b>Belohnung:</b> {x.a.rewardText} – je gemeisterter Stufe{#if x.best > 0}{' '}<span class="muted">(jetzt ×{x.best})</span>{/if}</p>
     </article>
@@ -149,10 +149,7 @@
   .stage { flex: 1; padding: 0.25rem 0; font-size: 0.8rem; font-weight: 700; }
   .stage.mastered { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); color: var(--gold); }
   .stage.on { background: color-mix(in srgb, var(--violet) 35%, var(--panel-2)); border-color: var(--violet); color: #fff; }
-  .goal { position: relative; height: 16px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; margin: 0.2rem 0 0.4rem; }
-  .goal.big { height: 20px; }
-  .goal div { height: 100%; background: linear-gradient(90deg, var(--violet), var(--teal)); transition: width 0.4s; }
-  .goal span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; text-shadow: 0 1px 2px #000; }
+  .goal { margin: 0.2rem 0 0.4rem; }
   .summary { position: sticky; z-index: 5; bottom: 0.5rem; margin-top: 0.75rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; }
   .gain { color: var(--gold); font-weight: 600; }
   /* Phones: stay above the bottom tab bar. */

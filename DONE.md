@@ -5,6 +5,17 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Einheitliche Optik für Balken und Kacheln
+
+- `Meter.svelte`: ein Fortschrittsbalken in drei Größen (sm 4 px, md 8 px, lg 16 px mit Wert) und Tönen mit Bedeutung
+  (Teal Fortschritt, Gold Belohnung/Rang, Violett Genetik/Seltenes, Rot Gefahr/KP), leuchtet voll, meldet sich als
+  `progressbar`. Umgestellt in 17 Komponenten. Bleiben eigen: Reiseleiste (Tagesmarken), Wochen-Boss (Belohnungsstufen),
+  Kampf-KP im RPG (Zahl im Balken), Aktionsleiste der Turm-Arena, Warte-Animation beim Aufholen, gestapelte Chancen
+- `CreatureTile.svelte`: eine Kreaturen-Kachel (Element-Schein, Seltenheit als Leiste, Name + Infozeile, links Auswahl
+  1/2, rechts eine Zusatzinfo je Ort, Zustände gewählt/blass) in Brutstation, Turm, Genlabor, Genom, Spleißen,
+  Infusion, Markt, Anlagen, Aufträge, Erkundung und Reise; Kachel-Raster überall `minmax(6,4rem, 1fr)`
+- Im Browser bei 1200 und 360 px geprüft: alle 16 Tabs ohne Überlauf und ohne Konsolenfehler
+
 ## 2026-10-02 – Markt: Tränke folgen der Produktion
 
 - Trank-Preise aus Minuten der aktuellen Produktion (`costMinutes` am Trank, der feste Preis ist die Untergrenze):

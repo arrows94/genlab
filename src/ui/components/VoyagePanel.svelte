@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Meter from './Meter.svelte';
   import { meter } from '../meter';
   import { content } from '@content/index';
   import { canAfford, toCost } from '@core/costs';
@@ -112,7 +113,7 @@
   </button>
 
   {#if !open}
-    {#if data.running}<div class="track mini" use:meter={data.running.progress}><div class="fill" style="width: {data.running.progress * 100}%"></div></div>{/if}
+    {#if data.running}<Meter size="sm" value={data.running.progress} />{/if}
   {:else if data.pending}
     <!-- Return: events + decision -->
     <div class="back">
@@ -229,7 +230,6 @@
   .member small { font-size: 0.66rem; }
 
   .track { position: relative; height: 10px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); margin: 0.6rem 0 1rem; }
-  .track.mini { height: 5px; margin: 0; }
   .track .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--petrol), var(--el)); }
   .mark { position: absolute; top: 12px; transform: translateX(-50%); font-size: 0.65rem; color: var(--muted); }
   .mark.reached { color: var(--text); font-weight: 700; }

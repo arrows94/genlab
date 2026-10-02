@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meter } from '../meter';
+  import Meter from './Meter.svelte';
   import { content } from '@content/index';
   import { formatNumber, formatPercent } from '@core/format';
   import { breedingPreview } from '@core/features/planner';
@@ -43,7 +43,7 @@
               {#if sp}<CreatureSvg appearance={{ ...neutral, hue: sp.hue }} shape={sp.shape} tier={sp.tier} size={28} />{:else}❔{/if}
             </span>
             <span class="sname">{sp ? sp.name : 'Unbekannte Kreuzung'}</span>
-            <span class="pbar" use:meter={s.p}><span style="width: {s.p * 100}%" class:hybrid={!sp || sp.tier !== 'base'}></span></span>
+            <Meter value={s.p} tone={!sp || sp.tier !== 'base' ? 'violet' : 'teal'} title="{sp ? sp.name : 'Unbekannte Kreuzung'} {formatPercent(s.p, 1)}" />
             <b class="num">{formatPercent(s.p, 0)}</b>
           </li>
         {/each}
@@ -115,9 +115,6 @@
   .icon { display: grid; place-items: center; width: 28px; height: 28px; }
   .icon.unknown { font-size: 1rem; }
   .sname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pbar { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
-  .pbar span { display: block; height: 100%; background: linear-gradient(90deg, var(--petrol), var(--teal)); }
-  .pbar span.hybrid { background: linear-gradient(90deg, var(--violet), #ff7ad9); }
 
   .strip { display: flex; height: 12px; border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
   .strip span { min-width: 3px; }
