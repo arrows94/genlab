@@ -23,6 +23,8 @@
       const slot = game.state.tower.relicSlots.indexOf(def.id);
       return { def, level, cost, affordable: !!cost && !!tokens && tokens.gte(cost), slot: slot >= 0 && slot < teamSize(game) ? slot : -1 };
     });
+    // Worn relics in the order of their places, the others after them.
+    relics.sort((a, b) => (a.slot < 0 ? Infinity : a.slot) - (b.slot < 0 ? Infinity : b.slot));
     const places = Array.from({ length: teamSize(game) }, (_, i) => {
       const id = game.state.tower.team[i];
       const relic = game.state.tower.relicSlots[i] ?? null;
@@ -87,7 +89,10 @@
   h3 { margin: 0; }
   h4 { margin: 0.4rem 0 0; font-size: 0.85rem; }
   .small { font-size: 0.78rem; }
-  .list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0.45rem; }
+  /* Three columns (5 relics: 3 + 2), two on tablets, one on phones. */
+  .list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+  @media (max-width: 900px) { .list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .list { grid-template-columns: 1fr; } }
   .relic { display: grid; grid-template-columns: 2rem 1fr; grid-template-rows: auto auto; gap: 0.3rem 0.5rem; padding: 0.5rem; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); }
   .relic.owned { border-color: color-mix(in srgb, #ffb74d 50%, var(--line)); }
   .relic.worn { box-shadow: 0 0 10px #ffb74d44; }
