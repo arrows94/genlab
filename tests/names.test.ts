@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature, findCreature } from '@core/creatures';
-import { breedingTimeMs, startBreeding } from '@core/features/breeding';
+import { eggs, startBreeding } from '@core/features/breeding';
+import { completeProcesses } from '@core/systems/processes';
 import { blendNames, epithetFor, foundFamily, givenName, rufname, syllables } from '@core/names';
 import { renameCreature, setNameStyle } from '@core/actions';
 import { Rng } from '@core/rng';
@@ -26,7 +27,8 @@ function hatch(g: ReturnType<typeof nameGame>, a: Creature, b: Creature): Creatu
   const ids: number[] = [];
   const off = g.bus.on('eggHatched', (e) => ids.push(e.creatureId));
   expect(startBreeding(g, a.id, b.id).ok).toBe(true);
-  g.advance(breedingTimeMs(g, 60, [a, b]) + 1000);
+  // Only the names matter here: hatch at once instead of simulating the breeding time.
+  completeProcesses(g, eggs(g));
   off();
   return findCreature(g, ids[0]!)!;
 }
