@@ -23,8 +23,10 @@ Spiellogik (ungeprüft):
 Qualität:
 - [ ] Große Dateien teilen: `simulateFight` (314 Zeilen, 40 `!`) in `towerCombat.ts` mit einem Datensatz je Kämpfer,
       `validateContent` als Tabelle, `TowerTab.svelte` und `BreedingTab.svelte` in Teilkomponenten
-- [ ] Gestaltung: feste Hex-Farben (~90) durch Tokens ersetzen (Glow, Relikt, Kristall), gemeinsame `<Meter>`- und
-      `<CreatureTile>`-Komponenten
+- [ ] Gestaltung: einheitliche Optik für Fortschrittsbalken (`<Meter>`) und Kreaturen-Kacheln (`<CreatureTile>`,
+      Kachel-CSS in 11 Komponenten kopiert) – Designentscheidung, weil sich das Aussehen ändert
+- [ ] `TowerTab.svelte` (1 015 Zeilen): Arena und Team-Auswahl als eigene Komponenten (Arena hängt eng am
+      Wiedergabe-Zustand)
 
 # Endgame
 

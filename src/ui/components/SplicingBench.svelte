@@ -307,7 +307,7 @@
   .head p { margin: 0.15rem 0 0; }
   .small { font-size: 0.8rem; }
   .risk { display: grid; grid-template-columns: auto 110px auto; gap: 0.4rem; align-items: center; }
-  .gauge { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #2fd3c4, #f2c14e, #ff6b6b); position: relative; }
+  .gauge { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--gold), #ff6b6b); position: relative; }
   .gauge div { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px #fff; }
 
   /* Target gallery */
@@ -324,7 +324,7 @@
     border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--el) 14%, transparent), var(--panel) 70%);
   }
   .tile:hover { border-color: var(--teal); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e66; }
+  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 40%, transparent); }
   .tile.done { opacity: 0.55; filter: saturate(0.6); }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
   .badge { position: absolute; top: 3px; right: 3px; font-size: 0.6rem; padding: 0 0.3rem; border-radius: 99px; background: var(--line); color: var(--text); }

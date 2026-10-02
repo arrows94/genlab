@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { canAfford, toCost } from '@core/costs';
   import { effectiveStats, findCreature } from '@core/creatures';
@@ -110,7 +111,7 @@
   </button>
 
   {#if !open}
-    {#if data.running}<div class="track mini"><div class="fill" style="width: {data.running.progress * 100}%"></div></div>{/if}
+    {#if data.running}<div class="track mini" use:meter={data.running.progress}><div class="fill" style="width: {data.running.progress * 100}%"></div></div>{/if}
   {:else if data.pending}
     <!-- Return: events + decision -->
     <div class="back">
@@ -145,7 +146,7 @@
       <span class="small num muted">noch {formatDuration(data.running.remaining)}</span>
       <CrystalSkip process={data.running.proc} />
     </div>
-    <div class="track" title="{formatPercent(data.running.progress, 0)} der Reise">
+    <div class="track" title="{formatPercent(data.running.progress, 0)} der Reise" use:meter={data.running.progress}>
       <div class="fill" style="width: {data.running.progress * 100}%"></div>
       {#each Array.from({ length: data.cfg.days }, (_, i) => i + 1) as d (d)}
         <span class="mark" class:reached={data.running.progress * data.cfg.days >= d} style="left: {(d / data.cfg.days) * 100}%">{d}</span>
@@ -207,7 +208,7 @@
 <style>
   .voyage { margin-top: 0.75rem; border-color: color-mix(in srgb, var(--el) 45%, var(--line)); display: grid; gap: 0.6rem; }
   .voyage.closed { padding: 0.5rem 0.8rem; gap: 0.4rem; }
-  .voyage.alert { border-color: var(--gold); box-shadow: 0 0 14px #f2c14e33; }
+  .voyage.alert { border-color: var(--gold); box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 20%, transparent); }
   .vhead { display: flex; gap: 0.7rem; align-items: center; width: 100%; padding: 0; border: 0; background: none; text-align: left; }
   .vhead:disabled { opacity: 1; cursor: default; }
   .vtitle { flex: 1; min-width: 0; }

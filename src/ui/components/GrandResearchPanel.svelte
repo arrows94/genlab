@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { formatDuration } from '@core/format';
@@ -52,7 +53,7 @@
           <span class="icon">{r.def.icon}</span>
           <div class="info">
             <b>{r.def.name} · Stufe {r.level}</b>
-            <div class="bar"><div style="width: {r.progress * 100}%"></div></div>
+            <div class="bar" use:meter={r.progress}><div style="width: {r.progress * 100}%"></div></div>
             <span class="small num muted">noch {formatDuration(r.remaining)} <CrystalSkip process={r.p} /></span>
           </div>
         {:else}

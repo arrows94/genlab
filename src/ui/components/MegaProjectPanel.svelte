@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { D } from '@core/num';
   import { formatDuration, formatNumber } from '@core/format';
@@ -115,14 +116,14 @@
           <b>Bauphase {x.done + 1}: {x.stage.name}</b>
           <p class="small muted">{x.stage.description}</p>
           {#if x.building}
-            <div class="bar build"><div style="width: {x.building.progress * 100}%"></div></div>
+            <div class="bar build" use:meter={x.building.progress}><div style="width: {x.building.progress * 100}%"></div></div>
             <span class="small num muted">🏗️ Im Bau · noch {formatDuration(x.building.remaining)} <CrystalSkip process={x.proc} /></span>
           {:else}
             <div class="rows">
               {#each x.rows as r (r.res)}
                 <div class="row" title={r.name}>
                   <span class="ricon">{r.icon}</span>
-                  <div class="bar"><div style="width: {r.share * 100}%" class:full={r.share >= 1}></div></div>
+                  <div class="bar" use:meter={r.share}><div style="width: {r.share * 100}%" class:full={r.share >= 1}></div></div>
                   <span class="small num">{formatNumber(r.paid)} / {formatNumber(r.total)}</span>
                 </div>
               {/each}
@@ -160,7 +161,7 @@
   @keyframes work { 50% { opacity: 0.2; } }
   .star { animation: twinkle 3s ease-in-out infinite; }
   @keyframes twinkle { 50% { opacity: 0.35; } }
-  .lens { filter: drop-shadow(0 0 3px #8ecbff); }
+  .lens { filter: drop-shadow(0 0 3px var(--crystal)); }
 
   .body { display: grid; gap: 0.4rem; min-width: 0; }
   .title { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }

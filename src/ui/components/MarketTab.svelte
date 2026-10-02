@@ -196,7 +196,7 @@
   .shelf { position: relative; z-index: 1; display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
   .plank { height: 14px; margin: 0 -0.8rem; border-radius: 0 0 var(--radius) var(--radius); background: linear-gradient(180deg, #8a5a33, #5a3a20); box-shadow: 0 -2px 0 #a8703f inset; }
   .slot { display: grid; justify-items: center; align-content: start; gap: 0.25rem; padding: 0.5rem 0.5rem 0.7rem; border-radius: 12px; border: 1px solid transparent; text-align: center; }
-  .slot.affordable { background: radial-gradient(circle at 50% 20%, #f2c14e14, transparent 70%); }
+  .slot.affordable { background: radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--gold) 8%, transparent), transparent 70%); }
   .slot.picked { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 10%, transparent); }
   .bottle { position: relative; padding: 0.2rem 0.6rem 0; border: 0; background: none; transition: transform 0.15s; }
   .bottle:hover:not(:disabled) { transform: translateY(-4px) rotate(-3deg); }
@@ -213,14 +213,14 @@
   .hint { margin: 0; }
   .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.4rem; }
   .stat { display: grid; justify-items: start; gap: 0.2rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; text-align: left; }
-  .stat.on { border-color: var(--gold); background: color-mix(in srgb, #f2c14e 12%, var(--panel-2)); }
+  .stat.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel-2)); }
   .pips { display: flex; gap: 2px; }
   .pip { width: 8px; height: 6px; border-radius: 2px; background: var(--bg-2); border: 1px solid var(--line); }
   .pip.full { background: #f2a93b; border-color: #f2a93b; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: 0.4rem; max-height: 18rem; overflow-y: auto; padding: 2px; }
   .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.05rem; padding: 0.35rem 0.25rem; border-radius: 10px;
     border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: var(--bg-2); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; background: color-mix(in srgb, #f2c14e 12%, var(--bg-2)); }
+  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
   .job { position: absolute; top: 2px; left: 5px; font-size: 0.8rem; }
   .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }

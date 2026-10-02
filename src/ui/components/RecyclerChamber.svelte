@@ -159,7 +159,7 @@
     position: relative; width: 96px; height: 118px; border-radius: 44px 44px 12px 12px; overflow: hidden; display: grid; place-items: center;
     border: 2px solid color-mix(in srgb, var(--rc) 55%, var(--line));
     background: radial-gradient(circle at 30% 20%, #ffffff18, transparent 45%), linear-gradient(180deg, #0f2a30, #081619);
-    box-shadow: inset 0 0 18px #2fd3c422, 0 0 calc(6px + var(--p) * 14px) color-mix(in srgb, var(--rc) 40%, transparent);
+    box-shadow: inset 0 0 18px color-mix(in srgb, var(--teal) 13%, transparent), 0 0 calc(6px + var(--p) * 14px) color-mix(in srgb, var(--rc) 40%, transparent);
   }
   .subject {
     position: relative; z-index: 1;
@@ -186,11 +186,11 @@
   @keyframes rise { 0% { transform: translateY(0) rotate(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-58px) rotate(180deg); opacity: 0; } }
   .liquid {
     position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--p) * 100%); z-index: 0;
-    background: linear-gradient(180deg, #2fd3c455, #9b6bff66); transition: height 0.2s linear;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--teal) 33%, transparent), color-mix(in srgb, var(--violet) 40%, transparent)); transition: height 0.2s linear;
   }
   .empty { font-size: 1.8rem; opacity: 0.35; }
   .socket { width: 104px; height: 12px; margin-top: -2px; border-radius: 4px 4px 8px 8px; background: linear-gradient(180deg, var(--panel-2, #1b3238), var(--panel)); border: 1px solid var(--line); }
-  .pop { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: var(--violet); font-weight: 700; white-space: nowrap; text-shadow: 0 0 8px #9b6bff88; animation: popup 1.4s ease-out forwards; pointer-events: none; }
+  .pop { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: var(--violet); font-weight: 700; white-space: nowrap; text-shadow: 0 0 8px color-mix(in srgb, var(--violet) 53%, transparent); animation: popup 1.4s ease-out forwards; pointer-events: none; }
   @keyframes popup { from { opacity: 0; transform: translate(-50%, 10px); } 15% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -34px); } }
 
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }

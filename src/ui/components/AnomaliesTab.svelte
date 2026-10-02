@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { conditionProgress } from '@core/conditions';
   import {
@@ -85,7 +86,7 @@
       <button onclick={abandon}>Abbrechen</button>
     </div>
     {#if data.progress !== null}
-      <div class="goal big" title="Fortschritt – das langsamste Ziel zählt"><div style="width: {data.progress * 100}%"></div><span class="num">{Math.floor(data.progress * 100)} %</span></div>
+      <div class="goal big" title="Fortschritt – das langsamste Ziel zählt" use:meter={data.progress}><div style="width: {data.progress * 100}%"></div><span class="num">{Math.floor(data.progress * 100)} %</span></div>
     {/if}
   </article>
 {/if}
@@ -112,7 +113,7 @@
 
       <p class="small"><b>Ziel{x.level > 0 ? ` (Stufe ${ROMAN[x.level]})` : ''}:</b> {x.goal}{#if x.scale > 1.05}{' '}<span class="muted" title="Das Ziel wächst mit deinem Produktionsbonus. Es wird beim Start des Laufs festgelegt.">(×{formatNumber(x.scale)} Fortschritt)</span>{/if}</p>
       {#if x.progress !== null}
-        <div class="goal"><div style="width: {x.progress * 100}%"></div><span class="num">{Math.floor(x.progress * 100)} %</span></div>
+        <div class="goal" use:meter={x.progress}><div style="width: {x.progress * 100}%"></div><span class="num">{Math.floor(x.progress * 100)} %</span></div>
       {/if}
       <p class="small reward"><b>Belohnung:</b> {x.a.rewardText} – je gemeisterter Stufe{#if x.best > 0}{' '}<span class="muted">(jetzt ×{x.best})</span>{/if}</p>
     </article>

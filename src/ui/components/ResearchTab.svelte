@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { buyUpgrade } from '@core/actions';
   import { CHANCE_TARGET, formatDuration, formatModifier, formatNumber, formatPercent } from '@core/format';
   import { researchEffect, researchTree, type ResearchNode } from '@core/research';
@@ -83,7 +84,7 @@
     </span>
   {:else}
     <span class="lvlbar" title="Stufe {x.level} von {x.def.maxLevel}">
-      <span class="track"><span style="width: {(x.level / x.def.maxLevel) * 100}%"></span></span>
+      <span class="track" use:meter={(x.level / x.def.maxLevel)}><span style="width: {(x.level / x.def.maxLevel) * 100}%"></span></span>
       <span class="num">{x.level}/{x.def.maxLevel}</span>
     </span>
   {/if}
@@ -183,7 +184,7 @@
     content: ''; position: absolute; left: -0.8rem; top: -0.45rem; width: 0.7rem; height: calc(50% + 0.45rem);
     border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); border-bottom-left-radius: 6px;
   }
-  .node.affordable { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e33; background: color-mix(in srgb, #f2c14e 6%, var(--bg-2)); }
+  .node.affordable { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 20%, transparent); background: color-mix(in srgb, var(--gold) 6%, var(--bg-2)); }
   .node.maxed { opacity: 0.6; }
   .node.locked { border-style: dashed; opacity: 0.75; background: transparent; }
   .main { display: grid; gap: 0.15rem; min-width: 0; }
@@ -212,7 +213,7 @@
   .intro { margin: 0.2rem 0 0.6rem; }
   .inf-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
   .inf { display: flex; flex-direction: column; gap: 0.3rem; }
-  .inf.affordable { border-color: var(--gold); box-shadow: 0 0 10px #f2c14e33; }
+  .inf.affordable { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 20%, transparent); }
 
   @media (max-width: 560px) {
     .node { grid-template-columns: 1fr; }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { dialog } from '../dialog';
   import { formatPercent } from '@core/format';
   import { fade, scale } from 'svelte/transition';
@@ -212,7 +213,7 @@
             <div class="stats">
               {#each content.stats.list as s (s.id)}
                 <span class="sname small">{s.short}</span>
-                <span class="sbar"><span style="width: {((n.species.baseStats[s.id] ?? 0) / statMax) * 100}%"></span></span>
+                <span class="sbar" use:meter={((n.species.baseStats[s.id] ?? 0) / statMax)}><span style="width: {((n.species.baseStats[s.id] ?? 0) / statMax) * 100}%"></span></span>
                 <span class="num small">{n.species.baseStats[s.id]}</span>
               {/each}
             </div>

@@ -175,7 +175,7 @@
     border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--el) 14%, transparent), var(--panel) 70%);
   }
   .tile:hover { border-color: var(--teal); }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e66; }
+  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 40%, transparent); }
   .tile.unknown { opacity: 0.7; }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
   .empty { grid-column: 1 / -1; margin: 0.3rem 0; }

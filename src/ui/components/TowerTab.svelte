@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { onDestroy, untrack } from 'svelte';
   import { scale } from 'svelte/transition';
   import { content } from '@content/index';
@@ -21,6 +22,8 @@
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
+  import TowerFloors from './TowerFloors.svelte';
+  import TowerBoard from './TowerBoard.svelte';
   import SortToggle from './SortToggle.svelte';
 
   /**
@@ -362,7 +365,6 @@
   /** Statuses of a fighter still running at the replay clock. */
   const activeMarks = (i: number) => (arena.mode === 'fight' ? Object.entries(marks[i] ?? {}).filter(([, until]) => until > arena.clock).map(([id]) => STATUS[id]).filter((x) => !!x) : []);
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
-  const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
 </script>
 
@@ -399,7 +401,7 @@
     {#if activeMarks(i).length}
       <span class="marks">{#each activeMarks(i) as m (m.name)}<span class="mark" class:bad={m.harmful} title={m.name}>{m.icon}</span>{/each}</span>
     {/if}
-    <div class="hpbar" title="Lebenspunkte"><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
+    <div class="hpbar" title="Lebenspunkte" use:meter={pct}><div style="width: {pct * 100}%" class:low={pct < 0.3}></div></div>
     <div class="atbrow" title="Aktionsleiste: handelt alle {formatNumber(iv, { decimals: 2 })} s Kampfzeit">
       <div class="atb" class:idle={!fighting} class:ready={fill > 0.8}>
         {#if fighting}
@@ -426,7 +428,7 @@
     <span class="kpi"><b class="num">🗼 {formatNumber(game.state.resources['towerTokens'] ?? 0)}</b><small>Turm-Marken</small></span>
     <span class="kpi veteran" title="Kampferfahrung: Jede gewonnene Etage bringt Erfahrung – je höher, desto mehr, ein Boss {game.balance.tower.xpBossMult}-mal so viel. Sie bleibt bei jeder Vererbung und jedem Äon. Je Rang +{formatPercent(game.balance.tower.xpRankBonus, 0)} KP und Schaden im Turm und gegen den Wochen-Boss – jetzt +{formatPercent(data.veteran.bonus, 0)}. Noch {formatNumber(Math.ceil(data.veteran.need - data.veteran.into))} bis Rang {data.veteran.rank + 1}.">
       <b class="num">🎖 {data.veteran.rank}</b><small>Rang · +{formatPercent(data.veteran.bonus, 0)}</small>
-      <span class="xpbar"><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
+      <span class="xpbar" use:meter={(data.veteran.into / data.veteran.need)}><span style="width: {Math.min(100, (data.veteran.into / data.veteran.need) * 100)}%"></span></span>
     </span>
     {#if data.resolve.bonus > 0}
       <span class="kpi resolve" title="Entschlossenheit: Seit {formatDuration(data.resolve.hours * 3_600_000)} kein neuer Rekord – dein Team beißt sich fest: je Tag +{formatPercent(game.balance.tower.resolvePerDay, 0)} KP und Schaden im Turm, höchstens +{formatPercent(game.balance.tower.resolveCap, 0)}. Ein neuer Rekord setzt sie zurück.">
@@ -441,37 +443,7 @@
 
 <div class="stage">
   <!-- Tower column -->
-  <aside class="tower panel" aria-label="Etagen">
-    <div class="roof"></div>
-    {#if data.aboveBest}<div class="floor ghost"><span class="small muted">⋮ Rekord {data.tw.best}</span></div>{/if}
-    {#each data.floors as fl (fl.f)}
-      <div class="floor" class:cleared={fl.cleared} class:next={fl.next} class:boss={fl.boss} class:guard={fl.guard} class:best={fl.best}>
-        <span class="fnum num">{fl.f}</span>
-        <span class="icons">
-          {#if fl.boss}<span title="Boss{fl.trait ? `: ${fl.trait.name}` : ''}">👑</span>{/if}
-          {#if fl.guard}<span title="Wächter: stärkere Gegner, etwa wie drei Etagen weiter oben">🛡️</span>{/if}
-          {#if fl.trait}<span title="{fl.trait.name}: {fl.trait.description}">{fl.trait.icon}</span>{/if}
-          {#if fl.milestone}<span title="Meilenstein">🏅</span>{/if}
-          {#if fl.checkpoint}<span title="Checkpoint">🚩</span>{/if}
-          {#if fl.catalyst}<span title="Evolutionskristall">💎</span>{/if}
-          {#if fl.allele}<span title="Seltenes Allel">🧬</span>{/if}
-        </span>
-        {#if fl.next && data.team.length}
-          <span class="squad">
-            {#each data.team.slice(0, 3) as c (c.id)}
-              {@const sp = content.species.get(c.speciesId)}
-              <CreatureSvg appearance={expressedAppearance(game, c)} shape={sp.shape} tier={sp.tier} size={20} />
-            {/each}
-          </span>
-        {:else if fl.cleared}
-          <span class="check">✓</span>
-        {/if}
-        {#if fl.best}<span class="rec">Rekord</span>{/if}
-      </div>
-    {/each}
-    <div class="base"></div>
-    {#if !data.boss}<p class="bossin small muted" title="Boss-Etagen alle {game.balance.tower.bossEvery} Etagen, mit Checkpoint">👑 Boss in {data.bossIn} {data.bossIn === 1 ? 'Etage' : 'Etagen'}</p>{/if}
-  </aside>
+  <TowerFloors floors={data.floors} aboveBest={data.aboveBest} best={data.tw.best} team={data.team} boss={data.boss} bossIn={data.bossIn} />
 
   <!-- Arena -->
   <section class="arena panel" style="--foe: {el(data.enemy.element).color}">
@@ -627,7 +599,7 @@
         </summary>
         <div class="foehp" title="KP der Gegner am Ende des Kampfes">
           <span class="small muted">Gegner-KP übrig</span>
-          <div class="bar"><div style="width: {defeat.foeHpLeft * 100}%"></div></div>
+          <div class="bar" use:meter={defeat.foeHpLeft}><div style="width: {defeat.foeHpLeft * 100}%"></div></div>
           <b class="num small">{formatPercent(defeat.foeHpLeft, 0)}</b>
         </div>
         <ul class="reasons">
@@ -769,48 +741,7 @@
 
 <RelicPanel />
 
-<!-- Leaderboard: the best runs, plus the most recent ones -->
-<article class="panel board">
-  <h3>🏆 Bestenliste</h3>
-  {#if data.tw.leaderboard.length === 0}
-    <p class="muted small">Noch keine Läufe.</p>
-  {:else}
-    <ol>
-      {#each data.tw.leaderboard.slice(0, game.balance.tower.leaderboardSize) as e, i (i)}
-        <li class="podium">
-          <span class="medal">{medal(i)}</span>
-          <span class="bfloor num">Etage {e.floor}</span>
-          {@render minis(e.team)}
-          <span class="small muted when">{new Date(e.at).toLocaleDateString('de-DE')}</span>
-        </li>
-      {/each}
-    </ol>
-  {/if}
-  {#if data.tw.history.length > 0}
-    <h4>🕑 Letzte Läufe</h4>
-    <ol class="history">
-      {#each data.tw.history as e, i (i)}
-        <li class:record={e.floor > 0 && e.floor === data.tw.best}>
-          <span class="bfloor num">Etage {e.floor}</span>
-          <span class="small muted range num" title="Start ab Etage {e.startFloor}">ab {e.startFloor}</span>
-          {@render minis(e.team)}
-          <span class="small muted when">{new Date(e.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-        </li>
-      {/each}
-    </ol>
-  {/if}
-</article>
-
-{#snippet minis(team: string[])}
-  <span class="minis">
-    {#each team as s, j (j)}
-      {#if content.species.has(s)}
-        {@const sp = content.species.get(s)}
-        <span title={sp.name}><CreatureSvg appearance={{ ...neutral, hue: sp.hue }} shape={sp.shape} tier={sp.tier} size={26} /></span>
-      {/if}
-    {/each}
-  </span>
-{/snippet}
+<TowerBoard />
 
 <style>
   .small { font-size: 0.8rem; }
@@ -847,7 +778,7 @@
   .squad :global(svg) { margin-left: -6px; }
   .rec { position: absolute; right: 4px; top: -10px; font-size: 0.6rem; color: var(--gold); background: var(--panel); padding: 0 3px; border-radius: 4px; }
   .base { height: 8px; margin: 0 -0.6rem; background: linear-gradient(90deg, transparent, var(--line), transparent); }
-  @keyframes glow { 50% { box-shadow: 0 0 12px #f2c14e88; } }
+  @keyframes glow { 50% { box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); } }
 
   /* Arena */
   .arena {
@@ -876,8 +807,8 @@
   .field::before {
     content: ''; position: absolute; left: -2rem; right: -2rem; bottom: 0; height: 55%; z-index: 0; pointer-events: none;
     background:
-      repeating-linear-gradient(90deg, #2fd3c414 0 1px, transparent 1px 48px),
-      repeating-linear-gradient(0deg, #2fd3c414 0 1px, transparent 1px 22px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--teal) 8%, transparent) 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--teal) 8%, transparent) 0 1px, transparent 1px 22px),
       radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--foe) 14%, transparent), transparent 70%);
     transform: perspective(300px) rotateX(55deg); transform-origin: 50% 100%;
     mask-image: linear-gradient(180deg, transparent, #000 40%);
@@ -948,7 +879,7 @@
   @keyframes shake { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
 
   .vs { position: relative; display: grid; place-items: center; width: 72px; height: 72px; }
-  .vs-txt { font-weight: 900; font-size: 1.4rem; color: var(--gold); text-shadow: 0 0 10px #f2c14e88; }
+  .vs-txt { font-weight: 900; font-size: 1.4rem; color: var(--gold); text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 53%, transparent); }
   .ring { position: absolute; inset: 0; transform: rotate(-90deg); }
   .track { fill: none; stroke: var(--bg-2); stroke-width: 6; }
   .fill { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear; }
@@ -960,7 +891,7 @@
     box-shadow: 0 0 22px #ff6b6b66; white-space: nowrap;
   }
   .banner small { display: block; font-size: 0.75rem; font-weight: 600; text-align: center; opacity: 0.8; }
-  .banner.win { background: color-mix(in srgb, var(--teal) 22%, var(--panel)); border-color: var(--teal); box-shadow: 0 0 22px #2fd3c466; }
+  .banner.win { background: color-mix(in srgb, var(--teal) 22%, var(--panel)); border-color: var(--teal); box-shadow: 0 0 22px color-mix(in srgb, var(--teal) 40%, transparent); }
 
   .enemy-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }
   .aim { margin: 0.3rem 0 0; color: var(--muted); }
@@ -1047,7 +978,7 @@
     position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem;
     border-radius: 10px; border: 2px solid color-mix(in srgb, var(--el) 45%, var(--line)); background: var(--bg-2);
   }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; background: color-mix(in srgb, #f2c14e 12%, var(--bg-2)); }
+  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
   .tile.on::after { content: '✓'; position: absolute; top: 2px; left: 6px; color: var(--gold); font-weight: 800; }
   .tile:disabled { opacity: 0.45; }
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rc); }
@@ -1055,14 +986,8 @@
 
   /* Leaderboard */
   .board { margin-top: 0.75rem; }
-  .board ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem; }
-  .board li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; padding: 0.25rem 0.5rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); }
-  .board li.podium { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .medal { width: 1.8rem; text-align: center; font-size: 1.1rem; }
   .bfloor { font-weight: 700; min-width: 5.5rem; }
-  .board h4 { margin: 0.8rem 0 0.4rem; }
-  .history li { padding-block: 0.1rem; }
-  .history li.record { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
   .range { min-width: 3.5rem; }
   .minis { display: flex; gap: 2px; }
   .when { margin-left: auto; white-space: nowrap; }

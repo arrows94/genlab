@@ -29,7 +29,7 @@
 {/if}
 
 <style>
-  .skip { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid #8ecbff66; background: #8ecbff14; color: #cfe8ff; white-space: nowrap; }
+  .skip { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--crystal) 40%, transparent); background: color-mix(in srgb, var(--crystal) 8%, transparent); color: #cfe8ff; white-space: nowrap; }
   .skip:disabled { opacity: 0.45; }
   .count { color: var(--muted); }
 </style>

@@ -276,17 +276,17 @@
   .ring-wrap { position: relative; width: 140px; height: 140px; flex: 0 0 auto; }
   .ring { width: 100%; height: 100%; transform: rotate(-90deg); }
   .track { fill: none; stroke: var(--bg-2); stroke-width: 10; }
-  .fill { fill: none; stroke: url(#inf-grad); stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray 0.8s ease-out; filter: drop-shadow(0 0 4px #9b6bff); }
-  .incoming { fill: none; stroke: #f2c14e; stroke-width: 10; stroke-linecap: round; opacity: 0.35; animation: breathe 1.4s ease-in-out infinite; }
+  .fill { fill: none; stroke: url(#inf-grad); stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray 0.8s ease-out; filter: drop-shadow(0 0 4px var(--violet)); }
+  .incoming { fill: none; stroke: var(--gold); stroke-width: 10; stroke-linecap: round; opacity: 0.35; animation: breathe 1.4s ease-in-out infinite; }
   @keyframes breathe { 50% { opacity: 0.7; } }
   .creature { position: absolute; inset: 0; display: grid; place-items: center; }
   .creature :global(svg) { border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--rc) 22%, transparent), transparent 70%); }
   .badge {
     position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%); padding: 0.05rem 0.55rem; border-radius: 99px;
-    background: linear-gradient(90deg, #9b6bff, #f2c14e); color: #111; font-weight: 800; font-size: 0.85rem; box-shadow: 0 0 10px #f2c14e88;
+    background: linear-gradient(90deg, var(--violet), var(--gold)); color: #111; font-weight: 800; font-size: 0.85rem; box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 53%, transparent);
   }
   .ring-wrap.pulse .ring { animation: ring-pulse 0.9s ease-out; }
-  @keyframes ring-pulse { 0% { filter: drop-shadow(0 0 0 #f2c14e); } 40% { filter: drop-shadow(0 0 18px #f2c14e) brightness(1.6); } 100% { filter: none; } }
+  @keyframes ring-pulse { 0% { filter: drop-shadow(0 0 0 var(--gold)); } 40% { filter: drop-shadow(0 0 18px var(--gold)) brightness(1.6); } 100% { filter: none; } }
   .burst { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
   .burst span {
     font-weight: 800; color: var(--bc); text-shadow: 0 0 8px var(--bc), 0 2px 4px #000; font-size: 1.05rem; white-space: nowrap;
@@ -297,8 +297,8 @@
   .info { flex: 1 1 220px; min-width: 0; }
   .pips { display: flex; gap: 4px; margin-bottom: 0.3rem; }
   .pip { flex: 1; max-width: 22px; height: 8px; border-radius: 3px; background: var(--bg-2); border: 1px solid var(--line); }
-  .pip.on { background: linear-gradient(90deg, #9b6bff, #f2c14e); border-color: transparent; box-shadow: 0 0 6px #f2c14e66; }
-  .pip.soon { background: #f2c14e55; border-color: #f2c14e; animation: breathe 1.2s ease-in-out infinite; }
+  .pip.on { background: linear-gradient(90deg, var(--violet), var(--gold)); border-color: transparent; box-shadow: 0 0 6px color-mix(in srgb, var(--gold) 40%, transparent); }
+  .pip.soon { background: color-mix(in srgb, var(--gold) 33%, transparent); border-color: var(--gold); animation: breathe 1.2s ease-in-out infinite; }
   .max { color: var(--gold); font-weight: 600; }
   .stats { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; font-size: 0.8rem; margin-top: 0.3rem; }
   .stat.up b { color: var(--teal); }
@@ -318,7 +318,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem; border-radius: 10px;
     border: 2px solid color-mix(in srgb, var(--rc) 60%, var(--line)); background: var(--bg-2); position: relative;
   }
-  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px #f2c14e88; background: color-mix(in srgb, #f2c14e 12%, var(--bg-2)); }
+  .tile.on { border-color: var(--gold); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 53%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
   .tile.on::after { content: '✓'; position: absolute; top: 2px; right: 6px; color: var(--gold); font-weight: 800; }
   .tile.blocked { opacity: 0.4; }
   .tname { font-size: 0.72rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

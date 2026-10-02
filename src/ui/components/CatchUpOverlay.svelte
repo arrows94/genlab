@@ -168,10 +168,10 @@
   .terminal small { font-size: 0.7rem; color: var(--muted); }
   .screen {
     width: 60px; height: 70px; overflow: hidden; border-radius: 8px; border: 2px solid var(--line);
-    background: #021014; box-shadow: 0 0 14px #2fd3c455, inset 0 0 10px #2fd3c433;
+    background: #021014; box-shadow: 0 0 14px color-mix(in srgb, var(--teal) 33%, transparent), inset 0 0 10px color-mix(in srgb, var(--teal) 20%, transparent);
     font-family: var(--mono); font-size: 0.6rem; line-height: 1.15; color: var(--teal);
   }
-  .right .screen { color: var(--violet); box-shadow: 0 0 14px #9b6bff55, inset 0 0 10px #9b6bff33; }
+  .right .screen { color: var(--violet); box-shadow: 0 0 14px color-mix(in srgb, var(--violet) 33%, transparent), inset 0 0 10px color-mix(in srgb, var(--violet) 20%, transparent); }
   .scroll { display: grid; animation: scroll 3s linear infinite; }
   .scroll.slow { animation-duration: 4.2s; }
   @keyframes scroll { to { transform: translateY(-50%); } }
@@ -207,7 +207,7 @@
   .dna path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .dna .rung { stroke-width: 1.2; opacity: 0.7; }
   .data { color: var(--violet); animation-name: carry-back; }
-  .data rect { fill: #9b6bff44; stroke: currentColor; stroke-width: 1.6; }
+  .data rect { fill: color-mix(in srgb, var(--violet) 27%, transparent); stroke: currentColor; stroke-width: 1.6; }
   .data path { stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
   @keyframes carry-there { 0%, 3% { opacity: 0; } 6%, 44% { opacity: 1; } 48%, 100% { opacity: 0; } }
   @keyframes carry-back { 0%, 52% { opacity: 0; } 56%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }

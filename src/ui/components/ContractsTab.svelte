@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { formatDuration } from '@core/format';
   import { expressedAppearance, missingAlleles } from '@core/genetics';
@@ -79,7 +80,7 @@
     <span class="kpi" title="Höhere Stufen bringen schwierigere Aufträge mit besseren Belohnungen.">
       <b class="num">Stufe {data.level}</b>
       <small>{data.next === null ? 'Höchste Stufe' : `${data.completed}/${data.next} erfüllt`}</small>
-      <span class="mini"><span style="width: {Math.min(100, data.progress * 100)}%"></span></span>
+      <span class="mini" use:meter={data.progress}><span style="width: {Math.min(100, data.progress * 100)}%"></span></span>
     </span>
     <span class="kpi"><b class="num">{formatDuration(data.renewIn)}</b><small>bis zu neuen Aufträgen</small></span>
     <span class="kpi"><b class="num">{data.rerollsLeft}</b><small>Tausch übrig</small></span>
@@ -188,7 +189,7 @@
 
   .tiles { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .tile { position: relative; display: flex; flex-direction: column; align-items: center; width: 4.6rem; padding: 0.25rem; border: 1px solid var(--line); border-top: 2px solid var(--rc); border-radius: 10px; background: var(--bg-2); }
-  .tile.sel { border-color: var(--teal); box-shadow: 0 0 10px #2fd3c455; }
+  .tile.sel { border-color: var(--teal); box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 33%, transparent); }
   .tile.blocked { opacity: 0.55; }
   .tname { font-size: 0.68rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lock { position: absolute; top: 2px; right: 4px; font-size: 0.7rem; }

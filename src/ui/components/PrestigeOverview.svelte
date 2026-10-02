@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { fade, scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { formatDuration, formatNumber, formatPercent } from '@core/format';
@@ -102,7 +103,7 @@
       <span class="num">{formatNumber(data.next.total)} / {formatNumber(data.next.needed)}</span>
       {source.map((r) => r.icon).join('+')} {layer.gainSource === 'owned' ? 'im Besitz' : 'verdient'}
     </div>
-    <div class="bar"><div style="width: {data.next.progress * 100}%"></div></div>
+    <div class="bar" use:meter={data.next.progress}><div style="width: {data.next.progress * 100}%"></div></div>
     <button class="primary go" disabled={data.gain.lte(0) || data.anomaly} onclick={confirm}>
       {text.action} für <span class="num">+{formatNumber(data.gain)}</span> {currency.icon}
     </button>

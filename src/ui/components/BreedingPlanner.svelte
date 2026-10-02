@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { content } from '@content/index';
   import { formatNumber, formatPercent } from '@core/format';
   import { breedingPreview } from '@core/features/planner';
@@ -42,7 +43,7 @@
               {#if sp}<CreatureSvg appearance={{ ...neutral, hue: sp.hue }} shape={sp.shape} tier={sp.tier} size={28} />{:else}❔{/if}
             </span>
             <span class="sname">{sp ? sp.name : 'Unbekannte Kreuzung'}</span>
-            <span class="pbar"><span style="width: {s.p * 100}%" class:hybrid={!sp || sp.tier !== 'base'}></span></span>
+            <span class="pbar" use:meter={s.p}><span style="width: {s.p * 100}%" class:hybrid={!sp || sp.tier !== 'base'}></span></span>
             <b class="num">{formatPercent(s.p, 0)}</b>
           </li>
         {/each}

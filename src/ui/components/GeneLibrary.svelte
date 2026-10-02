@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { meter } from '../meter';
   import { activeLoci, libraryHas } from '@core/genetics';
   import { game, view } from '../store.svelte';
   import { viewState } from '../viewState.svelte';
@@ -37,7 +38,7 @@
   <button class="head" onclick={() => (viewState.genome.libraryOpen = !viewState.genome.libraryOpen)} aria-expanded={viewState.genome.libraryOpen}>
     <h3>📚 Genbibliothek</h3>
     <span class="num count">{lib.found}/{lib.total}</span>
-    <span class="bar" title="{lib.found} von {lib.total} Allelen"><span style="width: {(lib.found / Math.max(1, lib.total)) * 100}%"></span></span>
+    <span class="bar" title="{lib.found} von {lib.total} Allelen" use:meter={(lib.found / Math.max(1, lib.total))}><span style="width: {(lib.found / Math.max(1, lib.total)) * 100}%"></span></span>
     <span class="small muted sum">{lib.complete}/{lib.genes} Gene komplett{#if lib.rareMissing}{' · '}{lib.rareMissing} seltene ★ offen{/if}</span>
     <span class="chev" aria-hidden="true">{viewState.genome.libraryOpen ? '▾' : '▸'}</span>
   </button>

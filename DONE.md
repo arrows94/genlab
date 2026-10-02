@@ -5,6 +5,15 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Oberfläche aufgeräumt
+
+- Brutstation geteilt (709 → 537 Zeilen): `BreedingAutomat`, `NestCard`, `RitualReveal` (die Enthüllung ist jetzt
+  ein richtiger Dialog mit `use:dialog`). Die Kandidatenliste war schon ein gemeinsames Snippet
+- Turm-Tab: Etagen-Säule (`TowerFloors`) und Bestenliste (`TowerBoard`) als eigene Komponenten
+- Farben: 82 feste Hex-Werte in Styles durch Tokens ersetzt (`color-mix` für Transparenz), neue Tokens `--relic`
+  und `--crystal`; Werte in SVG-Attributen bleiben
+- `use:meter` (`ui/meter.ts`): 20 Fortschrittsbalken melden sich als `progressbar` mit Wert, ohne Optikänderung
+
 ## 2026-10-02 – Schritt 4: Tests und Coverage
 
 - Sync: Entscheidung beim Herunterladen als reine Funktion `decidePull` (`ui/platform/sync.ts`) mit Tests für alle
