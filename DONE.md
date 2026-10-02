@@ -5,6 +5,10 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – `cost.potion` hat eine Quelle
+
+- Großforschung „Handelskontor“: −15 % auf alle Marktpreise pro Stufe, bis zu drei Stufen (Tester-Feedback, PR #51)
+
 ## 2026-10-02 – „Minuten Produktion“ ohne Trank-Buffs
 
 - Bestätigt: Festmahl oder Turbo-Trank kurz vor dem Abgeben eines Auftrags erhöhten die Belohnung (Test schlug mit dem

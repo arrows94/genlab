@@ -30,6 +30,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Ruf, Suche und Ordnung',
     items: [
       { text: 'Gen-Aufträge: Aus „Stufe“ wird „Ruf“ – und mit jedem Ruf wächst dein Auftragsbrett. Auf Ruf 5 warten jeden Tag 15 Aufträge, von fünf 1★ bis zu einem 5★. Das Brett ist nach Sternen geordnet.', feature: 'contracts' },
+      { text: 'Leihgaben: Manche Kunden leihen sich eine Kreatur nur für ein paar Stunden – danach kommt sie zurück. Auch Favoriten dürfen mit.', feature: 'contracts' },
+      { text: 'Neue Gen-Aufträge aus der anderen Welt: Händler suchen Ausrüstung aus dem GenLab RPG, Gilden einen erfahrenen Veteranen.', feature: 'rpg' },
       { text: 'Turm: Suche nach Name oder Art und neue Sortierungen für die Kandidaten – KP, Angriff, Verteidigung, Rolle und Seltenheit. „Vorteil vs.“ gilt jetzt für jedes Element, das du wählst, und die Sortierung bleibt beim Tabwechsel erhalten.', feature: 'tower' },
       { text: 'Relikte stehen nach ihrem Platz im Team sortiert in einem aufgeräumten Raster.', feature: 'tower' },
       { text: 'Monster, die gerade sequenziert werden, bleiben im GenLab RPG wählbar – sie verschwinden nicht mehr aus der Liste.', feature: 'rpg' },

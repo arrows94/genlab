@@ -12,7 +12,7 @@ wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, v
 ## Schritt 4 – Balancing und Qualität
 
 Spiellogik (ungeprüft):
-- [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.potion`, `cost.capsule`, `cost.upgrade`,
+- [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.capsule`, `cost.upgrade`,
       Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 # Endgame
@@ -41,6 +41,37 @@ Spiellogik (ungeprüft):
 Mögliche neue Splitter-Quellen – vor dem Umsetzen Umfang, Freischaltung und Splitter-Ertrag festlegen.
 
 - [ ] **Basebuilding / Worldbuilding / Universebuilding**
+
+# Gen-Aufträge
+
+Ideen aus dem Tester-Feedback (Oktober 2026). Schon umgesetzt: Ruf, Ausrüstung, Veteranen, Leihgaben.
+
+- [ ] Weitere Bedingungen: reine Linie ab Tiefe N, bestimmte Erbanlage (Tiefensequenzierung), schillernd (seltener
+      5★-Bonusauftrag), Infusionsstufe ab N
+- [ ] Lieferaufträge: Rohstoffe gegen andere Rohstoffe tauschen (z. B. Fragmente gegen Evolutionskristalle) – könnte
+      auch den Markt beleben
+- [ ] Eilaufträge: laufen nach wenigen Stunden ab, dafür mehr Belohnung
+- [ ] Wochenauftrag: ein großer Auftrag pro Woche zum Element der Wochen-Mutation
+- [ ] Ruf je Auftraggeber: Stammkunden geben ab N erfüllten Aufträgen eigene Boni oder einen Titel
+- [ ] Auftragsketten: mehrstufige Geschichte eines Auftraggebers mit Lore und Abschlussbelohnung
+- [ ] Ruf-Schwellen prüfen: Mit dem wachsenden Brett erreicht der Langzeit-Bot Ruf 4 an Tag 11 (vorher nie);
+      `balance.contracts.levelThresholds` ggf. anheben
+
+# Tester-Feedback (Oktober 2026)
+
+Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).
+
+- [ ] Dungeons länger und härter: mehr Räume, Zwischenboss oder Elite-Räume (`content/rpg.ts` `rooms`), danach mit
+      dem RPG-Bot Abschlussrate und Beute pro Fackel prüfen
+- [ ] Zuchtautomat bremsen („Brutbot verlangsamen / Brüten verlängern“) – beim Tester nachfragen, was genau stört;
+      denkbar: „höchstens X Nester nutzen“ oder ein Intervall
+- [ ] „Markt“ – beim Tester nachfragen, was gemeint ist
+- [ ] Nester ↔ Ritualnester umwandeln, oder einfacher: eine Forschung „+1 Ritualnest“ (`slots.ritualNest` hat noch
+      keine Quelle, siehe oben)
+- [ ] Erkundungskarte: Die Linien laufen alle vom Camp aus und überschneiden sich – Wegenetz von Ziel zu Ziel oder
+      Positionen neu setzen (`ExpeditionTab.svelte` `layout`, `pathOf`)
+- [ ] Animierte Szenen für die großen Erkundungen (Wolkengrat, Nebelmoor, Wochenexpedition), nach dem Vorbild des
+      Großprojekts
 
 # Langzeitmotivation (Idle über Tage und Wochen)
 
