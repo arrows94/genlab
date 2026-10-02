@@ -3,8 +3,10 @@ import { D } from '@core/num';
 import { effectiveStats } from '@core/creatures';
 import { potionCost, usePotion } from '@core/features/market';
 import { startProcess } from '@core/systems/processes';
+import { productionRates } from '@core/systems/production';
+import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
-import { makeGame } from './helpers';
+import { balance, makeGame } from './helpers';
 
 function marketGame() {
   const g = makeGame();
@@ -60,5 +62,21 @@ describe('market potions', () => {
     const p = startProcess(g, 'test-crystal', 1_000_000);
     expect(usePotion(g, 'timeCrystal').ok).toBe(true);
     expect(p.elapsedMs).toBe(900_000);
+  });
+
+  it('Zeittrank costs minutes of essence production and doubles when drunk again within the hour', () => {
+    const g = marketGame();
+    expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBeGreaterThanOrEqual(10); // base price early on
+    addBuff(g, 'test', [{ target: 'production.essence', op: 'add', value: 50 }], 1e9);
+    const rate = productionRates(g).essence!.toNumber();
+    expect(rate).toBeGreaterThan(0);
+    const first = potionCost(g, 'timeCrystal').essence!.toNumber();
+    expect(first).toBe(Math.ceil(Math.max(10, rate * 60 * balance.market.timeSkipMinutes)));
+    startProcess(g, 'test-crystal', 3_000_000);
+    expect(usePotion(g, 'timeCrystal').ok).toBe(true);
+    expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBe(Math.ceil(first * balance.market.timeSkipGrowth));
+    // After the window the price is back to normal.
+    g.state.lastTickAt += balance.market.timeSkipWindowHours * 3_600_000 + 1;
+    expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBe(first);
   });
 });

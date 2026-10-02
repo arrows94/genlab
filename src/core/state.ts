@@ -501,6 +501,8 @@ export interface GameState {
   creatures: Creature[];
   processes: Process[];
   buffs: Buff[];
+  /** Wall-clock times of recent Zeittränke (their price grows with each one in the window). */
+  timeSkips: number[];
   nextId: number;
   /** Hybrid recipes whose hint has been revealed. */
   recipeHints: Record<string, boolean>;
@@ -573,6 +575,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     creatures: [],
     processes: [],
     buffs: [],
+    timeSkips: [],
     nextId: 1,
     dex: {},
     geneLibrary: {},

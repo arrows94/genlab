@@ -945,7 +945,8 @@ export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Deci
   if (alleleFloor && !allele) tokens = tokens.mul(2);
   return {
     tokens,
-    catalyst: floor % t.catalystEvery === 0 ? 1 + Math.floor(floor / (t.catalystEvery * 5)) : 0,
+    // Evolutionskristalle only for a new highest floor (a retreat would otherwise pay them again and again).
+    catalyst: floor % t.catalystEvery === 0 && floor > towerBestEver(ctx) ? 1 + Math.floor(floor / (t.catalystEvery * 5)) : 0,
     allele,
     boss: isBossFloor(ctx, floor),
     guard: isGuardFloor(ctx, floor),
@@ -954,11 +955,11 @@ export function floorRewardInfo(ctx: GameContext, floor: number): { tokens: Deci
   };
 }
 
-function floorRewards(ctx: GameContext, floor: number): { rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null } {
+function floorRewards(ctx: GameContext, floor: number, record: boolean): { rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null } {
   const t = ctx.balance.tower;
   const rewards: Record<string, Decimal> = {};
   rewards['towerTokens'] = floorTokens(ctx, floor);
-  if (floor % t.catalystEvery === 0) rewards['catalyst'] = D(1 + Math.floor(floor / (t.catalystEvery * 5)));
+  if (record && floor % t.catalystEvery === 0) rewards['catalyst'] = D(1 + Math.floor(floor / (t.catalystEvery * 5)));
   let allele: { locus: string; allele: string } | null = null;
   if (floor % t.alleleEvery === 0) {
     // A rare allele for the gene library (if one is still missing).
@@ -1007,7 +1008,7 @@ export function fightNextFloor(ctx: GameContext, replay = true): void {
   }
   tw.best = Math.max(tw.best, floor);
   tw.bestEver = Math.max(tw.bestEver ?? 0, tw.best);
-  const { rewards, allele } = floorRewards(ctx, floor);
+  const { rewards, allele } = floorRewards(ctx, floor, record);
   // Milestone records (first time only, the best floor survives every reset) give a time crystal.
   if (record && floor % ctx.balance.timeCrystals.towerEvery === 0) rewards['timeCrystals'] = D(1);
   // Milestones (first time only): Äon-Splitter; the permanent bonus follows the record (towerMilestoneProvider).

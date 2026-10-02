@@ -36,7 +36,10 @@ export function isFullySpliced(ctx: GameContext, c: Creature): boolean {
 }
 
 export function instabilityChance(ctx: GameContext): number {
-  return Math.min(1, Math.max(0, ctx.mods().apply('splicing.instability', ctx.balance.genetics.splicing.instability)));
+  const cfg = ctx.balance.genetics.splicing;
+  // Reductions never make splicing risk-free (Stabilisator 5 + „Lebendes Archiv“ would reach 0).
+  const floor = Math.min(cfg.minInstability, cfg.instability);
+  return Math.min(1, Math.max(floor, ctx.mods().apply('splicing.instability', cfg.instability)));
 }
 
 export function splice(ctx: GameContext, creatureId: number, locusId: string, slot: 0 | 1, alleleId: string): ActionResult {

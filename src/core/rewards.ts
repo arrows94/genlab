@@ -11,7 +11,10 @@ export interface RewardSpec {
   resources?: ResourceAmounts;
 }
 
-/** Concrete amounts right now, scaled by the `factorTarget` modifier (e.g. `contracts.reward`). */
+/**
+ * Concrete amounts right now, scaled by the `factorTarget` modifier (e.g. `contracts.reward`).
+ * Rare currencies (`balance.rewards.unscaled`: Äon-Splitter, Zeitkristalle …) stay as written.
+ */
 export function rewardAmounts(ctx: GameContext, spec: RewardSpec, factorTarget?: string): Record<string, Decimal> {
   const factor = factorTarget ? ctx.mods().factor(factorTarget) : 1;
   const out: Record<string, Decimal> = {};
@@ -23,6 +26,7 @@ export function rewardAmounts(ctx: GameContext, spec: RewardSpec, factorTarget?:
     const feature = ctx.content.resources.get(res).feature;
     if (!feature || ctx.state.features[feature]) add(res, D(amount));
   }
-  for (const res of Object.keys(out)) out[res] = out[res]!.mul(factor).floor();
+  const unscaled = new Set(ctx.balance.rewards.unscaled);
+  for (const res of Object.keys(out)) out[res] = (unscaled.has(res) ? out[res]! : out[res]!.mul(factor)).floor();
   return out;
 }

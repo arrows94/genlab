@@ -39,6 +39,15 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
   const away = new Set(kept.map((p) => String(p.id)));
   if (r.creatures) {
     s.creatures = s.creatures.filter((c) => c.job?.kind === 'mission' && away.has(c.job.target));
+    // Travellers keep their journey and their genes, but start over like everyone else:
+    // no infusion, potion boosts, pure line or hero level from the old run.
+    for (const c of s.creatures) {
+      c.infusion = { level: 0, ep: 0 };
+      c.boosts = {};
+      c.boostUses = 0;
+      c.lineage = 0;
+      delete s.rpg.ranks[String(c.id)];
+    }
     s.tower.run = null;
     s.tower.team = [];
     s.tower.lastDefeat = null;

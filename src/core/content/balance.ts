@@ -21,6 +21,10 @@ export interface Balance {
     /** Offline summaries are only shown for absences longer than this. */
     summaryMinSec: number;
   };
+  rewards: {
+    /** Resources a reward bonus (`contracts.reward`, `daily.reward` …) does not multiply. */
+    unscaled: string[];
+  };
   contracts: {
     /** Offers on the board per (UTC) day. */
     offersPerDay: number;
@@ -245,6 +249,8 @@ export interface Balance {
       maxPerCreature: number;
       /** Base chance a splice fails and scrambles another locus (modified by `splicing.instability`). */
       instability: number;
+      /** Floor for the reduced chance (if the base itself is lower, the base is the floor). */
+      minInstability: number;
     };
   };
   hybrids: {
@@ -421,6 +427,8 @@ export interface Balance {
     statPerTier: number;
     /** Äon-Splitter for reaching each tier (same order as `tiers`). */
     shardsPerTier: number[];
+    /** Total Äon-Splitter dynasties can pay over all species. */
+    maxShards: number;
     /** Permanent bonus per tier, summed over all species. */
     modifiersPerTier: ModifierDef[];
   };
@@ -436,6 +444,11 @@ export interface Balance {
   market: {
     /** Per-creature cost growth for permanent stat potions is on the potion; this caps uses. */
     maxBoostsPerStat: number;
+    /** Zeittrank price: minutes of production of its cost resource (at least the base price). */
+    timeSkipMinutes: number;
+    /** Price factor per Zeittrank already drunk within `timeSkipWindowHours`. */
+    timeSkipGrowth: number;
+    timeSkipWindowHours: number;
   };
   appearance: {
     patterns: string[];

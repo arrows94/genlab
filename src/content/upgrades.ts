@@ -165,7 +165,7 @@ export const upgrades: UpgradeDef[] = [
   },
   {
     id: 'stabilizer', theme: 'genetics', name: 'Gen-Stabilisator', category: 'research', requires: { type: 'feature', feature: 'splicing' },
-    description: '−4 % Instabilität beim Splicing.',
+    description: '−4 % Instabilität beim Splicing (nie unter 5 %).',
     cost: { essence: 100 }, costGrowth: 2.5, maxLevel: 5,
     modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.04 }],
   },

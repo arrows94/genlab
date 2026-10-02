@@ -178,8 +178,17 @@ describe('long projects and inheritance', () => {
     expect(startDeepSequencing(g, c!.id).ok).toBe(true);
     g.state.earned.food = D(1e12);
     g.state.earned.gold = D(1e12);
+    a!.infusion = { level: 5, ep: 100 };
+    a!.boosts = { atk: 0.3 };
+    a!.boostUses = 6;
+    a!.lineage = 4;
 
     expect(performPrestige(g, 'inheritance').ok).toBe(true);
+    // Travellers start over like everyone else: no infusion, potion boosts or pure line from the old run.
+    expect(a!.infusion).toEqual({ level: 0, ep: 0 });
+    expect(a!.boosts).toEqual({});
+    expect(a!.boostUses).toBe(0);
+    expect(a!.lineage).toBe(0);
     // Voyage and journey with their travellers survive, the deep sequencing (lab) is gone.
     expect(g.state.processes.map((p) => p.kind).sort()).toEqual(['mission', 'voyage']);
     expect(g.state.creatures.map((x) => x.id)).toEqual(expect.arrayContaining([a!.id, b!.id]));
@@ -190,6 +199,21 @@ describe('long projects and inheritance', () => {
     g.simulateOffline(voyageDurationMs(g) + 1000);
     expect(g.state.voyage.pending).not.toBeNull();
     expect(g.state.creatures.find((x) => x.id === a!.id)?.job).toBeNull();
+  });
+});
+
+describe('Unterricht (teamBoost)', () => {
+  it('stops at the Kraftfutter cap', async () => {
+    const { maxStatBoost } = await import('@core/features/market');
+    const { g, team } = returned('mentor');
+    const c = g.state.creatures.find((x) => x.id === team[0])!;
+    const cap = maxStatBoost(g);
+    expect(cap).toBeGreaterThan(0);
+    c.boosts = Object.fromEntries(content.stats.list.map((s) => [s.id, cap]));
+    expect(resolveVoyage(g, 0).ok).toBe(true);
+    for (const s of content.stats.list) expect(c.boosts[s.id]).toBeCloseTo(cap, 9);
+    const other = g.state.creatures.find((x) => x.id === team[1])!;
+    for (const s of content.stats.list) expect(other.boosts[s.id]).toBeCloseTo(0.05, 9);
   });
 });
 

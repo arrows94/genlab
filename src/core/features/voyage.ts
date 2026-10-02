@@ -8,6 +8,7 @@ import { toCost } from '../costs';
 import type { VoyageDecisionDef, VoyageDestinationDef, VoyageEventDef } from '../content/types';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
+import { maxStatBoost } from './market';
 import type { Process } from '../state';
 import { campSlots, campsUsed, missionRewardFactor, registerCampProcess, rollMinRarity } from './expedition';
 import { revealHint } from './hybrids';
@@ -172,7 +173,8 @@ export function resolveVoyage(ctx: GameContext, option: 0 | 1): ActionResult {
     for (const id of p.team) {
       const c = findCreature(ctx, id);
       if (!c) continue;
-      for (const stat of ctx.content.stats.list) c.boosts[stat.id] = (c.boosts[stat.id] ?? 0) + o.teamBoost;
+      // Same cap as Kraftfutter, so a creature that keeps travelling does not stack it forever.
+      for (const stat of ctx.content.stats.list) c.boosts[stat.id] = Math.min(maxStatBoost(ctx), (c.boosts[stat.id] ?? 0) + o.teamBoost);
     }
   }
   ctx.state.voyage.nextBonus += o.nextBonus ?? 0;

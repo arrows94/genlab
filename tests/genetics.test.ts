@@ -7,7 +7,8 @@ import {
 import { breedingTimeMs, startBreeding } from '@core/features/breeding';
 import { breedingPreview } from '@core/features/planner';
 import { sequencingCost, sequencingTimeMs, startSequencing } from '@core/features/sequencing';
-import { maxSplices, splice } from '@core/features/splicing';
+import { instabilityChance, maxSplices, splice } from '@core/features/splicing';
+import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
 import { deserialize, serialize } from '@core/save';
 import { Game } from '@core/game';
@@ -248,6 +249,12 @@ describe('gene splicing', () => {
     g.state.geneLibrary['strength:Kt'] = true;
     return { g, c };
   }
+
+  it('research and achievements lower the risk, but never below the floor', () => {
+    const { g } = spliceGame(balance.genetics.splicing.instability);
+    addBuff(g, 'test', [{ target: 'splicing.instability', op: 'add', value: -1 }], 1e9);
+    expect(instabilityChance(g)).toBe(balance.genetics.splicing.minInstability);
+  });
 
   it('transfers an allele from the gene library', () => {
     const { g, c } = spliceGame(0);

@@ -5,6 +5,19 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Balancing
+
+- Zeittrank: kostet 20 min Essenz-Produktion (mindestens den Grundpreis), jeder weitere Trank innerhalb einer Stunde
+  das Doppelte (`balance.market.timeSkip*`, `state.timeSkips`, `recentTimeSkips`)
+- Belohnungsboni (`contracts.reward`, `daily.reward`) vervielfachen Äon-Splitter, Zeitkristalle und
+  Evolutionskristalle nicht mehr (`balance.rewards.unscaled`)
+- Turm: Evolutionskristalle nur für eine neue höchste Etage (`floor > towerBestEver`); vorher zahlte der Rückzug beim
+  Auto-Neustart dieselben Kristall-Etagen immer wieder
+- Reisende überstehen Vererbung und Äon weiter, beginnen aber neu: Infusion, Trank-Boni, Linie und Heldenstufe weg.
+  Der Unterricht der Wochenexpedition hält die Kraftfutter-Grenze ein (`maxStatBoost`)
+- Spleißen: Instabilität nie unter 5 % (`splicing.minInstability`)
+- Dynastien zahlen zusammen höchstens 25 Äon-Splitter (`dynasty.maxShards`, `dynastyShardsEarned`)
+
 ## 2026-10-02 – Schritt 3: Leistung und Bedienung
 
 - Rechenlast: Listen, Kosten und Filter rechnen im langsamen Takt (`view.slowFrame`) statt alle 100 ms – Labor

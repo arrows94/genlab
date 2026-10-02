@@ -9,19 +9,14 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
 wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
 
-## Schritt 4 – Balancing und Features (erst Richtung festlegen)
+## Schritt 4 – Balancing und Qualität
 
 Spiellogik (ungeprüft):
-- [ ] Zeittrank kostet fest 10 Essenz und spult alle Prozesse unter 1 h vor – Kosten mit der Produktion skalieren
-      oder Abklingzeit; Festmahl und Turbo ebenso (`content/potions.ts`, `features/market.ts:45`)
-- [ ] Belohnungs-Multiplikator vervielfacht auch Äon-Splitter, Zeitkristalle und Katalysator; Trank-Buffs blähen die
-      „Minuten Produktion“ auf (`core/rewards.ts:26`)
-- [ ] Evolutionskristalle im Turm nur beim ersten Mal (Rückzug lässt Kristall-Etagen wiederholen,
-      `features/tower.ts:961`) – vorher mit dem Äon-Bot messen
-- [ ] Reisende überstehen Vererbung und Äon mit allem Fortschritt; `teamBoost` der Reise umgeht die
-      Kraftfutter-Grenze (`features/voyage.ts:175`)
-- [ ] Spleißen wird risikolos (Instabilität 0,25 − 0,20 − 0,05 = 0) – Untergrenze ~5 % (`features/splicing.ts:39`)
-- [ ] Dynastie-Splitter je Art (bis 165) – deckeln oder je Element (`balance.ts` `shardsPerTier`)
+- [ ] Festmahl und Turbo-Trank haben feste Preise und werden im späten Spiel bedeutungslos billig
+      (`content/potions.ts`) – wie beim Zeittrank an die Produktion koppeln?
+- [ ] Trank-Buffs blähen die „Minuten Produktion“ in Belohnungen auf (Festmahl kurz vor dem Abgeben eines Auftrags,
+      `core/rewards.ts`). Braucht Produktionsraten ohne Buffs (`computeRates` mit gefilterten Modifiern, auch
+      Kreatur-Buffs in `creatureModifiers`)
 - [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.potion`, `cost.capsule`, `cost.upgrade`,
       Ritual-`rarityBoost`, Job-Art `'lab'`
 
