@@ -20,6 +20,7 @@ function measure(level: number, dungeon: string, runs: number) {
   const hero = makeHero(g, level);
   const xp = g.state.rpg.ranks[String(hero.id)]!;
   let cleared = 0;
+  let atBoss = 0;
   let depth = 0;
   let rounds = 0;
   const loot: Record<string, number> = {};
@@ -27,11 +28,12 @@ function measure(level: number, dungeon: string, runs: number) {
     g.state.rpg.ranks = { [String(hero.id)]: xp };
     const r = playRun(g, hero, dungeon);
     if (r.cleared) cleared++;
+    if (r.depth > g.content.rpgDungeons.get(dungeon).rooms) atBoss++;
     depth += r.depth;
     rounds += r.rounds;
     for (const [k, v] of Object.entries(r.loot)) loot[k] = (loot[k] ?? 0) + v / runs;
   }
-  return { clearRate: cleared / runs, depth: depth / runs, rounds: rounds / runs, loot };
+  return { clearRate: cleared / runs, bossRate: atBoss > 0 ? cleared / atBoss : 0, atBoss: atBoss / runs, depth: depth / runs, rounds: rounds / runs, loot };
 }
 
 /**
@@ -74,7 +76,7 @@ describe('GenLab RPG – Bot', () => {
       const row: string[] = [];
       for (const f of [1, 3, 6, 10, 14, 20, 26, 32, 40, 50, 60]) {
         const m = measure(f, d.id, 12);
-        row.push(`L${f}: ${Math.round(m.clearRate * 100)}% d${m.depth.toFixed(1)} r${Math.round(m.rounds)} 🗼${Math.round(m.loot['towerTokens'] ?? 0)} 🪬${Math.round(m.loot['runes'] ?? 0)}`);
+        row.push(`L${f}: ${Math.round(m.clearRate * 100)}% (Boss ${Math.round(m.atBoss * 100)}%→${Math.round(m.bossRate * 100)}%) d${m.depth.toFixed(1)} r${Math.round(m.rounds)} 🗼${Math.round(m.loot['towerTokens'] ?? 0)}`);
       }
       lines.push(`${d.name.padEnd(16)} ${row.join(' | ')}`);
     }
