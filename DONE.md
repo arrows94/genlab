@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Inhaltsprüfung aufgeteilt
+
+- `validateContent` (615 → 141 Zeilen in `validate.ts`): Tabelle `CONTENT_VALIDATORS` mit 43 Prüfern
+  (`validators.ts`, `rpgValidators.ts`) über einen gemeinsamen Prüf-Kontext (`checks.ts`); `as unknown as ContentDB`
+  weg, ein begründetes `as ContentDB` bleibt
+- Verhalten gleich geprüft: Referenz-Lauf über 57 883 kaputte und echte Inhaltsfälle (alle 81 Fehlerstellen, 100 %
+  Zweige der alten Datei) – gleiche Meldungen, gleiche Reihenfolge, gleiche Abstürze, gleiche ContentDB
+
 ## 2026-10-02 – Schritt 4: Turm-Kampf aufgeteilt
 
 - Kampf-Engine aus `tower.ts` (1 077 → 559 Zeilen) nach `core/features/towerCombat.ts`: ein Datensatz je Kämpfer
