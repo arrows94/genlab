@@ -5,6 +5,16 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – „Minuten Produktion“ ohne Trank-Buffs
+
+- Bestätigt: Festmahl oder Turbo-Trank kurz vor dem Abgeben eines Auftrags erhöhten die Belohnung (Test schlug mit dem
+  alten Verhalten fehl)
+- Neu `baseProductionRates` (`systems/production.ts`): Produktion ohne Buffs, global wie auf einzelnen Kreaturen.
+  Nutzen Belohnungen (`core/rewards.ts`: Aufträge, Tagesbelohnung), Trankpreise (ein Festmahl verteuert den nächsten
+  Trank nicht mehr) und das Sammeln (Produktionsanteil pro Klick, Fundstücke). Die angezeigte Produktion und
+  „Zeit bis leistbar“ zählen Buffs weiter mit
+- Tests in `tests/rewards.test.ts`; die Markt-Tests heben die Produktion jetzt über einen Test-Provider statt über Buffs
+
 ## 2026-10-02 – Turm-Tab aufgeteilt
 
 - `TowerTab.svelte` von 1 000 auf 92 Zeilen: nur noch Kopfzeile und Aufbau. Neu `TowerArena` (Wiedergabe, Vorschau,

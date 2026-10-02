@@ -1,6 +1,6 @@
 import { D, type Decimal } from '../num';
 import { grant } from '../resources';
-import { productionRates } from '../systems/production';
+import { baseProductionRates } from '../systems/production';
 import { checkUnlocks } from '../systems/unlocks';
 import type { ActionResult } from '../actions';
 import type { GameContext } from '../context';
@@ -34,10 +34,10 @@ export function rested(ctx: GameContext): boolean {
   return stamina(ctx) >= 1;
 }
 
-/** Yield of a click with full Ausdauer: base amount plus seconds of the current production. */
+/** Yield of a click with full Ausdauer: base amount plus seconds of the current production (without potion buffs). */
 function fullAmounts(ctx: GameContext): Record<string, Decimal> {
   const mods = ctx.mods();
-  const rates = productionRates(ctx);
+  const rates = baseProductionRates(ctx);
   const seconds = mods.apply('collect.production', ctx.balance.collect.productionSeconds);
   const out: Record<string, Decimal> = {};
   for (const r of ctx.content.resources.list) {
@@ -63,7 +63,7 @@ function rollFind(ctx: GameContext): CollectFind | null {
   if (s.simTimeMs < Math.max(s.collect.nextFindAt, cfg.cooldownSec * 1000)) return null;
   if (!ctx.rng.chance(ctx.mods().apply('collect.findChance', cfg.chance))) return null;
   const clicks = fullAmounts(ctx);
-  const rates = productionRates(ctx);
+  const rates = baseProductionRates(ctx);
   const candidates = ctx.content.resources.list.map((r) => r.id).filter((id) => clicks[id] || rates[id]);
   if (!candidates.length) return null;
   const resource = candidates[ctx.rng.int(0, candidates.length - 1)]!;

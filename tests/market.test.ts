@@ -4,12 +4,22 @@ import { effectiveStats } from '@core/creatures';
 import { potionCost, usePotion } from '@core/features/market';
 import { startProcess } from '@core/systems/processes';
 import { productionRates } from '@core/systems/production';
-import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
-import { balance, content, makeGame } from './helpers';
+import { Game } from '@core/game';
+import { DEFAULT_PROVIDERS } from '@core/providers';
+import type { ModifierDef } from '@core/modifiers';
+import { NOW, balance, content } from './helpers';
+
+/** Extra production that is not a potion buff (potion costs ignore buffs). */
+const extra: ModifierDef[] = [];
+function boost(g: Game, mods: ModifierDef[]) {
+  extra.push(...mods);
+  g.invalidate();
+}
 
 function marketGame() {
-  const g = makeGame();
+  extra.length = 0;
+  const g = new Game({ content, balance, now: NOW, seed: 42, providers: [...DEFAULT_PROVIDERS, (_ctx, into) => into.addAll('test', extra)] });
   unlockFeature(g, 'market');
   unlockFeature(g, 'farm');
   unlockFeature(g, 'breeding'); // avoid mid-test unlocks (new dex entry) changing production
@@ -69,17 +79,22 @@ describe('market potions', () => {
     const feast = content.potions.get('feast');
     const turbo = content.potions.get('turbo');
     expect(potionCost(g, 'feast').food!.toNumber()).toBe(Math.ceil(Math.max(feast.cost.food!, (productionRates(g).food?.toNumber() ?? 0) * 60 * feast.costMinutes!)));
-    addBuff(g, 'test', [{ target: 'production.food', op: 'add', value: 1e4 }, { target: 'production.gold', op: 'add', value: 1e4 }], 1e9);
+    boost(g, [{ target: 'production.food', op: 'add', value: 1e4 }, { target: 'production.gold', op: 'add', value: 1e4 }]);
     const food = productionRates(g).food!.toNumber();
     const gold = productionRates(g).gold!.toNumber();
     expect(potionCost(g, 'feast').food!.toNumber()).toBe(Math.ceil(food * 60 * feast.costMinutes!));
     expect(potionCost(g, 'turbo').gold!.toNumber()).toBe(Math.ceil(gold * 60 * turbo.costMinutes!));
+    // A Festmahl or Turbo-Trank does not make the next potion dearer.
+    usePotion(g, 'feast');
+    usePotion(g, 'turbo', g.state.creatures[0]!.id);
+    expect(productionRates(g).food!.toNumber()).toBeGreaterThan(food);
+    expect(potionCost(g, 'feast').food!.toNumber()).toBe(Math.ceil(food * 60 * feast.costMinutes!));
   });
 
   it('Zeittrank costs minutes of essence production and doubles when drunk again within the hour', () => {
     const g = marketGame();
     expect(potionCost(g, 'timeCrystal').essence!.toNumber()).toBeGreaterThanOrEqual(10); // base price early on
-    addBuff(g, 'test', [{ target: 'production.essence', op: 'add', value: 50 }], 1e9);
+    boost(g, [{ target: 'production.essence', op: 'add', value: 50 }]);
     const rate = productionRates(g).essence!.toNumber();
     expect(rate).toBeGreaterThan(0);
     const first = potionCost(g, 'timeCrystal').essence!.toNumber();

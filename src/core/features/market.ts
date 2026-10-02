@@ -7,7 +7,7 @@ import { skipProcessTime } from '../systems/processes';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import { ruleActive } from './anomalies';
-import { productionRates } from '../systems/production';
+import { baseProductionRates } from '../systems/production';
 
 /** Highest permanent boost per stat (Kraftfutter cap); other sources (voyage) respect it too. */
 export function maxStatBoost(ctx: GameContext): number {
@@ -32,10 +32,10 @@ export function potionCost(ctx: GameContext, potionId: string, creatureId: numbe
   // Zeittrank: every further one within the window costs more.
   if (def.kind === 'timeSkip') growth = D(ctx.balance.market.timeSkipGrowth).pow(recentTimeSkips(ctx));
   if (def.costMinutes) {
-    // Follows production, so the potion stays a real choice late in the game.
+    // Follows production (without potion buffs), so the potion stays a real choice late in the game.
     const cost: Cost = {};
     for (const [res, base] of Object.entries(def.cost)) {
-      const perMinutes = (productionRates(ctx)[res] ?? D(0)).mul(60 * def.costMinutes);
+      const perMinutes = (baseProductionRates(ctx)[res] ?? D(0)).mul(60 * def.costMinutes);
       cost[res] = D(base).max(perMinutes).mul(growth).mul(discount).ceil();
     }
     return cost;
