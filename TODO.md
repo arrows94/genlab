@@ -9,23 +9,6 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
 wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
 
-## Schritt 3 – Leistung und Bedienung
-
-- [ ] Schwere Ableitungen von `view.frame` auf `view.slowFrame` (LabTab, BreedingTab, TowerTab, DexTab, Badges in
-      `App.svelte`); nur Fortschrittsbalken brauchen den schnellen Takt. Je Karte ein Schnappschuss statt fünf
-      Ableitungen, `CreatureSvg` nicht zehnmal pro Sekunde neu zeichnen
-- [ ] Gemeinsame `Modal`-Komponente (Fokus beim Öffnen, Fokusfalle, Escape, Fokus zurück) für die neun handgebauten
-      Dialoge (`CreatureDetail`, `OfflineModal`, `WhatsNew`, `DexTab`, `RecyclerTab` …)
-- [ ] Reduzierte Bewegung: Schimmer schillernder Kreaturen (`<animate>` in `CreatureSvg.svelte:62`) und
-      `prefers-reduced-motion` auch für die Dauer (`styles.css:95`)
-- [ ] Favoriten-Knopf mit `aria-label` und `aria-pressed` (`CreatureCard.svelte`)
-- [ ] Handy-Breite: `ContractsTab` `minmax(270px, …)`, Expeditions-Karte `min-width: 560px`, `.confirm button`
-      `min-width: 12rem` im Markt; Tabs ohne Media-Query (Äon, Aufträge, Markt, Vererbung, Optionen, Statistik)
-- [ ] Englische Fehlertexte („Failed to fetch“) in Toasts auf Deutsch abbilden (`SettingsTab.svelte:76`,
-      `SyncPanel.svelte:36`, `sync.svelte.ts:117`)
-- [ ] Zahlen über `core/format.ts`: `toFixed(2)` in `AeonTab.svelte:56`, Prozent ohne `formatPercent` in
-      `TowerTab`, `RpgWorld`, `DexTab`; Modifier-Text einmal in core statt dreimal in der Oberfläche
-
 ## Schritt 4 – Balancing und Features (erst Richtung festlegen)
 
 Spiellogik (ungeprüft):
@@ -43,6 +26,8 @@ Spiellogik (ungeprüft):
       Ritual-`rarityBoost`, Job-Art `'lab'`
 
 Qualität:
+- [ ] Modifier-Text („+25 %“, „×1,25“) einmal in core (`describeModifier` erweitern) statt dreimal in der Oberfläche
+      (`CreatureDetail.svelte` `fmtMod`, `AeonTab.svelte` `effect`, `ResearchTab.svelte`)
 - [ ] Spielregeln aus der Oberfläche nach core: Zahlen im Tooltip `TowerTab.svelte:476`, Wut-Faktor `:530`,
       `newShards` in `AnomaliesTab`, `lineage` in `BreedingTab`, `canSplice` in `SplicingBench` (besser
       `spliceBlocker()` mit Grund), Kampf-Wiedergabe aus `TowerTab` nach `towerReport.ts`

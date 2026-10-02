@@ -40,8 +40,9 @@
   /** Hatchling of the last opened ritual egg, shown big with its rarity glow. */
   let reveal = $state<{ id: number; ritual: string } | null>(null);
 
+  // Lists, costs and filters: the slow tick is enough (actions refresh at once); egg progress runs below.
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const a = parentA !== null ? findCreature(game, parentA) : undefined;
     const b = parentB !== null ? findCreature(game, parentB) : undefined;
     const generation = offspringGeneration(a, b);
@@ -85,9 +86,7 @@
       knownAlleles: activeLoci(game).flatMap((l) => l.alleles.filter((al) => libraryHas(game, l.id, al.id)).map((al) => ({ id: `${l.id}:${al.id}`, label: `${l.name}: ${al.name} (${al.symbol})` }))),
       ownedSpecies: content.species.list.filter((s) => game.state.creatures.some((c) => c.speciesId === s.id)),
       slots: nestSlots(game),
-      eggs: nestEggs(game).map(eggView),
       ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
-      ritualEggs: ritualEggs(game).map(eggView),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -115,12 +114,18 @@
     return game.state.features['autoBreed'] && game.state.automation.autoBreed.enabled ? planAutoBreed(game) : null;
   });
 
-  const nestsFull = $derived(data.eggs.length >= data.slots);
-  const ritualFull = $derived(data.ritualEggs.length >= data.ritualSlots);
+  /** Eggs in the nests with their progress bars (fast tick). */
+  const nests = $derived.by(() => {
+    view.frame;
+    return { eggs: nestEggs(game).map(eggView), ritualEggs: ritualEggs(game).map(eggView) };
+  });
+
+  const nestsFull = $derived(nests.eggs.length >= data.slots);
+  const ritualFull = $derived(nests.ritualEggs.length >= data.ritualSlots);
   /** Normal nests first, then the Ritualnest (Besondere Brut). */
   const nestList = $derived([
-    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: data.eggs[i], ritual: false })),
-    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: data.ritualEggs[i], ritual: true })),
+    ...Array.from({ length: data.slots }, (_, i) => ({ key: `n${i}`, egg: nests.eggs[i], ritual: false })),
+    ...Array.from({ length: data.ritualSlots }, (_, i) => ({ key: `r${i}`, egg: nests.ritualEggs[i], ritual: true })),
   ]);
 
   function eggView(p: Process) {
@@ -255,7 +260,7 @@
 <header class="tab-head">
   <h2>🥚 Brutstation</h2>
   <div class="kpis">
-    <span class="kpi"><b class="num">{data.eggs.length}/{data.slots}</b><small>Nester</small></span>
+    <span class="kpi"><b class="num">{nests.eggs.length}/{data.slots}</b><small>Nester</small></span>
     <span class="kpi" class:warn={data.stableFull}>
       <b class="num">{data.stableUsed}/{data.stableCap}</b><small>Stall</small>
       <span class="mini"><span style="width: {Math.min(100, (data.stableUsed / Math.max(1, data.stableCap)) * 100)}%"></span></span>

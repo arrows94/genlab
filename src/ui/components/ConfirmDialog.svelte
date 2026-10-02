@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { fade, scale } from 'svelte/transition';
   import { view, answer } from '../store.svelte';
 
@@ -23,7 +24,7 @@
 
 {#if view.confirm}
   <div class="backdrop" transition:fade={{ duration: 120 }} onclick={(e) => e.target === e.currentTarget && answer(false)} role="presentation">
-    <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="confirm-text" transition:scale={{ duration: 150, start: 0.92 }}>
+    <div class="dialog panel" use:dialog role="alertdialog" aria-modal="true" aria-labelledby="confirm-text" transition:scale={{ duration: 150, start: 0.92 }}>
       <p id="confirm-text">{view.confirm.text}</p>
       <div class="buttons">
         <button onclick={() => answer(false)}>Abbrechen</button>

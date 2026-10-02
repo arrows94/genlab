@@ -29,7 +29,11 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-10-02',
     title: 'Kleine Reparaturen im Labor',
     items: [
-      { text: 'Kreaturen-Karten zeigen sofort, ob eine Kreatur Favorit ist, arbeitet oder auf den Recycler wartet.' },
+      { text: 'Fenster wie die Kreaturen-Details lassen sich mit Escape schließen, und die Tastatur bleibt darin, solange sie offen sind.' },
+      { text: 'Fehlermeldungen von Browser und Gerät erscheinen auf Deutsch.' },
+      { text: '„Weniger Bewegung“ hält jetzt auch das Farbenspiel schillernder Kreaturen an.' },
+      { text: 'Das Labor rechnet sparsamer – angenehmer auf dem Handy.' },
+      { text: 'Vererbung auf dem Handy: Große Bonuswerte werden nicht mehr abgeschnitten.', feature: 'inheritance' },
       { text: 'Der Sequenzier-Roboter lässt Kreaturen in Ruhe, die auf dem Weg in den Gen-Recycler sind.', feature: 'autoSequence' },
       { text: 'Wird der Recycler schneller, während eine Kreatur in der Kammer liegt, springt die nächste nicht mehr vor.', feature: 'autoRecycle' },
       { text: 'Wochen-Boss: Jeder verpasste Tag bringt seine Angriffe (bis zur Obergrenze), nicht nur der letzte.', feature: 'weeklyBoss' },

@@ -261,7 +261,10 @@
   @media (max-width: 640px) {
     .hero { grid-template-columns: 1fr; gap: 0.6rem; }
     .split { grid-template-columns: 1fr; }
-    .brow { grid-template-columns: 1fr auto auto auto; gap: 0.4rem; }
+    /* Label on its own line, so big numbers keep the full width (they were cut off at 320 px). */
+    .brow { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.1rem 0.4rem; }
+    .brow .blabel { grid-column: 1 / -1; }
+    .brow .after { text-align: left; }
     .big { font-size: 2.6rem; }
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { content } from '@content/index';
   import { activeLatent } from '@core/creatures';
   import { findCreature } from '@core/creatures';
@@ -71,8 +72,8 @@
 </script>
 
 {#if c && data}
-  <div class="backdrop" role="presentation" onclick={close}>
-    <div class="modal panel" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && close()}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && close()}>
+    <div class="modal panel" role="dialog" aria-modal="true" tabindex="-1" use:dialog={{ onescape: close }}>
       <header style="--rarity: {data.rarity.color}; --el: {data.element.color}">
         <div class="art"><CreatureSvg appearance={data.look} shape={data.species.shape} tier={data.species.tier} size={120} shiny={c.shiny} /></div>
         <div class="title">

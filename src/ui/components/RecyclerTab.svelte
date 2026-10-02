@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
   import { content } from '@content/index';
   import { canAfford } from '@core/costs';
   import { formatNumber, formatPercent } from '@core/format';
@@ -233,7 +234,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="backdrop" role="presentation" onclick={onBackdrop}>
     <div class="reveal {phase}" class:instant role="dialog" aria-modal="true" aria-label="Kapsel-Ergebnis" tabindex="-1"
-      onkeydown={(e) => e.key === 'Escape' && close()} style="--best: {best?.color ?? opened.color}">
+      use:dialog={{ onescape: close }} style="--best: {best?.color ?? opened.color}">
       {#if phase !== 'reveal'}
         <div class="stage">
           <div class="rays"></div>

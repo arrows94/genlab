@@ -165,7 +165,7 @@
   .mini span { display: block; height: 100%; background: var(--teal); }
   .intro { margin: 0 0 0.8rem; }
 
-  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0.8rem; }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 0.8rem; }
   .card { position: relative; display: flex; flex-direction: column; gap: 0.45rem; border-color: color-mix(in srgb, var(--gold) calc(var(--lv) * 12%), var(--line)); }
   .card.done { opacity: 0.6; }
   .top { display: flex; justify-content: space-between; align-items: center; min-height: 1.6rem; }

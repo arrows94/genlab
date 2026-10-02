@@ -6,6 +6,7 @@ import type { ActionResult } from '@core/actions';
 import { formatNumber } from '@core/format';
 import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
+import { errorText } from './errors';
 import { lookForUpdate, registerPwa } from './platform/pwa';
 import { closeNews, initNews, news } from './news.svelte';
 import { setupNative } from './platform/native';
@@ -157,13 +158,13 @@ async function loadSave(): Promise<boolean> {
   try {
     raw = await storage.load();
   } catch (err) {
-    view.loadError = (err as Error).message;
+    view.loadError = errorText(err);
   }
   if (!raw) return false;
   try {
     game.loadState(deserialize(raw).state);
   } catch (err) {
-    view.loadError = (err as Error).message;
+    view.loadError = errorText(err);
     // Keep the broken save around so it can be exported / inspected.
     try {
       localStorage.setItem('genlab.save.broken', raw);
@@ -336,7 +337,7 @@ function writeSave(): void {
   saveInbox();
   storage.save(serialize(game.state)).then(
     () => (view.lastSaved = Date.now()),
-    (err: Error) => toast(`Speichern fehlgeschlagen: ${err.message}`, 'error'),
+    (err: unknown) => toast(`Speichern fehlgeschlagen: ${errorText(err)}`, 'error'),
   );
 }
 
@@ -349,7 +350,7 @@ export async function readImport(text: string): Promise<{ state: GameState; save
   try {
     return await importSave(text);
   } catch (err) {
-    toast((err as Error).message, 'error', 6000);
+    toast(errorText(err), 'error', 6000);
     return null;
   }
 }

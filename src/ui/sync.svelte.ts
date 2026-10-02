@@ -1,5 +1,6 @@
 import type { GameState } from '@core/state';
 import { createStorage, deviceLabel } from './platform/storage';
+import { errorText } from './errors';
 import { SYNC_URL, SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyncCode, syncAvailable, type PutMeta, type PutResult, type RemoteMeta } from './platform/sync';
 
 /**
@@ -114,7 +115,7 @@ async function attempt(fn: () => Promise<void>, report: boolean): Promise<boolea
     sync.error = '';
     return true;
   } catch (err) {
-    const message = err instanceof SyncError ? err.message : `Abgleich fehlgeschlagen: ${(err as Error).message}`;
+    const message = err instanceof SyncError ? err.message : `Abgleich fehlgeschlagen: ${errorText(err)}`;
     sync.error = message;
     if (report) host?.notify(message, 'error');
     return false;

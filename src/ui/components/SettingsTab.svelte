@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
+  import { errorText } from '../errors';
   import { fade, scale } from 'svelte/transition';
   import { SAVE_VERSION } from '@core/save';
   import { formatDuration, formatNumber } from '@core/format';
@@ -73,7 +75,7 @@
     try {
       if (await shareText(await exportText(), 'Genlab-Spielstand', fileName())) toast('Spielstand geteilt.');
     } catch (err) {
-      toast(`Teilen fehlgeschlagen: ${(err as Error).message}`, 'error');
+      toast(`Teilen fehlgeschlagen: ${errorText(err)}`, 'error');
     }
   }
   async function fromFile(e: Event) {
@@ -261,7 +263,7 @@
 
 {#if pending}
   <div class="backdrop" transition:fade={{ duration: 120 }} onclick={(e) => e.target === e.currentTarget && (pending = null)} role="presentation">
-    <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="import-title" transition:scale={{ duration: 150, start: 0.92 }}>
+    <div class="dialog panel" use:dialog role="alertdialog" aria-modal="true" aria-labelledby="import-title" transition:scale={{ duration: 150, start: 0.92 }}>
       <h3 id="import-title">Spielstand ersetzen?</h3>
       <SaveCompare other={pending.state} otherLabel="Import" otherSavedAt={pending.savedAt} />
       {#if pending.state.simTimeMs < game.state.simTimeMs}

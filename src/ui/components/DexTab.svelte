@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dialog } from '../dialog';
+  import { formatPercent } from '@core/format';
   import { fade, scale } from 'svelte/transition';
   import { content } from '@content/index';
   import { dexKey } from '@core/state';
@@ -15,7 +17,7 @@
   let open = $state<string | null>(null);
 
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const tree = familyTree(game);
     return {
       dex: { ...game.state.dex },
@@ -52,7 +54,7 @@
       <circle cx="27" cy="27" r="22" class="track" />
       <circle cx="27" cy="27" r="22" class="fill" stroke-dasharray="{(share * RING).toFixed(1)} {RING.toFixed(1)}" />
     </svg>
-    <span class="pct num">{Math.floor(share * 100)}%</span>
+    <span class="pct num">{formatPercent(Math.floor(share * 100) / 100, 0)}</span>
     <b class="rlabel">{label}</b>
     <span class="rsub num muted">{sub}</span>
   </div>
@@ -165,7 +167,7 @@
 {#if detail}
   {@const n = detail.node}
   {@const el = content.elements.get(n.species.element)}
-  <div class="backdrop" role="presentation" onclick={() => (open = null)} transition:fade={{ duration: 150 }}>
+  <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && (open = null)} transition:fade={{ duration: 150 }}>
     <div
       class="modal panel"
       role="dialog"
@@ -173,8 +175,7 @@
       aria-label={name(n)}
       tabindex="-1"
       style="--el: {el.color}; --rc: {detail.best?.color ?? 'var(--line)'}"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.key === 'Escape' && (open = null)}
+      use:dialog={{ onescape: () => (open = null) }}
       in:scale={{ duration: 200, start: 0.92 }}
     >
       <button class="close" aria-label="Schließen" onclick={() => (open = null)}>✕</button>

@@ -224,7 +224,7 @@
   .tname { font-size: 0.75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 2px solid var(--rarity); }
   .job { position: absolute; top: 2px; left: 5px; font-size: 0.8rem; }
   .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
-  .confirm button { min-width: 12rem; }
+  .confirm button { min-width: min(100%, 12rem); }
 
   .section { margin: 0.4rem 0 0.5rem; }
   .effects { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }

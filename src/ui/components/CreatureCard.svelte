@@ -22,24 +22,24 @@
   const rarity = $derived(content.rarities.get(creature.rarity));
   const element = $derived(content.elements.get(species.element));
   const stats = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return effectiveStats(game, creature);
   });
   const look = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return expressedAppearance(game, creature);
   });
   const infusion = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return creature.infusion?.level ?? 0;
   });
   /** Freshly hatched/found creatures get a "NEU" marker for a few seconds. */
   const isNew = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return game.state.simTimeMs - creature.bornAt < 15_000 && creature.bornAt > 0;
   });
   const sequenced = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     return creature.sequenced;
   });
 
@@ -48,7 +48,7 @@
    * passes the same object every frame, so they must be re-read on the tick.
    */
   const live = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const a = game.state.automation;
     return {
       locked: creature.locked,
@@ -103,7 +103,7 @@
     {/if}
     <span class="rarity">{rarity.name}</span>
     {#if isNew}<span class="new">NEU</span>{/if}
-    <button class="lock" title={live.locked ? 'Favorit – geschützt vor Verkauf, Recycling und Infusion, nicht vor einer Vererbung' : 'Als Favorit sperren (schützt vor Verkauf, Recycling und Infusion)'} onclick={() => act(toggleLock(game, creature.id))}>
+    <button class="lock" aria-label="Favorit" aria-pressed={live.locked} title={live.locked ? 'Favorit – geschützt vor Verkauf, Recycling und Infusion, nicht vor einer Vererbung' : 'Als Favorit sperren (schützt vor Verkauf, Recycling und Infusion)'} onclick={() => act(toggleLock(game, creature.id))}>
       {live.locked ? '★' : '☆'}
     </button>
   </header>

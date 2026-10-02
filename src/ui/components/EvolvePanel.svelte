@@ -10,7 +10,7 @@
   let open = $state(false);
 
   const checks = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     if (!game.state.features['evolution']) return [];
     return evolutionsFor(game, creature).map((e) => checkEvolution(game, creature, e));
   });

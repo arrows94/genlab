@@ -263,8 +263,9 @@
 
   // ---- derived view data -------------------------------------------------
 
+  // Team, candidates and floor column: the slow tick is enough (a fight takes seconds); the bar runs in `timing`.
   const data = $derived.by(() => {
-    view.frame;
+    view.slowFrame;
     const tw = game.state.tower;
     const size = teamSize(game);
     const teamIds = tw.run?.team ?? tw.team;
@@ -274,7 +275,6 @@
     const nextFloor = current + 1;
     const enemy = enemyFor(game, nextFloor);
     const group = enemiesFor(game, nextFloor);
-    const interval = fightIntervalMs(game);
     const top = nextFloor + 3;
     const floors = [];
     for (let f = top; f >= Math.max(1, nextFloor - 4); f--) {
@@ -324,10 +324,16 @@
         const el = content.species.get(c.speciesId).element;
         return { c, dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
       }),
-      nextFightIn: tw.run ? interval - tw.run.elapsedMs : 0,
-      progress: tw.run ? Math.min(1, tw.run.elapsedMs / interval) : 0,
       auto: game.state.features['towerAuto'] === true,
     };
+  });
+
+  /** Countdown and bar to the next fight (fast tick). */
+  const timing = $derived.by(() => {
+    view.frame;
+    const run = game.state.tower.run;
+    const interval = fightIntervalMs(game);
+    return { nextFightIn: run ? interval - run.elapsedMs : 0, progress: run ? Math.min(1, run.elapsedMs / interval) : 0 };
   });
 
   /** What the arena shows: the (replayed) last fight, or a preview of the next floor. */
@@ -378,8 +384,8 @@
     if (await ask('Lauf beenden? Er wird in der Bestenliste eingetragen.', { ok: 'Beenden', danger: true })) act(stopRun(game));
   }
   const TARGETING = {
-    rows: `Greift zu ${Math.round(game.balance.tower.frontShare * 100)} % die vordere Reihe an (wenn beide Reihen besetzt sind).`,
-    back: `Greift zu ${Math.round(game.balance.tower.frontShare * 100)} % die hintere Reihe an – schütze deine Angreifer anders.`,
+    rows: `Greift zu ${formatPercent(game.balance.tower.frontShare, 0)} die vordere Reihe an (wenn beide Reihen besetzt sind).`,
+    back: `Greift zu ${formatPercent(game.balance.tower.frontShare, 0)} die hintere Reihe an – schütze deine Angreifer anders.`,
     weakest: 'Jagt immer das Teammitglied mit den wenigsten KP – Reihen schützen nicht.',
   } as const;
   /** Status symbols in the arena. */
@@ -572,9 +578,9 @@
         {#if data.tw.run && arena.mode === 'preview'}
           <svg viewBox="0 0 72 72" width="72" height="72" class="ring">
             <circle cx="36" cy="36" r="30" class="track" />
-            <circle cx="36" cy="36" r="30" class="fill" stroke-dasharray={RING} stroke-dashoffset={RING * (1 - data.progress)} />
+            <circle cx="36" cy="36" r="30" class="fill" stroke-dasharray={RING} stroke-dashoffset={RING * (1 - timing.progress)} />
           </svg>
-          <span class="count num">{formatDuration(data.nextFightIn)}</span>
+          <span class="count num">{formatDuration(timing.nextFightIn)}</span>
         {:else}
           <span class="vs-txt">VS</span>
         {/if}

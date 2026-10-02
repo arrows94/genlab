@@ -53,7 +53,7 @@
     const m = def.modifiers[0];
     if (!m) return '';
     const v = m.value * scale;
-    return m.op === 'add' && m.target === 'breeding.mutation' ? `+${formatPercent(v)}` : m.op === 'mult' ? `×${v.toFixed(2)}` : `+${formatPercent(v, 0)}`;
+    return m.op === 'add' && m.target === 'breeding.mutation' ? `+${formatPercent(v)}` : m.op === 'mult' ? `×${formatNumber(v, { decimals: 2 })}` : `+${formatPercent(v, 0)}`;
   }
 
 </script>

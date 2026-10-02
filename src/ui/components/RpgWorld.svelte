@@ -1,7 +1,7 @@
 <script lang="ts">
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
-  import { formatNumber } from '@core/format';
+  import { formatNumber, formatPercent } from '@core/format';
   import { INTENT_INFO, ROOM_INFO, chooseEventOption, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
   import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
@@ -54,7 +54,7 @@
     menuOpen = false;
     const fighting = !!data.run?.battle;
     const text = fighting
-      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.`
+      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${formatPercent(game.balance.rpg.defeatKeep, 0)} der getragenen bleiben.`
       : 'Aufgeben und zurückkehren? Du nimmst alle Beute mit, der Lauf ist dann vorbei.';
     if (await ask(text, { ok: 'Aufgeben', danger: fighting })) act(giveUpRpgRun(game));
   }

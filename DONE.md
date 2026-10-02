@@ -5,6 +5,24 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 3: Leistung und Bedienung
+
+- Rechenlast: Listen, Kosten und Filter rechnen im langsamen Takt (`view.slowFrame`) statt alle 100 ms – Labor
+  (Liste und Karten), Brutstation (nur Ei-Fortschritt schnell, `nests`), Turm (nur Countdown schnell, `timing`), Dex,
+  Reiter-Zähler in `App.svelte`, `DnaSequence`, `EvolvePanel`. Aktionen aktualisieren sofort (`refresh` erhöht beide)
+- Dialoge: gemeinsame Aktion `use:dialog` (`ui/dialog.ts`) – Fokus hinein, Fokusfalle, Escape, Fokus zurück – in
+  allen neun Dialogen; Schließen nur bei Klick auf den Hintergrund. Im Browser geprüft (Playwright)
+- Reduzierte Bewegung: Der Schimmer schillernder Kreaturen (SVG-`<animate>`) entfällt bei `prefs.reduceMotion`.
+  Die CSS-Regel für `prefers-reduced-motion` bleibt, wie sie ist: `loadPrefs` übernimmt die Systemeinstellung beim
+  ersten Start ohnehin als Option
+- Favoriten-Knopf mit `aria-label` und `aria-pressed`
+- Handy-Breite: `ContractsTab` und Markt-Knopf mit `min(100%, …)`; alle Tabs mit voll freigeschaltetem Spielstand bei
+  320 px geprüft – kein Überlauf; Vererbung: Bonuszeilen bekamen große Zahlen abgeschnitten, Beschriftung steht jetzt
+  darüber. Die Expeditions-Karte scrollt absichtlich in ihrem Rahmen
+- Fehlermeldungen: `ui/errors.ts` (`errorText`) übersetzt Browser-Fehler („Failed to fetch“, `NotAllowedError` …)
+  für Toasts, Sync und Laden/Speichern
+- Zahlen: `formatNumber`/`formatPercent` statt `toFixed` und `Math.round(x * 100) %` in Äon, Dex, Turm, RPG
+
 ## 2026-10-02 – Schritt 2: Sync-Server und CI abgesichert
 
 - Sync-Server: Rate-Limits je IP über Workers-Bindings (`LIMITER` 60/min, `CREATE_LIMITER` 5 neue Spielstände/min,
@@ -35,8 +53,9 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
   Dynastie (`recordLineage`)
 - Recycler: Eine kürzere Dauer (Forschung während eine Kreatur in der Kammer liegt) gibt keine Gratis-Zeit mehr
 - `removeCreature` und `repairReferences` räumen über dasselbe `pruneCreatureRefs` auf (auch `tower.back`, `rpg.run`)
-- Kreaturen-Karte liest Favorit, Job, Recycler-Status, Name, Linie und Fähigkeiten jeden Frame neu (`live` in
-  `CreatureCard.svelte`)
+- Kreaturen-Karte liest Favorit, Job, Recycler-Status, Name, Linie und Fähigkeiten im Takt neu (`live` in
+  `CreatureCard.svelte`). Die vermutete „veraltete Karte“ bestand im Browser nicht (die alte Karte wechselte den
+  Stern ebenfalls sofort) – die Änderung macht die Abhängigkeit nur ausdrücklich
 
 # Visuelle Überarbeitung
 
