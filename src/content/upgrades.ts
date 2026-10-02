@@ -83,7 +83,9 @@ export const upgrades: UpgradeDef[] = [
     modifiers: [{ target: 'slots.nest', op: 'add', value: 1 }],
   },
   {
-    id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research', requires: { type: 'feature', feature: 'specialBreeding' },
+    id: 'ritualChamber', theme: 'breeding', name: 'Ritualkammer', category: 'research',
+    // Same moment as "Besondere Brut" (first inheritance), without waiting on a long feature.
+    requires: { type: 'prestigeCount', layer: 'inheritance', count: 1 },
     description: '+1 Ritualnest: ein weiteres Brutritual gleichzeitig.',
     cost: { essence: 300, catalyst: 3 }, costGrowth: 4, maxLevel: 2,
     modifiers: [{ target: 'slots.ritualNest', op: 'add', value: 1 }],
