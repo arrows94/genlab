@@ -67,6 +67,6 @@ export function breedingPreview(ctx: GameContext, a: Creature, b: Creature, ritu
     rarity: rarityChances(eggRarityWeights(ctx, ritual)),
     loci,
     stats,
-    mutationChance: mutationChance(ctx, ritual),
+    mutationChance: mutationChance(ctx, ritual, [a, b]),
   };
 }

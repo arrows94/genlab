@@ -103,7 +103,7 @@
       affordable: canAfford(game.state, cost),
       generation,
       time: eggTimeMs(game, generation, [a, b], ritual),
-      mutation: mutationChance(game, ritual),
+      mutation: mutationChance(game, ritual, [a, b]),
       rituals,
       ritual,
       special: game.state.features['specialBreeding'] === true,

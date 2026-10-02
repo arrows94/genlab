@@ -9,11 +9,12 @@ import {
   setAutoAssign, setAutoBreed, setAutoRecycle, speciesLostWith, takeBackFromRecycler,
 } from '@core/features/automation';
 import { autoEggs, breedByHand, breedingCost, breedingTimeMs, lastPair, nestEggs, startBreeding } from '@core/features/breeding';
-import { startMission, missionDurationMs } from '@core/features/expedition';
+import { startMission, missionDurationMs, missionRewardFactor } from '@core/features/expedition';
 import { startSequencing } from '@core/features/sequencing';
 import { rarityChances, rarityWeights } from '@core/rarity';
 import { EMPTY_FILTER, filterCreatures, sortCreatures } from '@core/queries';
 import { unlockFeature } from '@core/systems/unlocks';
+import { assignJob } from '@core/actions';
 import { deserialize, serialize } from '@core/save';
 import type { Genome } from '@core/state';
 import { balance, content, makeGame } from './helpers';
@@ -837,3 +838,25 @@ describe('Zuchtbuch', () => {
     expect(lastPair(g)).toBeNull();
   });
 });
+
+describe('abilities only count while their creature is active', () => {
+  it('Goldherz raises gold production only while it works in a building', () => {
+    const g = richGame();
+    const c = createCreature(g, { speciesId: 'pebblit', rarity: 'legendary', abilities: ['goldheart'], genome: normal() });
+    g.invalidate();
+    const idle = g.mods().apply('production.gold', 1);
+    expect(assignJob(g, c.id, 'mine').ok).toBe(true);
+    expect(g.mods().apply('production.gold', 1)).toBeCloseTo(idle + 0.25);
+  });
+
+  it('Fernweh adds loot only to its own expeditions', () => {
+    const g = richGame();
+    const a = createCreature(g, { speciesId: 'zephyrix', rarity: 'common', abilities: [], genome: normal(), stats: { hp: 5, atk: 5, def: 5, spd: 5 }, exactStats: true });
+    const b = createCreature(g, { speciesId: 'zephyrix', rarity: 'common', abilities: [], genome: normal(), stats: { hp: 5, atk: 5, def: 5, spd: 5 }, exactStats: true });
+    a.latent = 'wanderer';
+    a.deepSequenced = true;
+    g.invalidate();
+    expect(missionRewardFactor(g, a)).toBeCloseTo(missionRewardFactor(g, b) * 1.05);
+  });
+});
+

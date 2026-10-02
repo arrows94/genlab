@@ -5,6 +5,14 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-02 – Fähigkeiten wirken nur bei der eigenen Tätigkeit
+
+- Brutpfleger, Nesthüter (Brutzeit) und Mutagen, Genweber (Mutation) zählen nur noch bei Eiern, deren Elternteil die
+  Kreatur ist (Scope `self`, `mutationChance` nimmt die Eltern); Fernweh nur auf der eigenen Erkundung
+  (`missionRewardFactor`); Goldherz wirkt global, aber nur, solange es in einem Gebäude arbeitet
+  (`globalAbilityProvider`). Vorher zählte jede Kreatur im Stall – die Ursache der 1-Sekunden-Eier
+- Die Brutzeit-Untergrenze (25 % der Grundzeit) bleibt als Sicherheitsnetz
+
 ## 2026-10-02 – Zuchtautomat mit eigenem Nest
 
 - Der Zuchtautomat brütet nur noch im eigenen Automatennest (`slots.autoNest`, Grundwert 1) – wie Sequenzer und

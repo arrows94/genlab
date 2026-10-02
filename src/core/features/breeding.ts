@@ -114,8 +114,11 @@ export function breedingTimeMs(ctx: GameContext, generation: number, parents: (C
   return Math.max(1000, Math.max(seconds, base * b.minTimeShare) * 1000);
 }
 
-export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef): number {
-  return Math.min(1, Math.max(0, ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0)));
+/** Mutation chance of an egg; parents' own bonuses (Mutagen, Genweber) count for their own eggs only. */
+export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef, parents: (Creature | undefined)[] = []): number {
+  let chance = ctx.mods().apply('breeding.mutation', ctx.balance.breeding.mutationChance) + (ritual?.mutationAdd ?? 0);
+  for (const p of parents) if (p) chance += creatureModifiers(ctx, p).apply('breeding.mutation', 0);
+  return Math.min(1, Math.max(0, chance));
 }
 
 /** Rituals the player can use right now (Besondere Brut). */
@@ -301,7 +304,7 @@ registerProcessHandler(EGG, {
     const [a, b] = data.sample ?? live;
     if (!a || !b) return; // parents vanished (should not happen) – egg is lost
     const ritual = data.ritual && ctx.content.breedingRituals.has(data.ritual) ? ctx.content.breedingRituals.get(data.ritual) : undefined;
-    const mutation = mutationChance(ctx, ritual);
+    const mutation = mutationChance(ctx, ritual, [a, b]);
     const speciesId = rollOffspringSpecies(ctx, a, b, ritual?.hybridMult ?? 1, ritual?.guaranteedHybrid ?? false);
     // Normal eggs roll their rarity in createCreature; a ritual rolls from its own weights.
     const rarity = hatchRarity(ctx, ritual);

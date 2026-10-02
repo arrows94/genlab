@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { D } from '@core/num';
 import { createCreature, effectiveStats, findCreature } from '@core/creatures';
-import { breedingCost, breedingTimeMs, nestSlots, startBreeding, inheritStats } from '@core/features/breeding';
+import { breedingCost, breedingTimeMs, mutationChance, nestSlots, startBreeding, inheritStats } from '@core/features/breeding';
+import { addBuff } from '@core/systems/buffs';
 import { unlockFeature } from '@core/systems/unlocks';
 import { balance, makeGame } from './helpers';
 
@@ -103,12 +104,26 @@ describe('breeding', () => {
     expect(breedingTimeMs(g, 2)).toBeCloseTo(before * 0.81);
   });
 
-  it('stacked bonuses never push an egg below its minimum time (tester saw 1-second eggs)', () => {
+  it('Brutpfleger and Mutagen only help with their own eggs, not from the stable (tester saw 1-second eggs)', () => {
     const g = makeGame();
     unlockFeature(g, 'breeding');
-    // Twenty Brutpfleger in the stable: −10 % each would add up to −200 %.
-    for (let i = 0; i < 20; i++) createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer'] });
+    const plain = [0, 1].map(() => createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: [] }));
+    const before = { time: breedingTimeMs(g, 2, plain), mutation: mutationChance(g, undefined, plain) };
+    // Twenty idle specialists in the stable used to add up to −200 % breeding time.
+    for (let i = 0; i < 20; i++) createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer', 'mutagenic'] });
     g.invalidate();
+    expect(breedingTimeMs(g, 2, plain)).toBe(before.time);
+    expect(mutationChance(g, undefined, plain)).toBe(before.mutation);
+    // As a parent each one counts for that egg.
+    const helper = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer', 'mutagenic'] });
+    expect(breedingTimeMs(g, 2, [plain[0], helper])).toBeCloseTo(before.time * 0.9);
+    expect(mutationChance(g, undefined, [plain[0], helper])).toBeCloseTo(before.mutation + 0.02);
+  });
+
+  it('stacked bonuses never push an egg below its minimum time', () => {
+    const g = makeGame();
+    unlockFeature(g, 'breeding');
+    addBuff(g, 'test', [{ target: 'breeding.time', op: 'mult', value: 0.01 }], 1e9);
     const base = balance.breeding.baseTimeSec * (1 + balance.breeding.timePerGeneration);
     expect(breedingTimeMs(g, 2)).toBe(base * balance.breeding.minTimeShare * 1000);
   });
