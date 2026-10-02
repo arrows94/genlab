@@ -5,6 +5,7 @@ import type { GameContext } from '../context';
 import type { System } from './types';
 import type { BuildingDef } from '../content/types';
 import type { Creature } from '../state';
+import { ModifierSet } from '../modifiers';
 
 /**
  * Rates only change when something calls `ctx.invalidate()` (new modifier
@@ -20,6 +21,33 @@ export function productionRates(ctx: GameContext): Record<string, Decimal> {
   const rates = computeRates(ctx);
   rateCache.set(mods, rates);
   return rates;
+}
+
+const calmMods = new WeakMap<object, ModifierSet>();
+
+/**
+ * Production per second without potion buffs (global and on single creatures).
+ * Everything that pays out or costs "minutes of production" uses this, so a
+ * Festmahl or Turbo-Trank right before does not inflate it.
+ */
+export function baseProductionRates(ctx: GameContext): Record<string, Decimal> {
+  if (ctx.state.buffs.length === 0) return productionRates(ctx);
+  const mods = ctx.mods();
+  let calm = calmMods.get(mods);
+  if (!calm) {
+    calm = new ModifierSet(mods.targets().flatMap((t) => mods.list(t).filter((m) => !m.source.startsWith('buff:'))));
+    calmMods.set(mods, calm);
+  }
+  const view: GameContext = {
+    state: { ...ctx.state, buffs: [] },
+    content: ctx.content,
+    balance: ctx.balance,
+    bus: ctx.bus,
+    rng: ctx.rng,
+    mods: () => calm,
+    invalidate: () => ctx.invalidate(),
+  };
+  return productionRates(view);
 }
 
 /** True when the creature's element has a type advantage in this building. */
