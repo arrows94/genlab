@@ -11,6 +11,7 @@
   import { batchSellValue, consumeBlocker, sell } from '@core/features/stable';
   import { fragmentValue } from '@core/features/recycler';
   import { inRecycler, sendToRecycler, speciesLostWith, takeBackFromRecycler } from '@core/features/automation';
+  import { rpgLevel } from '@core/features/rpgCombat';
   import { game, view, act, ask } from '../store.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import GenomeView from './GenomeView.svelte';
@@ -134,6 +135,13 @@
               {#if latent}<span class="lname">{latent.name}</span> <span class="muted small">{latent.description}</span>
               {:else if c.deepSequenced}<span class="muted">keine</span>
               {:else}<span class="muted">??? – nur die Tiefensequenzierung im Genlabor deckt sie auf.</span>{/if}
+            </p>
+          {/if}
+          {#if game.state.features['rpg']}
+            {@const rank = rpgLevel(game, c.id)}
+            <p class="latent" title="Stufe in der anderen Welt – sie wächst nur im Dungeon">
+              <b>GenLab RPG:</b> Stufe {rank.level}
+              <span class="muted small">{rank.need > 0 ? `· ${formatNumber(rank.into)}/${formatNumber(rank.need)} EP bis Stufe ${rank.level + 1}` : '· Höchststufe'}</span>
             </p>
           {/if}
 
