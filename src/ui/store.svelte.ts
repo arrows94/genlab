@@ -7,7 +7,7 @@ import { formatNumber } from '@core/format';
 import { plannedNotices } from '@core/notices';
 import { createStorage } from './platform/storage';
 import { errorText } from './errors';
-import { lookForUpdate, registerPwa } from './platform/pwa';
+import { checkForUpdate, lookForUpdate, registerPwa, watchForUpdates } from './platform/pwa';
 import { closeNews, initNews, news } from './news.svelte';
 import { setupNative } from './platform/native';
 import { cancelNotices, scheduleNotices } from './platform/notify';
@@ -51,6 +51,8 @@ export const view = $state({
   muteDex: false,
   /** Set when a new app version is downloaded (PWA); calling it reloads into the update. */
   applyUpdate: null as (() => void) | null,
+  /** The player put the update banner away („Später“); it returns when the game comes back to the foreground. */
+  updateLater: false,
   /** False until the stored save has been loaded (async on native platforms). */
   ready: false,
   /** Wall clock of the last successful save. */
@@ -386,7 +388,9 @@ function toBackground(): void {
 function toForeground(): void {
   cancelNotices();
   const pull = syncOnShow();
-  if (!longGap()) return;
+  // A dismissed update banner comes back, and a short absence still looks for a new version.
+  view.updateLater = false;
+  if (!longGap()) return checkForUpdate();
   void beforeCatchUp(pull, lookForUpdate(START_TIMEOUT_MS)).then(() => {
     advance(FIRST_SLICE_MS);
     refresh();
@@ -487,6 +491,8 @@ export async function init(): Promise<void> {
   for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, () => (touched = true), { capture: true, passive: true });
   // Look for a new version at once: after a long absence it is installed before anything is synced or caught up.
   const update = registerPwa((apply) => (view.applyUpdate = apply), START_TIMEOUT_MS).catch(() => null);
+  // An open game looks for new versions by itself; the banner appears as soon as one is ready.
+  void update.then(() => watchForUpdates());
   const hadSave = await loadSave();
   view.ready = true;
   // Before the loop starts, so the game continues on the newest save of all devices.

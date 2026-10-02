@@ -235,7 +235,7 @@
 <CreatureDetail />
 <OfflineModal />
 <WhatsNew />
-{#if view.applyUpdate}<UpdateBanner />{/if}
+{#if view.applyUpdate && !view.updateLater}<UpdateBanner />{/if}
 {/if}
 <Toasts />
 {#if view.ready && view.world === 'off'}<Celebration />{/if}

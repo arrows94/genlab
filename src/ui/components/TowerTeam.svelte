@@ -157,12 +157,16 @@
   .sorting { display: flex; gap: 0.3rem; align-items: stretch; }
   .sockets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
   .socket {
-    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+    position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
     min-height: 6.6rem; border-radius: 12px; border: 2px dashed var(--line); background: var(--bg-2); color: var(--muted); font-size: 1.4rem; padding: 0.3rem;
   }
   .socket.filled { border: 2px solid var(--el); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--el) 18%, transparent), var(--bg-2) 70%); color: var(--text); font-size: 0.8rem; }
   .socket.locked { opacity: 0.45; font-size: 1.1rem; }
-  .sname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  /* Long names wrap to a second line (with hyphenation) instead of being cut. */
+  .sname {
+    max-width: 100%; font-weight: 600; line-height: 1.2; text-align: center; hyphens: auto; overflow-wrap: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
   .x { position: absolute; top: 2px; right: 3px; padding: 0 0.35rem; border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1.2; }
   .x:hover { color: var(--danger); }
   .socket.back { border-style: dashed; }
@@ -181,9 +185,11 @@
 
   /* Leaderboard */
 
+  /* Phone: three places per row (five were too narrow for name and Vorne/Hinten); locked places only cost space. */
   @media (max-width: 760px) {
-    .sockets { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; }
+    .sockets { grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; }
     .socket { min-height: 5.4rem; }
+    .socket.locked { display: none; }
     .socket.filled :global(svg) { width: 40px; height: 40px; }
   }
 </style>

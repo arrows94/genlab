@@ -18,6 +18,7 @@
   import SyncPanel from './SyncPanel.svelte';
   import RescuePanel from './RescuePanel.svelte';
   import SoundList from './SoundList.svelte';
+  import { lookForUpdate, updatesSupported } from '../platform/pwa';
 
   let text = $state('');
   /** Mirrors the save's naming option (game state itself is not reactive). */
@@ -125,6 +126,19 @@
   const debugGroups = [...new Set(DEBUG_RESETS.map((r) => r.group))];
   async function doReset() {
     if ((await ask('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden.', { ok: 'Löschen', danger: true })) && (await ask('Ganz sicher? Exportiere vorher ein Backup!', { ok: 'Endgültig löschen', danger: true }))) hardReset();
+  }
+
+  /** „Nach Update suchen“: asks the server; a found version shows the banner and the install button. */
+  let updateCheck = $state<'idle' | 'checking' | 'latest' | 'unsupported'>('idle');
+  async function searchUpdate() {
+    if (!updatesSupported()) {
+      updateCheck = 'unsupported';
+      return;
+    }
+    updateCheck = 'checking';
+    const apply = await lookForUpdate(8000).catch(() => null);
+    view.updateLater = false;
+    updateCheck = apply ? 'idle' : 'latest';
   }
 </script>
 
@@ -240,7 +254,16 @@
       <dt>Speicherformat</dt><dd class="num">v{SAVE_VERSION}</dd>
       {#if CHANGELOG[0]}<dt>Stand</dt><dd>{formatReleaseDate(CHANGELOG[0].date)}</dd>{/if}
     </dl>
-    <button class="news" onclick={() => openAllNews((f) => game.state.features[f] === true)}>✨ Was ist neu?</button>
+    <div class="info-actions">
+      <button class="news" onclick={() => openAllNews((f) => game.state.features[f] === true)}>✨ Was ist neu?</button>
+      {#if view.applyUpdate}
+        <button class="primary" onclick={() => { save(); view.applyUpdate?.(); }}>⬆️ Neue Version installieren</button>
+      {:else}
+        <button disabled={updateCheck === 'checking'} onclick={searchUpdate}>{updateCheck === 'checking' ? 'Suche …' : '🔄 Nach Update suchen'}</button>
+      {/if}
+    </div>
+    {#if updateCheck === 'latest'}<p class="small muted">Du hast die neueste Version.</p>{/if}
+    {#if updateCheck === 'unsupported'}<p class="small muted">Diese App aktualisierst du über den App-Store bzw. eine neue Installationsdatei.</p>{/if}
   </article>
 </div>
 
@@ -299,7 +322,8 @@
   .vol-row input { flex: 1; min-width: 0; }
   .small { font-size: 0.82rem; }
   dl { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 1rem; margin: 0; font-size: 0.9rem; }
-  .news { margin-top: 0.7rem; font-size: 0.85rem; }
+  .info-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+  .info-actions button { font-size: 0.85rem; }
   dd { margin: 0; text-align: right; }
   textarea { width: 100%; font-family: var(--mono); font-size: 0.75rem; resize: vertical; margin-bottom: 0.5rem; }
   .error { color: var(--danger); }

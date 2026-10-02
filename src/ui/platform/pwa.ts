@@ -68,3 +68,31 @@ export function lookForUpdate(waitMs: number): Promise<Apply | null> {
     );
   });
 }
+
+/** Wall clock of the last background look for a new version. */
+let lastCheck = 0;
+
+/**
+ * Asks the server for a new version without waiting for it – at most once per
+ * `minGapMs`. Browsers only check by themselves on a reload (or once a day),
+ * so a game left open would never learn about an update. A version found here
+ * reports itself through `onUpdate` (the banner).
+ */
+export function checkForUpdate(minGapMs = 5 * 60_000): void {
+  const reg = registration;
+  if (!reg || apply || Date.now() - lastCheck < minGapMs) return;
+  lastCheck = Date.now();
+  reg.update().catch(() => {
+    /* offline: try again next time */
+  });
+}
+
+/** Looks for a new version every `everyMs` while the game runs (see `checkForUpdate`). */
+export function watchForUpdates(everyMs = 30 * 60_000): void {
+  setInterval(() => checkForUpdate(), everyMs);
+}
+
+/** True when this copy updates itself (browser with service worker); the apps update through their store or installer. */
+export function updatesSupported(): boolean {
+  return registration !== null;
+}

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 31,
+    date: '2026-10-02',
+    title: 'Updates sofort bemerken',
+    items: [
+      { text: 'Lässt du Genlab offen, sieht das Spiel jetzt regelmäßig und beim Zurückkehren nach einer neuen Version – dann erscheint oben „Eine neue Version von Genlab ist da“.' },
+      { text: 'Das Hinweisfeld lässt sich mit „Später“ ausblenden; in den Optionen unter „Info“ kannst du jederzeit nach Updates suchen und sie installieren.' },
+      { text: 'Auf dem Handy werden Kreaturen-Namen nicht mehr abgeschnitten: In den Anlagen, allen Auswahlfenstern und im Turm-Team stehen lange Namen auf zwei Zeilen, Arbeiter- und Teamplätze sind breiter.' },
+    ],
+  },
+  {
     id: 30,
     date: '2026-10-02',
     title: 'Kleine Reparaturen im Labor',
