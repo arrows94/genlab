@@ -6,13 +6,13 @@
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatDuration, formatPercent } from '@core/format';
   import {
-    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Row, checkpoint, restartCheckpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
+    actionIntervals, enemiesFor, isBossFloor, resolveInfo, veteranRank, techniqueFor, teamSynergies, ROLE_INFO, roleOf, rowOf, setRow, targetingOf, type Role, type Row, checkpoint, restartCheckpoint, elementMultiplier, enemyFor, fighterFor, fightIntervalMs, towerMilestones, floorRewardInfo, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize,
   } from '@core/features/tower';
   import { STATUS_INFO, currentDefeat, fightProtocol } from '@core/features/towerReport';
   import type { Creature } from '@core/state';
   import { game, view, act, ask } from '../store.svelte';
   import { prefs } from '../prefs.svelte';
-  import { viewState, type ReplaySpeed } from '../viewState.svelte';
+  import { viewState, type ReplaySpeed, type TowerSort } from '../viewState.svelte';
   import { play } from '../sound';
   import CreatureSvg from './CreatureSvg.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
@@ -60,8 +60,11 @@
   let sparks = $state<{ id: number; t: number; color: string }[]>([]);
   let banner = $state<{ win: boolean; floor: number; seconds: number } | null>(null);
   let shake = $state(false);
-  let sortBy = $state<'power' | 'matchup' | 'speed'>('power');
-  let invertSort = $state(false);
+  let search = $state('');
+  const SORT_LABELS: Record<TowerSort, string> = {
+    power: 'Stärke', matchup: 'Vorteil vs.', speed: 'Tempo', hp: 'KP', atk: 'Angriff', def: 'Verteidigung', role: 'Rolle', rarity: 'Seltenheit',
+  };
+  const ROLE_ORDER: Record<Role, number> = { tank: 2, attacker: 1, fast: 0 };
   let lastKey: string | null = null;
   /** Real milliseconds per second of fight time in the replay (and the preview gauges). */
   const REPLAY_MS_PER_SEC = 700;
@@ -282,14 +285,28 @@
       const trait = info.boss ? enemyFor(game, f).trait : undefined;
       floors.push({ f, ...info, trait: trait ? content.bossTraits.get(trait) : null, cleared: tw.run ? f <= tw.run.floor : f <= tw.best, next: f === nextFloor, best: f === tw.best && tw.best > 0 });
     }
+    const { sort, invert } = viewState.tower;
+    const vsElement = content.elements.has(viewState.tower.vsElement) ? viewState.tower.vsElement : enemy.element;
+    const q = search.trim().toLowerCase();
     const candidates = [...game.state.creatures]
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
       .map((c) => {
         const el = content.species.get(c.speciesId).element;
         const stats = effectiveStats(game, c);
-        return { c, power: creaturePower(game, c), spd: stats.spd ?? 0, role: roleOf(game, stats), inTeam: tw.team.includes(c.id), dealt: elementMultiplier(game, el, enemy.element), taken: elementMultiplier(game, enemy.element, el) };
+        const role = roleOf(game, stats);
+        const dealt = elementMultiplier(game, el, vsElement);
+        const taken = elementMultiplier(game, vsElement, el);
+        const key =
+          sort === 'matchup' ? dealt / taken
+          : sort === 'speed' ? (stats.spd ?? 0)
+          : sort === 'hp' || sort === 'atk' || sort === 'def' ? (stats[sort] ?? 0)
+          : sort === 'role' ? ROLE_ORDER[role]
+          : sort === 'rarity' ? content.rarities.get(c.rarity).order
+          : 0;
+        return { c, power: creaturePower(game, c), stats, role, key, inTeam: tw.team.includes(c.id), dealt };
       })
-      .sort((a, b) => (invertSort ? -1 : 1) * ((sortBy === 'matchup' ? b.dealt / b.taken - a.dealt / a.taken : sortBy === 'speed' ? b.spd - a.spd : 0) || b.power - a.power))
+      .sort((a, b) => (invert ? -1 : 1) * (b.key - a.key || b.power - a.power))
       .slice(0, 40);
     return {
       tw,
@@ -300,6 +317,7 @@
       current,
       nextFloor,
       enemy,
+      vsElement,
       boss: isBossFloor(game, nextFloor),
       guard: enemy.guard === true,
       // The column shows only a few floors around the team – the next boss may be far above.
@@ -404,6 +422,13 @@
   const mult = (m: number) => `×${formatNumber(m, { decimals: 1 })}`;
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   const el = (id: string) => content.elements.get(id);
+  /** The number under a candidate: the sorted stat, otherwise the total power. */
+  const STAT_SHORT: Partial<Record<TowerSort, string>> = { speed: '💨', hp: 'KP', atk: 'ANG', def: 'VER' };
+  const tileValue = (t: { power: number; stats: Record<string, number | undefined> }) => {
+    const sort = viewState.tower.sort;
+    const short = STAT_SHORT[sort];
+    return short ? `${short} ${formatNumber(t.stats[sort === 'speed' ? 'spd' : sort] ?? 0)}` : `Σ ${formatNumber(t.power)}`;
+  };
 </script>
 
 {#snippet who(f: { name: string; element: string; team: boolean } | undefined)}
@@ -775,12 +800,17 @@
     <div class="team-head">
       <h3>Kandidaten</h3>
       <div class="sorting">
-        <div class="seg">
-          <button class:on={sortBy === 'power'} onclick={() => (sortBy = 'power')}>Stärke</button>
-          <button class:on={sortBy === 'matchup'} onclick={() => (sortBy = 'matchup')}>Vorteil vs. {el(data.enemy.element).name}</button>
-          <button class:on={sortBy === 'speed'} onclick={() => (sortBy = 'speed')} title="Schnelle Kreaturen handeln öfter und weichen langsameren Gegnern aus">Tempo</button>
-        </div>
-        <SortToggle bind:inverted={invertSort} />
+        <input type="search" placeholder="Name oder Art …" bind:value={search} />
+        <select bind:value={viewState.tower.sort} title="Sortierung">
+          {#each Object.entries(SORT_LABELS) as [id, label] (id)}<option value={id}>{label}</option>{/each}
+        </select>
+        {#if viewState.tower.sort === 'matchup'}
+          <select bind:value={viewState.tower.vsElement} title="Vorteil gegen welches Element?">
+            <option value="">{el(data.enemy.element).name} (nächster Gegner)</option>
+            {#each content.elements.list as e (e.id)}<option value={e.id}>{e.name}</option>{/each}
+          </select>
+        {/if}
+        <SortToggle bind:inverted={viewState.tower.invert} />
       </div>
     </div>
     <div class="tiles">
@@ -796,7 +826,7 @@
         >
           <CreatureSvg appearance={expressedAppearance(game, t.c)} shape={sp.shape} tier={sp.tier} size={44} shiny={t.c.shiny} />
           <span class="tname">{t.c.name}</span>
-          <span class="num small muted">{sortBy === 'speed' ? `💨 ${formatNumber(t.spd)}` : `Σ ${formatNumber(t.power)}`}</span>
+          <span class="num small muted">{tileValue(t)}</span>
           {#if t.dealt > 1}<span class="adv good">▲</span>{:else if t.dealt < 1}<span class="adv bad">▼</span>{/if}
           <span class="trole" title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
         </button>
@@ -1058,7 +1088,9 @@
   .team-panel { margin-top: 0.75rem; }
   .team-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; margin: 0.3rem 0 0.5rem; }
   .team-head h3 { margin: 0; }
-  .sorting { display: flex; gap: 0.3rem; align-items: stretch; }
+  .sorting { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: stretch; }
+  .sorting input[type='search'] { flex: 1 1 9rem; max-width: 14rem; }
+  .sorting select { max-width: 11rem; }
   .sockets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
   .socket {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
@@ -1079,9 +1111,6 @@
   .syn { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
   .syn.on { color: var(--text); border-color: var(--c, var(--gold)); background: color-mix(in srgb, var(--c, var(--gold)) 15%, transparent); }
   .trole { position: absolute; bottom: 2px; left: 5px; font-size: 0.72rem; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg button { border: 0; border-radius: 0; font-size: 0.78rem; padding: 0.25rem 0.6rem; background: var(--bg-2); }
-  .seg button.on { background: var(--petrol); color: #fff; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.4rem; max-height: 22rem; overflow-y: auto; padding: 2px; }
   .tile {
     position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.35rem 0.25rem;

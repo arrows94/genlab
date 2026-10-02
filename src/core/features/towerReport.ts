@@ -165,7 +165,7 @@ export function analyzeDefeat(ctx: GameContext, fight: FightForReport): DefeatRe
       add(0.4 + Math.max(takenShare, resistedShare) * 0.6, {
         id: 'element', icon: '⚖️', title: `Element-Nachteil gegen ${elName(foeElement)}`,
         text: `${parts.join(', ')}.`,
-        tip: `${counterText(foeElement)} – sortiere die Kandidaten nach „Vorteil vs. ${elName(foeElement)}“.`,
+        tip: `${counterText(foeElement)} – sortiere die Kandidaten nach „Vorteil vs.“ und wähle ${elName(foeElement)}.`,
       });
     }
   }
