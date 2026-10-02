@@ -163,6 +163,15 @@ Monster-Dex mit Sammlung und Detailkarte, Sequenzierer und Genbibliothek, einhei
 
 # Komfort
 
+## 2026-10-02 – Update-Anzeige
+
+- Ein offenes Spiel sucht alle 30 min und beim Zurückkehren in den Tab nach einer neuen Version (`checkForUpdate`,
+  `watchForUpdates` in `ui/platform/pwa.ts`, höchstens alle 5 min); vorher nur beim Start und nach langer Pause.
+  Das vorhandene Banner bekam „Später“ (`view.updateLater`, kommt beim Zurückkehren wieder), die Optionen unter
+  „Info“ einen Knopf „Nach Update suchen“ bzw. „Neue Version installieren“. Mit zwei Builds im Browser geprüft
+- Die Apps (Android, Desktop) haben keinen Service Worker und aktualisieren sich über Store bzw. Installationsdatei;
+  die Optionen sagen das
+
 Zuchtbuch ↻ (`state.lastPair`), zwei Zuchtlisten (`prefs.breedingSplit`), Warnung, wenn eine Art aus dem Stall
 verschwindet (`speciesLostWith`; kein fester Schutz im Recycling-Automaten – „je Art behalten“ regelt das), Reiter in
 Bereichen (`GROUPS`, `viewState.nav`), Fortschrittsleiste am Reiter (`core/tabActivity.ts`), Handy-Dock (`--dock-h`).
