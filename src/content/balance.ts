@@ -42,8 +42,10 @@ export const balance: Balance = {
   },
   weeklyBoss: {
     minFloor: 30,
-    hpMult: 25,
-    atkMult: 1.5,
+    hpMult: 15,
+    // Weak enough that a team near the record lasts most of the fight: the damage then follows the
+    // team's strength smoothly instead of dropping off a cliff when the titan knocks it out in seconds.
+    atkMult: 0.5,
     // Seconds of fight time per attack (same fight as in the tower).
     fightSec: 30,
     attemptsPerDay: 3,

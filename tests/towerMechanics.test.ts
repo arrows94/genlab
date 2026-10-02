@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, setTeam, simulateFight, startRun, towerMilestones,
+  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, restartCheckpoint, setTeam, simulateFight, startRun, stopRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import { resetLayer } from '@core/prestige';
@@ -444,6 +444,45 @@ describe('Kampferfahrung', () => {
     fightNextFloor(g);
     expect(g.state.tower.resolve).toBe(0);
     expect(g.state.tower.recordAt).toBe(g.state.lastTickAt);
+  });
+
+  it('a run that loses its first floor lets the auto-restart step back one checkpoint', () => {
+    const g = towerGame();
+    const every = balance.tower.checkpointEvery;
+    const weak = champion(g, 1);
+    expect(setTeam(g, [weak.id]).ok).toBe(true);
+    g.state.tower.best = 3 * every + 5;
+    // By hand: the real checkpoint, lost at once – the auto-restart now begins one checkpoint lower.
+    expect(startRun(g).ok).toBe(true);
+    expect(g.state.tower.run!.startFloor).toBe(3 * every + 1);
+    fightNextFloor(g);
+    expect(g.state.tower.run).toBeNull();
+    expect(restartCheckpoint(g)).toBe(2 * every);
+    // The auto-restart (tower system) begins there and keeps stepping back, down to floor 1.
+    unlockFeature(g, 'towerAuto');
+    g.state.tower.autoRestart = true;
+    g.step(100);
+    expect(g.state.tower.run!.startFloor).toBe(2 * every + 1);
+    for (let i = 0; i < 4; i++) {
+      fightNextFloor(g);
+      g.step(100);
+    }
+    expect(g.state.tower.retreat).toBe(3);
+    expect(g.state.tower.run!.startFloor).toBe(1);
+    // A strong team climbs back: every cleared checkpoint floor brings the restart up to it.
+    stopRun(g);
+    const strong = champion(g, 1e6);
+    expect(setTeam(g, [strong.id]).ok).toBe(true);
+    expect(startRun(g, true, true).ok).toBe(true);
+    for (let i = 0; i < every; i++) fightNextFloor(g);
+    expect(restartCheckpoint(g)).toBe(every);
+    for (let i = 0; i < every; i++) fightNextFloor(g);
+    expect(restartCheckpoint(g)).toBe(2 * every);
+    // A start by hand always tries the real checkpoint.
+    stopRun(g);
+    expect(startRun(g).ok).toBe(true);
+    expect(g.state.tower.retreat).toBe(0);
+    expect(g.state.tower.run!.startFloor).toBe(3 * every + 1);
   });
 
   it('survives inheritance and Äon', () => {
