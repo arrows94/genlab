@@ -377,6 +377,8 @@ export const balance: Balance = {
   missions: {
     baseCamps: 1,
     statScaling: 0.02,
+    // Missions at least this long are Tagesreisen: they survive an inheritance.
+    journeyHours: 12,
   },
   market: {
     maxBoostsPerStat: 10,

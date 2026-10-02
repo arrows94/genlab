@@ -18,7 +18,7 @@ Spiellogik (ungeprüft):
       `core/rewards.ts`). Braucht Produktionsraten ohne Buffs (`computeRates` mit gefilterten Modifiern, auch
       Kreatur-Buffs in `creatureModifiers`)
 - [ ] Ohne Quelle: `slots.ritualNest`, `infusion.transferChance`, `cost.potion`, `cost.capsule`, `cost.upgrade`,
-      Ritual-`rarityBoost`, Job-Art `'lab'`
+      Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
 
 Qualität:
 - [ ] Modifier-Text („+25 %“, „×1,25“) einmal in core (`describeModifier` erweitern) statt dreimal in der Oberfläche
@@ -28,15 +28,10 @@ Qualität:
       `spliceBlocker()` mit Grund), Kampf-Wiedergabe aus `TowerTab` nach `towerReport.ts`
 - [ ] Große Dateien teilen: `simulateFight` (314 Zeilen, 40 `!`) in `towerCombat.ts` mit einem Datensatz je Kämpfer,
       `validateContent` als Tabelle, `TowerTab.svelte` und `BreedingTab.svelte` in Teilkomponenten
-- [ ] Doppelte Logik: eine `busyReason(c)` statt sieben Kopien (totes `isBusy`), ein `isExpendable` statt zwei, ein
-      gemeinsames `fail()` und `spend()` mit der fehlenden Ressource im Text
 - [ ] Tests: `evolution.ts`, ungetestete Exporte in `hybrids.ts` / `infusion.ts` / `recycler.ts`, Sync-Entscheidung
       aus `doPull` als reine Funktion testen, Coverage-Report
-- [ ] `mergeDefaults` prüft Typen gegen den Standardwert; `viewState` generisch zusammenführen
 - [ ] Gestaltung: feste Hex-Farben (~90) durch Tokens ersetzen (Glow, Relikt, Kristall), gemeinsame `<Meter>`- und
       `<CreatureTile>`-Komponenten
-- [ ] Kleinigkeiten: README „Brutrituale (4–24 h)“ stimmt nicht (1/3/8 h), Job-Arten in CLAUDE.md unvollständig,
-      `JOURNEY_SEC` nach `balance.ts`, tote Exporte (`ZERO`, `getNotation`, `isBusy`, `megaDone`, `recipesForPair`)
 
 # Endgame
 

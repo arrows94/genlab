@@ -1,7 +1,7 @@
 import { D, type Decimal } from '../num';
-import { createCreature, findCreature } from '../creatures';
+import { createCreature, findCreature, isOccupied } from '../creatures';
 import { catalogueSamples } from '../genetics';
-import { grant, trySpend } from '../resources';
+import { grant, spend } from '../resources';
 import { hashSeed } from '../rng';
 import { registerProcessHandler, registerResetSurvivor, startProcess } from '../systems/processes';
 import { toCost } from '../costs';
@@ -83,11 +83,12 @@ export function startVoyage(ctx: GameContext, teamIds: number[]): ActionResult {
   const team = ids.map((id) => findCreature(ctx, id));
   for (const c of team) {
     if (!c) return { ok: false, reason: 'Kreatur nicht gefunden.' };
-    if (c.job && c.job.kind !== 'building') return { ok: false, reason: `${c.name} ist beschäftigt.` };
+    if (isOccupied(c)) return { ok: false, reason: `${c.name} ist beschäftigt.` };
   }
   if (ids.length >= ctx.state.creatures.length) return { ok: false, reason: 'Mindestens eine Kreatur muss im Labor bleiben.' };
   if (campsUsed(ctx) >= campSlots(ctx)) return { ok: false, reason: 'Alle Camps sind belegt.' };
-  if (!trySpend(ctx, toCost(ctx.balance.voyage.cost))) return { ok: false, reason: 'Nicht genug Vorräte.' };
+  const paid = spend(ctx, toCost(ctx.balance.voyage.cost));
+  if (!paid.ok) return paid;
 
   const pool = [...ctx.content.voyageEvents.list];
   const events: string[] = [];

@@ -2,13 +2,13 @@
 import { toCost } from '../costs';
 import { checkPerfection, creaturePower, effectiveStats, findCreature, registerDex, removeCreature } from '../creatures';
 import { activeLoci, alleleDef } from '../genetics';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { checkUnlocks } from '../systems/unlocks';
 import type { AlleleDef, GeneLocusDef } from '../content/types';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
-import { canConsume, takeConsumable } from './stable';
+import { isExpendable, takeConsumable } from './stable';
 
 /**
  * Infusion: a target absorbs creatures of the same species for EP.
@@ -152,7 +152,8 @@ export function breakthrough(ctx: GameContext, targetId: number, partnerId: numb
   if (typeof partner === 'string') return { ok: false, reason: partner };
   const p = partner[0]!;
   if (p.speciesId !== target.speciesId || p.rarity !== target.rarity) return { ok: false, reason: 'Partner muss dieselbe Art und Seltenheit haben.' };
-  if (!trySpend(ctx, breakthroughCost(ctx, target))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, breakthroughCost(ctx, target));
+  if (!paid.ok) return paid;
 
   removeCreature(ctx, p.id, 'breakthrough');
   target.rarity = next;
@@ -181,10 +182,9 @@ export interface InfusionPick {
  */
 export function pickInfusionVictims(ctx: GameContext, target: Creature, pick: InfusionPick): Creature[] {
   const order = (id: string) => ctx.content.rarities.get(id).order;
-  const max = order(pick.maxRarity);
   const power = new Map<number, number>();
   const pool = infusionCandidates(ctx, target)
-    .filter((c) => canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && order(c.rarity) <= max)
+    .filter((c) => isExpendable(ctx, c, pick.maxRarity))
     .filter((c) => !pick.donorsOnly || bestTransfer(ctx, target, c) !== null);
   for (const c of pool) power.set(c.id, creaturePower(ctx, c));
   pool.sort((x, y) => order(x.rarity) - order(y.rarity) || x.generation - y.generation || power.get(x.id)! - power.get(y.id)!);

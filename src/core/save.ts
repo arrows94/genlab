@@ -154,9 +154,13 @@ export function migrate(envelope: SaveEnvelope, migrations: Record<number, Migra
  */
 export function mergeDefaults<T>(defaults: T, loaded: unknown): T {
   if (loaded === undefined || loaded === null) return defaults;
-  if (isDecimal(defaults) || Array.isArray(defaults) || typeof defaults !== 'object' || defaults === null) {
-    return loaded as T;
-  }
+  // A value of the wrong type (hand-edited or damaged save) falls back to the default instead of
+  // breaking the game later. Fields that default to null may hold anything.
+  if (defaults === null) return loaded as T;
+  if (Array.isArray(defaults)) return (Array.isArray(loaded) ? loaded : defaults) as T;
+  if (isDecimal(defaults)) return (isDecimal(loaded) ? loaded : typeof loaded === 'number' || typeof loaded === 'string' ? D(loaded) : defaults) as T;
+  if (typeof defaults === 'number') return (typeof loaded === 'number' ? loaded : isDecimal(loaded) ? loaded.toNumber() : defaults) as T;
+  if (typeof defaults !== 'object') return (typeof loaded === typeof defaults ? loaded : defaults) as T;
   if (typeof loaded !== 'object' || Array.isArray(loaded)) return defaults;
   const out: Record<string, unknown> = { ...(loaded as Record<string, unknown>) };
   for (const [k, v] of Object.entries(defaults as Record<string, unknown>)) {

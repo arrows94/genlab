@@ -11,7 +11,8 @@ import { breedingCost, nestEggs, nestSlots, offspringGeneration, startBreeding }
 import { checkCondition } from '../conditions';
 import { carriesAllele, hybridChance, isRecipeDiscovered, rarityAtLeast, recipeMatches } from './hybrids';
 import { recycle } from './recycler';
-import { canConsume, consumeBlocker, stableFree } from './stable';
+import { missingText } from '../resources';
+import { canConsume, consumeBlocker, isExpendable, stableFree } from './stable';
 import { isBeingSequenced, sequencerSlots, sequencerUsed, sequencingCost, startSequencing } from './sequencing';
 
 /**
@@ -179,17 +180,14 @@ export function planAutoBreed(ctx: GameContext, opts: { ignoreRoom?: boolean } =
   if (!pair) return { ok: false, reason: none };
   const [a, b] = pair;
   const cost = breedingCost(ctx, offspringGeneration(a, b));
-  if (!canAfford(ctx.state, cost)) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const missing = missingText(ctx, cost);
+  if (missing) return { ok: false, reason: missing };
   for (const [res, amount] of Object.entries(cost)) {
     if (amount.gt((ctx.state.resources[res] ?? D(0)).mul(cfg.budget))) return { ok: false, reason: `Über dem Budget (${Math.round(cfg.budget * 100)} % der Vorräte).` };
   }
   return { ok: true, a, b };
 }
 
-/** Automations may only remove consumable creatures that are not shiny, not infused and at most `maxRarity`. */
-function expendable(ctx: GameContext, c: Creature, maxRarity: string): boolean {
-  return canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && ctx.content.rarities.get(c.rarity).order <= ctx.content.rarities.get(maxRarity).order;
-}
 
 /** Weakest first: lower rarity, then lower power. */
 function weakestFirst(ctx: GameContext, list: Creature[]): Creature[] {
@@ -225,7 +223,7 @@ export function autoRecycleCandidates(ctx: GameContext): Creature[] {
     const plan = planAutoBreed(ctx, { ignoreRoom: true });
     if (plan.ok) kept.add(plan.a.id).add(plan.b.id);
   }
-  const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && expendable(ctx, c, cfg.maxRarity)));
+  const out = weakestFirst(ctx, ctx.state.creatures.filter((c) => !kept.has(c.id) && !(cfg.keepSequenced && c.sequenced) && isExpendable(ctx, c, cfg.maxRarity)));
   // At least one creature must remain.
   return out.length >= ctx.state.creatures.length ? out.slice(0, -1) : out;
 }
@@ -306,7 +304,7 @@ function nextForChamber(ctx: GameContext): Creature | null {
 /** Cheap per-step check: the player may rescue the creature (favourite, put to work, sequencing …). */
 function stillExpendable(ctx: GameContext, c: Creature | undefined): c is Creature {
   const cfg = ctx.state.automation.autoRecycle;
-  return !!c && expendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
+  return !!c && isExpendable(ctx, c, cfg.maxRarity) && !(cfg.keepSequenced && c.sequenced);
 }
 
 /** The creature in the Zerlege-Kammer with its progress, or null. `manual`: sent by the player. */

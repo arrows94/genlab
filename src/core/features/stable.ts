@@ -28,6 +28,16 @@ export function canConsume(ctx: GameContext, c: Creature): boolean {
   return !isBeingSequenced(ctx, c.id);
 }
 
+/**
+ * What automations (Recycling-Automat, automatic infusion picks) may use up:
+ * consumable, not shiny, not infused and at most `maxRarity`. The player can
+ * still pick any consumable creature by hand.
+ */
+export function isExpendable(ctx: GameContext, c: Creature, maxRarity: string): boolean {
+  const order = (id: string) => ctx.content.rarities.get(id).order;
+  return canConsume(ctx, c) && !c.shiny && (c.infusion?.level ?? 0) === 0 && order(c.rarity) <= order(maxRarity);
+}
+
 export function consumeBlocker(ctx: GameContext, c: Creature): string | null {
   if (c.locked) return 'Favoriten sind geschützt.';
   if (c.job) return 'Kreatur ist beschäftigt.';

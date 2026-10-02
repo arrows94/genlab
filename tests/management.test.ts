@@ -247,7 +247,7 @@ describe('gene recycler & capsules', () => {
     const g = richGame(2, { stable: { baseCapacity: 3 } });
     expect(openCapsules(g, 'standard', 5)).toEqual({ ok: false, reason: 'Nicht genug Platz im Stall.' });
     g.state.resources.fragments = D(10);
-    expect(openCapsules(g, 'standard', 1)).toEqual({ ok: false, reason: 'Nicht genug Gen-Fragmente.' });
+    expect(openCapsules(g, 'standard', 1)).toEqual({ ok: false, reason: 'Nicht genug Gen-Fragmente – es fehlen 5.' });
   });
 
   it('mythics are far rarer from capsules than from breeding with a maxed ancestor lab', () => {
@@ -372,7 +372,7 @@ describe('automation', () => {
       make(g, 'pebblit', { generation: 10 });
       setAutoBreed(g, { rule: 'power', budget: 0.1 });
       g.state.resources.food = D(1);
-      expect(pair(g)).toBe('Nicht genug Ressourcen.');
+      expect(pair(g)).toMatch(/^Nicht genug Nahrung – es fehlen /);
       g.state.resources.food = D(1e9);
       expect(planAutoBreed(g).ok).toBe(true);
       g.state.resources.food = breedingCost(g, 11).food!.mul(5); // affordable, but more than 10 %

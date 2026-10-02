@@ -3,7 +3,7 @@ import { nextUpgradeCost, upgradeAvailable } from './actions';
 import type { GameContext } from './context';
 import type { ContentDB, UpgradeDef } from './content/types';
 import type { Creature, GameState } from './state';
-import { creatureModifiers, creaturePower, effectiveStats } from './creatures';
+import { creatureModifiers, creaturePower, effectiveStats, isOccupied } from './creatures';
 import { genomeReport } from './genetics';
 
 /** Read-only helpers for the UI (keeps rules out of components). */
@@ -93,7 +93,7 @@ export function filterCreatures(ctx: GameContext, f: CreatureFilter): Creature[]
     if (f.rarity && c.rarity !== f.rarity) return false;
     if (f.status === 'idle' && c.job !== null) return false;
     if (f.status === 'working' && c.job?.kind !== 'building') return false;
-    if (f.status === 'busy' && !(c.job && c.job.kind !== 'building')) return false;
+    if (f.status === 'busy' && !isOccupied(c)) return false;
     if (f.status === 'locked' && !c.locked) return false;
     if (f.hideAway && f.status !== 'busy' && c.job?.kind === 'mission') return false;
     if (f.allele && !(c.sequenced && c.genome[f.allele.locus]?.includes(f.allele.allele))) return false;

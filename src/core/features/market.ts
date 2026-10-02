@@ -1,6 +1,6 @@
 import { D } from '../num';
 import { findCreature } from '../creatures';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { scaleCost, type Cost } from '../costs';
 import { addBuff } from '../systems/buffs';
 import { skipProcessTime } from '../systems/processes';
@@ -68,7 +68,8 @@ export function usePotion(ctx: GameContext, potionId: string, creatureId: number
   }
   const shortMs = ctx.balance.timeCrystals.longProjectHours * 3_600_000;
   if (def.kind === 'timeSkip' && !ctx.state.processes.some((p) => p.durationMs < shortMs)) return { ok: false, reason: 'Es laufen keine kurzen Vorgänge – lange Projekte brauchen Zeitkristalle.' };
-  if (!trySpend(ctx, potionCost(ctx, potionId, creatureId))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, potionCost(ctx, potionId, creatureId));
+  if (!paid.ok) return paid;
 
   switch (def.kind) {
     case 'permanentStat':

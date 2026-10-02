@@ -5,6 +5,19 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 4: Qualität (erster Teil)
+
+- Doppelte Logik: `isOccupied(c)` (`core/creatures.ts`) statt sieben Kopien von „beschäftigt“ (totes `isBusy` weg),
+  `isExpendable` in `features/stable.ts` für Recycling-Automat und Infusion
+- `spend(ctx, cost)` / `missingText` (`core/resources.ts`): „Nicht genug Essenz – es fehlen 40.“ statt „Nicht genug
+  Ressourcen.“ in Zucht, Sequenzierung, Spleißen, Markt, Kapseln, Expedition, Reise, Großforschung, Infusion,
+  Forschung und im Zuchtautomaten. Ein gemeinsames `fail()` für alle 216 Fehler-Literale bringt nichts Sichtbares
+  und blieb weg
+- `mergeDefaults` prüft geladene Werte gegen den Typ des Standardwerts (Zahl, Text, Wahrheitswert, Liste, Decimal)
+- Kleinigkeiten: README „Brutrituale (1–8 h)“, Job-Arten in CLAUDE.md, Job-Art `'lab'` entfernt,
+  `JOURNEY_SEC` → `balance.missions.journeyHours`, tote Exporte (`ZERO`, `getNotation`, `isBusy`, `megaDone`,
+  `recipesForPair`) entfernt
+
 ## 2026-10-02 – Schritt 4: Balancing
 
 - Zeittrank: kostet 20 min Essenz-Produktion (mindestens den Grundpreis), jeder weitere Trank innerhalb einer Stunde
@@ -17,6 +30,8 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
   Der Unterricht der Wochenexpedition hält die Kraftfutter-Grenze ein (`maxStatBoost`)
 - Spleißen: Instabilität nie unter 5 % (`splicing.minInstability`)
 - Dynastien zahlen zusammen höchstens 25 Äon-Splitter (`dynasty.maxShards`, `dynastyShardsEarned`)
+- Äon-Bot über 14 Tage (Seed wie im Test) vorher/nachher: Äonen, Talente, Observatorium, Relikte und Rang Tag für
+  Tag gleich; nur Tag 14 weicht durch den Zufall ab (Turm 195 statt 198)
 
 ## 2026-10-02 – Schritt 3: Leistung und Bedienung
 

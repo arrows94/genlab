@@ -9,7 +9,7 @@ import { averageBase, reprofileStats, rollOffspringSpecies } from './hybrids';
 import { stableFree } from './stable';
 import { lineageDepth, recordLineage } from './dynasty';
 import { foundFamily, offspringName } from '../names';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { completeProcesses, isWaiting, registerProcessHandler, startProcess } from '../systems/processes';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -194,7 +194,8 @@ export function startBreeding(ctx: GameContext, aId: number, bId: number, ritual
   const check = canBreed(ctx, a, b, ritual);
   if (!check.ok) return check;
   const generation = offspringGeneration(a, b);
-  if (!trySpend(ctx, eggCost(ctx, generation, ritual))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, eggCost(ctx, generation, ritual));
+  if (!paid.ok) return paid;
   const data: EggData = { parents: [aId, bId], generation };
   if (ritual) {
     // A ritual only needs a Keimprobe: the parents stay free for everything else.

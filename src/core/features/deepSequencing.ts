@@ -1,6 +1,6 @@
 import { checkPerfection, findCreature } from '../creatures';
 import { catalogueGenome } from '../genetics';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import { registerProcessHandler, startProcess } from '../systems/processes';
 import { toCost, type Cost } from '../costs';
 import type { GameContext } from '../context';
@@ -39,7 +39,8 @@ export function startDeepSequencing(ctx: GameContext, creatureId: number): Actio
   const blocker = deepSequencingBlocker(ctx, c);
   if (blocker) return { ok: false, reason: blocker };
   if (sequencerUsed(ctx) >= sequencerSlots(ctx)) return { ok: false, reason: 'Alle Sequenzierer sind belegt.' };
-  if (!trySpend(ctx, deepSequencingCost(ctx))) return { ok: false, reason: 'Nicht genug Essenz.' };
+  const paid = spend(ctx, deepSequencingCost(ctx));
+  if (!paid.ok) return paid;
   const data: SequenceData = { creatureId };
   startProcess(ctx, DEEP_SEQUENCE, deepSequencingTimeMs(ctx), data);
   return { ok: true };

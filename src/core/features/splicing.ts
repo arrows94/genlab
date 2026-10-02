@@ -1,7 +1,7 @@
 import { D } from '../num';
 import { checkPerfection, effectiveStats, findCreature } from '../creatures';
 import { activeLoci, alleleDef, isPerfectGenome, libraryHas, phenotypeLabel, rollAllele } from '../genetics';
-import { trySpend } from '../resources';
+import { spend } from '../resources';
 import type { Cost } from '../costs';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
@@ -53,7 +53,8 @@ export function splice(ctx: GameContext, creatureId: number, locusId: string, sl
   if (!libraryHas(ctx, locusId, alleleId)) return { ok: false, reason: 'Dieses Allel fehlt in der Genbibliothek.' };
   if (c.genome[locusId]?.[slot] === alleleId) return { ok: false, reason: 'Das Allel ist bereits vorhanden.' };
   if ((c.splices ?? 0) >= maxSplices(ctx)) return { ok: false, reason: 'Keine Splicing-Versuche mehr für diese Kreatur.' };
-  if (!trySpend(ctx, spliceCost(ctx, c))) return { ok: false, reason: 'Nicht genug Ressourcen.' };
+  const paid = spend(ctx, spliceCost(ctx, c));
+  if (!paid.ok) return paid;
 
   c.splices = (c.splices ?? 0) + 1;
   let success = true;

@@ -1,6 +1,6 @@
 import { D, type Decimal } from '../num';
 import { Rng, hashSeed } from '../rng';
-import { creatureModifiers, effectiveStats, findCreature } from '../creatures';
+import { creatureModifiers, effectiveStats, findCreature, isOccupied } from '../creatures';
 import { activeLoci, catalogueGenome, libraryHas } from '../genetics';
 import { grant } from '../resources';
 import type { GameContext } from '../context';
@@ -891,7 +891,7 @@ export function startRun(ctx: GameContext, fromCheckpoint = true, auto = false):
   if (tw.run) return { ok: false, reason: 'Es läuft bereits ein Lauf.' };
   const team = tw.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
   if (team.length === 0) return { ok: false, reason: 'Stelle zuerst ein Team zusammen.' };
-  const busy = team.find((c) => c.job && c.job.kind !== 'building');
+  const busy = team.find(isOccupied);
   if (busy) return { ok: false, reason: `${busy.name} ist beschäftigt.` };
   for (const c of team) c.job = { kind: 'tower', target: 'team' };
   if (!auto) tw.retreat = 0;

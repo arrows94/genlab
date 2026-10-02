@@ -229,8 +229,9 @@ export function creaturePower(ctx: GameContext, c: Creature): number {
   return Object.values(effectiveStats(ctx, c)).reduce((a, b) => a + b, 0);
 }
 
-export function isBusy(c: Creature): boolean {
-  return c.job !== null;
+/** Busy with something that cannot be interrupted (nest, journey, tower, dungeon); work in a building can. */
+export function isOccupied(c: Creature): boolean {
+  return c.job !== null && c.job.kind !== 'building';
 }
 
 export function removeCreature(ctx: GameContext, id: number, reason: string): void {

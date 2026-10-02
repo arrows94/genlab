@@ -440,6 +440,8 @@ export interface Balance {
     baseCamps: number;
     /** Each point of speed adds this fraction to rewards. */
     statScaling: number;
+    /** Missions at least this long are Tagesreisen (survive an inheritance). */
+    journeyHours: number;
   };
   market: {
     /** Per-creature cost growth for permanent stat potions is on the potion; this caps uses. */

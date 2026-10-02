@@ -14,10 +14,6 @@ export function setNotation(n: Notation): void {
   defaultNotation = n;
 }
 
-export function getNotation(): Notation {
-  return defaultNotation;
-}
-
 /**
  * German number formatting: `1.234,5`, `12,3 Tsd.`, `4,56 Mio.` …, and
  * scientific (`1,23e45`) beyond the suffix list or when chosen.

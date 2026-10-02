@@ -37,3 +37,19 @@ describe('cost calculation', () => {
     expect(upgradeCost(def, 1, mods).food!.toNumber()).toBe(Math.ceil(40 * 1.6 * 0.75));
   });
 });
+
+describe('spend: names what is missing', () => {
+  it('pays when affordable, otherwise says which resource is short and by how much', async () => {
+    const { spend } = await import('@core/resources');
+    const { D } = await import('@core/num');
+    const { makeGame } = await import('./helpers');
+    const g = makeGame();
+    g.state.resources.essence = D(100);
+    g.state.resources.gold = D(0);
+    expect(spend(g, { essence: D(40) })).toEqual({ ok: true });
+    expect(g.state.resources.essence!.toNumber()).toBe(60);
+    expect(spend(g, { essence: D(100) })).toEqual({ ok: false, reason: 'Nicht genug Essenz – es fehlen 40.' });
+    expect(spend(g, { essence: D(100), gold: D(5), catalyst: D(1) })).toEqual({ ok: false, reason: 'Nicht genug Essenz, Gold und Evolutionskristalle.' });
+    expect(g.state.resources.essence!.toNumber()).toBe(60);
+  });
+});
