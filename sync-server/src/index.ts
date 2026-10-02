@@ -1,4 +1,4 @@
-import { RETENTION_MS, handle, type HistoryEntry, type SaveRow, type SaveStore } from './handler';
+import { RETENTION_MS, handle, type HistoryEntry, type RateLimiter, type SaveRow, type SaveStore } from './handler';
 
 /** The parts of Cloudflare's D1 binding used here (avoids a dependency on @cloudflare/workers-types). */
 interface D1Result {
@@ -15,6 +15,20 @@ interface D1Database {
 
 interface Env {
   DB: D1Database;
+  /** Rate limiting bindings from wrangler.toml (missing in `wrangler dev` without them: no limit). */
+  LIMITER?: RateLimiter;
+  CREATE_LIMITER?: RateLimiter;
+  /** Optional comma list of browser origins (Worker variable); unset = every origin. */
+  ALLOWED_ORIGINS?: string;
+}
+
+function parseHistory(raw: string): HistoryEntry[] {
+  try {
+    const list = JSON.parse(raw) as unknown;
+    return Array.isArray(list) ? (list as HistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 interface DbRow {
@@ -34,7 +48,7 @@ class D1SaveStore implements SaveStore {
 
   async get(id: string): Promise<SaveRow | null> {
     const r = await this.db.prepare('SELECT * FROM saves WHERE id = ?').bind(id).first<DbRow>();
-    return r && { id: r.id, rev: r.rev, savedAt: r.saved_at, device: r.device, writer: r.writer, history: JSON.parse(r.history) as HistoryEntry[], data: r.data, updatedAt: r.updated_at };
+    return r && { id: r.id, rev: r.rev, savedAt: r.saved_at, device: r.device, writer: r.writer, history: parseHistory(r.history), data: r.data, updatedAt: r.updated_at };
   }
 
   async insert(row: SaveRow): Promise<boolean> {
@@ -66,7 +80,8 @@ class D1SaveStore implements SaveStore {
 
 export default {
   fetch(request: Request, env: Env): Promise<Response> {
-    return handle(request, new D1SaveStore(env.DB));
+    const allowedOrigins = (env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+    return handle(request, new D1SaveStore(env.DB), Date.now(), { limiter: env.LIMITER, createLimiter: env.CREATE_LIMITER, allowedOrigins });
   },
   /** Daily cron (wrangler.toml): drop saves nobody has synced for a year. */
   async scheduled(_event: unknown, env: Env): Promise<void> {

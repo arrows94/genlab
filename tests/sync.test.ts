@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HISTORY_SIZE, MAX_DATA_CHARS, MemorySaveStore, RETENTION_MS, handle } from '../sync-server/src/handler';
+import { HISTORY_SIZE, MAX_CLOCK_SKEW_MS, MAX_DATA_CHARS, MemorySaveStore, RETENTION_MS, handle, type RateLimiter } from '../sync-server/src/handler';
 import { SyncClient, SyncError, newSyncCode, newWriterId, normalizeSyncCode, type PutMeta } from '@ui/platform/sync';
 import { exportSave, importSave } from '@core/save';
 import { NOW, makeGame } from './helpers';
@@ -111,6 +111,58 @@ describe('sync server + client', () => {
     expect(pre.status).toBe(204);
     expect(pre.headers.get('Access-Control-Allow-Methods')).toContain('PUT');
     expect((await put(good)).headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+
+  it('stops reading an oversized body even without Content-Length, and checks device and clock', async () => {
+    const store = new MemorySaveStore();
+    const id = 'a'.repeat(64);
+    const url = `${BASE}/v1/saves/${id}`;
+    const good = { baseRev: 0, savedAt: NOW, device: 'Browser', writer: 'devicea', data: 'QUJD' };
+    // A streamed body has no Content-Length: the server must still stop at the limit.
+    const huge = new TextEncoder().encode(JSON.stringify({ ...good, data: 'A'.repeat(MAX_DATA_CHARS * 2) }));
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) {
+        for (let i = 0; i < huge.length; i += 65_536) c.enqueue(huge.slice(i, i + 65_536));
+        c.close();
+      },
+    });
+    const req = new Request(url, { method: 'PUT', body: stream, duplex: 'half' } as RequestInit);
+    expect(req.headers.get('Content-Length')).toBeNull();
+    expect((await handle(req, store, NOW)).status).toBe(413);
+    expect(store.rows.size).toBe(0);
+
+    const put = (body: unknown) => handle(new Request(url, { method: 'PUT', body: JSON.stringify(body) }), store, NOW);
+    expect((await put({ ...good, device: 'Brow\u0000ser' })).status).toBe(400);
+    expect((await put({ ...good, savedAt: NOW + 1e12 })).status).toBe(200);
+    expect(store.rows.get(id)!.savedAt).toBe(NOW + MAX_CLOCK_SKEW_MS);
+  });
+
+  it('answers 429 when a rate limit is exhausted; new saves have their own limit', async () => {
+    const store = new MemorySaveStore();
+    const allowing = (n: number): RateLimiter & { calls: string[] } => {
+      const calls: string[] = [];
+      return { calls, limit: async ({ key }) => (calls.push(key), { success: calls.length <= n }) };
+    };
+    const limiter = allowing(2);
+    const createLimiter = allowing(1);
+    const put = (id: string) =>
+      handle(
+        new Request(`${BASE}/v1/saves/${id}`, { method: 'PUT', headers: { 'CF-Connecting-IP': '203.0.113.7' }, body: JSON.stringify({ baseRev: 0, savedAt: NOW, device: 'Browser', writer: 'devicea', data: 'QUJD' }) }),
+        store, NOW, { limiter, createLimiter },
+      );
+    expect((await put('a'.repeat(64))).status).toBe(200);
+    expect((await put('b'.repeat(64))).status).toBe(429); // create limit
+    expect((await put('c'.repeat(64))).status).toBe(429); // overall limit
+    expect(store.rows.size).toBe(1);
+    expect(limiter.calls).toEqual(['203.0.113.7', '203.0.113.7', '203.0.113.7']);
+  });
+
+  it('can restrict browser origins', async () => {
+    const store = new MemorySaveStore();
+    const opts = { allowedOrigins: ['https://arrows94.github.io', 'capacitor://localhost'] };
+    const pre = (origin: string) => handle(new Request(`${BASE}/v1/saves/${'a'.repeat(64)}`, { method: 'OPTIONS', headers: { Origin: origin } }), store, NOW, opts);
+    expect((await pre('capacitor://localhost')).headers.get('Access-Control-Allow-Origin')).toBe('capacitor://localhost');
+    expect((await pre('https://evil.example')).headers.get('Access-Control-Allow-Origin')).toBe('https://arrows94.github.io');
   });
 
   it('reports an unreachable server as a readable error', async () => {

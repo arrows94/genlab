@@ -9,16 +9,6 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
 wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
 
-## Schritt 2 – Sync-Server und CI absichern
-
-- [ ] Sync-Server: Rate-Limit (Workers-Binding, strenger für neue Zeilen), CORS auf die eigenen Ursprünge statt `*`
-      (`sync-server/src/handler.ts:57`, `:124`)
-- [ ] Größencheck beim Upload: Body als Stream mit Byte-Zähler lesen oder ohne `Content-Length` mit 411 ablehnen
-      (`handler.ts:108`); `device` nur erlaubte Zeichen, `savedAt` nicht weit in der Zukunft, `JSON.parse(history)`
-      absichern
-- [ ] `pages.yml`, `desktop.yml`, `android.yml`, `sync-server.yml` laufen ohne `npm test` – Tests vor dem Build oder
-      Deploy erst nach grüner CI; `wrangler` fest pinnen
-
 ## Schritt 3 – Leistung und Bedienung
 
 - [ ] Schwere Ableitungen von `view.frame` auf `view.slowFrame` (LabTab, BreedingTab, TowerTab, DexTab, Badges in

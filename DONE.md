@@ -5,6 +5,15 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-02 – Schritt 2: Sync-Server und CI abgesichert
+
+- Sync-Server: Rate-Limits je IP über Workers-Bindings (`LIMITER` 60/min, `CREATE_LIMITER` 5 neue Spielstände/min,
+  sonst `429`), Body wird nur bis 512 KB + 1 KB gelesen (`readLimited`, unabhängig von `Content-Length`), Gerätename
+  ohne Steuerzeichen, `savedAt` höchstens einen Tag in der Zukunft, `history` aus D1 abgesichert gelesen, optionale
+  `ALLOWED_ORIGINS` für CORS (Standard weiter `*`). Konfiguration mit `wrangler deploy --dry-run` geprüft
+- CI: `pages.yml`, `android.yml`, `desktop.yml` und `sync-server.yml` führen vor Build bzw. Deploy `npm test` aus;
+  `wrangler` fest auf 4.146.0
+
 ## 2026-10-02 – Schritt 1: weitere Fehler (bestätigt und behoben)
 
 - Recycling-Automat schont das Paar des Zuchtautomaten auch bei vollem Stall (`planAutoBreed(ctx, { ignoreRoom })`)
