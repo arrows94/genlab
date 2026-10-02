@@ -32,7 +32,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { text: 'Gen-Aufträge: Aus „Stufe“ wird „Ruf“ – und mit jedem Ruf wächst dein Auftragsbrett. Auf Ruf 5 warten jeden Tag 15 Aufträge, von fünf 1★ bis zu einem 5★. Das Brett ist nach Sternen geordnet.', feature: 'contracts' },
       { text: 'Leihgaben: Manche Kunden leihen sich eine Kreatur nur für ein paar Stunden – danach kommt sie zurück. Auch Favoriten dürfen mit.', feature: 'contracts' },
       { text: 'Der Zuchtautomat hat sein eigenes Automatennest: Er brütet dort gemächlicher, und deine Nester bleiben frei für die Zucht von Hand.', feature: 'autoBreed' },
-      { text: 'Eier brauchen etwas länger zum Schlüpfen.', feature: 'breeding' },
+      { text: 'Eier brauchen länger zum Schlüpfen (Grundzeit eine Minute). Boni wie „Brutpfleger“ verkürzen das weiterhin, aber nicht mehr auf wenige Sekunden.', feature: 'breeding' },
       { text: 'Die Erkundungskarte ist aufgeräumt: Die Wege verzweigen sich von Ziel zu Ziel, statt sich alle am Camp zu kreuzen.', feature: 'expedition' },
       { text: 'Neue Forschung „Ritualkammer“: bis zu zwei weitere Ritualnester für Brutrituale.', feature: 'specialBreeding' },
       { text: 'Die Dungeons des GenLab RPG sind länger: mehr Räume, mehr Kämpfe und mehr Erfahrung – und auf halbem Weg versperrt ein Wächter den Weg.', feature: 'rpg' },

@@ -230,6 +230,8 @@ export interface Balance {
   };
   breeding: {
     baseTimeSec: number;
+    /** Shortest egg time as a share of the base time of its generation (bonuses cannot go below). */
+    minTimeShare: number;
     /** Each generation of the offspring adds this fraction of base time. */
     timePerGeneration: number;
     /**

@@ -104,13 +104,14 @@ export function breedingCost(ctx: GameContext, generation = 2): Cost {
 /** Breeding time; parents' own `breeding.time` modifiers (e.g. fertility genes) apply too. */
 export function breedingTimeMs(ctx: GameContext, generation: number, parents: (Creature | undefined)[] = []): number {
   const b = ctx.balance.breeding;
-  let seconds = ctx.mods().apply('breeding.time', b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1)));
+  const base = b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1));
+  let seconds = ctx.mods().apply('breeding.time', base);
   for (const p of parents) {
     if (!p) continue;
     // creatureModifiers only carries global stat.* targets, so this is the parent's own share.
     seconds *= creatureModifiers(ctx, p).factor('breeding.time');
   }
-  return Math.max(1000, seconds * 1000);
+  return Math.max(1000, Math.max(seconds, base * b.minTimeShare) * 1000);
 }
 
 export function mutationChance(ctx: GameContext, ritual?: BreedingRitualDef): number {

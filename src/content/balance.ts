@@ -189,8 +189,10 @@ export const balance: Balance = {
     max: 3,
   },
   breeding: {
-    baseTimeSec: 25,
+    baseTimeSec: 60,
     timePerGeneration: 0.15,
+    // Bonuses stack (every Brutpfleger in the stable counts) – an egg never takes less than this share of its base time.
+    minTimeShare: 0.25,
     costs: [
       { resource: 'food', base: 30, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 2 },
       { resource: 'gold', base: 20, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 3 },

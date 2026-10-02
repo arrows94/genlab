@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { createCreature, effectiveStats, findCreature } from '@core/creatures';
 import { breedingCost, breedingTimeMs, nestSlots, startBreeding, inheritStats } from '@core/features/breeding';
 import { unlockFeature } from '@core/systems/unlocks';
-import { makeGame } from './helpers';
+import { balance, makeGame } from './helpers';
 
 function breedingGame(seed = 42) {
   const g = makeGame(seed);
@@ -101,6 +101,16 @@ describe('breeding', () => {
     g.state.upgrades.incubator = 2;
     g.invalidate();
     expect(breedingTimeMs(g, 2)).toBeCloseTo(before * 0.81);
+  });
+
+  it('stacked bonuses never push an egg below its minimum time (tester saw 1-second eggs)', () => {
+    const g = makeGame();
+    unlockFeature(g, 'breeding');
+    // Twenty Brutpfleger in the stable: −10 % each would add up to −200 %.
+    for (let i = 0; i < 20; i++) createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer'] });
+    g.invalidate();
+    const base = balance.breeding.baseTimeSec * (1 + balance.breeding.timePerGeneration);
+    expect(breedingTimeMs(g, 2)).toBe(base * balance.breeding.minTimeShare * 1000);
   });
 
   it('is deterministic for the same seed', () => {

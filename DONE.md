@@ -10,8 +10,11 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 - Der Zuchtautomat brütet nur noch im eigenen Automatennest (`slots.autoNest`, Grundwert 1) – wie Sequenzer und
   Recycler mit festem Platz; die normalen Nester bleiben für die Zucht von Hand frei
 - Seine Eier brauchen das Dreifache der Brutzeit (`balance.automation.autoBreedTimeMult`)
-- Grund-Brutzeit 20 → 25 s. 30 s wurde verworfen: der Bot gab weniger für Eier aus, kam schneller voran und der Markt
-  öffnete vor 15 Minuten; mit 25 s bleibt die Freischalt-Zeitleiste der ersten Stunde wie vorher
+- Grund-Brutzeit 20 → 60 s, dazu eine Untergrenze: Boni drücken ein Ei höchstens auf 25 % seiner Grundzeit
+  (`balance.breeding.minTimeShare`). Ursache der 1-Sekunden-Eier: globale Fähigkeiten wie „Brutpfleger“ (−10 %) zählen
+  für jede Kreatur im Stall, zehn davon ergaben −100 % und nur noch die 1-s-Grenze (Test in `tests/breeding.test.ts`)
+- Der Bot gibt mit langsameren Eiern weniger für Brut aus und forscht früher; damit der Markt nicht vor 15 Minuten
+  öffnet, braucht er jetzt 30 statt 25 verdiente Essenz. Erste Vererbung im Bot nach 46 statt 45 Minuten
 
 ## 2026-10-02 – Erkundungskarte als Wegenetz
 
