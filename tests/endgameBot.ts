@@ -262,6 +262,8 @@ function feedMegaProjects(g: Game, share: number): void {
  */
 function descendCellar(g: Game): void {
   if (!g.state.features.cellar || g.state.cellar.run) return;
+  // The tower first: until its team is full (after a reset) the cellar waits, so it never holds the best creatures.
+  if (g.state.tower.team.length < teamSize(g)) return;
   if (!g.state.cellar.auto) setCellarAuto(g, true);
   const next = cellarCheckpoint(g) + 1;
   const foe = cellarEnemies(g, next).find((f) => f.boss) ?? cellarEnemies(g, next)[0]!;

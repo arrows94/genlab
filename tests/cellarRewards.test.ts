@@ -52,23 +52,27 @@ describe('Schattenmarken', () => {
 });
 
 describe('Äon-Splitter', () => {
-  it('a new boss depth gives one, at most two a week; old depths give none', () => {
+  it('new boss depths and Tiefen-Meilensteine give them, at most two a week; old depths give none', () => {
     const g = cellarGame();
-    const boss = balance.cellar.bossEvery;
-    descend(g, boss - 1, 1);
-    expect(g.state.resources['aeonShards']!.toNumber()).toBe(balance.cellar.shardsPerBoss);
+    const cfg = balance.cellar;
+    const shards = () => g.state.resources['aeonShards']?.toNumber() ?? 0;
+    // −10 is a milestone.
+    descend(g, 9, 1);
+    expect(shards()).toBe(cfg.shardsPerMilestone);
     // The same depth again: nothing.
-    descend(g, boss - 1, 1);
-    expect(g.state.resources['aeonShards']!.toNumber()).toBe(balance.cellar.shardsPerBoss);
-    // Deeper bosses until the weekly cap.
-    descend(g, boss, 3 * boss);
-    expect(g.state.resources['aeonShards']!.toNumber()).toBe(balance.cellar.weeklyShards);
+    descend(g, 9, 1);
+    expect(shards()).toBe(cfg.shardsPerMilestone);
+    // −30 is boss and milestone at once – the weekly cap stops at two.
+    descend(g, 10, 20);
+    expect(shards()).toBe(cfg.weeklyShards);
     expect(weeklyShardRoom(g)).toBe(0);
+    descend(g, 30, 30);
+    expect(shards()).toBe(cfg.weeklyShards);
     // Next week there is room again.
     g.state.lastTickAt += WEEK;
-    expect(weeklyShardRoom(g)).toBe(balance.cellar.weeklyShards);
-    descend(g, 4 * boss, boss);
-    expect(g.state.resources['aeonShards']!.toNumber()).toBe(balance.cellar.weeklyShards + 1);
+    expect(weeklyShardRoom(g)).toBe(cfg.weeklyShards);
+    descend(g, 60, 15);
+    expect(shards()).toBe(cfg.weeklyShards + Math.min(cfg.weeklyShards, cfg.shardsPerMilestone));
   });
 });
 

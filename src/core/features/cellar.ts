@@ -399,9 +399,11 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     run.light = 1;
   }
   const rewards: Record<string, Decimal> = { shadowMarks: courseFloorTokens(cellarCourse(ctx), level) };
-  // A new boss depth: an Äon-Splitter while this week's cap has room.
-  if (record && level % cellarCourse(ctx).curve.bossEvery === 0) {
-    const shards = Math.min(cfg.shardsPerBoss, weeklyShardRoom(ctx));
+  // A new boss depth or a Tiefen-Meilenstein: Äon-Splitter while this week's cap has room.
+  const milestone = record && ctx.content.cellarMilestones.list.some((m) => m.level === level);
+  const boss = record && level % cellarCourse(ctx).curve.bossEvery === 0;
+  if (milestone || boss) {
+    const shards = Math.min((boss ? cfg.shardsPerBoss : 0) + (milestone ? cfg.shardsPerMilestone : 0), weeklyShardRoom(ctx));
     if (shards > 0) {
       rewards['aeonShards'] = D(shards);
       useShards(ctx, shards);

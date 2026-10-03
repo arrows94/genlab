@@ -488,8 +488,9 @@ export interface Balance {
     lightPerLevel: number;
     lightMissFrom: number;
     lightMiss: number;
-    /** Äon-Splitter for every boss depth cleared for the first time … */
+    /** Äon-Splitter for every boss depth cleared for the first time, and for every Tiefen-Meilenstein … */
     shardsPerBoss: number;
+    shardsPerMilestone: number;
     /** … at most this many per week. */
     weeklyShards: number;
   };
