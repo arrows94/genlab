@@ -5,6 +5,17 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-03 – Brutzeit: Deckel, Untergrenze, Inkubator und Brutpfleger
+
+- Tester hatte trotz Upgrades über eine Minute Brutzeit: Der Generationszuschlag (+15 % je Generation) hob auch die
+  Untergrenze (25 % der Grundzeit) an, ab Generation 21 lag sie über einer Minute – und ab Inkubator 10 + FF brachten
+  Brutpfleger, Nestwärter und Elixier nichts mehr.
+- Neu: Grundzeit wächst nur bis `balance.breeding.maxTimeGeneration` (11, also höchstens 150 s); Untergrenze
+  `max(minTimeSec 15 s, minTimeShare 10 %)`. Inkubator −6 % statt −10 % pro Stufe, Brutpfleger −15 % statt −10 %
+  (Stufe III −30 %). Ab G20: nur Inkubator 10 → 77 s, + Nestwärter mit Brutpfleger III → 54 s, alles → 17 s.
+- Markt öffnet bei 55 statt 30 Essenz (Bot hält die 15-Minuten-Leitplanke; der schwächere Inkubator spart dem Bot
+  Futter, das Biolabor kam früher).
+
 ## 2026-10-02 – Reine Linie vererbt Fähigkeitsstufen
 
 - `inheritAbilityLevels`: ein gewöhnliches Kind erbt eine Stufe weniger als der bessere Elternteil (mindestens I),

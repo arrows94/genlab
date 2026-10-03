@@ -122,16 +122,16 @@ describe('Fähigkeits-Elixier and Keimöl', () => {
   it('raises one ability of one creature a level: ×1,5, then ×2, never further', () => {
     const { g, c } = elixirGame();
     const factor = () => creatureModifiers(g, c).factor('breeding.time');
-    expect(factor()).toBeCloseTo(0.9);
+    expect(factor()).toBeCloseTo(0.85);
     const first = potionCost(g, 'abilityElixir', c.id, 'nurturer');
     expect(usePotion(g, 'abilityElixir', c.id, 'nurturer').ok).toBe(true);
     expect(abilityLevel(c, 'nurturer')).toBe(2);
-    expect(factor()).toBeCloseTo(0.85);
+    expect(factor()).toBeCloseTo(0.775);
     // The next level costs `costGrowth` times as much – Keimöl included.
     const second = potionCost(g, 'abilityElixir', c.id, 'nurturer');
     expect(second['germOil']!.toNumber()).toBe(first['germOil']!.toNumber() * content.potions.get('abilityElixir').costGrowth!);
     expect(usePotion(g, 'abilityElixir', c.id, 'nurturer').ok).toBe(true);
-    expect(factor()).toBeCloseTo(0.8);
+    expect(factor()).toBeCloseTo(0.7);
     expect(usePotion(g, 'abilityElixir', c.id, 'nurturer')).toEqual({ ok: false, reason: 'Diese Fähigkeit ist bereits auf der höchsten Stufe.' });
     expect(usePotion(g, 'abilityElixir', c.id, 'mutagenic')).toEqual({ ok: false, reason: 'Wähle eine Fähigkeit der Kreatur.' });
     expect(abilityLevel(c, 'tough')).toBe(1);

@@ -252,10 +252,13 @@ export interface Balance {
   };
   breeding: {
     baseTimeSec: number;
-    /** Shortest egg time as a share of the base time of its generation (bonuses cannot go below). */
+    /** Shortest egg time: the larger of this share of its base time and `minTimeSec` (bonuses cannot go below). */
     minTimeShare: number;
-    /** Each generation of the offspring adds this fraction of base time. */
+    minTimeSec: number;
+    /** Each generation of the offspring adds this fraction of base time … */
     timePerGeneration: number;
+    /** … up to this generation; deeper offspring take as long as this one. */
+    maxTimeGeneration: number;
     /**
      * Cost components: base × generationGrowth^(offspring generation − 2)
      * × creatureGrowth^(creatures owned − 1); only from `fromGeneration` on.

@@ -144,7 +144,7 @@ export function breedingCost(ctx: GameContext, generation = 2): Cost {
 /** Breeding time; parents' own `breeding.time` modifiers (e.g. fertility genes) apply too. */
 export function breedingTimeMs(ctx: GameContext, generation: number, parents: (Creature | undefined)[] = []): number {
   const b = ctx.balance.breeding;
-  const base = b.baseTimeSec * (1 + b.timePerGeneration * (generation - 1));
+  const base = b.baseTimeSec * (1 + b.timePerGeneration * (Math.min(generation, b.maxTimeGeneration) - 1));
   let seconds = ctx.mods().apply('breeding.time', base);
   for (const p of parents) {
     if (!p) continue;
@@ -152,7 +152,7 @@ export function breedingTimeMs(ctx: GameContext, generation: number, parents: (C
     seconds *= creatureModifiers(ctx, p).factor('breeding.time');
   }
   for (const k of nestKeepers(ctx)) seconds *= keeperBonus(ctx, k).time;
-  return Math.max(1000, Math.max(seconds, base * b.minTimeShare) * 1000);
+  return Math.max(seconds, base * b.minTimeShare, b.minTimeSec) * 1000;
 }
 
 /** Mutation chance of an egg; parents' own bonuses (Mutagen, Genweber) count for their own eggs only. */

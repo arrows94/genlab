@@ -25,14 +25,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: 34,
-    date: '2026-10-02',
+    id: 35,
+    date: '2026-10-03',
     title: 'Die dunkle Welt',
     items: [
       { text: 'Das GenLab RPG wird härter und taktischer: Jeder Zug kostet Ausdauer. Neu sind Ausweichen, Parieren (ein gelungener Konter lässt den Gegner taumeln) und Verschnaufen. Treffer bringen Gegner – und dein Monster – ins Wanken.', feature: 'rpg' },
       { text: 'Heiltränke sind knapp: drei pro Lauf, ein Schluck kostet im Kampf deinen Zug. Schätze und Lagerplätze sind selten geworden – nur das Leuchtfeuer hinter dem Wächter heilt voll und füllt die Tränke auf.', feature: 'rpg' },
       { text: 'Jeder Dungeon hat jetzt seinen eigenen Boss hinter einem Nebeltor – mit Namen, eigener Mechanik, Kombos und einer zweiten Phase. Rechne damit, beim ersten Versuch zu sterben.', feature: 'rpg' },
       { text: 'Blutfleck: Stirbst du, bleibt deine getragene Beute im Dungeon liegen. Kommst du im nächsten Lauf bis dorthin, holst du sie zurück – stirbst du vorher, ist sie verloren.', feature: 'rpg' },
+    ],
+  },
+  {
+    id: 34,
+    date: '2026-10-03',
+    title: 'Brutzeit neu austariert',
+    items: [
+      { text: 'Tiefe Linien brüten nicht mehr endlos länger: Ab der 11. Generation wächst die Brutzeit nicht weiter (höchstens 2½ Minuten Grundzeit).', feature: 'breeding' },
+      { text: 'Jeder Brut-Bonus zählt jetzt bis zum Schluss: Ein Ei braucht mindestens 15 Sekunden statt eines Viertels seiner Grundzeit. Inkubator, Gen „Fruchtbar“, Brutpfleger und Nestwärter stapeln sich bis dorthin.', feature: 'breeding' },
+      { text: 'Der Inkubator kürzt die Brutzeit um 6 % pro Stufe (statt 10 %), dafür ist Brutpfleger stärker: −15 % bei den eigenen Eiern statt −10 %.', feature: 'breeding' },
+      { text: 'Mit dem Fähigkeits-Elixier erreicht Brutpfleger III jetzt −30 % Brutzeit.', feature: 'abilityElixir' },
     ],
   },
   {
