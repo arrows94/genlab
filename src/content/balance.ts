@@ -143,7 +143,8 @@ export const balance: Balance = {
       fight: { fixed: { towerTokens: 3 }, chance: { catalyst: 0.08, alleleSamples: 0.05, runes: 0.2 } },
       elite: { fixed: { towerTokens: 8, runes: 2 }, chance: { catalyst: 0.35, alleleSamples: 0.25, timeCrystals: 0.1 } },
       treasure: { fixed: { towerTokens: 6, runes: 1 }, chance: { catalyst: 0.25, alleleSamples: 0.3, timeCrystals: 0.08 } },
-      boss: { fixed: { towerTokens: 25, catalyst: 1, runes: 8 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04 } },
+      // primalEgg: Urzeit-Ei, × loot factor (Wurzellabyrinth 3,2 %, Kristallkern 29 %) – the weekly cap keeps it rare.
+      boss: { fixed: { towerTokens: 25, catalyst: 1, runes: 8 }, chance: { timeCrystals: 0.5, alleleSamples: 0.5, aeonShards: 0.04, primalEgg: 0.04 } },
     },
     // Equipment: chance per room kind (× loot factor, at most 1), rarity by weights – deeper dungeons shift them
     // up (weight × (1 + (loot − 1) × gearRarityShift × rarity order)); rarer pieces multiply their values.
@@ -155,7 +156,9 @@ export const balance: Balance = {
     // Taking equipment apart gives Runen by rarity (also for pieces found while the collection is full).
     salvage: { common: 2, uncommon: 4, rare: 8, epic: 16, legendary: 32, mythic: 64 },
     // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
-    weeklyCap: { timeCrystals: 6, aeonShards: 2 },
+    weeklyCap: { timeCrystals: 6, aeonShards: 2, primalEgg: 2 },
+    // An Urzeit-Ei is too rare to lose to a defeat: it is safe the moment it is found.
+    instantLoot: ['primalEgg'],
   },
   timeCrystals: {
     skipHours: 4,
@@ -244,9 +247,9 @@ export const balance: Balance = {
     hours: 8,
     nests: 1,
     minRarity: 'rare',
-    // Still open where the eggs come from (see TODO.md). Both sources are wired: a chance here, or
-    // `rpg.loot.<room>.chance.primalEgg` for the GenLab RPG.
-    contractChance: 0,
+    // Main source: the boss of the GenLab RPG (`rpg.loot.boss`, at most `rpg.weeklyCap.primalEgg` a week).
+    // A little one for players without the dungeon: 5★ Gen-Aufträge.
+    contractChance: { 5: 0.1 },
   },
   genetics: {
     alleleMutationFactor: 0.5,

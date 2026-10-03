@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 39,
+    date: '2026-10-03',
+    title: 'Urzeit-Eier',
+    items: [
+      { text: 'Der Endboss im GenLab RPG hütet manchmal ein Urzeit-Ei – in tieferen Dungeons öfter, höchstens zwei pro Woche. Ein gefundenes Ei ist sofort sicher, auch wenn der Lauf danach verloren geht.', feature: 'rpg' },
+      { text: 'Gen-Aufträge: Bei einem 5★-Auftrag legt der Kunde ab und zu ein Urzeit-Ei als Dank dazu.', feature: 'contracts' },
+      { text: 'Brutkammer: In der Brutstation erwacht ein Urzeit-Ei in 8 Stunden. Welches der sieben Urzeitwesen darin schläft, zeigt sich erst beim Öffnen – mindestens selten, und es findet auch in einem vollen Stall Platz.', feature: 'primalEggs' },
+      { text: 'Urzeitwesen geben ihre Art nur an ihresgleichen weiter und haben eine eigene Seite im Dex. „Vollkommenheit“ und „Regenbogenchronik“ zählen jetzt alle 40 Arten.', feature: 'primalEggs' },
+    ],
+  },
+  {
     id: 38,
     date: '2026-10-03',
     title: 'Der Genom-Keller',

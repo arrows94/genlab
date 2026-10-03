@@ -369,7 +369,7 @@ function completeOffer(ctx: GameContext, offer: ContractOffer, creatureId: numbe
   const template = ctx.content.contracts.get(offer.template);
   for (const [res, amount] of Object.entries(contractReward(ctx, offer))) grant(ctx, res, amount, `contract:${template.id}`);
   catalogueSamples(ctx, template.reward.alleleSamples ?? 0);
-  rollPrimalEgg(ctx, ctx.balance.primalEggs.contractChance, `contract:${template.id}`);
+  rollPrimalEgg(ctx, ctx.balance.primalEggs.contractChance[template.level] ?? 0, `contract:${template.id}`);
   offer.done = true;
   ctx.state.contracts.completed++;
   ctx.invalidate();

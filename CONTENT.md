@@ -33,7 +33,7 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 
 ### Urzeitwesen
 
-Arten mit `tier: 'primal'` schlüpfen nur aus Urzeit-Eiern (Brutkammer in der Brutstation). Sie brauchen ein `eggWeight` (Gewicht beim Öffnen eines Eis) und `wild: false`; Rezepte und Gen-Kapseln führen nicht zu ihnen. Woher die Eier kommen, steht im Balancing: `primalEggs.contractChance` (je erfülltem Gen-Auftrag) oder ein Eintrag `primalEgg` in `rpg.loot.<raum>.chance`.
+Arten mit `tier: 'primal'` schlüpfen nur aus Urzeit-Eiern (Brutkammer in der Brutstation). Sie brauchen ein `eggWeight` (Gewicht beim Öffnen eines Eis) und `wild: false`; Rezepte und Gen-Kapseln führen nicht zu ihnen. Woher die Eier kommen, steht im Balancing: `primalEggs.contractChance` (Chance je erfülltem Gen-Auftrag, nach Sternen) und der Eintrag `primalEgg` in `rpg.loot.boss.chance` (mit Wochendeckel `rpg.weeklyCap` und sofort gesichert über `rpg.instantLoot`).
 
 ## Neues Gen (Locus mit Allelen)
 

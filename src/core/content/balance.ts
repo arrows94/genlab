@@ -203,6 +203,8 @@ export interface Balance {
     salvage: Record<string, number>;
     /** Most of these per week (paid out) from the dungeon. */
     weeklyCap: ResourceAmounts;
+    /** Loot paid out the moment it is found (never carried, so a defeat cannot lose it). */
+    instantLoot: string[];
   };
   grandResearch: {
     /** Parallel Großforschung projects (extendable via `slots.grandResearch`). */
@@ -326,7 +328,8 @@ export interface Balance {
   };
   /**
    * Urzeit-Eier (resource `primalEgg`): hatched in the Brutkammer into Urzeitwesen (species tier `primal`).
-   * Sources are data: RPG loot via `rpg.loot.<room>.chance.primalEgg`, Gen-Aufträge via `contractChance`.
+   * Sources are data: RPG loot via `rpg.loot.<room>.chance.primalEgg` (weekly cap `rpg.weeklyCap.primalEgg`),
+   * Gen-Aufträge via `contractChance`.
    */
   primalEggs: {
     /** Hours in the Brutkammer until the egg can be opened (`process.primalEgg.speed`). */
@@ -335,8 +338,8 @@ export interface Balance {
     nests: number;
     /** A hatchling is at least this rare. */
     minRarity: string;
-    /** Chance per fulfilled Gen-Auftrag to find an Urzeit-Ei (0 = no eggs from contracts). */
-    contractChance: number;
+    /** Chance to find an Urzeit-Ei per fulfilled Gen-Auftrag, by its stars (template level); missing = none. */
+    contractChance: Record<number, number>;
   };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */

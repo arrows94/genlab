@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { createCreature } from '@core/creatures';
 import { rollOffspringSpecies } from '@core/features/hybrids';
 import { deliverContract, refreshContracts } from '@core/features/contracts';
-import { leaveRpgRun, lootChance, refreshTorches, startRpgRun } from '@core/features/rpg';
+import { enterRoom, finishRpgRun, lootChance, refreshTorches, startRpgRun } from '@core/features/rpg';
 import {
   findPrimalEgg,
   incubatePrimalEgg,
@@ -176,7 +176,7 @@ describe('Urzeit-Eier', () => {
     expect(notices.some((n) => n.kind === 'primalEgg' && n.title.includes('Urzeit-Ei'))).toBe(true);
   });
 
-  it('come from the debug tools until a source is decided', () => {
+  it('also come from the debug tools', () => {
     const g = makeGame();
     expect(debugReset(g, 'primalEgg').ok).toBe(true);
     expect(primalEggsOwned(g)).toBe(1);
@@ -184,33 +184,59 @@ describe('Urzeit-Eier', () => {
 });
 
 describe('Urzeit-Eier – Fundquellen', () => {
-  it('no source is switched on yet', () => {
-    expect(balance.primalEggs.contractChance).toBe(0);
-    for (const room of Object.values(balance.rpg.loot)) expect(room.chance?.['primalEgg'] ?? 0).toBe(0);
+  it('come from the RPG boss (capped per week) and from 5★ Gen-Aufträge', () => {
+    expect(balance.rpg.loot.boss!.chance!['primalEgg']).toBeGreaterThan(0);
+    expect(balance.rpg.weeklyCap['primalEgg']).toBe(2);
+    expect(balance.rpg.instantLoot).toContain('primalEgg');
+    for (const kind of ['fight', 'elite', 'treasure'] as const) expect(balance.rpg.loot[kind]?.chance?.['primalEgg'] ?? 0, kind).toBe(0);
+    expect(Object.keys(balance.primalEggs.contractChance)).toEqual(['5']);
   });
 
-  it('Gen-Aufträge: a chance per fulfilled contract', () => {
-    const g = makeGame(42, { primalEggs: { ...balance.primalEggs, contractChance: 1 } });
+  it('Gen-Aufträge: only 5★ contracts may bring one', () => {
+    const g = makeGame(42, { primalEggs: { ...balance.primalEggs, contractChance: { 5: 1 } } });
     unlockFeature(g, 'contracts');
     refreshContracts(g);
-    const offer = g.state.contracts.offers[0]!;
-    offer.requirements = [];
-    const c = createCreature(g, { speciesId: 'emberpup', rarity: 'common' });
-    expect(deliverContract(g, 0, c.id).ok).toBe(true);
+    const deliver = (template: string) => {
+      const offer = g.state.contracts.offers[0]!;
+      Object.assign(offer, { template, requirements: [], done: false });
+      const c = createCreature(g, { speciesId: 'emberpup', rarity: 'common' });
+      expect(deliverContract(g, 0, c.id).ok).toBe(true);
+    };
+    deliver('eliteLine'); // 4★
+    expect(primalEggsOwned(g)).toBe(0);
+    deliver('masterwork'); // 5★
     expect(primalEggsOwned(g)).toBe(1);
   });
 
-  it('GenLab RPG: an entry in the loot table, carried home like any loot', () => {
-    const boss = balance.rpg.loot.boss!;
-    const loot = { ...balance.rpg.loot, boss: { ...boss, chance: { ...boss.chance, primalEgg: 0.05 } } };
+  it('GenLab RPG: the boss chance grows with the dungeon’s loot factor', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    expect(startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze').ok).toBe(true);
+    const run = g.state.rpg.run!;
+    expect(lootChance(g, run, 'boss', 'primalEgg')).toBeCloseTo(balance.rpg.loot.boss!.chance!['primalEgg']! * content.rpgDungeons.get('rootMaze').loot);
+    expect(lootChance(g, { ...run, dungeon: 'crystalCore' }, 'boss', 'primalEgg')).toBeGreaterThan(lootChance(g, run, 'boss', 'primalEgg'));
+  });
+
+  it('GenLab RPG: an egg is safe the moment it is found, at most two a week', () => {
+    const treasure = balance.rpg.loot.treasure!;
+    const loot = { ...balance.rpg.loot, treasure: { ...treasure, chance: { ...treasure.chance, primalEgg: 2 } } };
     const g = makeGame(42, { rpg: { ...balance.rpg, loot } });
     unlockFeature(g, 'rpg');
     refreshTorches(g, NOW);
     expect(startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze').ok).toBe(true);
-    expect(lootChance(g, g.state.rpg.run!, 'boss', 'primalEgg')).toBeGreaterThan(0);
-    g.state.rpg.run!.loot = { primalEgg: 1 };
-    expect(leaveRpgRun(g).ok).toBe(true);
-    expect(primalEggsOwned(g)).toBe(1);
+    const run = g.state.rpg.run!;
+    for (let i = 0; i < 3; i++) {
+      run.choices = ['treasure'];
+      enterRoom(g, 0);
+    }
+    expect(primalEggsOwned(g)).toBe(2); // paid out at once, the weekly cap stops the third
+    expect(run.loot['primalEgg']).toBeUndefined();
+    expect(run.secured['primalEgg']).toBe(2);
+    finishRpgRun(g, false); // a defeat loses the carried loot – not the eggs
+    expect(primalEggsOwned(g)).toBe(2);
+    expect(g.state.rpg.bloodstain?.loot['primalEgg']).toBeUndefined();
+    expect(g.state.rpg.lastResult?.loot['primalEgg']).toBe(2);
     g.advance(100);
     expect(g.state.features['primalEggs']).toBe(true);
   });

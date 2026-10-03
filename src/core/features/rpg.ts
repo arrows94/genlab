@@ -496,10 +496,13 @@ function rollLoot(ctx: GameContext, run: RpgRun, kind: 'fight' | 'elite' | 'trea
   }
   for (const [res, amount] of Object.entries(found)) {
     const v = Math.min(amount, weeklyRoom(ctx, res));
-    if (v > 0) {
-      run.loot[res] = (run.loot[res] ?? 0) + v;
-      got.loot[res] = v;
-    }
+    if (v <= 0) continue;
+    got.loot[res] = v;
+    if (ctx.balance.rpg.instantLoot.includes(res)) {
+      // Safe at once (Urzeit-Ei): paid out and counted as secured, a defeat cannot take it.
+      payOut(ctx, { [res]: v });
+      run.secured[res] = (run.secured[res] ?? 0) + v;
+    } else run.loot[res] = (run.loot[res] ?? 0) + v;
   }
   const gearChance = Math.min(1, (ctx.balance.rpg.gearChance[kind] ?? 0) * ctx.content.rpgDungeons.get(run.dungeon).loot * times);
   if (ctx.rng.chance(gearChance)) {

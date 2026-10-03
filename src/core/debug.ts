@@ -41,7 +41,7 @@ export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'collect', group: 'Allgemein', name: 'Sammel-Ausdauer voll', description: 'Die Ausdauer beim Sammeln ist sofort wieder voll, die Wartezeit bis zum nächsten Fundstück ist vorbei.' },
   { id: 'daily', group: 'Allgemein', name: 'Tagesbelohnung wieder offen', description: 'Die heutige Tagesbelohnung kann noch einmal abgeholt werden.' },
   { id: 'contracts', group: 'Allgemein', name: 'Gen-Aufträge neu', description: 'Das heutige Auftragsbrett wird neu ausgelegt, erledigte Aufträge sind wieder offen, der Tausch ist wieder frei.' },
-  { id: 'primalEgg', group: 'Allgemein', name: '+1 Urzeit-Ei', description: 'Ein Urzeit-Ei für die Brutkammer – solange noch keine Fundquelle feststeht, der einzige Weg zu einem.' },
+  { id: 'primalEgg', group: 'Allgemein', name: '+1 Urzeit-Ei', description: 'Ein Urzeit-Ei für die Brutkammer (sonst nur vom RPG-Endboss und aus 5★-Gen-Aufträgen).' },
   { id: 'weeklyBoss', group: 'Allgemein', name: 'Wochen-Boss neu', description: 'Ein frischer Wochen-Titan nach dem aktuellen Turm-Rekord, alle Angriffe voll.' },
   { id: 'cellarAttempts', group: 'Genom-Keller', name: 'Abstiege voll', description: 'Der Vorrat an Abstiegen in den Genom-Keller ist sofort voll.' },
   { id: 'cellarProgress', group: 'Genom-Keller', name: 'Keller-Fortschritt löschen', description: 'Rekord, Kontrollpunkt und Verlauf im Keller stehen wieder auf 0.' },
