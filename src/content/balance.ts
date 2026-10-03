@@ -244,7 +244,6 @@ export const balance: Balance = {
     hours: 8,
     nests: 1,
     minRarity: 'rare',
-    undiscoveredWeight: 3,
     // Still open where the eggs come from (see TODO.md). Both sources are wired: a chance here, or
     // `rpg.loot.<room>.chance.primalEgg` for the GenLab RPG.
     contractChance: 0,

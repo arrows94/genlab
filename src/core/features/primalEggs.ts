@@ -48,13 +48,10 @@ export function primalNestVisible(ctx: GameContext): boolean {
   return !!ctx.state.features['primalEggs'] || primalNestEggs(ctx).length > 0;
 }
 
-/** Hatch weights: species missing from the dex weigh more, so a new one comes sooner. */
+/** Hatch weights (`eggWeight` of each Urzeitwesen). */
 export function primalWeights(ctx: GameContext): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const s of primalSpecies(ctx)) {
-    const w = s.eggWeight ?? 0;
-    if (w > 0) out[s.id] = isSpeciesDiscovered(ctx, s.id) ? w : w * ctx.balance.primalEggs.undiscoveredWeight;
-  }
+  for (const s of primalSpecies(ctx)) if ((s.eggWeight ?? 0) > 0) out[s.id] = s.eggWeight!;
   return out;
 }
 

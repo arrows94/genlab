@@ -496,7 +496,7 @@ Verworfen (vorerst): Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs 
   Urzeitwesen geben ihre Art weiter. Knochenplatten im Kreaturen-SVG, eigene Gruppe im Dex
 - Ressource „Urzeit-Ei“ (🥚, `primalEgg`, unskaliert, übersteht jeden Reset). Brutkammer in der Brutstation
   (`features/primalEggs.ts`, `PrimalNest.svelte`): 1 Platz (`slots.primalNest`), 8 h, wartet aufs Öffnen,
-  Art erst beim Öffnen gewürfelt (fehlende Arten ×3), mindestens Selten, schlüpft auch in einen vollen Stall.
+  Art erst beim Öffnen nach `eggWeight` gewürfelt, mindestens Selten, schlüpft auch in einen vollen Stall.
   Prozess überdauert Prestige; Benachrichtigung, Reiter-Balken, Debug „+1 Urzeit-Ei“
 - Fundquellen angeschlossen, aber aus: `balance.primalEggs.contractChance` und RPG-Beutetabelle (siehe `TODO.md`)
 

@@ -335,8 +335,6 @@ export interface Balance {
     nests: number;
     /** A hatchling is at least this rare. */
     minRarity: string;
-    /** Urzeitwesen not yet in the dex weigh this many times as much (new species come sooner). */
-    undiscoveredWeight: number;
     /** Chance per fulfilled Gen-Auftrag to find an Urzeit-Ei (0 = no eggs from contracts). */
     contractChance: number;
   };

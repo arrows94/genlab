@@ -120,7 +120,6 @@
         </li>
       {/each}
     </ul>
-    <p class="tiny muted">Urzeitwesen, die noch fehlen, schlüpfen häufiger.</p>
   </details>
 </article>
 

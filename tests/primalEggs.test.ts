@@ -134,13 +134,12 @@ describe('Urzeit-Eier', () => {
     expect(g.state.creatures.length).toBe(cap + 1);
   });
 
-  it('favour Urzeitwesen missing from the dex', () => {
+  it('weigh every Urzeitwesen by its eggWeight, discovered or not', () => {
     const g = eggGame();
     const before = primalWeights(g);
+    expect(before['ammonix']).toBe(content.species.get('ammonix').eggWeight);
     createCreature(g, { speciesId: 'ammonix', rarity: 'rare' });
-    const after = primalWeights(g);
-    expect(after['ammonix']).toBe(before['ammonix']! / balance.primalEggs.undiscoveredWeight);
-    expect(after['starseed']).toBe(before['starseed']);
+    expect(primalWeights(g)).toEqual(before);
     const chances = primalChances(g);
     expect(chances.reduce((a, c) => a + c.chance, 0)).toBeCloseTo(1);
     expect(chances.find((c) => c.species.id === 'ammonix')!.discovered).toBe(true);
