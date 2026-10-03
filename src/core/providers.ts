@@ -9,6 +9,7 @@ import { weeklyProvider } from './features/weekly';
 import { grandResearchProvider } from './features/grandResearch';
 import { towerMilestoneProvider, towerVeteranProvider } from './features/tower';
 import { dynastyProvider } from './features/dynasty';
+import { cellarMilestoneProvider } from './features/cellar';
 
 /**
  * A modifier provider contributes modifiers from one part of the state.
@@ -88,4 +89,5 @@ export const DEFAULT_PROVIDERS: ModifierProvider[] = [
   towerMilestoneProvider,
   towerVeteranProvider,
   dynastyProvider,
+  cellarMilestoneProvider,
 ];

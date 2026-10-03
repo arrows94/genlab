@@ -89,12 +89,29 @@ export function relicFor(ctx: GameContext, c: Creature): { def: RelicDef; level:
   return level > 0 ? { def: ctx.content.relics.get(id), level } : null;
 }
 
-export function fighterFor(ctx: GameContext, c: Creature): Fighter {
+/** Dunkles Relikt in the tower or cellar team place of this creature, with its level (null if none). */
+export function darkRelicFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar'): { def: RelicDef; level: number } | null {
+  const team = course === 'tower' ? ctx.state.tower.team : ctx.state.cellar.team;
+  const slots = course === 'tower' ? ctx.state.tower.darkSlots : ctx.state.cellar.relicSlots;
+  const slot = team.indexOf(c.id);
+  const id = slot >= 0 ? slots[slot] : null;
+  if (!id || !ctx.content.darkRelics.has(id)) return null;
+  const level = relicLevel(ctx, id);
+  return level > 0 ? { def: ctx.content.darkRelics.get(id), level } : null;
+}
+
+/** Everything a creature wears in a course: the relic and the dark relic in the tower, only the dark one in the cellar. */
+function relicsFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar'): { def: RelicDef; level: number }[] {
+  return [course === 'tower' ? relicFor(ctx, c) : null, darkRelicFor(ctx, c, course)].filter((r): r is { def: RelicDef; level: number } => !!r);
+}
+
+/** A creature as a fighter of the tower (or, with its dark relic only, of the cellar). */
+export function fighterFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar' = 'tower'): Fighter {
   const s = effectiveStats(ctx, c);
   const own = creatureModifiers(ctx, c);
   const global = ctx.mods();
-  const relic = relicFor(ctx, c);
-  const boost = (key: keyof RelicDef['bonus']) => 1 + (relic ? (relic.def.bonus[key] ?? 0) * relic.level : 0);
+  const worn = relicsFor(ctx, c, course);
+  const boost = (key: keyof RelicDef['bonus']) => worn.reduce((f, r) => f * Math.max(0.1, 1 + (r.def.bonus[key] ?? 0) * r.level), 1);
   const hp = Math.round((s.hp ?? 1) * boost('hp') * global.factor('tower.hp') * own.factor('tower.hp'));
   return {
     name: c.name,
@@ -122,20 +139,33 @@ export function relicLevel(ctx: GameContext, id: string): number {
   return ctx.state.relics[id] ?? 0;
 }
 
-/** Turm-Marken for the next level (null at the maximum). */
+/** A relic or dark relic by id. */
+export function relicDef(ctx: GameContext, id: string): RelicDef {
+  return ctx.content.relics.has(id) ? ctx.content.relics.get(id) : ctx.content.darkRelics.get(id);
+}
+
+/** Resource a relic is bought with. */
+export function relicCurrency(def: RelicDef): string {
+  return def.currency ?? 'towerTokens';
+}
+
+/** Price of the next level in its currency (null at the maximum). */
 export function relicCost(ctx: GameContext, id: string): Decimal | null {
-  const def = ctx.content.relics.get(id);
+  const def = relicDef(ctx, id);
   const level = relicLevel(ctx, id);
   return level >= def.maxLevel ? null : D(def.cost).mul(D(def.costGrowth).pow(level)).ceil();
 }
 
 export function buyRelic(ctx: GameContext, id: string): ActionResult {
-  if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  const dark = ctx.content.darkRelics.has(id);
+  if (!dark && !ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  if (dark && !ctx.state.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };
   const cost = relicCost(ctx, id);
   if (!cost) return { ok: false, reason: 'Das Relikt ist bereits auf der höchsten Stufe.' };
-  const owned = ctx.state.resources['towerTokens'] ?? D(0);
-  if (owned.lt(cost)) return { ok: false, reason: 'Nicht genug Turm-Marken.' };
-  ctx.state.resources['towerTokens'] = owned.sub(cost);
+  const currency = relicCurrency(relicDef(ctx, id));
+  const owned = ctx.state.resources[currency] ?? D(0);
+  if (owned.lt(cost)) return { ok: false, reason: `Nicht genug ${ctx.content.resources.get(currency).name}.` };
+  ctx.state.resources[currency] = owned.sub(cost);
   ctx.state.relics[id] = relicLevel(ctx, id) + 1;
   ctx.invalidate();
   return { ok: true };
@@ -148,6 +178,22 @@ export function equipRelic(ctx: GameContext, slot: number, id: string | null): A
   if (!Number.isInteger(slot) || slot < 0 || slot >= teamSize(ctx)) return { ok: false, reason: 'Diesen Platz gibt es nicht.' };
   if (id !== null && (!ctx.content.relics.has(id) || relicLevel(ctx, id) < 1)) return { ok: false, reason: 'Dieses Relikt besitzt du noch nicht.' };
   const slots = ctx.state.tower.relicSlots;
+  while (slots.length < teamSize(ctx)) slots.push(null);
+  if (id !== null) for (let i = 0; i < slots.length; i++) if (slots[i] === id) slots[i] = null;
+  slots[slot] = id;
+  return { ok: true };
+}
+
+/**
+ * Puts a dark relic into the dark place of a tower or cellar team place (null clears it). It sits in one place
+ * per course at most – the same relic may be worn in the tower and in the cellar at once.
+ */
+export function equipDarkRelic(ctx: GameContext, course: 'tower' | 'cellar', slot: number, id: string | null): ActionResult {
+  if (!ctx.state.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };
+  if ((course === 'tower' ? ctx.state.tower.run : ctx.state.cellar.run)) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
+  if (!Number.isInteger(slot) || slot < 0 || slot >= teamSize(ctx)) return { ok: false, reason: 'Diesen Platz gibt es nicht.' };
+  if (id !== null && (!ctx.content.darkRelics.has(id) || relicLevel(ctx, id) < 1)) return { ok: false, reason: 'Dieses dunkle Relikt besitzt du noch nicht.' };
+  const slots = course === 'tower' ? ctx.state.tower.darkSlots : ctx.state.cellar.relicSlots;
   while (slots.length < teamSize(ctx)) slots.push(null);
   if (id !== null) for (let i = 0; i < slots.length; i++) if (slots[i] === id) slots[i] = null;
   slots[slot] = id;

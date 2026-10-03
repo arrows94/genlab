@@ -427,9 +427,12 @@ export const balance: Balance = {
     guardHpMult: 1.12,
     guardAtkMult: 1.1,
     checkpointEvery: 10,
-    // Turm-Marken for now (own Schattenmarken come with the rewards step).
-    tokensPerFloor: 5,
-    tokenGrowthPerFloor: 0.1,
+    // Schattenmarken per level (whole numbers, see courseFloorTokens): 2 on −1, about 4 on −20, 5 on −30.
+    tokensPerFloor: 2,
+    tokenGrowthPerFloor: 0.05,
+    // A new boss depth (every 30 levels) gives an Äon-Splitter, at most two a week (like the RPG).
+    shardsPerBoss: 1,
+    weeklyShards: 2,
   },
   anomalies: {
     maxLevel: 5,

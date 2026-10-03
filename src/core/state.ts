@@ -154,6 +154,8 @@ export interface TowerState {
   back: number[];
   /** Relikt per team place (relic id or null), same order as `team`. */
   relicSlots: (string | null)[];
+  /** Dunkles Relikt per team place (Genom-Keller), next to the relic. */
+  darkSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
   leaderboard: { floor: number; team: string[]; at: number }[];
   /** The most recent runs, newest first (missing startFloor in older saves). */
@@ -217,6 +219,10 @@ export interface CellarState {
   day: number;
   /** Start the next descent on its own while attempts are left. */
   auto: boolean;
+  /** Dunkles Relikt per team place (same order as `team`). */
+  relicSlots: (string | null)[];
+  /** Äon-Splitter from new boss depths this week (weekly cap). */
+  weekly: { week: number; shards: number };
   /** The most recent descents, newest first. */
   history: { level: number; startLevel: number; team: string[]; at: number }[];
   /** The latest fight, for the arena (same shape as the tower's). */
@@ -659,8 +665,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, retreat: 0 },
-    cellar: { team: [], back: [], run: null, best: 0, attempts: 0, day: -1, auto: false, history: [], lastResult: null },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], darkSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, retreat: 0 },
+    cellar: { team: [], back: [], run: null, best: 0, attempts: 0, day: -1, auto: false, relicSlots: [], weekly: { week: -1, shards: 0 }, history: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},

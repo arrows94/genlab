@@ -129,7 +129,7 @@ describe('Genom-Keller: descent', () => {
     // Erschöpfung: someone took damage, and it stays.
     const afterFirst = [...run.hp];
     expect(afterFirst.some((s) => s < 1)).toBe(true);
-    const tokens = g.state.resources['towerTokens']!.toNumber();
+    const tokens = g.state.resources['shadowMarks']!.toNumber();
     expect(tokens).toBeGreaterThan(0);
     // Down to the first rest vault: it heals by restHeal.
     while (g.state.cellar.run && g.state.cellar.run.level < balance.cellar.restEvery - 1) fightNextCellarLevel(g);
@@ -175,7 +175,7 @@ describe('Genom-Keller: descent', () => {
     expect(g.state.cellar.run).toBeNull();
     expect(g.state.cellar.best).toBe(0);
     expect(g.state.cellar.history[0]).toMatchObject({ level: 0, startLevel: 1 });
-    expect(g.state.resources['towerTokens'] ?? D(0)).toEqual(D(0));
+    expect(g.state.resources['shadowMarks'] ?? D(0)).toEqual(D(0));
   });
 });
 

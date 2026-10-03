@@ -4,17 +4,6 @@ Hier steht nur Offenes. Was fertig ist, wandert als kurze Zusammenfassung nach `
 Einträge oben) und wird hier gestrichen – `tests/todo.test.ts` prüft das. Einzelheiten, Messreihen und Begründungen
 stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 
-# Code-Durchsicht (Oktober 2026)
-
-Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
-wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
-
-## Schritt 4 – Balancing und Qualität
-
-Spiellogik (ungeprüft):
-- [ ] Ohne Quelle: `infusion.transferChance`, `cost.capsule`, `cost.upgrade`,
-      Ritual-`rarityBoost` (geplant: Tiefen-Meilensteine des Genom-Kellers, Schritt 5; sonst ein zweites Großprojekt)
-
 # Endgame
 
 - [ ] Gen-Aufträge: kosmetische Muster als Belohnung (braucht neue Muster im Kreaturen-SVG)
@@ -27,7 +16,7 @@ Spiellogik (ungeprüft):
       „Reine Linie vertiefen“ nutzt
 - [ ] Wiederholbare Langzeitziele, wenn Anomalien, Talente und Großprojekt ausgereizt sind (Ideen aus der
       Durchsicht: „Anomalie der Woche“, wöchentliche Zuchtschau, zweites Großprojekt als Senke für Runen und Marken,
-      das `slots.ritualNest` und `infusion.transferChance` eine Quelle gibt)
+      das `slots.ritualNest` eine Quelle gibt)
 
 ## Später
 
@@ -124,9 +113,9 @@ Merkmale wirken außerhalb der Produktion kaum.
   **„Schatten deiner Dynastie“**: eine dunkle Kopie der meistgezüchteten Art des Spielers, mit deren Genen
 - **Belohnungen:** eigene Währung **Schattenmarken** für **dunkle Relikte** (Vorteil mit Nachteil, z. B. +30 % ANG,
   −10 % KP), die in Turm *und* Keller wirken – hilft gegen den Turm-Stillstand. **Tiefen-Meilensteine** als dauerhafte
-  Boni und Quelle für die quellenlosen Werte aus der Code-Durchsicht (`infusion.transferChance`, Ritual-`rarityBoost`,
-  `cost.capsule`). Äon-Splitter an Meilensteinen mit Wochen-Deckel wie im RPG. Später **Höhlenformen**: blasse,
-  augenlose Varianten bekannter Arten (Dex oder Kosmetik)
+  Boni und Quelle für die quellenlosen Werte aus der Code-Durchsicht (`infusion.transferChance`, Ritual-Seltenheit,
+  `cost.capsule`, `cost.upgrade`). Äon-Splitter an neuen Boss-Tiefen mit Wochen-Deckel wie im RPG. Später
+  **Höhlenformen**: blasse, augenlose Varianten bekannter Arten (Dex oder Kosmetik)
 - **Freischaltung:** Etage 150 im Turm (dort steht schon der Erfolg „Turmstürmer“; liegt im Äon-Bot an der ersten
   Mauer – mit dem Bot prüfen)
 - **Eigenes Team**, eigener Tiefen-Rekord und eigene Kontrollpunkte; eine Kreatur steht nie in Turm und Keller
@@ -164,15 +153,14 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 5 – Belohnungen**: Ressource Schattenmarken (`resources.ts`), dunkle Relikte (`RelicDef` mit Nachteil,
-      Platz-Regel für Turm und Keller festlegen), `cellarMilestoneProvider` mit den Quellen für
-      `infusion.transferChance`, Ritual-`rarityBoost` und `cost.capsule` (dann den Punkt in der Code-Durchsicht
-      streichen), Äon-Splitter mit Wochen-Deckel
 - [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab (zuletzt gewählter Bereich in
       `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung des nächsten
       Abschnitts (`environmentAt`, `environmentSection`) mit ihren Regeln und welche Kreaturen passen
       (`cellarFit`, `cellarCandidates`), Fackellicht-Anzeige, Keller-Regel der Wochen-Mutation (auch in der
-      Wochen-Anzeige oben), Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Toasts zu `cellarRunEnded`, Zeile
+      Wochen-Anzeige oben), Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Schattenmarken, dunkle Relikte
+      kaufen und anlegen (Keller-Plätze und je Turm-Platz ein dunkler Platz neben dem Relikt, `equipDarkRelic`),
+      Tiefen-Meilensteine (`cellarMilestonesReached`, `nextCellarMilestone`), Toasts zu `cellarRunEnded` und
+      `cellarMilestone`, Zeile
       „Tiefste Keller-Ebene“ in der Statistik (`record.cellarLevel`), `tabActivity`, Changelog-Eintrag mit
       `feature: 'cellar'`. Funktional, noch im einfachen Stil. Auch auf Handy-Breite prüfen. Bis hierhin den Branch
       nicht nach `main` bringen: Ab Turm-Etage 150 schaltet der Keller schon frei, hat aber noch keine Oberfläche

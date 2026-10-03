@@ -175,11 +175,13 @@ export function eggRarityWeights(ctx: GameContext, ritual?: BreedingRitualDef): 
   if (!ritual) return base;
   const floor = ritual.minRarity ? ctx.content.rarities.get(ritual.minRarity).order : 0;
   const rare = ctx.content.rarities.get('rare').order;
+  // The ritual's own boost, raised by bonuses (Tiefen-Meilensteine of the Genom-Keller).
+  const boost = ctx.mods().apply('breeding.ritualRarity', ritual.rarityBoost ?? 0);
   const out: Record<string, number> = {};
   for (const [id, w] of Object.entries(base)) {
     const order = ctx.content.rarities.get(id).order;
     if (order < floor) continue;
-    out[id] = order >= rare ? w * (1 + (ritual.rarityBoost ?? 0)) : w;
+    out[id] = order >= rare ? w * (1 + boost) : w;
   }
   return Object.values(out).some((w) => w > 0) ? out : { [ritual.minRarity ?? 'common']: 1 };
 }

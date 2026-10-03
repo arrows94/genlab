@@ -1,4 +1,4 @@
-import type { AnomalyDef, BossTraitDef, CellarEnvironmentDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, BossTraitDef, CellarEnvironmentDef, CellarMilestoneDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
 
 /** Talent tiers 4 and 5 and the resonance open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
@@ -224,4 +224,38 @@ export const relics: RelicDef[] = [
     description: '+10 % Tempo je Stufe – wer zuerst zuschlägt, gewinnt öfter.', bonus: { spd: 0.1 } },
   { id: 'elementPrism', name: 'Elementprisma', icon: '🔷', cost: 100, costGrowth: 2.3, maxLevel: 10,
     description: '+12 % Schaden bei Element-Vorteil je Stufe.', bonus: { element: 0.12 } },
+];
+
+/**
+ * Dunkle Relikte from the Genom-Keller: a strong bonus with a price. Each team place has a dark place next to its
+ * relic – in the tower and in the cellar, so they also help where the tower stalls.
+ */
+export const darkRelics: RelicDef[] = [
+  { id: 'bloodFang', name: 'Blutzahn', icon: '🦷', cost: 40, costGrowth: 2.2, maxLevel: 10, currency: 'shadowMarks',
+    description: 'Je Stufe +15 % Angriff, aber −5 % KP.', bonus: { atk: 0.15, hp: -0.05 } },
+  { id: 'hollowHeart', name: 'Hohles Herz', icon: '🖤', cost: 40, costGrowth: 2.2, maxLevel: 10, currency: 'shadowMarks',
+    description: 'Je Stufe +20 % KP, aber −6 % Tempo.', bonus: { hp: 0.2, spd: -0.06 } },
+  { id: 'boneArmor', name: 'Knochenpanzer', icon: '🦴', cost: 40, costGrowth: 2.2, maxLevel: 10, currency: 'shadowMarks',
+    description: 'Je Stufe +20 % Verteidigung, aber −5 % Angriff.', bonus: { def: 0.2, atk: -0.05 } },
+  { id: 'wraithVeil', name: 'Geisterschleier', icon: '👻', cost: 60, costGrowth: 2.3, maxLevel: 10, currency: 'shadowMarks',
+    description: 'Je Stufe +15 % Tempo, aber −6 % Verteidigung.', bonus: { spd: 0.15, def: -0.06 } },
+];
+
+/**
+ * Tiefen-Meilensteine: a bonus for every depth reached first. They are the source of values nothing else raises –
+ * the allele transfer of the Infusion, rare rituals and the price of capsules and research.
+ */
+export const cellarMilestones: CellarMilestoneDef[] = [
+  { id: 'depth10', level: 10, name: 'Unter dem Turm', description: 'Gen-Kapseln 10 % billiger.', modifiers: [{ target: 'cost.capsule', op: 'pct', value: -0.1 }] },
+  { id: 'depth20', level: 20, name: 'Tropfsteine', description: '+3 % Allel-Übertragung bei der Infusion.', modifiers: [{ target: 'infusion.transferChance', op: 'add', value: 0.03 }] },
+  { id: 'depth30', level: 30, name: 'Der erste Schatten', description: 'Brutrituale: Selten und besser 25 % wahrscheinlicher.', modifiers: [{ target: 'breeding.ritualRarity', op: 'add', value: 0.25 }] },
+  { id: 'depth40', level: 40, name: 'Vergessene Labore', description: 'Forschung 5 % billiger.', modifiers: [{ target: 'cost.upgrade', op: 'pct', value: -0.05 }] },
+  { id: 'depth50', level: 50, name: 'Zerbrochene Tanks', description: 'Gen-Kapseln 10 % billiger.', modifiers: [{ target: 'cost.capsule', op: 'pct', value: -0.1 }] },
+  { id: 'depth60', level: 60, name: 'Schwarzes Wasser', description: '+3 % Allel-Übertragung bei der Infusion.', modifiers: [{ target: 'infusion.transferChance', op: 'add', value: 0.03 }] },
+  { id: 'depth75', level: 75, name: 'Die Wiege', description: 'Brutrituale: Selten und besser 25 % wahrscheinlicher.', modifiers: [{ target: 'breeding.ritualRarity', op: 'add', value: 0.25 }] },
+  { id: 'depth90', level: 90, name: 'Archiv der Fehlzuchten', description: 'Forschung 5 % billiger.', modifiers: [{ target: 'cost.upgrade', op: 'pct', value: -0.05 }] },
+  { id: 'depth120', level: 120, name: 'Wurzel des Genoms', description: '+4 % Allel-Übertragung bei der Infusion, Brutrituale: Selten und besser 50 % wahrscheinlicher.',
+    modifiers: [{ target: 'infusion.transferChance', op: 'add', value: 0.04 }, { target: 'breeding.ritualRarity', op: 'add', value: 0.5 }] },
+  { id: 'depth150', level: 150, name: 'Grund des Kellers?', description: 'Gen-Kapseln 10 % und Forschung 5 % billiger.',
+    modifiers: [{ target: 'cost.capsule', op: 'pct', value: -0.1 }, { target: 'cost.upgrade', op: 'pct', value: -0.05 }] },
 ];

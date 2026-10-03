@@ -416,18 +416,41 @@ export function validateCourses({ data, issues, at, text }: ContentChecks): void
   for (const id of ['tower', 'cellar']) if (!data.courses.some((c) => c.id === id)) issues.push(`courses: Strecke "${id}" fehlt`);
 }
 
-export function validateRelics({ data, issues, at, text, num }: ContentChecks): void {
-  for (const r of data.relics) {
-    const w = at('relics', r.id);
-    text(`${w}.name`, r.name);
-    num(`${w}.cost`, r.cost, 1);
-    num(`${w}.costGrowth`, r.costGrowth, 1);
-    num(`${w}.maxLevel`, r.maxLevel, 1);
-    for (const [k, v] of Object.entries(r.bonus)) {
-      if (!['hp', 'atk', 'def', 'spd', 'element'].includes(k)) issues.push(`${w}.bonus: unbekannter Wert "${k}"`);
-      num(`${w}.bonus.${k}`, v, 0, 5);
+export function validateRelics({ data, issues, at, text, num, ref }: ContentChecks): void {
+  for (const kind of ['relics', 'darkRelics'] as const) {
+    const dark = kind === 'darkRelics';
+    for (const r of data[kind]) {
+      const w = at(kind, r.id);
+      text(`${w}.name`, r.name);
+      num(`${w}.cost`, r.cost, 1);
+      num(`${w}.costGrowth`, r.costGrowth, 1);
+      num(`${w}.maxLevel`, r.maxLevel, 1);
+      ref(`${w}.currency`, 'resources', r.currency);
+      for (const [k, v] of Object.entries(r.bonus)) {
+        if (!['hp', 'atk', 'def', 'spd', 'element'].includes(k)) issues.push(`${w}.bonus: unbekannter Wert "${k}"`);
+        num(`${w}.bonus.${k}`, v, dark ? -0.5 : 0, 5);
+        // A malus must leave something at the highest level.
+        if (v < 0 && 1 + v * r.maxLevel < 0.1) issues.push(`${w}.bonus.${k}: auf Stufe ${r.maxLevel} bliebe weniger als 10 %`);
+      }
+      const values = Object.values(r.bonus);
+      if (values.length === 0) issues.push(`${w}.bonus: mindestens ein Wert`);
+      if (dark && !(values.some((v) => v > 0) && values.some((v) => v < 0))) issues.push(`${w}.bonus: ein dunkles Relikt hat einen Vorteil und einen Nachteil`);
     }
-    if (Object.keys(r.bonus).length === 0) issues.push(`${w}.bonus: mindestens ein Wert`);
+  }
+  for (const r of data.darkRelics) if (data.relics.some((x) => x.id === r.id)) issues.push(`darkRelics[${r.id}]: dieselbe id wie ein Relikt (die Stufen teilen sich einen Speicher)`);
+}
+
+export function validateCellarMilestones({ data, issues, at, text, num, mods }: ContentChecks): void {
+  let last = 0;
+  for (const m of data.cellarMilestones) {
+    const w = at('cellarMilestones', m.id);
+    text(`${w}.name`, m.name);
+    text(`${w}.description`, m.description);
+    num(`${w}.level`, m.level, 1);
+    if (m.level <= last) issues.push(`${w}.level: Meilensteine aufsteigend ohne Doppelte`);
+    last = m.level;
+    if (m.modifiers.length === 0) issues.push(`${w}.modifiers: mindestens ein Bonus`);
+    mods(`${w}.modifiers`, m.modifiers);
   }
 }
 

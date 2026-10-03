@@ -89,6 +89,12 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-03 – Werte ohne Quelle
+
+- Bestätigt: `infusion.transferChance`, `cost.capsule`, `cost.upgrade` hatten keinen Bonus im Inhalt, und der
+  `rarityBoost` der Rituale ließ sich durch nichts heben. Quelle sind jetzt die Tiefen-Meilensteine des
+  Genom-Kellers (neues Ziel `breeding.ritualRarity` für Rituale). Damit ist die Code-Durchsicht abgearbeitet.
+
 ## 2026-10-02 – `cost.potion` hat eine Quelle
 
 - Großforschung „Handelskontor“: −15 % auf alle Marktpreise pro Stufe, bis zu drei Stufen (Tester-Feedback, PR #51)
@@ -318,6 +324,19 @@ Kampf-Eigenschaften aus der Genetik, mehrere Gegner und Boss-Begleiter, Wochen-B
 Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben deterministisch und offline schnell.
 
 # Turm: Stillstand abbauen, feinere Etagen
+
+## 2026-10-03 – Genom-Keller Schritt 5: Belohnungen
+
+- **Schattenmarken** 🌒 (neue Ressource, nie zurückgesetzt): je geschaffter Ebene, 2 auf −1, etwa 4 auf −20 (statt
+  der vorläufigen Turm-Marken). **Äon-Splitter**: 1 je neuer Boss-Tiefe (alle 30 Ebenen), höchstens 2 pro Woche.
+- **Dunkle Relikte** (`darkRelics`: Blutzahn, Hohles Herz, Knochenpanzer, Geisterschleier) mit Vorteil und
+  Nachteil je Stufe, gekauft mit Schattenmarken (`RelicDef.currency`). Platz-Regel: Jeder Turm-Platz hat neben dem
+  Relikt einen dunklen Platz (`tower.darkSlots`), das Keller-Team eigene Plätze (`cellar.relicSlots`); dasselbe
+  dunkle Relikt darf in Turm und Keller zugleich getragen werden. Im Keller zählen normale Relikte nicht.
+- **Tiefen-Meilensteine** (`cellarMilestones`, `cellarMilestoneProvider`) bei −10 bis −150: Gen-Kapseln und
+  Forschung billiger, mehr Allel-Übertragung bei der Infusion, seltenere Ritual-Eier (neues Ziel
+  `breeding.ritualRarity`); Ereignis `cellarMilestone`.
+- Turm, Langzeit- und Äon-Bot Zeichen für Zeichen unverändert. Tests `tests/cellarRewards.test.ts` (5).
 
 ## 2026-10-03 – Genom-Keller Schritt 4: Gegner und Bosse
 

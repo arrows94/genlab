@@ -7,9 +7,11 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
 import type { System } from '../systems/types';
-import type { CellarEffect, CellarEnvironmentDef, CellarMatch, CellarRuleDef } from '../content/types';
+import type { ModifierProvider } from '../providers';
+import type { CellarEffect, CellarEnvironmentDef, CellarMatch, CellarMilestoneDef, CellarRuleDef } from '../content/types';
+import { D, type Decimal } from '../num';
 import { contractDay } from './contracts';
-import { activeMutation } from './weekly';
+import { activeMutation, weekIndex } from './weekly';
 import { cellarCourse, courseCheckpoint, courseEnemies, courseFloorTokens, floorLabel, techniqueFor } from './floors';
 import { fighterFor, simulateFight, teamSize, type Fighter, type Row } from './tower';
 
@@ -282,7 +284,7 @@ export function torchMiss(ctx: GameContext, light: number): number {
  * share it still has and what the level's rules (`effect`) and the torch do to it.
  */
 export function cellarFighter(ctx: GameContext, c: Creature, hpShare = 1, effect: Required<CellarEffect> = combineEffects([]), light = 1): Fighter {
-  const f = fighterFor(ctx, c);
+  const f = fighterFor(ctx, c, 'cellar');
   const st = effect.stats;
   const scale = (v: number, k: 'hp' | 'atk' | 'def' | 'spd') => Math.max(1, Math.round(v * Math.max(0.1, 1 + (st[k] ?? 0))));
   const maxHp = scale(f.maxHp, 'hp');
@@ -378,6 +380,7 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     run.hp[m.i] = Math.max(0, result.stats.hpLeft[k] ?? 0) / Math.max(1, fighters[k]!.maxHp);
   });
   run.level = level;
+  const record = level > ce.best;
   ce.best = Math.max(ce.best, level);
   const cfg = ctx.balance.cellar;
   const rest = cfg.restEvery > 0 && level % cfg.restEvery === 0;
@@ -387,10 +390,48 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     run.hp = run.hp.map((share) => Math.min(1, share + cfg.restHeal));
     run.light = 1;
   }
-  const rewards = { towerTokens: courseFloorTokens(cellarCourse(ctx), level) };
+  const rewards: Record<string, Decimal> = { shadowMarks: courseFloorTokens(cellarCourse(ctx), level) };
+  // A new boss depth: an Äon-Splitter while this week's cap has room.
+  if (record && level % cellarCourse(ctx).curve.bossEvery === 0) {
+    const shards = Math.min(cfg.shardsPerBoss, weeklyShardRoom(ctx));
+    if (shards > 0) {
+      rewards['aeonShards'] = D(shards);
+      ctx.state.cellar.weekly.shards += shards;
+    }
+  }
   for (const [res, v] of Object.entries(rewards)) grant(ctx, res, v, 'cellar');
   ctx.bus.emit('cellarLevel', { level, win: true, rewards, rest });
+  if (record) {
+    const reached = ctx.content.cellarMilestones.list.filter((m) => m.level === level);
+    for (const m of reached) ctx.bus.emit('cellarMilestone', { milestone: m.id });
+    if (reached.length) ctx.invalidate();
+  }
 }
+
+// ---- Rewards -------------------------------------------------------------------
+
+/** Äon-Splitter the cellar may still give this week. */
+export function weeklyShardRoom(ctx: GameContext): number {
+  const w = ctx.state.cellar.weekly;
+  const week = weekIndex(ctx.balance.weekly.epoch, ctx.state.lastTickAt);
+  if (w.week !== week) Object.assign(w, { week, shards: 0 });
+  return Math.max(0, ctx.balance.cellar.weeklyShards - w.shards);
+}
+
+/** Tiefen-Meilensteine reached (the record never shrinks, so they stay). */
+export function cellarMilestonesReached(ctx: GameContext): CellarMilestoneDef[] {
+  return ctx.content.cellarMilestones.list.filter((m) => m.level <= ctx.state.cellar.best);
+}
+
+/** The next Tiefen-Meilenstein (null when all are reached). */
+export function nextCellarMilestone(ctx: GameContext): CellarMilestoneDef | null {
+  return ctx.content.cellarMilestones.list.find((m) => m.level > ctx.state.cellar.best) ?? null;
+}
+
+/** Permanent bonuses of the Tiefen-Meilensteine. */
+export const cellarMilestoneProvider: ModifierProvider = (ctx, into) => {
+  for (const m of cellarMilestonesReached(ctx)) into.addAll(`cellar:${m.id}`, m.modifiers);
+};
 
 export const cellarSystem: System = {
   id: 'cellar',

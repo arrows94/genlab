@@ -625,12 +625,25 @@ export interface RelicDef {
   name: string;
   icon: string;
   description: string;
-  /** Turm-Marken for level 1; each level costs `costGrowth` times more. */
+  /** Price of level 1 (in `currency`); each level costs `costGrowth` times more. */
   cost: number;
+  /** Resource it is bought with (Turm-Marken if missing; dark relics: Schattenmarken). */
+  currency?: string;
   costGrowth: number;
   maxLevel: number;
-  /** Bonus per level (0.1 = +10 %) on fight stats; `element` raises the element advantage. */
+  /** Bonus per level (0.1 = +10 %) on fight stats; `element` raises the element advantage. Dark relics also have a malus (< 0). */
   bonus: Partial<Record<'hp' | 'atk' | 'def' | 'spd' | 'element', number>>;
+}
+
+/** A permanent bonus for reaching a depth in the Genom-Keller for the first time. */
+export interface CellarMilestoneDef {
+  id: string;
+  /** Deepest level that must have been cleared. */
+  level: number;
+  name: string;
+  /** Short German text of the bonus. */
+  description: string;
+  modifiers: ModifierDef[];
 }
 
 /** One construction stage of a Großprojekt: pay in over time, then build. */
@@ -953,6 +966,9 @@ export interface ContentData {
   cellarEnvironments: CellarEnvironmentDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
+  /** Dunkle Relikte (Genom-Keller): bought with Schattenmarken, one per team place in the tower and in the cellar. */
+  darkRelics: RelicDef[];
+  cellarMilestones: CellarMilestoneDef[];
   techniques: TechniqueDef[];
   nameLists: NameListDef[];
   rpgSkills: RpgSkillDef[];
