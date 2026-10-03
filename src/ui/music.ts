@@ -106,7 +106,11 @@ let playing = false;
 /** Gain per scheduled chord, so a mood change can fade the sounding ones out. */
 let voices: { gain: GainNode; end: number }[] = [];
 let moodTimer: ReturnType<typeof setTimeout> | null = null;
+/** Mood the pending `moodTimer` switches to. */
+let pendingMood: Mood | null = null;
 const CROSSFADE_SEC = 1.2;
+/** Delay before a tab switch changes the mood (flicking through tabs keeps the track). */
+const MOOD_DELAY_MS = 350;
 let noiseBuffer: AudioBuffer | null = null;
 
 /** A long, soft reverb from decaying noise. */
@@ -334,21 +338,23 @@ function crossfade(next: Mood): void {
 /** Turns the music on/off, sets its volume (0…1) and the mood of the current area. */
 export function setMusic(on: boolean, vol: number, next: Mood): void {
   try {
-    if (next !== mood) {
-      // Flicking through tabs should not restart the music on every tab: wait a moment.
-      if (moodTimer) clearTimeout(moodTimer);
-      if (playing) moodTimer = setTimeout(() => {
-        moodTimer = null;
-        crossfade(next);
-      }, 350);
-      else {
+    if (next === mood || !playing) {
+      // Back on the area that is playing before the switch took effect – or silent, so switch at once.
+      cancelPending();
+      if (next !== mood) {
         mood = next;
         chordIndex = 0;
       }
-    } else if (moodTimer) {
-      // Back on the area that is playing before the switch took effect.
-      clearTimeout(moodTimer);
-      moodTimer = null;
+    } else if (next !== pendingMood) {
+      // Flicking through tabs should not restart the music on every tab: wait a moment. A repeated call
+      // for the same mood keeps the running timer (App calls this on every re-render).
+      cancelPending();
+      pendingMood = next;
+      moodTimer = setTimeout(() => {
+        moodTimer = null;
+        pendingMood = null;
+        crossfade(next);
+      }, MOOD_DELAY_MS);
     }
     volume = Math.max(0, Math.min(1, vol));
     if (on && volume > 0) {
@@ -358,6 +364,17 @@ export function setMusic(on: boolean, vol: number, next: Mood): void {
   } catch {
     /* music is optional */
   }
+}
+
+function cancelPending(): void {
+  if (moodTimer) clearTimeout(moodTimer);
+  moodTimer = null;
+  pendingMood = null;
+}
+
+/** The mood that is playing (or will play once the music starts). */
+export function currentMood(): Mood {
+  return mood;
 }
 
 /** Mood per area of the tab bar (`GROUPS` in App.svelte), so a track keeps playing across its sub-tabs. */
