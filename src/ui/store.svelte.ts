@@ -240,6 +240,15 @@ function wireEvents(g: Game): void {
   });
   g.bus.on('towerRank', (e) => toast(`🎖 Kampferfahrung: Rang ${e.rank} – +${Math.round(e.rank * g.balance.tower.xpRankBonus * 100)} % KP und Schaden im Turm`, 'rare'));
   g.bus.on('towerRunEnded', (e) => toast(`🗼 Turm-Lauf beendet auf Etage ${e.floor}.`, 'info'));
+  g.bus.on('cellarLevel', (e) => {
+    if (e.win && e.level % g.balance.cellar.bossEvery === 0) toast(`🕳️ Ebene −${e.level}: Der Schatten ist bezwungen! ${amounts(e.rewards)}`, 'rare');
+  });
+  g.bus.on('cellarRunEnded', (e) =>
+    toast(e.level >= e.startLevel ? `🕳️ Abstieg beendet: −${e.startLevel} bis −${e.level}.` : `🕳️ Abstieg gescheitert – schon Ebene −${e.startLevel} war zu viel.`, 'info'));
+  g.bus.on('cellarMilestone', (e) => {
+    const m = content.cellarMilestones.get(e.milestone);
+    toast(`🏅 Tiefen-Meilenstein „${m.name}“: ${m.description}`, 'rare', 6000);
+  });
   g.bus.on('talentBought', (e) => toast(`⏳ Talent gelernt: ${content.talents.get(e.talent).name}`, 'rare'));
   g.bus.on('resonanceBought', (e) => toast(`〰️ ${content.resonances.get(e.resonance).name} auf Stufe ${e.level}`, 'info'));
   g.bus.on('megaProjectStage', (e) => {

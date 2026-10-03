@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 38,
+    date: '2026-10-03',
+    title: 'Der Genom-Keller',
+    items: [
+      { text: 'Unter dem Genom-Turm öffnet sich der Genom-Keller: Ein eigenes Team steigt Ebene für Ebene hinab – ohne Heilung zwischen den Kämpfen, nur in Rast-Gewölben. Ein paar Abstiege pro Tag, jeder ab dem letzten Kontrollpunkt. Umschalten oben im Turm: ▲ Turm / ▼ Keller.', feature: 'cellar' },
+      { text: 'Jeder Abschnitt hat seine Umgebung – Finsternis, Sporennebel, Überflutet, Einsturz … Rohe Stärke reicht dort nicht: Gezüchtete Anpassungen wie Nachtsicht (Farbe Dunkel oder Albino), reinerbiges Unermüdlich oder Diamanthaut schützen. Die Kandidatenliste zeigt, wer zur nächsten Ebene passt.', feature: 'cellar' },
+      { text: 'Unten warten die verworfenen Linien – und alle 30 Ebenen der Schatten deiner Dynastie: eine dunkle Kopie deiner meistgezüchteten Art, mit den Genen deiner besten Kreatur.', feature: 'cellar' },
+      { text: 'Schattenmarken kaufen dunkle Relikte mit Vorteil und Preis. Sie haben eigene Plätze im Keller-Team und neben jedem Relikt im Turm. Tiefen-Meilensteine machen Kapseln und Forschung billiger, Infusionen und Rituale besser; neue Boss-Tiefen geben Äon-Splitter.', feature: 'cellar' },
+    ],
+  },
+  {
     id: 37,
     date: '2026-10-03',
     title: 'Freie Sockel',

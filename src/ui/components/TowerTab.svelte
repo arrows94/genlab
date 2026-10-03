@@ -10,6 +10,9 @@
   import TowerFloors from './TowerFloors.svelte';
   import TowerBoard from './TowerBoard.svelte';
   import TowerTeam from './TowerTeam.svelte';
+  import CellarView from './CellarView.svelte';
+  import DarkRelicPanel from './DarkRelicPanel.svelte';
+  import { viewState } from '../viewState.svelte';
 
   /**
    * Genom-Turm: header figures, the floor column, the arena (replay of the
@@ -23,11 +26,28 @@
     return towerView(game);
   });
 
+  /** Tower or Genom-Keller: the switch only appears once the cellar is open. */
+  const cellarOpen = $derived.by(() => {
+    view.slowFrame;
+    return !!game.state.features['cellar'];
+  });
+  const area = $derived(cellarOpen ? viewState.tower.area : 'tower');
+
   /** „+15 % Turm-Schaden, +10 % Nahrung-Ertrag …“ – straight from the balance numbers. */
   const MILESTONE_BONUS = game.balance.tower.milestoneModifiers.map((m) => describeModifier(game, m)).join(', ');
 </script>
 
 
+{#if cellarOpen}
+  <div class="area-switch" role="group" aria-label="Turm oder Keller">
+    <button class:on={area === 'tower'} onclick={() => (viewState.tower.area = 'tower')}>▲ Turm</button>
+    <button class:on={area === 'cellar'} onclick={() => (viewState.tower.area = 'cellar')}>▼ Keller{#if game.state.cellar.run}<span class="live-dot" title="Ein Abstieg läuft"></span>{/if}</button>
+  </div>
+{/if}
+
+{#if area === 'cellar'}
+  <CellarView />
+{:else}
 <header class="tab-head">
   <h2>🗼 Genom-Turm</h2>
   <div class="kpis">
@@ -61,12 +81,19 @@
 
 <RelicPanel />
 
+{#if cellarOpen}<DarkRelicPanel course="tower" />{/if}
+
 <TowerBoard />
+{/if}
 
 <style>
 
 
   .stage { display: grid; grid-template-columns: 11rem 1fr; gap: 0.75rem; align-items: start; }
+  .area-switch { display: inline-flex; margin-bottom: 0.6rem; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .area-switch button { border: 0; border-radius: 0; padding: 0.3rem 0.9rem; background: var(--bg-2); position: relative; }
+  .area-switch button.on { background: var(--petrol); color: #fff; }
+  .live-dot { display: inline-block; width: 7px; height: 7px; margin-left: 0.35rem; border-radius: 50%; background: var(--teal); vertical-align: middle; }
 
   /* Tower column */
   .veteran { gap: 0.1rem; }

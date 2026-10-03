@@ -12,7 +12,7 @@ import type { CellarEffect, CellarEnvironmentDef, CellarMatch, CellarMilestoneDe
 import { D, type Decimal } from '../num';
 import { contractDay } from './contracts';
 import { activeMutation, weekIndex } from './weekly';
-import { cellarCourse, courseCheckpoint, courseEnemies, courseFloorTokens, floorLabel, techniqueFor } from './floors';
+import { cellarCourse, courseCheckpoint, courseEnemies, courseFloorTokens, floorLabel, isCourseBossFloor, isCourseGuardFloor, techniqueFor } from './floors';
 import { fighterFor, simulateFight, teamSize, type Fighter, type Row } from './tower';
 
 /**
@@ -396,7 +396,7 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     const shards = Math.min(cfg.shardsPerBoss, weeklyShardRoom(ctx));
     if (shards > 0) {
       rewards['aeonShards'] = D(shards);
-      ctx.state.cellar.weekly.shards += shards;
+      useShards(ctx, shards);
     }
   }
   for (const [res, v] of Object.entries(rewards)) grant(ctx, res, v, 'cellar');
@@ -410,12 +410,19 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
 
 // ---- Rewards -------------------------------------------------------------------
 
-/** Äon-Splitter the cellar may still give this week. */
+/** Äon-Splitter the cellar may still give this week (read only). */
 export function weeklyShardRoom(ctx: GameContext): number {
+  const w = ctx.state.cellar.weekly;
+  const used = w.week === weekIndex(ctx.balance.weekly.epoch, ctx.state.lastTickAt) ? w.shards : 0;
+  return Math.max(0, ctx.balance.cellar.weeklyShards - used);
+}
+
+/** Counts Äon-Splitter against this week's cap. */
+function useShards(ctx: GameContext, shards: number): void {
   const w = ctx.state.cellar.weekly;
   const week = weekIndex(ctx.balance.weekly.epoch, ctx.state.lastTickAt);
   if (w.week !== week) Object.assign(w, { week, shards: 0 });
-  return Math.max(0, ctx.balance.cellar.weeklyShards - w.shards);
+  w.shards += shards;
 }
 
 /** Tiefen-Meilensteine reached (the record never shrinks, so they stay). */
@@ -452,3 +459,57 @@ export const cellarSystem: System = {
     }
   },
 };
+
+// ---- View ----------------------------------------------------------------------
+
+/** Everything the Keller view shows, read only: header figures, the next level, the shaft below it. */
+export function cellarView(ctx: GameContext) {
+  const ce = ctx.state.cellar;
+  const cfg = ctx.balance.cellar;
+  const course = cellarCourse(ctx);
+  const run = ce.run;
+  const next = (run ? run.level : cellarCheckpoint(ctx)) + 1;
+  const light = run ? (run.light ?? 1) : 1;
+  const team = ce.team.map((id) => findCreature(ctx, id)).filter((c): c is Creature => !!c);
+  const milestoneAt = new Map(ctx.content.cellarMilestones.list.map((m) => [m.level, m]));
+  const shaft = Array.from({ length: 10 }, (_, i) => {
+    const level = next + i;
+    return {
+      level,
+      label: floorLabel(course, level),
+      boss: isCourseBossFloor(course, level),
+      guard: isCourseGuardFloor(course, level),
+      rest: cfg.restEvery > 0 && level % cfg.restEvery === 0,
+      checkpoint: level % course.curve.checkpointEvery === 0,
+      env: environmentAt(ctx, level),
+      milestone: level > ce.best ? (milestoneAt.get(level) ?? null) : null,
+    };
+  });
+  return {
+    best: ce.best,
+    checkpoint: cellarCheckpoint(ctx),
+    attempts: ce.attempts,
+    maxAttempts: cfg.maxAttempts,
+    perDay: cfg.attemptsPerDay,
+    auto: ce.auto,
+    run,
+    next,
+    nextLabel: floorLabel(course, next),
+    env: environmentAt(ctx, next),
+    section: environmentSection(ctx, next),
+    rules: cellarRules(ctx, next),
+    weekly: activeMutation(ctx)?.cellar ?? null,
+    foes: cellarEnemies(ctx, next),
+    team,
+    light,
+    torchMiss: torchMiss(ctx, light),
+    marks: ctx.state.resources['shadowMarks'] ?? D(0),
+    reached: cellarMilestonesReached(ctx),
+    nextMilestone: nextCellarMilestone(ctx),
+    shardRoom: weeklyShardRoom(ctx),
+    history: ce.history,
+    lastResult: ce.lastResult,
+    intervalMs: cellarIntervalMs(ctx),
+    shaft,
+  };
+}

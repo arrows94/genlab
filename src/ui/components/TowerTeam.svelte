@@ -41,6 +41,8 @@
     const q = search.trim().toLowerCase();
     return [...game.state.creatures]
       .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
+      // The Keller team stays down there (a creature never stands in both teams).
+      .filter((c) => !game.state.cellar.team.includes(c.id))
       .filter((c) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
       .map((c) => {
         const element = content.species.get(c.speciesId).element;

@@ -8,6 +8,7 @@ import { MEGA_PROJECT } from './features/megaProjects';
 import { CONTRACT_LOAN } from './features/contracts';
 import { recyclingNow } from './features/automation';
 import { fightIntervalMs } from './features/tower';
+import { cellarIntervalMs } from './features/cellar';
 import { isWaiting, processRemainingMs } from './systems/processes';
 
 /** Which tab shows a running process of this kind. New timed systems add their kind here. */
@@ -35,7 +36,7 @@ export interface TabActivity {
 
 /**
  * Running work per tab for the tab bar (a filling bar under the tab):
- * processes by kind, the Zerlege-Kammer and a running tower run. Finished
+ * processes by kind, the Zerlege-Kammer, a running tower run and a descent into the Genom-Keller. Finished
  * processes waiting for the player (ritual eggs) count as news, not work.
  */
 export function tabActivity(ctx: GameContext): Record<string, TabActivity> {
@@ -59,6 +60,12 @@ export function tabActivity(ctx: GameContext): Record<string, TabActivity> {
   if (run) {
     const interval = fightIntervalMs(ctx);
     add('tower', Math.min(1, run.elapsedMs / interval), Math.max(0, interval - run.elapsedMs), true);
+  }
+  // A descent into the Genom-Keller lives in the tower tab too.
+  const descent = ctx.state.cellar.run;
+  if (descent) {
+    const interval = cellarIntervalMs(ctx);
+    add('tower', Math.min(1, descent.elapsedMs / interval), Math.max(0, interval - descent.elapsedMs), true);
   }
   return out;
 }

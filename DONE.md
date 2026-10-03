@@ -325,6 +325,21 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 6: Oberfläche
+
+- Umschalter ▲ Turm / ▼ Keller oben im Turm-Tab (sobald der Keller offen ist; gewählter Bereich in
+  `viewState.tower.area`, Punkt am Schalter während eines Abstiegs). Neue Ansicht `CellarView.svelte`: Kennzahlen
+  (tiefste Ebene, Kontrollpunkt, Abstiege, Schattenmarken, freie Splitter), Abstieg starten/abbrechen, Auto-Abstieg,
+  Fackellicht, Schacht mit den nächsten zehn Ebenen (Umgebung, Boss, Wächter, Rast, Kontrollpunkt, Meilenstein),
+  nächste Ebene mit Umgebung, Regeln, Wochen-Regel und Gegnern, letzter Kampf als Protokoll, Tiefen-Meilensteine,
+  letzte Abstiege. Daten aus der neuen Abfrage `cellarView`.
+- `CellarTeam.svelte`: Plätze mit Reihe, Nachtsicht, Passung (▲/▼) und KP während des Abstiegs; Kandidaten nach
+  Passung zur nächsten Ebene. `DarkRelicPanel.svelte` für Keller und Turm (dunkle Plätze neben den Relikten).
+  Turm-Kandidaten ohne Keller-Team.
+- Toasts (Schatten bezwungen, Abstieg beendet, Tiefen-Meilenstein), Keller-Regel in der Wochen-Leiste, Statistik
+  „Tiefste Keller-Ebene“, Tab-Aktivität während eines Abstiegs, Changelog-Eintrag 38 (`feature: 'cellar'`).
+- Im Browser geprüft (Desktop und Handy-Breite, Spielstand mit laufendem Abstieg und Aufholen).
+
 ## 2026-10-03 – Genom-Keller Schritt 5: Belohnungen
 
 - **Schattenmarken** 🌒 (neue Ressource, nie zurückgesetzt): je geschaffter Ebene, 2 auf −1, etwa 4 auf −20 (statt

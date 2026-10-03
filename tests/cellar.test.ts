@@ -234,3 +234,26 @@ describe('Genom-Keller: resets and saves', () => {
     expect(g.state.cellar.best).toBe(0);
   });
 });
+
+describe('Genom-Keller: view', () => {
+  it('shows the next level, its shaft and the running descent in the tower tab', async () => {
+    const { cellarView } = await import('@core/features/cellar');
+    const { tabActivity } = await import('@core/tabActivity');
+    const g = cellarGame();
+    g.state.cellar.best = 23;
+    const v = cellarView(g);
+    expect(v.checkpoint).toBe(20);
+    expect(v.next).toBe(21);
+    expect(v.nextLabel).toBe('Ebene −21');
+    expect(v.shaft.map((s) => s.level)).toEqual(Array.from({ length: 10 }, (_, i) => 21 + i));
+    expect(v.shaft.find((s) => s.level === 30)).toMatchObject({ boss: true, rest: true, checkpoint: true });
+    // Milestones already reached are no longer marked.
+    expect(v.shaft.find((s) => s.level === 30)!.milestone?.id).toBe('depth30');
+    expect(v.env).not.toBeNull();
+    expect(tabActivity(g)['tower']).toBeUndefined();
+    team(g, 200);
+    startCellarRun(g);
+    expect(tabActivity(g)['tower']).toMatchObject({ loop: true });
+    expect(cellarView(g).run).not.toBeNull();
+  });
+});

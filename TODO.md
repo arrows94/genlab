@@ -153,20 +153,10 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab (zuletzt gewählter Bereich in
-      `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung des nächsten
-      Abschnitts (`environmentAt`, `environmentSection`) mit ihren Regeln und welche Kreaturen passen
-      (`cellarFit`, `cellarCandidates`), Fackellicht-Anzeige, Keller-Regel der Wochen-Mutation (auch in der
-      Wochen-Anzeige oben), Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Schattenmarken, dunkle Relikte
-      kaufen und anlegen (Keller-Plätze und je Turm-Platz ein dunkler Platz neben dem Relikt, `equipDarkRelic`),
-      Tiefen-Meilensteine (`cellarMilestonesReached`, `nextCellarMilestone`), Toasts zu `cellarRunEnded` und
-      `cellarMilestone`, Zeile
-      „Tiefste Keller-Ebene“ in der Statistik (`record.cellarLevel`), `tabActivity`, Changelog-Eintrag mit
-      `feature: 'cellar'`. Funktional, noch im einfachen Stil. Auch auf Handy-Breite prüfen. Bis hierhin den Branch
-      nicht nach `main` bringen: Ab Turm-Etage 150 schaltet der Keller schon frei, hat aber noch keine Oberfläche
 - [ ] **Schritt 7 – Atmosphäre: Bild** (siehe oben): eigene Farb-Tokens, Arena mit Lichtkegel nach Fackellicht,
       Gegner aus der Dunkelheit (Kämpfer-Daten tragen `tint`), Kulisse, sichtbare Umgebungen, Boss „Schatten“
-      (`shadow: true`), Lichtfresser lässt den Lichtkegel erlöschen, Aufzug-Fahrt durch den Boden
+      (`shadow: true`), Wiedergabe der Kämpfe in einer eigenen Keller-Arena statt der Text-Liste „Letzter Kampf“,
+      Lichtfresser lässt den Lichtkegel erlöschen, Aufzug-Fahrt durch den Boden
       (Licht flackert, Seil ruckt, Ansicht sinkt). `.reduce-motion` = ruhiges Bild ohne Flackern und sofortiger
       Wechsel. Leistung auf dem Handy prüfen (Lichtkegel und Nebel nur mit CSS, keine großen Bilder)
 - [ ] **Schritt 8 – Atmosphäre: Klang und Musik** (siehe oben): Stimmung `cellar` mit Drone, Spieluhr, Raum-Geräuschen,
