@@ -8,7 +8,7 @@ import type { RpgEventOutcome, RpgGearSlot, RpgIntent, RpgRoomKind, RpgSkillDef 
 import type { System } from '../systems/types';
 import { weekIndex } from './weekly';
 import { catalogueSamples } from '../genetics';
-import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
+import { foeXp, heroCombatant, heroPerks, heroStats, makeFoe, metaEffects, newBattle, playRound, rpgDefenseFor, rpgLevel, rpgSkillsFor, skillBlocker, xpToNext } from './rpgCombat';
 export { xpToNext } from './rpgCombat';
 
 /**
@@ -136,7 +136,7 @@ export function startRpgRun(ctx: GameContext, creatureId: number, dungeonId: str
   ctx.invalidate();
   r.run = {
     creatureId: c.id, dungeon: dungeonId, choices: [], room: null, event: null, eventResult: null, hp: rpgMaxHp(ctx, c), startLevel: rpgLevel(ctx, c.id).level, upgrades: [], offer: [], pendingLevels: 0, depth: 0, path: [],
-    loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null,
+    loot: {}, secured: {}, gear: [], securedGear: [], startedAt: ctx.state.lastTickAt, battle: null, flasks: ctx.balance.rpg.flasks,
   };
   r.runs++;
   pruneRanks(ctx);
@@ -242,7 +242,8 @@ export function secureLoot(ctx: GameContext): void {
 
 /**
  * Ends the run. Leaving (win) brings all carried loot home, a defeat keeps
- * `defeatKeep` of it. Secured loot was paid out already.
+ * `defeatKeep` of it and leaves the rest with the carried equipment as a
+ * Blutfleck where the hero fell (an older one is lost). Secured loot was paid out already.
  */
 export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false, fight?: RpgAftermath): void {
   const r = ctx.state.rpg;
@@ -265,6 +266,9 @@ export function finishRpgRun(ctx: GameContext, win: boolean, cleared = false, fi
   if (!win) {
     r.lastResult.lost = lost;
     r.lastResult.lostGear = [...run.gear];
+    const carried = Object.keys(lost).length > 0 || run.gear.length > 0;
+    r.bloodstain = carried ? { dungeon: run.dungeon, depth: Math.max(1, run.depth), loot: lost, gear: [...run.gear] } : null;
+    if (carried) r.lastResult.stain = Math.max(1, run.depth);
   }
   if (fight) r.lastResult.fight = fight;
   r.run = null;
@@ -302,6 +306,7 @@ export function startRpgBattle(ctx: GameContext, enemyId: string, speciesId: str
   if (run.battle) return { ok: false, reason: 'Es läuft bereits ein Kampf.' };
   run.battle = newBattle(heroCombatant(ctx, hero, run.hp, run.upgrades), makeFoe(ctx, enemyId, speciesId, level));
   run.battle.charge = Math.min(1, metaEffects(ctx).startCharge);
+  run.battle.stamina = ctx.balance.rpg.stamina.max;
   return { ok: true };
 }
 
@@ -311,15 +316,45 @@ export function rpgSkills(ctx: GameContext): RpgSkillDef[] {
   return hero ? rpgSkillsFor(ctx, hero) : [];
 }
 
+/** Ausweichen, Parieren, Verschnaufen and the Heiltrank (second row of buttons). */
+export function rpgDefense(ctx: GameContext): RpgSkillDef[] {
+  return rpgHero(ctx) ? rpgDefenseFor(ctx) : [];
+}
+
+/** Heiltränke left in the running run. */
+export function rpgFlasks(ctx: GameContext): number {
+  const run = ctx.state.rpg.run;
+  return run ? (run.flasks ?? ctx.balance.rpg.flasks) : 0;
+}
+
+/** Drinks a Heiltrank between rooms (in a fight it is a move: `useRpgSkill(ctx, 'flask')`). */
+export function drinkRpgFlask(ctx: GameContext): ActionResult {
+  const run = ctx.state.rpg.run;
+  const hero = rpgHero(ctx);
+  if (!run || !hero) return { ok: false, reason: 'Es läuft kein Lauf.' };
+  if (run.battle) return useRpgSkill(ctx, 'flask');
+  if (rpgFlasks(ctx) <= 0) return { ok: false, reason: 'Keine Heiltränke mehr – das Leuchtfeuer füllt sie auf.' };
+  const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+  if (run.hp >= maxHp) return { ok: false, reason: 'Dein Monster ist unverletzt.' };
+  const flask = ctx.content.rpgSkills.list.find((k) => k.slot === 'item')!;
+  run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * (flask.heal ?? 0)));
+  run.flasks = rpgFlasks(ctx) - 1;
+  return { ok: true };
+}
+
 /** The player uses a skill: one round of the fight. A won fight hands back to the dungeon, a lost one ends the run. */
 export function useRpgSkill(ctx: GameContext, skillId: string): ActionResult {
   const run = ctx.state.rpg.run;
   const battle = run?.battle;
   if (!run || !battle) return { ok: false, reason: 'Gerade läuft kein Kampf.' };
-  const skill = rpgSkills(ctx).find((k) => k.id === skillId);
+  const skill = [...rpgSkills(ctx), ...rpgDefense(ctx)].find((k) => k.id === skillId);
   if (!skill) return { ok: false, reason: 'Diese Fähigkeit hat dein Monster nicht.' };
   const blocker = skillBlocker(battle, skill);
   if (blocker) return { ok: false, reason: blocker };
+  if (skill.slot === 'item' && !battle.hero.statuses.some((s) => s.id === 'stun')) {
+    if (rpgFlasks(ctx) <= 0) return { ok: false, reason: 'Keine Heiltränke mehr – das Leuchtfeuer füllt sie auf.' };
+    run.flasks = rpgFlasks(ctx) - 1;
+  }
   const outcome = playRound(ctx, battle, skill, heroPerks(ctx, run.upgrades));
   run.hp = battle.hero.hp;
   ctx.bus.emit('rpgRound', { events: battle.last ?? [], outcome, boss: battle.foe.kind === 'boss' });
@@ -515,7 +550,7 @@ export function isGuardianNext(ctx: GameContext, run: RpgRun): boolean {
   return run.depth === guardianRoom(ctx, run.dungeon);
 }
 
-/** Offers the next ways: 2–3 different rooms, the guardian halfway, or the boss after the last room. */
+/** Offers the next ways: 2–3 different rooms, the guardian halfway and the Leuchtfeuer behind it, or the boss after the last room. */
 function offerRooms(ctx: GameContext, run: RpgRun): void {
   const d = ctx.content.rpgDungeons.get(run.dungeon);
   if (run.depth >= d.rooms) {
@@ -524,6 +559,12 @@ function offerRooms(ctx: GameContext, run: RpgRun): void {
   }
   if (isGuardianNext(ctx, run)) {
     run.choices = ['elite'];
+    return;
+  }
+  // Behind the guardian burns the Leuchtfeuer – the one sure place to recover.
+  const guardian = guardianRoom(ctx, run.dungeon);
+  if (guardian >= 0 && run.depth === guardian + 1) {
+    run.choices = ['bonfire'];
     return;
   }
   const [min, max] = ctx.balance.rpg.choices;
@@ -556,6 +597,16 @@ function foeSpecies(ctx: GameContext, run: RpgRun, boss: boolean): string {
   return ctx.rng.pick(pool.filter((sp) => (order[sp.tier] ?? 0) === top)).id;
 }
 
+/** Reaching the room of the last defeat takes the Blutfleck back: its loot is carried again. */
+function pickUpBloodstain(ctx: GameContext, run: RpgRun): void {
+  const stain = ctx.state.rpg.bloodstain;
+  if (!stain || stain.dungeon !== run.dungeon || stain.depth !== run.depth) return;
+  addLoot(run.loot, stain.loot);
+  run.gear.push(...stain.gear);
+  ctx.state.rpg.bloodstain = null;
+  run.eventResult = 'Du findest deinen Blutfleck – die verlorene Beute gehört wieder dir. Bring sie diesmal heim!';
+}
+
 /** Goes into one of the offered rooms. Fights start at once; treasure and rest take effect right away. */
 export function enterRoom(ctx: GameContext, index: number): ActionResult {
   const run = ctx.state.rpg.run;
@@ -570,14 +621,17 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
   run.room = kind;
   (run.path ??= []).push(kind);
   run.eventResult = null;
+  pickUpBloodstain(ctx, run);
   const hero = rpgHero(ctx)!;
   switch (kind) {
     case 'fight':
     case 'elite':
     case 'boss': {
       const enemyKind = kind === 'fight' ? 'normal' : kind;
-      const enemy = ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind));
-      return startRpgBattle(ctx, enemy.id, foeSpecies(ctx, run, kind === 'boss'), roomLevel(ctx, run));
+      // Behind the fog gate waits the dungeon's own boss (others only where it has none).
+      const own = kind === 'boss' ? ctx.content.rpgEnemies.list.find((e) => e.dungeon === run.dungeon) : undefined;
+      const enemy = own ?? ctx.rng.pick(ctx.content.rpgEnemies.list.filter((e) => e.kind === enemyKind && !e.dungeon));
+      return startRpgBattle(ctx, enemy.id, enemy.species ?? foeSpecies(ctx, run, kind === 'boss'), roomLevel(ctx, run));
     }
     case 'treasure':
       rollLoot(ctx, run, 'treasure');
@@ -588,9 +642,14 @@ export function enterRoom(ctx: GameContext, index: number): ActionResult {
       return { ok: true };
     }
     case 'rest':
-      run.hp = Math.min(rpgMaxHp(ctx, hero, run.upgrades), run.hp + Math.round(rpgMaxHp(ctx, hero, run.upgrades) * (ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal)));
+    case 'bonfire': {
+      const maxHp = rpgMaxHp(ctx, hero, run.upgrades);
+      const heal = kind === 'bonfire' ? ctx.balance.rpg.bonfireHeal : ctx.balance.rpg.restHeal + metaEffects(ctx).restHeal;
+      run.hp = Math.min(maxHp, run.hp + Math.round(maxHp * heal));
+      if (kind === 'bonfire') run.flasks = ctx.balance.rpg.flasks;
       secureLoot(ctx);
       break;
+    }
   }
   roomDone(ctx, run);
   return { ok: true };
@@ -626,7 +685,8 @@ export const ROOM_INFO: Record<RpgRoomKind, { name: string; icon: string; hint: 
   fight: { name: 'Kampf', icon: '⚔️', hint: 'Ein Gegner – Beute und Erfahrung.' },
   elite: { name: 'Elite', icon: '💀', hint: 'Ein starker Gegner – mehr Beute und Erfahrung.' },
   treasure: { name: 'Schatz', icon: '💰', hint: 'Beute ohne Kampf.' },
-  rest: { name: 'Rast', icon: '🏕️', hint: 'Heilen und die Beute sichern.' },
+  rest: { name: 'Lagerplatz', icon: '🏕️', hint: 'Etwas heilen und die Beute sichern.' },
+  bonfire: { name: 'Leuchtfeuer', icon: '🔥', hint: 'Heilt voll und sichert die Beute – der einzige sichere Ort.' },
   event: { name: 'Ereignis', icon: '❔', hint: 'Etwas Unerwartetes – du entscheidest.' },
   boss: { name: 'Boss', icon: '👑', hint: 'Der Herr des Dungeons. Sieg = Dungeon geschafft.' },
 };
@@ -634,6 +694,7 @@ export const ROOM_INFO: Record<RpgRoomKind, { name: string; icon: string; hint: 
 export const INTENT_INFO: Record<RpgIntent, { name: string; icon: string; hint: string }> = {
   attack: { name: 'Angriff', icon: '🗡️', hint: 'Greift normal an.' },
   charge: { name: 'Lädt auf', icon: '⚡', hint: 'Sammelt Kraft – danach kommt ein schwerer Schlag.' },
+  combo: { name: 'Kombo', icon: '🌪️', hint: 'Zwei schnelle Treffer – Ausweichen entgeht nur dem ersten, eine Parade fängt beide.' },
   heavy: { name: 'Schwerer Schlag', icon: '💢', hint: 'Ein sehr starker Treffer. Schild, Deckung oder Betäubung helfen.' },
   guard: { name: 'Deckung', icon: '🛡️', hint: 'Ein Schild fängt in dieser Runde Schaden ab.' },
   heal: { name: 'Heilung', icon: '💚', hint: 'Heilt sich.' },
