@@ -6,6 +6,7 @@
   import Meter from './Meter.svelte';
   import CellarTeam from './CellarTeam.svelte';
   import DarkRelicPanel from './DarkRelicPanel.svelte';
+  import CellarArena from './CellarArena.svelte';
 
   /**
    * Genom-Keller (functional view, the dark look comes later): header figures,
@@ -22,6 +23,7 @@
   const species = (id: string) => (content.species.has(id) ? content.species.get(id).name : id);
 </script>
 
+<div class="cellar">
 <header class="tab-head">
   <h2>🕳️ Genom-Keller</h2>
   <div class="kpis">
@@ -69,6 +71,7 @@
   </ol>
 
   <div class="next-col">
+    <CellarArena team={data.team} foes={data.foes} light={data.light} env={data.env?.id ?? null} />
     <article class="panel">
       <h3>Nächste Ebene: {data.nextLabel}</h3>
       {#if data.env}
@@ -95,12 +98,12 @@
     </article>
 
     {#if data.lastResult}
-      <article class="panel last">
-        <h3>Letzter Kampf: {cellarLevelLabel(game, data.lastResult.floor)} <span class:good={data.lastResult.win} class:bad={!data.lastResult.win}>{data.lastResult.win ? 'gewonnen' : 'verloren'}</span></h3>
+      <details class="panel last">
+        <summary>Letzter Kampf: {cellarLevelLabel(game, data.lastResult.floor)} <span class:good={data.lastResult.win} class:bad={!data.lastResult.win}>{data.lastResult.win ? 'gewonnen' : 'verloren'}</span></summary>
         <ul class="log small muted">
           {#each data.lastResult.log.slice(-8) as line, i (i)}<li>{line}</li>{/each}
         </ul>
-      </article>
+      </details>
     {/if}
   </div>
 </div>
@@ -135,8 +138,19 @@
     {/if}
   </article>
 </div>
+</div>
 
 <style>
+  /* The Keller's own colours: green-black stone, pale bioluminescence, rust and bone; red only for eyes. */
+  .cellar {
+    --abyss: #050a08; --bile: #9fd88a; --rust: #8a4b2a; --bone: #d8d0bb; --blood: #e0313a;
+    --panel: #0b1310; --panel-2: #111c16; --bg-2: #0d1612; --line: #24321f; --teal: var(--bile); --petrol: #2c4a30;
+    color: var(--bone);
+  }
+  .cellar :global(.panel) { background: linear-gradient(180deg, #0d1712, #080e0b); border-color: #24321f; box-shadow: inset 0 1px 0 #ffffff08; }
+  .cellar :global(.kpi) { background: #0b130f; border-color: #24321f; }
+  .cellar h2 { color: var(--bone); text-shadow: 0 0 12px #9fd88a33; }
+  summary { cursor: pointer; font-weight: 600; }
   .small { font-size: 0.8rem; }
   .good { color: var(--teal); }
   .bad { color: var(--danger); }

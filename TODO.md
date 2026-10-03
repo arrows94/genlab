@@ -153,12 +153,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 7 – Atmosphäre: Bild** (siehe oben): eigene Farb-Tokens, Arena mit Lichtkegel nach Fackellicht,
-      Gegner aus der Dunkelheit (Kämpfer-Daten tragen `tint`), Kulisse, sichtbare Umgebungen, Boss „Schatten“
-      (`shadow: true`), Wiedergabe der Kämpfe in einer eigenen Keller-Arena statt der Text-Liste „Letzter Kampf“,
-      Lichtfresser lässt den Lichtkegel erlöschen, Aufzug-Fahrt durch den Boden
-      (Licht flackert, Seil ruckt, Ansicht sinkt). `.reduce-motion` = ruhiges Bild ohne Flackern und sofortiger
-      Wechsel. Leistung auf dem Handy prüfen (Lichtkegel und Nebel nur mit CSS, keine großen Bilder)
 - [ ] **Schritt 8 – Atmosphäre: Klang und Musik** (siehe oben): Stimmung `cellar` mit Drone, Spieluhr, Raum-Geräuschen,
       Tiefe und Herzschlag; Boss-Variante aus der Brutstation-Melodie; Keller-Klänge in `sound.ts`; Klänge nur im
       Keller-Bereich (`setSoundScope`-Muster der RPG-Welt prüfen). Mit echten Ohren gegenhören: schaurig, aber auf

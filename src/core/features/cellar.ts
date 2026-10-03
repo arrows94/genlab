@@ -368,8 +368,13 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     if (effect.hazard > 0) f.hp = Math.max(1, f.hp - Math.round(effect.hazard * f.maxHp));
     return f;
   });
+  // The fight changes the fighters' HP: the replay needs where everyone started.
+  const startHp = [...fighters, ...foes].map((f) => f.hp);
   const result = simulateFight(ctx, fighters, foes, ctx.rng, { replay });
-  ce.lastResult = { floor: level, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
+  ce.lastResult = {
+    floor: level, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt,
+    startHp, light, env: environmentAt(ctx, level)?.id ?? null,
+  };
   if (!result.win) {
     ctx.bus.emit('cellarLevel', { level, win: false, rewards: {}, rest: false });
     endCellarRun(ctx);

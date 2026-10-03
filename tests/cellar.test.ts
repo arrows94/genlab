@@ -257,3 +257,25 @@ describe('Genom-Keller: view', () => {
     expect(cellarView(g).run).not.toBeNull();
   });
 });
+
+describe('Genom-Keller: replay data', () => {
+  it('a fight keeps the carried HP, the torch light and the environment for the arena', async () => {
+    const { replayStart, finalState } = await import('@core/features/towerReplay');
+    const g = cellarGame();
+    team(g, 200);
+    startCellarRun(g);
+    const run = g.state.cellar.run!;
+    run.hp = [0.5, 1, 1];
+    run.light = 0.7;
+    run.level = balance.cellar.environmentFrom - 1;
+    fightNextCellarLevel(g);
+    const lr = g.state.cellar.lastResult!;
+    expect(lr.light).toBe(0.7);
+    expect(lr.env).toBeTruthy();
+    expect(lr.startHp![0]).toBeLessThan(lr.fighters![0]!.maxHp);
+    expect(replayStart(lr).hp[0]).toBe(lr.startHp![0]);
+    // A fighter no event touched ends where it started.
+    const untouched = lr.fighters!.findIndex((f, i) => f.team && !(lr.events ?? []).some((e) => e.t === i));
+    if (untouched >= 0) expect(finalState(lr).hp[untouched]).toBe(lr.startHp![untouched]);
+  });
+});

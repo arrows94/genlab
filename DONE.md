@@ -325,6 +325,24 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 7: Atmosphäre im Bild
+
+- Eigene Farben für den Keller (Schwarzgrün, fahles Biolumineszenz-Grün, Rost, Knochenweiß, Rot nur für Augen),
+  die Panels der Keller-Ansicht übernehmen sie.
+- `CellarArena.svelte`: Gewölbe mit Bogen und Steinfugen, zerbrochene Zuchttanks mit Blasen, Adern im
+  Herzschlag-Takt, Tropfen, Bodennebel, verblichenes Schild „Zuchtreihe B-3 · Ausschuss“ – nur CSS und Inline-SVG.
+  Ein flackernder Lichtkegel um das Team folgt dem Fackellicht (kleiner in der Finsternis, fast aus beim
+  Lichtfresser). Gegner sind bis zu ihrem ersten Schlag oder Treffer nur glühende Augen im Dunkel, danach mit
+  fahler Tönung; der Schatten-Boss ist eine schwarze, zitternde Kopie mit roten Augen.
+- Umgebungen sichtbar: Wasserlinie (Überflutet), aufsteigende Sporen, violetter Dunst (Schatten-Aura), Risse und
+  Staub (Einsturz), Wurzeln, ein rotes Siegel (Vielfalts-Siegel).
+- Wiedergabe jedes Keller-Kampfs wie im Turm (Tempo 1×/2×/⏭), mit den mitgetragenen KP: Kampfdaten speichern
+  `startHp`, das Licht und die Umgebung (`replayStart`/`finalState` nutzen `startHp`). Das Text-Protokoll ist
+  eingeklappt darunter.
+- Aufzug-Fahrt beim Umschalten ▲ Turm / ▼ Keller: Gesteinsschichten ziehen vorbei, die Kabine ruckt, die Lampe
+  flackert; die Ansicht wechselt hinter der Blende, mit reduzierter Bewegung sofort.
+- Im Browser geprüft (Desktop, Handy-Breite, Boss-Kampf, Aufzug).
+
 ## 2026-10-03 – Genom-Keller Schritt 6: Oberfläche
 
 - Umschalter ▲ Turm / ▼ Keller oben im Turm-Tab (sobald der Keller offen ist; gewählter Bereich in

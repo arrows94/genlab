@@ -176,6 +176,8 @@ export interface TowerState {
     }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
+    /** HP of every fighter at the start (Genom-Keller: the team carries its HP; missing = full). */
+    startHp?: number[];
   } | null;
   /** Kampferfahrung from won floors – belongs to the player, survives every reset. */
   xp: number;
@@ -225,8 +227,8 @@ export interface CellarState {
   weekly: { week: number; shards: number };
   /** The most recent descents, newest first. */
   history: { level: number; startLevel: number; team: string[]; at: number }[];
-  /** The latest fight, for the arena (same shape as the tower's). */
-  lastResult: TowerState['lastResult'];
+  /** The latest fight, for the arena (the tower's shape plus the torch light and the environment of the level). */
+  lastResult: (NonNullable<TowerState['lastResult']> & { light?: number; env?: string | null }) | null;
 }
 
 /** A fighter of a tower fight as the arena and the defeat analysis see it. */
