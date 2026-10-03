@@ -440,6 +440,22 @@ export function validateRelics({ data, issues, at, text, num, ref }: ContentChec
   for (const r of data.darkRelics) if (data.relics.some((x) => x.id === r.id)) issues.push(`darkRelics[${r.id}]: dieselbe id wie ein Relikt (die Stufen teilen sich einen Speicher)`);
 }
 
+export function validateTowerOffers({ data, issues, at, num, ref }: ContentChecks): void {
+  const seen = new Set<string>();
+  for (const o of data.towerOffers) {
+    const w = at('towerOffers', o.id);
+    ref(`${w}.resource`, 'resources', o.resource);
+    if (o.resource === 'towerTokens') issues.push(`${w}.resource: Turm-Marken gegen Turm-Marken`);
+    if (seen.has(o.resource)) issues.push(`${w}.resource: "${o.resource}" hat schon ein Angebot`);
+    seen.add(o.resource);
+    num(`${w}.amount`, o.amount, 1);
+    num(`${w}.floors`, o.floors, 1);
+    num(`${w}.priceGrowth`, o.priceGrowth, 1, 3);
+    num(`${w}.weeklyLimit`, o.weeklyLimit, 1, 100);
+    if (!Number.isInteger(o.weeklyLimit)) issues.push(`${w}.weeklyLimit: ganze Zahl`);
+  }
+}
+
 export function validateCellarMilestones({ data, issues, at, text, num, mods }: ContentChecks): void {
   let last = 0;
   for (const m of data.cellarMilestones) {

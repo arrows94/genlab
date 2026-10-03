@@ -1,4 +1,4 @@
-import type { AnomalyDef, BossTraitDef, CellarEnvironmentDef, CellarMilestoneDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, BossTraitDef, CellarEnvironmentDef, CellarMilestoneDef, CourseDef, RelicDef, ResonanceDef, TalentDef, TowerOfferDef, WeeklyMutationDef } from '@core/content/types';
 
 /** Talent tiers 4 and 5 and the resonance open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
@@ -224,6 +224,19 @@ export const relics: RelicDef[] = [
     description: '+10 % Tempo je Stufe – wer zuerst zuschlägt, gewinnt öfter.', bonus: { spd: 0.1 } },
   { id: 'elementPrism', name: 'Elementprisma', icon: '🔷', cost: 100, costGrowth: 2.3, maxLevel: 10,
     description: '+12 % Schaden bei Element-Vorteil je Stufe.', bonus: { element: 0.12 } },
+];
+
+/**
+ * Quartiermeister: Turm-Marken for what is scarce elsewhere (Evolutionskristalle, Fragmente, Zeitkristalle, Keimöl).
+ * Prices in small floors' worth of Turm-Marken at the record (one floor ≈ 1/12.000 of a day's tower income late in
+ * the game). A full week of every offer costs about 2½ days of that income; the weekly limit keeps the scarce
+ * resources scarce.
+ */
+export const towerOffers: TowerOfferDef[] = [
+  { id: 'catalyst', resource: 'catalyst', amount: 1, floors: 300, priceGrowth: 1.12, weeklyLimit: 20 },
+  { id: 'fragments', resource: 'fragments', amount: 20, floors: 150, priceGrowth: 1.12, weeklyLimit: 10 },
+  { id: 'timeCrystal', resource: 'timeCrystals', amount: 1, floors: 1500, priceGrowth: 1.5, weeklyLimit: 2 },
+  { id: 'germOil', resource: 'germOil', amount: 1, floors: 1500, priceGrowth: 1.5, weeklyLimit: 2 },
 ];
 
 /**

@@ -294,6 +294,20 @@ Vorhanden: Vererbung + Äon mit Talentbaum (5 Stufen + Resonanz), endloser Genom
 3 unendliche Forschungen, Anomalien mit Stufen I–V, 12 Wochen-Mutationen, Perfektions-Jagd im Dex, Urgen,
 Gen-Aufträge, Stammbaum-Dynastien.
 
+## 2026-10-03 – Senken für Turm-Marken: Relikt-Veredelung und Quartiermeister
+
+- Befund der Ressourcen-Durchsicht: Im Äon-Bot (28 Tage, Seed 2024) waren alle fünf Relikte an Tag ~17 voll, danach
+  liefen ~70.000 Turm-Marken am Tag ins Leere – an Tag 28 lagen 1,1 Mio. ungenutzt.
+- **Veredelung:** Turm-Relikte auf Stufe 10 lassen sich ohne Ende veredeln (dunkle Relikte nicht). Veredelung n kostet
+  den Preis der letzten Stufe × 1,15^n und zählt als 0,5 × n^0,7 Stufen (`balance.tower.refine`, `relicPower`).
+- **Quartiermeister** (ab Turm-Etage 100, `features/quartermaster.ts`, `towerOffers`): Evolutionskristall (20/Woche),
+  20 Fragmente (10/Woche), Zeitkristall und Keimöl (je 2/Woche). Preis in Etagen-Werten am Rekord (`floorTokens`),
+  × `priceGrowth` je Kauf in der Woche. Debug-Reset „Quartiermeister neu“.
+- Äon-Bot mit beidem (kauft Angebote bis zu einem Viertel seiner Marken): An Tag 28 liegen 80.000 statt 1,1 Mio.
+  Turm-Marken; ausgegeben 1,47 Mio. für Relikte und Veredelungen, 0,79 Mio. beim Quartiermeister (+93 Kristalle,
+  +1.000 Fragmente, +8 Zeitkristalle, +8 Keimöl). Turm 153 statt 156, Keller −52 statt −48, 6 statt 5 Äonen – die
+  Kampfkraft verschiebt sich kaum.
+
 Erledigt: Gen-Aufträge (Auftragspool mit Stufen, Äon-Splitter und Genproben), Talentstufe 4/5 und Resonanz
 (Stufe^0,7), Splitter-Tempo über fünf 28-Tage-Läufe abgestimmt (zuletzt 6 Äonen, 12 Talente, Resonanz 8, an Tag 28
 nichts übrig), Boss-Eigenheiten, Relikte (×2,2 je Stufe), Turm-Meilensteine, Anomalien mit Stufen, Kombinationen und

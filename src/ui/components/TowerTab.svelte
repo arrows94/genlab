@@ -6,6 +6,7 @@
   import Meter from './Meter.svelte';
   import WeeklyBossPanel from './WeeklyBossPanel.svelte';
   import RelicPanel from './RelicPanel.svelte';
+  import QuartermasterPanel from './QuartermasterPanel.svelte';
   import TowerArena from './TowerArena.svelte';
   import TowerFloors from './TowerFloors.svelte';
   import TowerBoard from './TowerBoard.svelte';
@@ -104,6 +105,8 @@
 <TowerTeam team={data.team} size={data.size} running={!!data.tw.run} synergies={data.synergies} roles={data.roles} rows={data.rows} enemyElement={data.enemy.element} />
 
 <RelicPanel />
+
+{#if game.state.features['quartermaster']}<QuartermasterPanel />{/if}
 
 {#if cellarOpen}<DarkRelicPanel course="tower" />{/if}
 

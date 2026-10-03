@@ -385,6 +385,9 @@ export const balance: Balance = {
     // Entschlossenheit against long stalls: +15 % per day without a new record, at most +60 %.
     resolvePerDay: 0.15,
     resolveCap: 0.6,
+    // Veredelung: an endless sink for Turm-Marken once the relics are full (Äon-Bot: all five at level 10 on day
+    // ~17, then ~70.000 Marken a day had no use). Flat price growth, diminishing bonus like the Resonanz.
+    refine: { costGrowth: 1.15, share: 0.5, levelPower: 0.7 },
     milestoneModifiers: [
       { target: 'tower.damage', op: 'pct', value: 0.15 },
       { target: 'production.food', op: 'pct', value: 0.1 },

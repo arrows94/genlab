@@ -80,12 +80,12 @@ export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
   return courseEnemies(ctx, towerCourse(ctx), floor);
 }
 
-/** Relikt in the team place of this creature, with its level (null if none). */
+/** Relikt in the team place of this creature, with its effective level incl. Veredelung (null if none). */
 export function relicFor(ctx: GameContext, c: Creature): { def: RelicDef; level: number } | null {
   const slot = ctx.state.tower.team.indexOf(c.id);
   const id = slot >= 0 ? ctx.state.tower.relicSlots[slot] : null;
   if (!id || !ctx.content.relics.has(id)) return null;
-  const level = relicLevel(ctx, id);
+  const level = relicPower(ctx, id);
   return level > 0 ? { def: ctx.content.relics.get(id), level } : null;
 }
 
@@ -142,8 +142,27 @@ export function fighterFor(ctx: GameContext, c: Creature, course: 'tower' | 'cel
 
 // ---- Relikte --------------------------------------------------------------
 
+/** Levels bought, Veredelungen included (a refined relic stands above its `maxLevel`). */
 export function relicLevel(ctx: GameContext, id: string): number {
   return ctx.state.relics[id] ?? 0;
+}
+
+/** Veredelung: only the tower's relics (Turm-Marken) go beyond their highest level, dark relics stop there. */
+export function canRefine(ctx: GameContext, id: string): boolean {
+  return ctx.content.relics.has(id);
+}
+
+/** Veredelungen bought so far (levels above `maxLevel`). */
+export function relicRefinement(ctx: GameContext, id: string): number {
+  return Math.max(0, relicLevel(ctx, id) - relicDef(ctx, id).maxLevel);
+}
+
+/** Level the bonus counts with: the regular levels, then each Veredelung a little less (share × n^levelPower). */
+export function relicPower(ctx: GameContext, id: string, level = relicLevel(ctx, id)): number {
+  const def = relicDef(ctx, id);
+  const n = Math.max(0, level - def.maxLevel);
+  const r = ctx.balance.tower.refine;
+  return Math.min(level, def.maxLevel) + (n > 0 ? r.share * Math.pow(n, r.levelPower) : 0);
 }
 
 /** A relic or dark relic by id. */
@@ -156,11 +175,15 @@ export function relicCurrency(def: RelicDef): string {
   return def.currency ?? 'towerTokens';
 }
 
-/** Price of the next level in its currency (null at the maximum). */
+/** Price of the next level or Veredelung in its currency (null at the maximum of a relic that cannot be refined). */
 export function relicCost(ctx: GameContext, id: string): Decimal | null {
   const def = relicDef(ctx, id);
   const level = relicLevel(ctx, id);
-  return level >= def.maxLevel ? null : D(def.cost).mul(D(def.costGrowth).pow(level)).ceil();
+  if (level < def.maxLevel) return D(def.cost).mul(D(def.costGrowth).pow(level)).ceil();
+  if (!canRefine(ctx, id)) return null;
+  // Veredelung n (1, 2 …) costs the last regular level × costGrowth^n: flat, so it keeps taking Turm-Marken.
+  const last = D(def.cost).mul(D(def.costGrowth).pow(def.maxLevel - 1));
+  return last.mul(D(ctx.balance.tower.refine.costGrowth).pow(level - def.maxLevel + 1)).ceil();
 }
 
 export function buyRelic(ctx: GameContext, id: string): ActionResult {

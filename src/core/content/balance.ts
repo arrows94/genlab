@@ -462,6 +462,11 @@ export interface Balance {
     /** Entschlossenheit: while the record does not rise, +resolvePerDay KP and damage per day (hourly steps), at most resolveCap; a new record resets it. */
     resolvePerDay: number;
     resolveCap: number;
+    /**
+     * Relikt-Veredelung: a tower relic at its highest level can be refined without end. Refinement n costs the
+     * price of the last regular level × costGrowth^n and counts as share × n^levelPower levels (less and less).
+     */
+    refine: { costGrowth: number; share: number; levelPower: number };
   };
   /**
    * Genom-Keller: limited descents below the tower with the tower's fight engine. The team's HP carries from

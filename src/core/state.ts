@@ -628,8 +628,10 @@ export interface GameState {
   megaProjects: Record<string, MegaProjectState>;
   /** Äon-Resonanz levels (never reset). */
   resonance: Record<string, number>;
-  /** Relikt levels (never reset). */
+  /** Relikt levels (never reset); a tower relic above its `maxLevel` is refined (Veredelung). */
   relics: Record<string, number>;
+  /** Quartiermeister: purchases per offer in the calendar week `week`. */
+  quartermaster: { week: number; bought: Record<string, number> };
   /** Recent prestige runs, oldest first (capped by `balance.prestigeLogSize`). */
   prestigeLog: PrestigeLogEntry[];
   weeklyBoss: WeeklyBossState;
@@ -685,6 +687,7 @@ export function createEmptyState(now: number, seed: number): GameState {
     megaProjects: {},
     resonance: {},
     relics: {},
+    quartermaster: { week: -1, bought: {} },
     prestigeLog: [],
     weeklyBoss: { week: -1, day: -1, species: '', element: '', floor: 0, maxHp: 0, damage: 0, tiers: 0, attempts: 0, last: null },
     rpg: { torchAt: -1, run: null, lastResult: null, runs: 0, cleared: {}, best: {}, ranks: {}, weekly: { week: -1, got: {} }, items: [], equipped: { weapon: null, armor: null, charm: null }, nextItemId: 1, meta: {}, bloodstain: null },

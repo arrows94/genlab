@@ -3,13 +3,14 @@
   import { content } from '@content/index';
   import { findCreature } from '@core/creatures';
   import { formatNumber, formatPercent } from '@core/format';
-  import { buyRelic, equipRelic, relicCost, relicLevel, teamSize } from '@core/features/tower';
+  import { buyRelic, equipRelic, relicCost, relicLevel, relicPower, relicRefinement, teamSize } from '@core/features/tower';
   import { game, view, act } from '../store.svelte';
 
   /**
    * Relikte: bought and levelled with Turm-Marken, put into the places of the
    * tower team. They belong to the player, not to a creature, so they stay
-   * through every reset – whoever stands in the place gets the bonus.
+   * through every reset – whoever stands in the place gets the bonus. A relic
+   * at its highest level is refined (Veredelung) without end, for less each time.
    */
   const STAT: Record<string, string> = { hp: 'KP', atk: 'Angriff', def: 'Verteidigung', spd: 'Tempo', element: 'Element-Vorteil' };
 
@@ -21,7 +22,10 @@
       const level = relicLevel(game, def.id);
       const cost = relicCost(game, def.id);
       const slot = game.state.tower.relicSlots.indexOf(def.id);
-      return { def, level, cost, affordable: !!cost && !!tokens && tokens.gte(cost), slot: slot >= 0 && slot < teamSize(game) ? slot : -1 };
+      return {
+        def, level, cost, power: relicPower(game, def.id), next: relicPower(game, def.id, level + 1), refined: relicRefinement(game, def.id),
+        affordable: !!cost && !!tokens && tokens.gte(cost), slot: slot >= 0 && slot < teamSize(game) ? slot : -1,
+      };
     });
     // Worn relics in the order of their places, the others after them.
     relics.sort((a, b) => (a.slot < 0 ? Infinity : a.slot) - (b.slot < 0 ? Infinity : b.slot));
@@ -40,7 +44,7 @@
 <article class="panel relics">
   <div class="rhead">
     <h3>🏺 Relikte</h3>
-    <span class="small muted">Für Turm-Marken · gehören dir, nicht der Kreatur – sie bleiben über jeden Neustart.</span>
+    <span class="small muted">Für Turm-Marken · gehören dir, nicht der Kreatur – sie bleiben über jeden Neustart. Auf Stufe 10 lassen sie sich ohne Ende veredeln, mit jedem Mal etwas weniger.</span>
   </div>
 
   <div class="grid list">
@@ -49,14 +53,15 @@
         <span class="icon">{r.def.icon}</span>
         <div class="info">
           <b>{r.def.name}{#if r.slot >= 0}<span class="where small">&nbsp;· Platz {r.slot + 1}</span>{/if}</b>
-          <span class="pips" title="Stufe {r.level} von {r.def.maxLevel}">
+          <span class="pips" title="Stufe {Math.min(r.level, r.def.maxLevel)} von {r.def.maxLevel}{r.refined > 0 ? `, ${r.refined}× veredelt` : ''}">
             {#each Array.from({ length: r.def.maxLevel }, (_, i) => i) as i (i)}<span class="pip" class:on={i < r.level}></span>{/each}
+            {#if r.refined > 0}<span class="refined small">✦ {r.refined}</span>{/if}
           </span>
-          <span class="small muted">{r.level > 0 ? `Jetzt ${bonusText(r.def.bonus, r.level)}` : r.def.description}</span>
+          <span class="small muted">{r.level > 0 ? `Jetzt ${bonusText(r.def.bonus, r.power)}` : r.def.description}</span>
         </div>
         {#if r.cost}
-          <button class="buy" class:primary={r.affordable} disabled={!r.affordable} onclick={() => act(buyRelic(game, r.def.id)) && play('relic')}>
-            {r.level > 0 ? 'Stufe +1' : 'Kaufen'} · <span class="num">{formatNumber(r.cost)} 🗼</span>
+          <button class="buy" class:primary={r.affordable} disabled={!r.affordable} title="Danach {bonusText(r.def.bonus, r.next)}" onclick={() => act(buyRelic(game, r.def.id)) && play('relic')}>
+            {r.level >= r.def.maxLevel ? 'Veredeln' : r.level > 0 ? 'Stufe +1' : 'Kaufen'} · <span class="num">{formatNumber(r.cost)} 🗼</span>
           </button>
         {:else}
           <span class="max small">✓ Maximal</span>
@@ -102,6 +107,8 @@
   .pips { display: flex; gap: 2px; }
   .pip { width: 9px; height: 5px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
   .pip.on { background: var(--relic); border-color: var(--relic); }
+  .pips { align-items: center; }
+  .refined { margin-left: 0.3rem; color: var(--gold); font-weight: 600; line-height: 1; }
   .buy { grid-column: 2; font-size: 0.8rem; padding: 0.3rem 0.5rem; }
   .max { grid-column: 2; color: var(--gold); }
   .places { display: grid; gap: 0.35rem; }

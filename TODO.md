@@ -15,7 +15,7 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
       keine Splitter. Tempo der hohen Stufen und Splitter-Ertrag erst messen, wenn der Bot das Zuchtautomat-Ziel
       „Reine Linie vertiefen“ nutzt
 - [ ] Wiederholbare Langzeitziele, wenn Anomalien, Talente und Großprojekt ausgereizt sind (Ideen aus der
-      Durchsicht: „Anomalie der Woche“, wöchentliche Zuchtschau, zweites Großprojekt als Senke für Runen und Marken,
+      Durchsicht: „Anomalie der Woche“, wöchentliche Zuchtschau, zweites Großprojekt als Senke für Runen,
       das `slots.ritualNest` eine Quelle gibt)
 
 ## Später

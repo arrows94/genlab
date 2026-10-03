@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 39,
+    date: '2026-10-03',
+    title: 'Was tun mit Turm-Marken?',
+    items: [
+      { text: 'Relikte auf Stufe 10 lassen sich jetzt ohne Ende veredeln: Jede Veredelung macht sie noch etwas stärker, jede ein wenig weniger als die vorige. Der Knopf zeigt, was die nächste bringt.', feature: 'tower' },
+      { text: 'Der Quartiermeister hat sich im Genom-Turm eingerichtet: Er tauscht Turm-Marken gegen Evolutionskristalle, Gen-Fragmente, Zeitkristalle und Keimöl – ein paar Mal pro Woche, die Preise wachsen mit deinem Turm-Rekord.', feature: 'quartermaster' },
+    ],
+  },
+  {
     id: 38,
     date: '2026-10-03',
     title: 'Der Genom-Keller',

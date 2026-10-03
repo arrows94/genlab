@@ -635,6 +635,22 @@ export interface RelicDef {
   bonus: Partial<Record<'hp' | 'atk' | 'def' | 'spd' | 'element', number>>;
 }
 
+/**
+ * Quartiermeister: trades Turm-Marken for a scarce resource, a few times a week. The price follows the tower
+ * record – `floors` small floors' worth of Turm-Marken at the record – and grows by `priceGrowth` with every
+ * purchase in the week, so the offer stays a choice however high the tower is.
+ */
+export interface TowerOfferDef {
+  id: string;
+  /** What is bought (an offer of a locked resource stays hidden). */
+  resource: string;
+  amount: number;
+  floors: number;
+  priceGrowth: number;
+  /** Purchases per calendar week. */
+  weeklyLimit: number;
+}
+
 /** A permanent bonus for reaching a depth in the Genom-Keller for the first time. */
 export interface CellarMilestoneDef {
   id: string;
@@ -968,6 +984,8 @@ export interface ContentData {
   relics: RelicDef[];
   /** Dunkle Relikte (Genom-Keller): bought with Schattenmarken, one per team place in the tower and in the cellar. */
   darkRelics: RelicDef[];
+  /** Quartiermeister: Turm-Marken for scarce resources, with a weekly limit. */
+  towerOffers: TowerOfferDef[];
   cellarMilestones: CellarMilestoneDef[];
   techniques: TechniqueDef[];
   nameLists: NameListDef[];

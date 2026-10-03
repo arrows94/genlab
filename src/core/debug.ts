@@ -15,6 +15,7 @@ export type DebugResetId =
   | 'daily'
   | 'contracts'
   | 'weeklyBoss'
+  | 'quartermaster'
   | 'cellarAttempts'
   | 'cellarProgress'
   | 'rpgRun'
@@ -40,6 +41,7 @@ export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'daily', group: 'Allgemein', name: 'Tagesbelohnung wieder offen', description: 'Die heutige Tagesbelohnung kann noch einmal abgeholt werden.' },
   { id: 'contracts', group: 'Allgemein', name: 'Gen-Aufträge neu', description: 'Das heutige Auftragsbrett wird neu ausgelegt, erledigte Aufträge sind wieder offen, der Tausch ist wieder frei.' },
   { id: 'weeklyBoss', group: 'Allgemein', name: 'Wochen-Boss neu', description: 'Ein frischer Wochen-Titan nach dem aktuellen Turm-Rekord, alle Angriffe voll.' },
+  { id: 'quartermaster', group: 'Allgemein', name: 'Quartiermeister neu', description: 'Alle Angebote des Quartiermeisters sind diese Woche wieder voll, die Preise fangen von vorn an.' },
   { id: 'cellarAttempts', group: 'Genom-Keller', name: 'Abstiege voll', description: 'Der Vorrat an Abstiegen in den Genom-Keller ist sofort voll.' },
   { id: 'cellarProgress', group: 'Genom-Keller', name: 'Keller-Fortschritt löschen', description: 'Rekord, Kontrollpunkt und Verlauf im Keller stehen wieder auf 0.' },
   { id: 'rpgRun', group: 'GenLab RPG', name: 'Lauf beenden', description: 'Der laufende Lauf endet wie beim Verlassen (Beute kommt mit).' },
@@ -78,6 +80,9 @@ export function debugReset(ctx: GameContext, id: DebugResetId): ActionResult {
       s.weeklyBoss.week = -1;
       refreshWeeklyBoss(ctx);
       s.weeklyBoss.attempts = bossAttempts(ctx).max;
+      break;
+    case 'quartermaster':
+      s.quartermaster = { week: -1, bought: {} };
       break;
     case 'cellarAttempts':
       if (!s.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };

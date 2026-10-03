@@ -3,7 +3,7 @@ import { D } from '@core/num';
 import { Rng } from '@core/rng';
 import { createCreature } from '@core/creatures';
 import {
-  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, restartCheckpoint, setTeam, simulateFight, startRun, stopRun, towerMilestones,
+  actionIntervals, enemiesFor, floorXp, resolveInfo, techniqueFor, veteranRank, teamSynergies, buyRelic, damage, elementMultiplier, evadeChance, pickTarget, roleOf, rowOf, setRow, targetingOf, enemyFor, equipRelic, fightNextFloor, fighterFor, floorRewardInfo, relicCost, relicLevel, relicPower, relicRefinement, restartCheckpoint, setTeam, simulateFight, startRun, stopRun, towerMilestones,
 } from '@core/features/tower';
 import { unlockFeature } from '@core/systems/unlocks';
 import { resetLayer } from '@core/prestige';
@@ -520,10 +520,53 @@ describe('relics', () => {
     expect(buyRelic(g, def.id).ok).toBe(true);
     expect(g.state.resources.towerTokens!.toNumber()).toBe(1e6 - def.cost);
     expect(relicCost(g, def.id)!.toNumber()).toBe(Math.ceil(def.cost * def.costGrowth));
-    g.state.relics[def.id] = def.maxLevel;
-    expect(buyRelic(g, def.id).ok).toBe(false);
     g.state.resources.towerTokens = D(0);
     expect(buyRelic(g, 'lifeAmulet')).toEqual({ ok: false, reason: 'Nicht genug Turm-Marken.' });
+  });
+
+  it('refine beyond the highest level: flat price growth, less bonus per Veredelung', () => {
+    const g = towerGame();
+    const def = content.relics.get('towerBlade');
+    const r = g.balance.tower.refine;
+    g.state.relics[def.id] = def.maxLevel;
+    expect(relicPower(g, def.id)).toBe(def.maxLevel);
+    const last = def.cost * Math.pow(def.costGrowth, def.maxLevel - 1);
+    expect(relicCost(g, def.id)!.toNumber()).toBe(Math.ceil(last * r.costGrowth));
+    expect(buyRelic(g, def.id).ok).toBe(true);
+    expect(relicLevel(g, def.id)).toBe(def.maxLevel + 1);
+    expect(relicRefinement(g, def.id)).toBe(1);
+    expect(relicCost(g, def.id)!.toNumber()).toBe(Math.ceil(last * r.costGrowth ** 2));
+    // Each Veredelung counts as less than a level, and less than the one before.
+    const gains: number[] = [];
+    for (let n = 1; n <= 4; n++) {
+      g.state.relics[def.id] = def.maxLevel + n;
+      gains.push(relicPower(g, def.id) - (def.maxLevel + (n > 1 ? r.share * Math.pow(n - 1, r.levelPower) : 0)));
+    }
+    expect(gains[0]).toBeCloseTo(r.share);
+    for (let i = 1; i < gains.length; i++) expect(gains[i]).toBeLessThan(gains[i - 1]!);
+    expect(gains[0]).toBeLessThan(1);
+  });
+
+  it('a refined relic makes its wearer stronger in the fight', () => {
+    const g = towerGame();
+    const a = champion(g, 100);
+    setTeam(g, [a.id]);
+    g.state.relics['towerBlade'] = 10;
+    expect(equipRelic(g, 0, 'towerBlade').ok).toBe(true);
+    const full = fighterFor(g, a).atk;
+    g.state.relics['towerBlade'] = 12;
+    expect(fighterFor(g, a).atk).toBeGreaterThan(full);
+  });
+
+  it('dark relics stop at their highest level', () => {
+    const g = towerGame();
+    unlockFeature(g, 'cellar');
+    const dark = content.darkRelics.list[0]!;
+    g.state.resources.shadowMarks = D(1e9);
+    g.state.relics[dark.id] = dark.maxLevel;
+    expect(relicCost(g, dark.id)).toBeNull();
+    expect(buyRelic(g, dark.id).ok).toBe(false);
+    expect(relicPower(g, dark.id)).toBe(dark.maxLevel);
   });
 
   it('boost whoever stands in their team place and move between places', () => {

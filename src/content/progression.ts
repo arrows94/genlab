@@ -55,6 +55,11 @@ export const features: FeatureDef[] = [
   { id: 'primordialChamber', name: 'Ur-Gen-Kammer', hint: 'Die Ur-Gen-Kammer ist erwacht.' },
   { id: 'inheritance', name: 'Vererbung', tab: 'prestige', hint: 'Vererbung möglich: Tausche Fortschritt gegen dauerhaftes Erbgut.', condition: { type: 'resourceEarned', resource: 'gold', amount: 25_000 } },
   { id: 'tower', name: 'Genom-Turm', tab: 'tower', hint: 'Der Genom-Turm erhebt sich! Stelle ein Team zusammen und kämpfe Etage für Etage.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
+  // Quartiermeister: Turm-Marken for scarce resources. Late enough that the relics have taken the first Marken.
+  {
+    id: 'quartermaster', name: 'Quartiermeister', hint: 'Der Quartiermeister hat sich im Genom-Turm eingerichtet: Er tauscht Turm-Marken gegen Evolutionskristalle, Fragmente und mehr – ein paar Mal pro Woche.',
+    condition: { type: 'towerFloor', floor: 100 },
+  },
   { id: 'towerAuto', name: 'Turm-Routine', hint: 'Dein Team startet nach einer Niederlage automatisch neu.' },
   { id: 'infiniteResearch', name: 'Unendliche Forschung', hint: 'Unendliche Forschung verfügbar – ohne Obergrenze, mit abnehmendem Ertrag.', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },
   { id: 'weekly', name: 'Wochen-Mutation', hint: 'Jede Woche verändert eine Mutation die Regeln. Schau oben in die Leiste!', condition: { type: 'prestigeCount', layer: 'inheritance', count: 1 } },

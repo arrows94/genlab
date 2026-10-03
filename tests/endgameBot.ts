@@ -4,6 +4,7 @@ import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
 import { buyRelic, elementMultiplier, enemyFor, equipDarkRelic, equipRelic, relicCost, relicLevel, roleOf, setRow, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { buyOffer, offerPrice, towerOffers } from '@core/features/quartermaster';
 import { cellarCheckpoint, cellarEnemies, cellarFit, setCellarAuto, setCellarRow, setCellarTeam } from '@core/features/cellar';
 import { attackWeeklyBoss, bossAttempts } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
@@ -54,6 +55,7 @@ export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
   const { depositShare = 0.3 } = opts;
   feedMegaProjects(g, depositShare);
   ensureTowerRoutine(g);
+  buyOffers(g);
   buyRelics(g);
   if (opts.cellar !== false) buyDarkRelics(g);
   // The tower routine keeps the same team forever: rebuild it from the strongest creatures each visit.
@@ -179,6 +181,20 @@ function buyRelics(g: Game): void {
       .filter((x) => x.cost <= spare)
       .sort((a, b) => a.cost - b.cost)[0];
     if (!next || !buyRelic(g, next.id).ok) break;
+  }
+}
+
+/** Quartiermeister: whatever costs at most a quarter of the Turm-Marken on hand, cheapest first (the rest goes to relics). */
+function buyOffers(g: Game): void {
+  if (!g.state.features.quartermaster) return;
+  for (let i = 0; i < 60; i++) {
+    const tokens = g.state.resources['towerTokens']?.toNumber() ?? 0;
+    const next = towerOffers(g)
+      .map((o) => ({ id: o.id, price: offerPrice(g, o.id).toNumber() }))
+      .filter((x) => x.price <= tokens / 4)
+      .sort((a, b) => a.price - b.price)
+      .find((x) => buyOffer(g, x.id).ok);
+    if (!next) break;
   }
 }
 
