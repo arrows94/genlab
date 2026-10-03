@@ -32,7 +32,7 @@ export const features: FeatureDef[] = [
     condition: { type: 'statistic', statistic: 'sequenced', amount: 1 },
   },
   { id: 'splicing', name: 'Gen-Splicing', hint: 'Gen-Splicing möglich: Übertrage Allele aus der Genbibliothek – mit Risiko.' },
-  { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 30 } },
+  { id: 'market', name: 'Markt', tab: 'market', hint: 'Der Markt hat geöffnet: Tränke für deine Kreaturen.', condition: { type: 'resourceEarned', resource: 'essence', amount: 55 } },
   {
     id: 'recycler', name: 'Gen-Recycler', tab: 'recycler', hint: 'Der Gen-Recycler zerlegt überzählige Kreaturen in Fragmente – und aus Fragmenten werden Gen-Kapseln.',
     condition: { type: 'all', of: [{ type: 'feature', feature: 'market' }, { type: 'statistic', statistic: 'sold', amount: 10 }, { type: 'resourceEarned', resource: 'essence', amount: 60 }] },

@@ -102,7 +102,7 @@ describe('breeding', () => {
     const before = breedingTimeMs(g, 2);
     g.state.upgrades.incubator = 2;
     g.invalidate();
-    expect(breedingTimeMs(g, 2)).toBeCloseTo(before * 0.81);
+    expect(breedingTimeMs(g, 2)).toBeCloseTo(before * 0.94 * 0.94);
   });
 
   it('Brutpfleger and Mutagen only help with their own eggs, not from the stable (tester saw 1-second eggs)', () => {
@@ -117,7 +117,7 @@ describe('breeding', () => {
     expect(mutationChance(g, undefined, plain)).toBe(before.mutation);
     // As a parent each one counts for that egg.
     const helper = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer', 'mutagenic'] });
-    expect(breedingTimeMs(g, 2, [plain[0], helper])).toBeCloseTo(before.time * 0.9);
+    expect(breedingTimeMs(g, 2, [plain[0], helper])).toBeCloseTo(before.time * 0.85);
     expect(mutationChance(g, undefined, [plain[0], helper])).toBeCloseTo(before.mutation + 0.02);
   });
 
@@ -125,8 +125,22 @@ describe('breeding', () => {
     const g = makeGame();
     unlockFeature(g, 'breeding');
     addBuff(g, 'test', [{ target: 'breeding.time', op: 'mult', value: 0.01 }], 1e9);
-    const base = balance.breeding.baseTimeSec * (1 + balance.breeding.timePerGeneration);
-    expect(breedingTimeMs(g, 2)).toBe(base * balance.breeding.minTimeShare * 1000);
+    const b = balance.breeding;
+    expect(breedingTimeMs(g, 2)).toBe(b.minTimeSec * 1000);
+    const deepest = b.baseTimeSec * (1 + b.timePerGeneration * (b.maxTimeGeneration - 1));
+    expect(breedingTimeMs(g, 40)).toBe(Math.max(b.minTimeSec, deepest * b.minTimeShare) * 1000);
+  });
+
+  it('deep lines stop getting slower (tester waited over a minute despite every upgrade)', () => {
+    const g = breedingGame();
+    const b = balance.breeding;
+    expect(breedingTimeMs(g, 30)).toBe(breedingTimeMs(g, b.maxTimeGeneration));
+    expect(breedingTimeMs(g, b.maxTimeGeneration)).toBeGreaterThan(breedingTimeMs(g, b.maxTimeGeneration - 1));
+    // A maxed Inkubator alone is not the floor: Brutpfleger, Nestwärter and Fruchtbar still shorten the egg.
+    g.state.upgrades.incubator = 10;
+    g.state.achievements.firstEgg = true;
+    g.invalidate();
+    expect(breedingTimeMs(g, 30)).toBeGreaterThan(b.minTimeSec * 1000 * 4);
   });
 
   it('is deterministic for the same seed', () => {
@@ -177,7 +191,7 @@ describe('Nestwärter', () => {
     const other = createCreature(g, { speciesId: 'emberpup', source: 'other', abilities: ['nurturer'] });
     expect(setNestKeeper(g, nurse.id).ok).toBe(true);
     expect(nurse.job).toEqual({ kind: 'keeper', target: 'nest' });
-    expect(breedingTimeMs(g, 2, parents)).toBeCloseTo(time * 0.9);
+    expect(breedingTimeMs(g, 2, parents)).toBeCloseTo(time * 0.85);
     expect(mutationChance(g, undefined, parents)).toBeCloseTo(mutation + 0.02);
     // The keeper does not breed or work meanwhile.
     expect(startBreeding(g, nurse.id, parents[0]!.id).ok).toBe(false);

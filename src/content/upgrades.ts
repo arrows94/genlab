@@ -72,9 +72,9 @@ export const upgrades: UpgradeDef[] = [
   // --- Brutstation ---
   {
     id: 'incubator', theme: 'breeding', name: 'Inkubator', category: 'research', requires: breeding,
-    description: '−10 % Brutzeit.',
+    description: '−6 % Brutzeit.',
     cost: { food: 150 }, costGrowth: 2, maxLevel: 10,
-    modifiers: [{ target: 'breeding.time', op: 'mult', value: 0.9 }],
+    modifiers: [{ target: 'breeding.time', op: 'mult', value: 0.94 }],
   },
   {
     id: 'nestExpansion', theme: 'breeding', name: 'Nest-Ausbau', category: 'research', requires: breeding,

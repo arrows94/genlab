@@ -196,8 +196,11 @@ export const balance: Balance = {
   breeding: {
     baseTimeSec: 60,
     timePerGeneration: 0.15,
-    // Bonuses stack (every Brutpfleger in the stable counts) – an egg never takes less than this share of its base time.
-    minTimeShare: 0.25,
+    // From this generation on the base time stops growing (60 s × 2.5 = 150 s), so deep lines keep a short loop.
+    maxTimeGeneration: 11,
+    // Stacked bonuses (Inkubator, Fruchtbar, Brutpfleger, Nestwärter …) never push an egg below this.
+    minTimeShare: 0.1,
+    minTimeSec: 15,
     costs: [
       { resource: 'food', base: 30, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 2 },
       { resource: 'gold', base: 20, generationGrowth: 1.5, creatureGrowth: 1.04, fromGeneration: 3 },
