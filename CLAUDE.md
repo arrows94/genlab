@@ -80,7 +80,7 @@ Before a release, add a new entry at the **top** of `src/ui/changelog.ts` and in
 
 ## TODO and DONE
 
-- `TODO.md` holds **only open work**. The section "Code-Durchsicht (Oktober 2026)" is the review backlog. Work through it step by step, in the order given there.
+- `TODO.md` holds **only open work**. The review backlog "Code-Durchsicht (Oktober 2026)" is finished (see `DONE.md`); larger plans such as the Genom-Keller list their steps in order – work through them one by one.
 - Whenever you finish an item from `TODO.md`, do both of these in the same commit:
   - delete the item from `TODO.md`;
   - add a short summary of it to `DONE.md` under the matching area, newest entries first, with the date (`## YYYY-MM-DD – …`).

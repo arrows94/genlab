@@ -51,6 +51,10 @@ export function resetLayer(ctx: GameContext, layer: PrestigeLayerDef): void {
     s.tower.run = null;
     s.tower.team = [];
     s.tower.lastDefeat = null;
+    // The cellar keeps its record and its attempts; the descent ends with the stable.
+    s.cellar.run = null;
+    s.cellar.team = [];
+    s.cellar.back = [];
     // The monster leaves the dungeon with what it carries before the stable starts over.
     finishRpgRun(ctx, true);
   }
@@ -231,6 +235,7 @@ export function resetOverview(ctx: GameContext, layerId: string): { lost: ResetI
   const library = Object.keys(s.geneLibrary).length;
   if (library > 0) kept.push({ icon: '📚', label: 'Genbibliothek', detail: `${library} Allele` });
   if (s.tower.best > 0) kept.push({ icon: '🗼', label: 'Turm-Rekord', detail: `Etage ${s.tower.best}` });
+  if (s.cellar.best > 0) kept.push({ icon: '🕳️', label: 'Keller-Rekord', detail: `Ebene −${s.cellar.best}` });
   const talents = Object.values(s.talents).filter(Boolean).length;
   if (talents > 0) kept.push({ icon: '⏳', label: 'Äon-Talente', detail: `${talents} gelernt` });
   const grand = Object.values(s.grandResearch).reduce((n, l) => n + l, 0);

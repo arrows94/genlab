@@ -1,5 +1,4 @@
 import { D, type Decimal } from '../num';
-import { Rng, hashSeed } from '../rng';
 import { creatureModifiers, effectiveStats, findCreature, isOccupied } from '../creatures';
 import { activeLoci, catalogueGenome, libraryHas } from '../genetics';
 import { grant } from '../resources';
@@ -7,15 +6,20 @@ import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature, FightStats } from '../state';
 import type { System } from '../systems/types';
-import type { RelicDef, TargetingMode, TechniqueDef } from '../content/types';
+import type { RelicDef, TargetingMode } from '../content/types';
 import type { ModifierProvider } from '../providers';
 import { simulateFight, type Fighter, type Row } from './towerCombat';
+import {
+  courseCheckpoint, courseEnemies, courseEnemy, courseFloorTokens, courseFloorsToBoss, isCourseBossFloor, isCourseGuardFloor, techniqueFor, towerCourse,
+} from './floors';
 
 // The fight engine lives in towerCombat.ts; callers keep importing it from here.
 export {
   MAX_FIGHT_EVENTS, actionIntervals, damage, defFactor, elementMultiplier, enrageFactor, evadeChance, pickTarget, simulateFight, teamSynergies,
 } from './towerCombat';
 export type { FightEvent, FightResult, Fighter, FighterSnapshot, Row, Synergy } from './towerCombat';
+// Enemy curves of endless courses live in floors.ts.
+export { techniqueFor } from './floors';
 
 /**
  * Genom-Turm: an endless auto-battle. A team of 3–5 creatures fights floor
@@ -52,108 +56,28 @@ export function teamSize(ctx: GameContext): number {
   return Math.floor(ctx.mods().apply('slots.tower', ctx.balance.tower.baseTeamSize));
 }
 
-/**
- * Dice for a floor. The three small floors of a former floor n share its element and group size (`step`
- * seeded with n, as before the finer floors), so the tower is not more jagged than it was; floor 3n is
- * exactly the former floor n. The floors in between pick their species with dice of their own (`own`).
- */
-function floorDice(ctx: GameContext, prefix: string, floor: number): { step: Rng; own: Rng } {
-  const per = ctx.balance.tower.subFloors;
-  const step = Rng.fromSeed(hashSeed(`${prefix}-${Math.ceil(floor / per)}`));
-  return { step, own: floor % per === 0 ? step : Rng.fromSeed(hashSeed(`${prefix}-${floor}/${per}`)) };
-}
-
-/** Boss floor: every `bossEvery`-th. */
+/** Boss floor of the tower: every `bossEvery`-th. */
 export function isBossFloor(ctx: GameContext, floor: number): boolean {
-  return floor % ctx.balance.tower.bossEvery === 0;
+  return isCourseBossFloor(towerCourse(ctx), floor);
 }
 
-/** Wächter floor: every `guardEvery`-th that is not a boss floor. */
+/** Wächter floor of the tower: every `guardEvery`-th that is not a boss floor. */
 export function isGuardFloor(ctx: GameContext, floor: number): boolean {
-  const every = ctx.balance.tower.guardEvery;
-  return every > 0 && floor % every === 0 && !isBossFloor(ctx, floor);
+  return isCourseGuardFloor(towerCourse(ctx), floor);
 }
 
 /**
- * Enemy for a floor – deterministic per floor, independent of the game RNG.
+ * Enemy for a tower floor – deterministic per floor, independent of the game RNG.
  * `plain` leaves out the boss and Wächter multipliers and the trait (the
  * weekly titan follows the floor's normal strength).
  */
 export function enemyFor(ctx: GameContext, floor: number, opts: { plain?: boolean } = {}): Fighter {
-  const t = ctx.balance.tower;
-  const { step: rng, own } = floorDice(ctx, 'tower', floor);
-  const element = rng.pick(ctx.content.elements.list).id;
-  const scale = Math.pow(t.enemyGrowth, floor - t.subFloors);
-  const boss = !opts.plain && isBossFloor(ctx, floor);
-  const guard = !opts.plain && isGuardFloor(ctx, floor);
-  const hpMult = boss ? t.bossHpMult : guard ? t.guardHpMult : 1;
-  const atkMult = boss ? t.bossAtkMult : guard ? t.guardAtkMult : 1;
-  const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * hpMult);
-  const names = ctx.content.species.list.filter((s) => s.element === element);
-  const species = own.pick(names.length ? names : ctx.content.species.list);
-  const traits = ctx.content.bossTraits.list;
-  const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
-  return {
-    name: `${boss ? 'Boss: ' : guard ? 'Wächter: ' : ''}${species.name}`,
-    speciesId: species.id,
-    element,
-    hp,
-    maxHp: hp,
-    atk: Math.round((t.enemyBase['atk'] ?? 8) * scale * atkMult),
-    def: Math.round((t.enemyBase['def'] ?? 5) * scale),
-    spd: Math.round((t.enemyBase['spd'] ?? 5) * Math.sqrt(scale)),
-    power: 1,
-    elementPower: 1,
-    team: false,
-    trait,
-    ...(boss ? { boss: true } : {}),
-    ...(guard ? { guard: true } : {}),
-    technique: techniqueFor(ctx, element)?.id,
-  };
+  return courseEnemy(ctx, towerCourse(ctx), floor, opts);
 }
 
-/**
- * Everyone the team meets on a floor – deterministic per floor. On a Wächter
- * floor every foe is stronger, the first one is the Wächter. Normal floors
- * from `groupFromFloor` on may bring 2–3 foes that share the floor's strength;
- * boss floors from `companionsFromFloor` on bring two companions in front of
- * the boss, and from `phaseFromFloor` on the boss wakes a second trait below
- * half HP.
- */
+/** Everyone the team meets on a tower floor (see `courseEnemies`). */
 export function enemiesFor(ctx: GameContext, floor: number): Fighter[] {
-  const t = ctx.balance.tower;
-  const main = enemyFor(ctx, floor);
-  const { step: rng, own } = floorDice(ctx, 'tower-group', floor);
-  const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
-  const pickSpecies = () => (sameElement.length ? own.pick(sameElement) : ctx.content.species.get(main.speciesId));
-  if (main.boss) {
-    const traits = ctx.content.bossTraits.list.filter((b) => b.id !== main.trait);
-    if (floor >= t.phaseFromFloor && main.trait && traits.length) main.phaseTrait = rng.pick(traits).id;
-    if (floor < t.companionsFromFloor) return [main];
-    main.row = 'back';
-    const normalHp = main.maxHp / t.bossHpMult;
-    const normalAtk = main.atk / t.bossAtkMult;
-    const companions = [0, 1].map((): Fighter => {
-      const sp = pickSpecies();
-      const hp = Math.max(1, Math.round(normalHp * t.companionHp));
-      return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk: Math.max(1, Math.round(normalAtk * t.companionAtk)), trait: undefined, phaseTrait: undefined, boss: undefined, row: 'front' };
-    });
-    return [...companions, main];
-  }
-  // The three small floors of a former floor share its group size (thresholds from its floor 3n).
-  const stepFloor = Math.ceil(floor / t.subFloors) * t.subFloors;
-  if (stepFloor < t.groupFromFloor) return [main];
-  // Bigger groups get likelier higher up.
-  const r = rng.next();
-  const late = stepFloor >= t.groupFromFloor * 2.5;
-  const size = r < (late ? 0.3 : 0.5) ? 1 : r < (late ? 0.7 : 0.85) ? 2 : 3;
-  if (size === 1) return [main];
-  const hp = Math.max(1, Math.round((main.maxHp * (t.groupHp[size - 1] ?? 1)) / size));
-  const atk = Math.max(1, Math.round((main.atk * (t.groupAtk[size - 1] ?? 1)) / size));
-  return Array.from({ length: size }, (_, i): Fighter => {
-    const sp = i === 0 ? ctx.content.species.get(main.speciesId) : pickSpecies();
-    return { ...main, name: i === 0 ? main.name : sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
-  });
+  return courseEnemies(ctx, towerCourse(ctx), floor);
 }
 
 /** Relikt in the team place of this creature, with its level (null if none). */
@@ -165,13 +89,37 @@ export function relicFor(ctx: GameContext, c: Creature): { def: RelicDef; level:
   return level > 0 ? { def: ctx.content.relics.get(id), level } : null;
 }
 
-export function fighterFor(ctx: GameContext, c: Creature): Fighter {
+/** Dunkles Relikt in the tower or cellar team place of this creature, with its level (null if none). */
+export function darkRelicFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar'): { def: RelicDef; level: number } | null {
+  const team = course === 'tower' ? ctx.state.tower.team : ctx.state.cellar.team;
+  const slots = course === 'tower' ? ctx.state.tower.darkSlots : ctx.state.cellar.relicSlots;
+  const slot = team.indexOf(c.id);
+  const id = slot >= 0 ? slots[slot] : null;
+  if (!id || !ctx.content.darkRelics.has(id)) return null;
+  const level = relicLevel(ctx, id);
+  return level > 0 ? { def: ctx.content.darkRelics.get(id), level } : null;
+}
+
+/** Everything a creature wears in a course: the relic and the dark relic in the tower, only the dark one in the cellar. */
+function relicsFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar'): { def: RelicDef; level: number }[] {
+  return [course === 'tower' ? relicFor(ctx, c) : null, darkRelicFor(ctx, c, course)].filter((r): r is { def: RelicDef; level: number } => !!r);
+}
+
+/** A creature as a fighter of the tower (or, with its dark relic only, of the cellar). */
+export function fighterFor(ctx: GameContext, c: Creature, course: 'tower' | 'cellar' = 'tower'): Fighter {
   const s = effectiveStats(ctx, c);
   const own = creatureModifiers(ctx, c);
   const global = ctx.mods();
-  const relic = relicFor(ctx, c);
-  const boost = (key: keyof RelicDef['bonus']) => 1 + (relic ? (relic.def.bonus[key] ?? 0) * relic.level : 0);
-  const hp = Math.round((s.hp ?? 1) * boost('hp') * global.factor('tower.hp') * own.factor('tower.hp'));
+  const worn = relicsFor(ctx, c, course);
+  const boost = (key: keyof RelicDef['bonus']) => worn.reduce((f, r) => f * Math.max(0.1, 1 + (r.def.bonus[key] ?? 0) * r.level), 1);
+  // Entschlossenheit is the tower's answer to a standing record – it does not follow the team into the cellar.
+  const resolve = course === 'cellar' ? (ctx.state.tower.resolve ?? 0) : 0;
+  const towerFactor = (target: string) => {
+    if (!resolve) return global.factor(target);
+    const t = global.totals(target);
+    return (1 + t.add) * (1 + t.pct - resolve) * t.mult;
+  };
+  const hp = Math.round((s.hp ?? 1) * boost('hp') * towerFactor('tower.hp') * own.factor('tower.hp'));
   return {
     name: c.name,
     speciesId: c.speciesId,
@@ -181,7 +129,7 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
     atk: Math.round((s.atk ?? 1) * boost('atk')),
     def: Math.round((s.def ?? 0) * boost('def')),
     spd: Math.round((s.spd ?? 1) * boost('spd')),
-    power: global.factor('tower.damage') * own.factor('tower.damage'),
+    power: towerFactor('tower.damage') * own.factor('tower.damage'),
     elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage') * boost('element'),
     team: true,
     row: rowOf(ctx, c.id),
@@ -192,31 +140,39 @@ export function fighterFor(ctx: GameContext, c: Creature): Fighter {
   };
 }
 
-/** The Element-Technik of an element. */
-export function techniqueFor(ctx: GameContext, element: string): TechniqueDef | undefined {
-  return ctx.content.techniques.list.find((t) => t.element === element);
-}
-
 // ---- Relikte --------------------------------------------------------------
 
 export function relicLevel(ctx: GameContext, id: string): number {
   return ctx.state.relics[id] ?? 0;
 }
 
-/** Turm-Marken for the next level (null at the maximum). */
+/** A relic or dark relic by id. */
+export function relicDef(ctx: GameContext, id: string): RelicDef {
+  return ctx.content.relics.has(id) ? ctx.content.relics.get(id) : ctx.content.darkRelics.get(id);
+}
+
+/** Resource a relic is bought with. */
+export function relicCurrency(def: RelicDef): string {
+  return def.currency ?? 'towerTokens';
+}
+
+/** Price of the next level in its currency (null at the maximum). */
 export function relicCost(ctx: GameContext, id: string): Decimal | null {
-  const def = ctx.content.relics.get(id);
+  const def = relicDef(ctx, id);
   const level = relicLevel(ctx, id);
   return level >= def.maxLevel ? null : D(def.cost).mul(D(def.costGrowth).pow(level)).ceil();
 }
 
 export function buyRelic(ctx: GameContext, id: string): ActionResult {
-  if (!ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  const dark = ctx.content.darkRelics.has(id);
+  if (!dark && !ctx.state.features['tower']) return { ok: false, reason: 'Der Genom-Turm ist noch nicht freigeschaltet.' };
+  if (dark && !ctx.state.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };
   const cost = relicCost(ctx, id);
   if (!cost) return { ok: false, reason: 'Das Relikt ist bereits auf der höchsten Stufe.' };
-  const owned = ctx.state.resources['towerTokens'] ?? D(0);
-  if (owned.lt(cost)) return { ok: false, reason: 'Nicht genug Turm-Marken.' };
-  ctx.state.resources['towerTokens'] = owned.sub(cost);
+  const currency = relicCurrency(relicDef(ctx, id));
+  const owned = ctx.state.resources[currency] ?? D(0);
+  if (owned.lt(cost)) return { ok: false, reason: `Nicht genug ${ctx.content.resources.get(currency).name}.` };
+  ctx.state.resources[currency] = owned.sub(cost);
   ctx.state.relics[id] = relicLevel(ctx, id) + 1;
   ctx.invalidate();
   return { ok: true };
@@ -235,6 +191,22 @@ export function equipRelic(ctx: GameContext, slot: number, id: string | null): A
   return { ok: true };
 }
 
+/**
+ * Puts a dark relic into the dark place of a tower or cellar team place (null clears it). It sits in one place
+ * per course at most – the same relic may be worn in the tower and in the cellar at once.
+ */
+export function equipDarkRelic(ctx: GameContext, course: 'tower' | 'cellar', slot: number, id: string | null): ActionResult {
+  if (!ctx.state.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };
+  if ((course === 'tower' ? ctx.state.tower.run : ctx.state.cellar.run)) return { ok: false, reason: 'Während eines Laufs nicht änderbar.' };
+  if (!Number.isInteger(slot) || slot < 0 || slot >= teamSize(ctx)) return { ok: false, reason: 'Diesen Platz gibt es nicht.' };
+  if (id !== null && (!ctx.content.darkRelics.has(id) || relicLevel(ctx, id) < 1)) return { ok: false, reason: 'Dieses dunkle Relikt besitzt du noch nicht.' };
+  const slots = course === 'tower' ? ctx.state.tower.darkSlots : ctx.state.cellar.relicSlots;
+  while (slots.length < teamSize(ctx)) slots.push(null);
+  if (id !== null) for (let i = 0; i < slots.length; i++) if (slots[i] === id) slots[i] = null;
+  slots[slot] = id;
+  return { ok: true };
+}
+
 // ---- Meilensteine -----------------------------------------------------------
 
 /** Highest record ever (a lowered record keeps what was earned). */
@@ -244,8 +216,7 @@ export function towerBestEver(ctx: GameContext): number {
 
 /** Floors until the next boss floor (0 = the given floor is one). */
 export function floorsToBoss(ctx: GameContext, floor: number): number {
-  const every = ctx.balance.tower.bossEvery;
-  return every - (floor % every || every);
+  return courseFloorsToBoss(towerCourse(ctx), floor);
 }
 
 /** Floor of the next tower milestone. */
@@ -363,8 +334,7 @@ export function fightIntervalMs(ctx: GameContext): number {
 }
 
 export function checkpoint(ctx: GameContext): number {
-  const every = ctx.balance.tower.checkpointEvery;
-  return Math.floor(ctx.state.tower.best / every) * every;
+  return courseCheckpoint(towerCourse(ctx), ctx.state.tower.best);
 }
 
 /** Where the next auto-restart from the checkpoint begins: the checkpoint, minus the checkpoints it stepped back. */
@@ -378,6 +348,8 @@ export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   // Ids of creatures that no longer exist are dropped instead of blocking the change.
   const unique = [...new Set(ids)].filter((id) => findCreature(ctx, id));
   if (unique.length > teamSize(ctx)) return { ok: false, reason: `Höchstens ${teamSize(ctx)} Kreaturen.` };
+  const inCellar = unique.find((id) => ctx.state.cellar.team.includes(id));
+  if (inCellar !== undefined) return { ok: false, reason: `${findCreature(ctx, inCellar)!.name} steht schon im Keller-Team.` };
   ctx.state.tower.team = unique;
   ctx.state.tower.back = ctx.state.tower.back.filter((id) => unique.includes(id));
   return { ok: true };
@@ -424,15 +396,9 @@ function missingRareAlleles(ctx: GameContext): { locus: string; allele: string }
   return activeLoci(ctx).flatMap((l) => l.alleles.filter((a) => a.weight <= 10 && !libraryHas(ctx, l.id, a.id)).map((a) => ({ locus: l.id, allele: a.id })));
 }
 
-/**
- * Turm-Marken for clearing a floor. The amount per floor may be a fraction
- * (tokensPerFloor × (1 + growth × (floor − 1))); paying the step of the
- * rounded running sum gives whole numbers that add up to exactly that.
- */
+/** Turm-Marken for clearing a floor (whole numbers, see `courseFloorTokens`). */
 export function floorTokens(ctx: GameContext, floor: number): Decimal {
-  const t = ctx.balance.tower;
-  const total = (f: number) => (f <= 0 ? 0 : Math.round(t.tokensPerFloor * (f + (t.tokenGrowthPerFloor * f * (f - 1)) / 2)));
-  return D(Math.max(0, total(floor) - total(floor - 1)));
+  return courseFloorTokens(towerCourse(ctx), floor);
 }
 
 /** Side-effect-free preview of what clearing a floor pays. */

@@ -38,7 +38,12 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
     bus.on('processCompleted', (e) => inc(`completed.${e.kind}`)),
     bus.on('upgradeBought', () => inc('upgradesBought')),
     bus.on('prestige', (e) => inc(`prestige.${e.layer}`)),
-    bus.on('eggHatched', () => inc('hatched')),
+    bus.on('eggHatched', (e) => {
+      inc('hatched');
+      // Per species: the Genom-Keller's „Schatten deiner Dynastie“ takes the most bred one.
+      const c = getCtx().state.creatures.find((x) => x.id === e.creatureId);
+      if (c) inc(`bred.${c.speciesId}`);
+    }),
     bus.on('missionCompleted', (e) => {
       if (e.wildCreatureId !== null) inc('wildFound');
     }),
@@ -61,6 +66,9 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
       if (!e.win) return;
       record('record.towerFloor', e.floor);
       if (getCtx().balance.activity.towerMilestones.includes(e.floor)) stampMilestone(getCtx(), `tower:${e.floor}`);
+    }),
+    bus.on('cellarLevel', (e) => {
+      if (e.win) record('record.cellarLevel', e.level);
     }),
     // Milestones: when (in active play time) something was first reached.
     bus.on('featureUnlocked', (e) => stampMilestone(getCtx(), `feature:${e.feature}`)),

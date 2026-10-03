@@ -37,6 +37,14 @@ export interface Fighter {
   thorns?: number;
   /** Acts almost at once in a fight (tower.firstStrike ≥ 1). */
   firstStrike?: boolean;
+  /** Extra chance that its own attacks miss (darkness in the Genom-Keller). */
+  miss?: number;
+  /** Multiplier on the healing it receives (Schatten-Aura: 0.5). */
+  healing?: number;
+  /** Colour cast in the arena (foes of the Genom-Keller). */
+  tint?: string;
+  /** „Schatten deiner Dynastie“: drawn as a dark copy in the arena. */
+  shadow?: boolean;
   /** Boss of its floor (crown in the arena). */
   boss?: boolean;
   /** Wächter of its floor (a stronger single enemy between the bosses). */
@@ -177,6 +185,9 @@ export interface FighterSnapshot {
   boss?: boolean;
   /** Wächter of the floor. */
   guard?: boolean;
+  /** Colour cast in the arena. */
+  tint?: string;
+  shadow?: boolean;
 }
 
 export interface FightResult {
@@ -370,6 +381,9 @@ function land(fight: Fight, att: Combatant, target: Combatant, dmg: number, at: 
   const hpDmg = dmg - absorbed;
   hurt(fight, target, hpDmg, att, at);
   record(fight, { at, a: att.i, t: target.i, dmg: hpDmg, hp: Math.max(0, target.f.hp), m: elementMultiplier(fight.ctx, att.f.element, target.f.element), ...(absorbed ? { absorbed } : {}), ...extra });
+  // Lebensraub: the boss drinks a share of what it dealt.
+  const drain = hasTrait(att, 'drain');
+  if (drain && hpDmg > 0 && att.f.hp > 0) heal(fight, att, att, hpDmg * drain.value, at);
   // Dornenhaut and Prisma: a share of the damage goes back to the attacker.
   const back = Math.round(dmg * ((target.f.thorns ?? 0) + (statusOf(target, 'reflect', at)?.value ?? 0)));
   if (back > 0 && att.f.hp > 0 && target.f !== att.f) {
@@ -383,7 +397,7 @@ function land(fight: Fight, att: Combatant, target: Combatant, dmg: number, at: 
 /** Heals `target` by `amount` (capped at max HP). */
 function heal(fight: Fight, by: Combatant, target: Combatant, amount: number, at: number): void {
   const f = target.f;
-  const healed = Math.min(f.maxHp - f.hp, Math.round(amount));
+  const healed = Math.min(f.maxHp - f.hp, Math.round(amount * (f.healing ?? 1)));
   if (healed <= 0 || f.hp <= 0) return;
   f.hp += healed;
   bump(fight.stats.healed, target.i, healed);
@@ -402,6 +416,13 @@ function addStatus(fight: Fight, by: Combatant, target: Combatant, id: StatusId,
   if (id === 'shield') v = Math.round(value * f.maxHp);
   target.statuses.set(id, { until, value: v, src: by.f.atk * by.f.power, by });
   record(fight, { at, a: by.i, t: target.i, dmg: 0, hp: Math.max(0, f.hp), m: 1, kind: 'status', status: id, until: Math.round(until * 100) / 100 });
+}
+
+/** Schrecken: the strongest terror of a standing foe makes the team's attacks miss more often. */
+function terrorOf(fight: Fight): number {
+  let v = 0;
+  for (const c of fight.all) if (c.foe && c.f.hp > 0) v = Math.max(v, hasTrait(c, 'terror')?.value ?? 0);
+  return v;
 }
 
 /** Element-Schild: damage from the team without element advantage is cut to `shield.value` (at least 1). */
@@ -428,7 +449,7 @@ function strike(fight: Fight, a: Combatant, t: Combatant, at: number, mult: numb
   const att = a.f;
   const target = t.f;
   const m = elementMultiplier(ctx, att.element, target.element);
-  const evade = Math.min(0.6, evadeChance(ctx, att, target) + (statusOf(t, 'evade', at)?.value ?? 0));
+  const evade = Math.min(0.6, evadeChance(ctx, att, target) + (statusOf(t, 'evade', at)?.value ?? 0)) + (att.miss ?? 0) + (att.team ? terrorOf(fight) : 0);
   if (rng.chance(evade)) {
     bump(stats.missed, a.i, 1);
     bump(stats.dodged, t.i, 1);
@@ -627,6 +648,7 @@ export function simulateFight(ctx: GameContext, team: Fighter[], enemies: Fighte
   const fighters: FighterSnapshot[] = order.map((f, i) => ({
     name: f.name, speciesId: f.speciesId, element: f.element, maxHp: f.maxHp, team: f.team, interval: intervals[i] ?? 0,
     ...(f.team ? { row: f.row ?? 'front' } : f.row ? { row: f.row } : {}), ...(f.boss ? { boss: true } : {}), ...(f.guard ? { guard: true } : {}),
+    ...(f.tint ? { tint: f.tint } : {}), ...(f.shadow ? { shadow: true } : {}),
   }));
   const zeros = () => order.map(() => 0);
   const stats: FightStats = {

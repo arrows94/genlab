@@ -392,6 +392,49 @@ export const balance: Balance = {
       { target: 'production.essence', op: 'pct', value: 0.1 },
     ],
   },
+  cellar: {
+    fightIntervalSec: 4,
+    attemptsPerDay: 3,
+    maxAttempts: 6,
+    restEvery: 5,
+    restHeal: 0.5,
+    historySize: 10,
+    // Levels −1 to −10 are a plain vault; from −11 on every ten levels have their own surroundings.
+    environmentFrom: 11,
+    environmentEvery: 10,
+    // Four levels after a rest the torch is at 40 %: the last level before the next rest vault is the darkest.
+    lightPerLevel: 0.15,
+    lightMissFrom: 0.6,
+    lightMiss: 0.5,
+    // Level −1 is about as strong as tower floor 60, every level ×1.04 – a little steeper than the tower's ×1.035
+    // per floor, and the team does not heal between levels (Äon-Bot, DONE.md Genom-Keller step 9).
+    enemyBase: { hp: 436, atk: 65, def: 36, spd: 16 },
+    enemyGrowth: 1.04,
+    subFloors: 1,
+    groupFromFloor: 1,
+    groupHp: [1, 1.1, 1.2],
+    groupAtk: [1, 1, 1.05],
+    companionsFromFloor: 30,
+    companionHp: 0.2,
+    companionAtk: 0.2,
+    phaseFromFloor: 60,
+    bossEvery: 30,
+    bossHpMult: 1.3,
+    bossAtkMult: 1.05,
+    bossTraitFromFloor: 30,
+    guardEvery: 10,
+    guardHpMult: 1.12,
+    guardAtkMult: 1.1,
+    checkpointEvery: 10,
+    // Schattenmarken per level (whole numbers, see courseFloorTokens): 3 on −1, 6 on −20, 7–8 on −30.
+    tokensPerFloor: 3,
+    tokenGrowthPerFloor: 0.05,
+    // A new boss depth (every 30 levels) and every Tiefen-Meilenstein give an Äon-Splitter, at most two a week
+    // (like the RPG).
+    shardsPerBoss: 1,
+    shardsPerMilestone: 1,
+    weeklyShards: 2,
+  },
   anomalies: {
     maxLevel: 5,
     goalGrowth: 4,

@@ -61,8 +61,8 @@ export const genes: GeneLocusDef[] = [
     id: 'color', name: 'Farbe', category: 'visual', description: 'Färbung. Albino ist rezessiv.',
     alleles: [
       { id: 'N', name: 'Normal', symbol: 'N', dominance: 2, weight: 60, color: '#90a4ae', modifiers: [] },
-      { id: 'D', name: 'Dunkel', symbol: 'D', dominance: 2, weight: 25, color: '#37474f', modifiers: [], visual: { lightness: 36, saturation: 55 } },
-      { id: 'al', name: 'Albino', symbol: 'aₗ', dominance: 1, weight: 10, color: '#f5f5f5', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.05 }], visual: { saturation: 12, lightness: 86 } },
+      { id: 'D', name: 'Dunkel', symbol: 'D', dominance: 2, weight: 25, color: '#37474f', modifiers: [], visual: { lightness: 36, saturation: 55 }, nightSight: true },
+      { id: 'al', name: 'Albino', symbol: 'aₗ', dominance: 1, weight: 10, color: '#f5f5f5', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.05 }], visual: { saturation: 12, lightness: 86 }, nightSight: true },
     ],
   },
   {

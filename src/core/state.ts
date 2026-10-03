@@ -16,7 +16,7 @@ export interface Appearance {
 }
 
 export interface CreatureJob {
-  kind: 'building' | 'nest' | 'mission' | 'tower' | 'rpg' | 'keeper';
+  kind: 'building' | 'nest' | 'mission' | 'tower' | 'cellar' | 'rpg' | 'keeper';
   target: string;
 }
 
@@ -154,6 +154,8 @@ export interface TowerState {
   back: number[];
   /** Relikt per team place (relic id or null), same order as `team`. */
   relicSlots: (string | null)[];
+  /** Dunkles Relikt per team place (Genom-Keller), next to the relic. */
+  darkSlots: (string | null)[];
   /** Personal leaderboard: best runs. */
   leaderboard: { floor: number; team: string[]; at: number }[];
   /** The most recent runs, newest first (missing startFloor in older saves). */
@@ -174,6 +176,8 @@ export interface TowerState {
     }[];
     /** Time of the fight (lastTickAt), so the UI replays each fight once. */
     at?: number;
+    /** HP of every fighter at the start (Genom-Keller: the team carries its HP; missing = full). */
+    startHp?: number[];
   } | null;
   /** Kampferfahrung from won floors – belongs to the player, survives every reset. */
   xp: number;
@@ -190,6 +194,43 @@ export interface TowerState {
   lastDefeat: { floor: number; at: number; fighters: FightFighterSnapshot[]; stats: FightStats } | null;
 }
 
+/** A descent into the Genom-Keller: one attempt, from a checkpoint until the team falls. */
+export interface CellarRun {
+  /** Deepest level cleared in this descent (counts down as −1, −2 … in the UI). */
+  level: number;
+  team: number[];
+  /** Share of its max HP each team member carries into the next level (same order as `team`; 1 = full, 0 = fallen). */
+  hp: number[];
+  /** Fackellicht (1 = full): drops with every level, a rest vault fills it again. */
+  light: number;
+  elapsedMs: number;
+  startLevel: number;
+}
+
+export interface CellarState {
+  /** Selected team (creature ids); a creature never stands in the tower and the cellar team at once. */
+  team: number[];
+  /** Team members in the back row. */
+  back: number[];
+  run: CellarRun | null;
+  /** Deepest level ever cleared – never reset, sets the checkpoint. */
+  best: number;
+  /** Descents left; refilled per contract day (see `refreshCellarAttempts`). */
+  attempts: number;
+  /** Contract day of the last refill (-1 = never). */
+  day: number;
+  /** Start the next descent on its own while attempts are left. */
+  auto: boolean;
+  /** Dunkles Relikt per team place (same order as `team`). */
+  relicSlots: (string | null)[];
+  /** Äon-Splitter from new boss depths this week (weekly cap). */
+  weekly: { week: number; shards: number };
+  /** The most recent descents, newest first. */
+  history: { level: number; startLevel: number; team: string[]; at: number }[];
+  /** The latest fight, for the arena (the tower's shape plus the torch light and the environment of the level). */
+  lastResult: (NonNullable<TowerState['lastResult']> & { light?: number; env?: string | null }) | null;
+}
+
 /** A fighter of a tower fight as the arena and the defeat analysis see it. */
 export interface FightFighterSnapshot {
   name: string;
@@ -200,6 +241,10 @@ export interface FightFighterSnapshot {
   interval?: number;
   row?: 'front' | 'back';
   boss?: boolean;
+  /** Colour cast in the arena (foes of the Genom-Keller). */
+  tint?: string;
+  /** „Schatten deiner Dynastie“ (Genom-Keller boss). */
+  shadow?: boolean;
 }
 
 /**
@@ -554,6 +599,7 @@ export interface GameState {
   /** Capsules opened since the last pity-qualifying result, per capsule. */
   capsulePity: Record<string, number>;
   tower: TowerState;
+  cellar: CellarState;
   talents: Record<string, boolean>;
   /**
    * Running anomaly challenge: difficulty stage per active anomaly (several at
@@ -621,7 +667,8 @@ export function createEmptyState(now: number, seed: number): GameState {
     automation: { autoAssign: false, autoBreed: { enabled: false, rule: 'power', species: null, allele: null, budget: 1 },
       autoRecycle: { enabled: false, maxRarity: 'common', keepPerSpecies: 2, keepSequenced: true, when: 'always' }, recycling: null, recycleQueue: [], autoSequence: false, lastRunMs: 0 },
     capsulePity: {},
-    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, retreat: 0 },
+    tower: { team: [], back: [], run: null, best: 0, bestEver: 0, autoRestart: false, restartFromCheckpoint: true, relicSlots: [], darkSlots: [], leaderboard: [], history: [], lastResult: null, lastDefeat: null, xp: 0, recordAt: 0, resolve: 0, retreat: 0 },
+    cellar: { team: [], back: [], run: null, best: 0, attempts: 0, day: -1, auto: false, relicSlots: [], weekly: { week: -1, shards: 0 }, history: [], lastResult: null },
     talents: {},
     anomaly: null,
     anomaliesCompleted: {},
@@ -653,9 +700,11 @@ export function resource(state: GameState, id: string): Decimal {
   return state.resources[id] ?? D(0);
 }
 
-/** Drops references to creatures that no longer exist (tower rows, the RPG hero). */
+/** Drops references to creatures that no longer exist (tower and cellar rows, the RPG hero). */
 export function pruneCreatureRefs(state: GameState, exists: (id: number) => boolean): void {
   state.tower.team = state.tower.team.filter(exists);
   state.tower.back = state.tower.back.filter(exists);
+  state.cellar.team = state.cellar.team.filter(exists);
+  state.cellar.back = state.cellar.back.filter(exists);
   if (state.rpg.run && !exists(state.rpg.run.creatureId)) state.rpg.run = null;
 }

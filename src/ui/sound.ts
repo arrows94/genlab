@@ -380,6 +380,54 @@ const SOUNDS = {
     for (const m of [72, 76, 79, 84]) s.note(m, 0.3, 0.8, 'triangle', 0.22, 4000);
   },
 
+  // ---- Genom-Keller ----
+  /** The lift: a creaking rope, grinding stone and a dull thud on arrival (0 = down, 1 = up). */
+  cellarLift: (s: Synth, v: number) => {
+    const down = v !== 1;
+    s.slide(down ? 43 : 38, down ? 38 : 43, 0, 1.2, 'sawtooth', 0.12, 380);
+    for (let i = 0; i < 5; i++) s.noise(0.1 + i * 0.22, 0.18, 0.12, 500 + (i % 2) * 300);
+    s.slide(52, 47, 0.3, 0.5, 'triangle', 0.06, 900);
+    s.note(28, 1.3, 0.6, 'sine', 0.5, 180);
+    s.noise(1.3, 0.12, 0.25, 700);
+  },
+  /** A level cleared: a dull, cracked gong. */
+  cellarGong: (s: Synth) => {
+    s.note(38, 0, 1.6, 'sine', 0.4, 300);
+    s.note(55.6, 0, 1.1, 'sine', 0.12, 900);
+    s.note(62.7, 0.01, 0.8, 'triangle', 0.06, 1400);
+  },
+  /** A rest vault: the fire crackles. */
+  cellarRest: (s: Synth) => {
+    for (let i = 0; i < 9; i++) s.noise(i * 0.09 + (i % 3) * 0.03, 0.03, 0.2 + (i % 2) * 0.1, 3500);
+    s.note(45, 0, 0.9, 'sine', 0.12, 300);
+  },
+  /** The torch goes out (Lichtfresser): a hiss that sinks into nothing. */
+  torchOut: (s: Synth) => {
+    s.noise(0, 0.7, 0.25, 6000);
+    s.slide(84, 60, 0, 0.5, 'sine', 0.06, 3000);
+  },
+  /** New surroundings below: a low swell. */
+  cellarEnv: (s: Synth) => {
+    s.slide(28, 33, 0, 1.4, 'sawtooth', 0.12, 260);
+    s.noise(0.2, 1, 0.08, 500);
+  },
+  /** The shadow awaits: a deep, growing growl. */
+  shadowRises: (s: Synth) => {
+    s.slide(26, 33, 0, 1.6, 'sawtooth', 0.2, 500);
+    s.slide(27, 34, 0.04, 1.6, 'sawtooth', 0.16, 450);
+    s.note(21, 0, 1.8, 'sine', 0.45, 160);
+  },
+  /** A descent ends in defeat: a cluster sinking into the depth. */
+  cellarDefeat: (s: Synth) => {
+    for (const [m, at] of [[60, 0], [61, 0.06], [63, 0.12]] as const) s.slide(m, m - 12, at, 1.4, 'triangle', 0.13, 1200);
+    s.note(31, 0.2, 1.6, 'sine', 0.35, 200);
+  },
+  /** New descents are ready: a distant, cracked bell. */
+  cellarBell: (s: Synth) => {
+    s.note(69, 0, 1.4, 'sine', 0.18, 4000);
+    s.note(81.4, 0, 0.9, 'sine', 0.07, 5000);
+  },
+
   /** Short sample for the volume setting. */
   test: (s: Synth) => {
     s.note(72, 0, 0.12, 'triangle', 0.5, 4000);
@@ -421,6 +469,11 @@ export const SOUND_GROUPS: { name: string; sounds: { id: SoundKey; name: string 
     { id: 'milestone', name: 'Meilenstein' }, { id: 'relic', name: 'Relikt gekauft' }, { id: 'bossHit', name: 'Wochen-Boss: Angriff' },
     { id: 'bossTier', name: 'Wochen-Boss: Belohnungsstufe' },
   ] },
+  { name: 'Genom-Keller', sounds: [
+    { id: 'cellarLift', name: 'Aufzug' }, { id: 'cellarGong', name: 'Ebene geschafft' }, { id: 'cellarRest', name: 'Rast-Gewölbe' },
+    { id: 'torchOut', name: 'Fackel erlischt' }, { id: 'cellarEnv', name: 'Neue Umgebung' }, { id: 'shadowRises', name: 'Der Schatten wartet' },
+    { id: 'cellarDefeat', name: 'Abstieg gescheitert' }, { id: 'cellarBell', name: 'Neue Abstiege' },
+  ] },
   { name: 'GenLab RPG', sounds: [
     { id: 'portal', name: 'Portal in die andere Welt' }, { id: 'parry', name: 'Parieren' }, { id: 'stagger', name: 'Wanken' },
     { id: 'bossPhase', name: 'Boss: zweite Phase' }, { id: 'felled', name: 'Feind gefällt' }, { id: 'youDied', name: 'Du bist gestorben' },
@@ -452,6 +505,7 @@ export function preview(name: SoundKey): void {
 const LIMITS: Partial<Record<SoundName, number>> = {
   collect: 40, click: 30, toastInfo: 400, toastRare: 600, bonk: 250, research: 120, unlock: 800, achievement: 800,
   hit: 60, hitCrit: 90, technique: 120, hitWeak: 60, whoosh: 80, cardFlip: 40, recycled: 500, horn: 1500, wild: 1200,
+  cellarGong: 900, cellarRest: 1500, cellarEnv: 2000, shadowRises: 3000, cellarLift: 1000,
   perfect: 1500, shiny: 1500, eggLaid: 700, hatch: 600, hatchRare: 900, twins: 900, discovery: 1500, sequenced: 800, deepSequenced: 1500, catalogued: 400,
 };
 const DEFAULT_GAP_MS = 80;

@@ -105,6 +105,8 @@ export interface AlleleDef {
   visual?: AlleleVisual;
   /** Target allele for the "perfect genome" (Perfektions-Jagd). */
   top?: boolean;
+  /** Expressing it lets a creature see in the dark of the Genom-Keller (no torchlight malus, „Finsternis“). */
+  nightSight?: boolean;
 }
 
 export interface AlleleVisual {
@@ -369,6 +371,8 @@ export interface WeeklyMutationDef {
   name: string;
   description: string;
   modifiers: ModifierDef[];
+  /** Rule in the Genom-Keller while this mutation is active (on every level). */
+  cellar?: CellarRuleDef;
 }
 
 export interface CapsuleDef {
@@ -489,6 +493,70 @@ export interface ResonanceDef {
   modifiers: ModifierDef[];
 }
 
+/**
+ * An endless floor course: the Genom-Turm (up) or the Genom-Keller (down). The enemy curve comes from
+ * `balance.<id>` (a `FloorCurve`), the fight from the shared tower engine.
+ */
+export interface CourseDef {
+  id: 'tower' | 'cellar';
+  name: string;
+  icon: string;
+  /** Up: floors count 1, 2, 3 …; down: levels count −1, −2, −3 … */
+  direction: 'up' | 'down';
+  /** What one step is called („Etage“, „Ebene“). */
+  unit: string;
+  /** Seed prefix of the floor dice – changing it changes every floor of the course. */
+  dice: string;
+  /** Name prefixes of its foes, one picked per foe („Wechselbalg“ → „Wechselbalg-Glutwelpe“); none = the plain species name. */
+  foePrefixes?: string[];
+  /** Colour cast of its foes in the arena (CSS colour). */
+  foeTint?: string;
+}
+
+/** Which team members a Keller rule concerns; a list matches if any entry does. */
+export type CellarMatch =
+  | { kind: 'element'; elements: string[] }
+  /** Expresses the allele (or, with `homozygous`, carries it twice). */
+  | { kind: 'allele'; locus: string; allele: string; homozygous?: boolean }
+  /** Has this Erbanlage awake (deep-sequenced). */
+  | { kind: 'latent'; trait: string }
+  /** Expresses an allele with `nightSight`. */
+  | { kind: 'nightSight' }
+  | { kind: 'row'; row: 'front' | 'back' }
+  /** Another creature of its species stands before it in the team. */
+  | { kind: 'duplicate' };
+
+/** What a Keller rule does to a team member. Several rules add up (heal multiplies). */
+export interface CellarEffect {
+  /** Share more (negative: less) of a fight stat, e.g. `{ atk: -0.25 }`. */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  /** Extra chance that its own attacks miss. */
+  miss?: number;
+  /** Multiplier on the healing it receives (0.5 = halved). */
+  heal?: number;
+  /** Share of its max HP it loses before every level (never below 1 HP). */
+  hazard?: number;
+}
+
+export interface CellarRuleDef {
+  /** Concerns the team members matching any of these (everyone if missing) … */
+  match?: CellarMatch[];
+  /** … except those matching any of these – they are adapted. */
+  except?: CellarMatch[];
+  effect: CellarEffect;
+  /** Short German text for the UI („Feuer: −25 % Angriff“). */
+  text: string;
+}
+
+/** Surroundings of a section of the Genom-Keller: rules that call for a team bred to fit. */
+export interface CellarEnvironmentDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  rules: CellarRuleDef[];
+}
+
 /** A special trick of a tower boss (from `balance.tower.bossTraitFromFloor`). */
 export interface BossTraitDef {
   id: string;
@@ -499,9 +567,14 @@ export interface BossTraitDef {
    * shield: damage without element advantage × value; shift: changes element
    * every second (value unused); regen: heals value × the damage it took in
    * the last second; sweep: every `sweepEvery`-th action hits the whole back
-   * row (everyone if nobody stands back) with value × a normal hit.
+   * row (everyone if nobody stands back) with value × a normal hit;
+   * drain: heals value × the damage it deals; terror: while it stands the
+   * team's attacks miss value more often; darken: puts out the Keller torch
+   * for the fight (value unused).
    */
-  kind: 'shield' | 'shift' | 'regen' | 'sweep';
+  kind: 'shield' | 'shift' | 'regen' | 'sweep' | 'drain' | 'terror' | 'darken';
+  /** Courses whose bosses may have it (all if missing). */
+  courses?: CourseDef['id'][];
   value: number;
   /**
    * Whom the boss attacks: rows (default) prefers the front row,
@@ -552,12 +625,25 @@ export interface RelicDef {
   name: string;
   icon: string;
   description: string;
-  /** Turm-Marken for level 1; each level costs `costGrowth` times more. */
+  /** Price of level 1 (in `currency`); each level costs `costGrowth` times more. */
   cost: number;
+  /** Resource it is bought with (Turm-Marken if missing; dark relics: Schattenmarken). */
+  currency?: string;
   costGrowth: number;
   maxLevel: number;
-  /** Bonus per level (0.1 = +10 %) on fight stats; `element` raises the element advantage. */
+  /** Bonus per level (0.1 = +10 %) on fight stats; `element` raises the element advantage. Dark relics also have a malus (< 0). */
   bonus: Partial<Record<'hp' | 'atk' | 'def' | 'spd' | 'element', number>>;
+}
+
+/** A permanent bonus for reaching a depth in the Genom-Keller for the first time. */
+export interface CellarMilestoneDef {
+  id: string;
+  /** Deepest level that must have been cleared. */
+  level: number;
+  name: string;
+  /** Short German text of the bonus. */
+  description: string;
+  modifiers: ModifierDef[];
 }
 
 /** One construction stage of a Großprojekt: pay in over time, then build. */
@@ -876,8 +962,13 @@ export interface ContentData {
   resonances: ResonanceDef[];
   megaProjects: MegaProjectDef[];
   researchThemes: ResearchThemeDef[];
+  courses: CourseDef[];
+  cellarEnvironments: CellarEnvironmentDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
+  /** Dunkle Relikte (Genom-Keller): bought with Schattenmarken, one per team place in the tower and in the cellar. */
+  darkRelics: RelicDef[];
+  cellarMilestones: CellarMilestoneDef[];
   techniques: TechniqueDef[];
   nameLists: NameListDef[];
   rpgSkills: RpgSkillDef[];

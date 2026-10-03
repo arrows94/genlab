@@ -6,13 +6,15 @@ import { audioContext } from './sound';
  * plucked arpeggios and a long reverb. Each area has its own mood; on a
  * tab switch the sounding chords fade out while the new mood swells in.
  * The other world (GenLab RPG) adds a step grid: war drums, a galloping bass
- * and a horn riff, so fights sound like fights.
+ * and a horn riff, so fights sound like fights. The Genom-Keller has no chords
+ * at all: a breathing drone, a broken music box, sounds in the dark and – the
+ * deeper and the more dangerous – a tritone, a cluster and a heartbeat.
  *
  * `setMusic(on, volume, mood)` is the only entry point; it is called from an
  * effect in App.svelte whenever the settings or the tab change.
  */
 
-export type Mood = 'lab' | 'breeding' | 'genetics' | 'tower' | 'aeon' | 'isekai' | 'battle';
+export type Mood = 'lab' | 'breeding' | 'genetics' | 'tower' | 'aeon' | 'isekai' | 'battle' | 'cellar' | 'cellarBoss';
 
 interface MoodDef {
   /** Chords as MIDI notes; the first note is the root. */
@@ -47,6 +49,8 @@ interface MoodDef {
     /** Horn riffs, one per chord in turn: chord-note index (1…) per step, 0 = rest. */
     riffs?: number[][];
   };
+  /** Genom-Keller: no chords – drone, music box and sounds in the dark (`boss`: the shadow's track). */
+  horror?: 'cellar' | 'boss';
 }
 
 const MOODS: Record<Mood, MoodDef> = {
@@ -86,6 +90,10 @@ const MOODS: Record<Mood, MoodDef> = {
       ],
     },
   },
+  // Genom-Keller: the chord is only the drone's root (A1); everything else is scheduled by `horror`.
+  cellar: { chords: [[33]], chordSec: 8, plucks: 0, pulse: 0, bright: 300, pluck: 'sine', horror: 'cellar' },
+  // The shadow of the player's line: lower (G1), slower, the Brutstation's tune bent to minor, the heart racing.
+  cellarBoss: { chords: [[31]], chordSec: 9.6, plucks: 0, pulse: 0, bright: 300, pluck: 'sine', horror: 'boss' },
 };
 
 const LOOKAHEAD_SEC = 1.2;
@@ -210,6 +218,7 @@ function scheduleChord(c: AudioContext, at: number): void {
   const out = c.createGain();
   out.connect(bus!);
   voices.push({ gain: out, end: at + len + 3 });
+  if (m.horror) return horror(c, out, at, len, chord[0]!, m.horror === 'boss', index);
   // Pad: two slightly detuned saws per note, slow swell.
   const pad = m.pad ?? 0.035;
   for (const n of chord.slice(1)) {
@@ -264,6 +273,140 @@ function scheduleChord(c: AudioContext, at: number): void {
       const note = pattern[k % pattern.length]! + (k % 2 ? 24 : 12);
       tone(c, out, note, at + t, m.arp * 0.5, 'triangle', k % 4 === 0 ? 0.05 : 0.03, 2000, 0.005);
     }
+  }
+}
+
+// ---- Genom-Keller ---------------------------------------------------------------
+
+/** How deep (0…1) and how dangerous (0…1) the cellar is right now – set by the Keller view. */
+let atmosphere = { depth: 0, danger: 0 };
+
+/** The Keller view reports depth and danger; the next segments of the cellar track follow them. */
+export function setCellarAtmosphere(depth: number, danger: number): void {
+  atmosphere = { depth: Math.max(0, Math.min(1, depth)), danger: Math.max(0, Math.min(1, danger)) };
+}
+
+/** A tone that glides from one pitch to another (drops, creaks). */
+function glide(c: AudioContext, out: AudioNode, from: number, to: number, at: number, length: number, type: OscillatorType, level: number, cutoff: number): void {
+  const osc = c.createOscillator();
+  const filter = c.createBiquadFilter();
+  const gain = c.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(hz(from), at);
+  osc.frequency.exponentialRampToValueAtTime(hz(to), at + length);
+  filter.type = 'lowpass';
+  filter.frequency.value = cutoff;
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.linearRampToValueAtTime(level, at + Math.min(0.02, length / 4));
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  osc.connect(filter).connect(gain).connect(out);
+  osc.start(at);
+  osc.stop(at + length + 0.05);
+}
+
+/** A whisper: looping noise through a band-pass that wanders, swelling and fading. */
+function whisper(c: AudioContext, out: AudioNode, at: number, length: number, level: number): void {
+  const src = c.createBufferSource();
+  src.buffer = noise(c);
+  src.loop = true;
+  const filter = c.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 6;
+  filter.frequency.setValueAtTime(500 + Math.random() * 300, at);
+  filter.frequency.linearRampToValueAtTime(1100 + Math.random() * 800, at + length * 0.6);
+  filter.frequency.linearRampToValueAtTime(600, at + length);
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.linearRampToValueAtTime(level, at + length * 0.4);
+  gain.gain.linearRampToValueAtTime(0.0001, at + length);
+  src.connect(filter).connect(gain).connect(out);
+  src.start(at);
+  src.stop(at + length + 0.05);
+}
+
+/** One heartbeat: a dull „lub“ and a softer „dub“. */
+function heartbeat(c: AudioContext, out: AudioNode, at: number, level: number): void {
+  for (const [t, l] of [[0, level], [0.2, level * 0.6]] as const) {
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(68, at + t);
+    osc.frequency.exponentialRampToValueAtTime(40, at + t + 0.16);
+    gain.gain.setValueAtTime(0.0001, at + t);
+    gain.gain.linearRampToValueAtTime(l, at + t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + t + 0.28);
+    osc.connect(gain).connect(out);
+    osc.start(at + t);
+    osc.stop(at + t + 0.32);
+  }
+}
+
+/** A lullaby from the lab's early days (A minor), for the broken music box. */
+const LULLABY = [76, 72, 74, 71, 72, 69, 71, 68, 69];
+/**
+ * The shadow's tune: the Brutstation's chords (C – Am7 – F – G) as a falling
+ * arpeggio, every major third and sixth bent down a semitone into minor.
+ */
+const BENT_BROOD = (() => {
+  const brood = [[60, 64, 67], [60, 64, 57], [65, 60, 57], [62, 59, 55]];
+  const bend = (n: number) => ([4, 9, 11].includes(n % 12) ? n - 1 : n);
+  return brood.flatMap((chord) => chord.map(bend));
+})();
+
+/** The music box: detuned, uneven, winding down – and sometimes it just stops. */
+function musicBox(c: AudioContext, out: AudioNode, at: number, len: number, boss: boolean): void {
+  const tune = boss ? BENT_BROOD : LULLABY;
+  const stopAt = Math.random() < 0.35 ? 3 + Math.floor(Math.random() * (tune.length - 3)) : tune.length;
+  let t = at + 0.4 + Math.random() * 1.2;
+  let step = boss ? 0.72 : 0.5;
+  for (let i = 0; i < stopAt && t < at + len - 0.3; i++) {
+    const note = tune[i]! + (boss ? -12 : 0);
+    const detune = (Math.random() - 0.5) * (boss ? 70 : 45);
+    tone(c, out, note, t, 0.5, 'sine', 0.05, 5000, 0.005, detune);
+    tone(c, out, note + 12, t, 0.25, 'triangle', 0.012, 6000, 0.005, detune);
+    // Winding down: every note a little later than the last, never quite even.
+    step *= 1.06 + Math.random() * 0.06;
+    t += step * (0.85 + Math.random() * 0.3);
+  }
+}
+
+/** Sounds in the dark: a drop, creaking metal, a distant knock or a whisper. */
+function roomSound(c: AudioContext, out: AudioNode, at: number): void {
+  const kind = Math.floor(Math.random() * 4);
+  if (kind === 0) glide(c, out, 96 + Math.random() * 4, 84, at, 0.07, 'sine', 0.06, 6000);
+  else if (kind === 1) {
+    glide(c, out, 40, 44 + Math.random() * 3, at, 0.7, 'sawtooth', 0.025, 420);
+    glide(c, out, 44, 38, at + 0.7, 0.6, 'sawtooth', 0.02, 380);
+  } else if (kind === 2) {
+    const n = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < n; i++) hit(c, out, at + i * (0.32 + Math.random() * 0.1), 'lowpass', 260, 0.18, 0.18);
+  } else whisper(c, out, at, 1.6 + Math.random(), 0.035);
+}
+
+/**
+ * One segment of the cellar track: the breathing drone (two sines a few cents
+ * apart, so they beat slowly), deeper down a tritone and then a minor-second
+ * cluster, the music box every other segment, one to three sounds in the dark,
+ * and a heartbeat when the team is in danger (always against the shadow).
+ */
+function horror(c: AudioContext, out: AudioNode, at: number, len: number, root: number, boss: boolean, index: number): void {
+  const { depth, danger } = atmosphere;
+  const swell = len * 0.45;
+  tone(c, out, root, at, len, 'sine', 0.16, 300, swell, -4);
+  tone(c, out, root, at, len, 'sine', 0.16, 300, swell, 5);
+  tone(c, out, root + 12, at, len, 'sawtooth', 0.018, 180, swell, 9);
+  if (boss || depth > 0.15) tone(c, out, root + 18, at, len, 'sine', 0.02 + 0.04 * (boss ? 1 : depth), 500, swell, -12);
+  if (boss || depth > 0.5) {
+    tone(c, out, root + 25, at + len * 0.3, len * 0.6, 'triangle', 0.012 + 0.012 * depth, 900, 1.5);
+    tone(c, out, root + 26, at + len * 0.35, len * 0.55, 'triangle', 0.012 + 0.012 * depth, 900, 1.5);
+  }
+  if (boss || index % 2 === 0) musicBox(c, out, at, len, boss);
+  const sounds = 1 + Math.floor(Math.random() * (2 + depth * 2));
+  for (let i = 0; i < sounds; i++) roomSound(c, out, at + Math.random() * (len - 1.5));
+  const fear = boss ? 0.9 : danger;
+  if (fear > 0.35) {
+    const beat = boss ? 0.75 : 1.15 - 0.45 * fear;
+    for (let t = 0.2; t < len - 0.3; t += beat) heartbeat(c, out, at + t, 0.12 + 0.18 * fear);
   }
 }
 

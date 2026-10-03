@@ -10,7 +10,8 @@
   import { loadPrefs, prefs } from './prefs.svelte';
   import { viewState } from './viewState.svelte';
   import { openInbox } from './inbox.svelte';
-  import { moodFor, setMusic } from './music';
+  import { moodFor, setCellarAtmosphere, setMusic } from './music';
+  import { cellarAtmosphere } from '@core/features/cellar';
   import { play } from './sound';
   import ResourceBar from './components/ResourceBar.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
@@ -143,8 +144,19 @@
     view.frame;
     return view.world === 'run' && !!game.state.rpg.run?.battle;
   });
+  // Down in the Genom-Keller: its own track, the shadow's when a boss comes next; depth and danger shape it.
+  const cellar = $derived.by(() => {
+    view.slowFrame;
+    if (view.tab !== 'tower' || viewState.tower.area !== 'cellar' || !game.state.features['cellar']) return null;
+    return cellarAtmosphere(game);
+  });
+  $effect(() => {
+    if (cellar) setCellarAtmosphere(cellar.depth, cellar.danger);
+  });
   // A string, so the effect only reruns when the mood changes (`activeGroup` is a new object every frame).
-  const mood = $derived(inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab, activeGroup.id));
+  const mood = $derived(
+    inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : cellar ? (cellar.boss ? 'cellarBoss' : 'cellar') : moodFor(view.tab, activeGroup.id),
+  );
   $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, mood));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.

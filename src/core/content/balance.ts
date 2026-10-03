@@ -2,6 +2,47 @@ import type { ResourceAmounts } from './types';
 import type { ModifierDef } from '../modifiers';
 
 /**
+ * The enemy curve of an endless floor course (Genom-Turm, later the Genom-Keller): who stands on a floor, how
+ * strong, the rhythm of bosses, Wächter and checkpoints and the token pay per floor. The fight rules themselves
+ * (Aktionsleiste, Wut, defence …) are shared and stay in `Balance.tower`.
+ */
+export interface FloorCurve {
+  /** Normal floors from here on can bring 2–3 foes. */
+  groupFromFloor: number;
+  /** HP / ANG of the whole group (× the single enemy), index = group size − 1; split among its members. */
+  groupHp: number[];
+  groupAtk: number[];
+  /** Boss floors from here on bring two companions. */
+  companionsFromFloor: number;
+  /** Companion HP / ANG as a share of a normal enemy of that floor. */
+  companionHp: number;
+  companionAtk: number;
+  /** Bosses from here on wake a second trait below `Balance.tower.phaseAt` of their HP. */
+  phaseFromFloor: number;
+  enemyBase: Record<string, number>;
+  /** Enemy stats × growth^(floor − subFloors). */
+  enemyGrowth: number;
+  /**
+   * Small floors per former floor (3): enemy stats × growth^(floor − subFloors), and floor 3n rolls the same
+   * enemy, element and boss trait as the former floor n.
+   */
+  subFloors: number;
+  bossEvery: number;
+  bossHpMult: number;
+  bossAtkMult: number;
+  /** Wächter: every n-th floor (not a boss floor) the foes are stronger – no checkpoint, no trait. */
+  guardEvery: number;
+  guardHpMult: number;
+  guardAtkMult: number;
+  /** Tokens of floor f (Turm-Marken in the tower): tokensPerFloor × (1 + tokenGrowthPerFloor × (f − 1)), paid as whole numbers (running sum). */
+  tokensPerFloor: number;
+  tokenGrowthPerFloor: number;
+  checkpointEvery: number;
+  /** Bosses from this floor on have a trait (`bossTraits`). */
+  bossTraitFromFloor: number;
+}
+
+/**
  * Shape of the central balancing file (`src/content/balance.ts`). Core logic
  * never contains tuning numbers; everything comes from here.
  */
@@ -359,7 +400,7 @@ export interface Balance {
     /** Eggs of the Zuchtautomat take this many times as long as a hand-bred egg. */
     autoBreedTimeMult: number;
   };
-  tower: {
+  tower: FloorCurve & {
     fightIntervalSec: number;
     baseTeamSize: number;
     /**
@@ -385,18 +426,7 @@ export interface Balance {
     techniqueEvery: number;
     /** Tower enemies use their technique every n-th action (0 = never). */
     enemyTechniqueEvery: number;
-    /** Normal floors from here on can bring 2–3 foes. */
-    groupFromFloor: number;
-    /** HP / ANG of the whole group (× the single enemy), index = group size − 1; split among its members. */
-    groupHp: number[];
-    groupAtk: number[];
-    /** Boss floors from here on bring two companions. */
-    companionsFromFloor: number;
-    /** Companion HP / ANG as a share of a normal enemy of that floor. */
-    companionHp: number;
-    companionAtk: number;
-    /** Bosses from here on wake a second trait below `phaseAt` of their HP. */
-    phaseFromFloor: number;
+    /** Share of its HP below which a boss wakes its second trait (from `phaseFromFloor` on). */
     phaseAt: number;
     /** Flächenangriff: every n-th action of the boss. */
     sweepEvery: number;
@@ -406,36 +436,15 @@ export interface Balance {
     pairBonus: number;
     /** Three or more different elements: +share damage against the Wandler. */
     diversityBonus: number;
-    enemyBase: Record<string, number>;
-    /** Enemy stats × growth^(floor − subFloors). */
-    enemyGrowth: number;
-    /**
-     * Small floors per former floor (3): enemy stats × growth^(floor − subFloors), and floor 3n rolls the same
-     * enemy, element and boss trait as the former floor n.
-     */
-    subFloors: number;
-    bossEvery: number;
-    bossHpMult: number;
-    bossAtkMult: number;
-    /** Wächter: every n-th floor (not a boss floor) the foes are stronger – no checkpoint, no trait. */
-    guardEvery: number;
-    guardHpMult: number;
-    guardAtkMult: number;
     strongMult: number;
     weakMult: number;
     /** Damage = atk × mult / (1 + defWeight × def / atk) (scale-free: fights last as long on every floor). */
     defWeight: number;
-    /** Turm-Marken of floor f: tokensPerFloor × (1 + tokenGrowthPerFloor × (f − 1)), paid as whole numbers (running sum). */
-    tokensPerFloor: number;
-    tokenGrowthPerFloor: number;
     catalystEvery: number;
     alleleEvery: number;
     leaderboardSize: number;
     /** Number of recent runs kept in the tower history. */
     historySize: number;
-    checkpointEvery: number;
-    /** Bosses from this floor on have a trait (`bossTraits`). */
-    bossTraitFromFloor: number;
     /** A new record on every multiple of this floor is a milestone. */
     milestoneEvery: number;
     /** Äon-Splitter for reaching a milestone the first time. */
@@ -453,6 +462,37 @@ export interface Balance {
     /** Entschlossenheit: while the record does not rise, +resolvePerDay KP and damage per day (hourly steps), at most resolveCap; a new record resets it. */
     resolvePerDay: number;
     resolveCap: number;
+  };
+  /**
+   * Genom-Keller: limited descents below the tower with the tower's fight engine. The team's HP carries from
+   * level to level (Erschöpfung); a rest vault heals between them.
+   */
+  cellar: FloorCurve & {
+    /** Seconds of play per level (the fights run in the background like the tower's). */
+    fightIntervalSec: number;
+    /** Descents per day and how many can be saved up. */
+    attemptsPerDay: number;
+    maxAttempts: number;
+    /** After every n-th cleared level a rest vault heals the team by restHeal of its max HP – the fallen get up again. */
+    restEvery: number;
+    restHeal: number;
+    /** Number of recent descents kept in the history. */
+    historySize: number;
+    /** Environments (`cellarEnvironments`) from this level on, one per section of `environmentEvery` levels. */
+    environmentFrom: number;
+    environmentEvery: number;
+    /**
+     * Fackellicht: starts full (1) and drops by lightPerLevel after every level, a rest vault fills it again.
+     * Below lightMissFrom own attacks miss more: (lightMissFrom − light) × lightMiss – not for creatures with night sight.
+     */
+    lightPerLevel: number;
+    lightMissFrom: number;
+    lightMiss: number;
+    /** Äon-Splitter for every boss depth cleared for the first time, and for every Tiefen-Meilenstein … */
+    shardsPerBoss: number;
+    shardsPerMilestone: number;
+    /** … at most this many per week. */
+    weeklyShards: number;
   };
   anomalies: {
     /** Highest difficulty stage (I–V). */

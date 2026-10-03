@@ -3,7 +3,8 @@ import { effectiveStats } from '@core/creatures';
 import { abandonAnomaly, anomalyAvailable, anomalyBest, startAnomalies } from '@core/features/anomalies';
 import { depositMegaProject, megaAvailable, megaConstruction, megaRemaining, currentStage } from '@core/features/megaProjects';
 import { AEON_CURRENCY, buyResonance, buyTalent, resonanceAvailable, resonanceCost, resonanceLevel, talentAvailable } from '@core/features/talents';
-import { buyRelic, elementMultiplier, enemyFor, equipRelic, relicCost, relicLevel, roleOf, setRow, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { buyRelic, elementMultiplier, enemyFor, equipDarkRelic, equipRelic, relicCost, relicLevel, roleOf, setRow, setTeam, setTowerAutoRestart, startRun, stopRun, teamSize } from '@core/features/tower';
+import { cellarCheckpoint, cellarEnemies, cellarFit, setCellarAuto, setCellarRow, setCellarTeam } from '@core/features/cellar';
 import { attackWeeklyBoss, bossAttempts } from '@core/features/weeklyBoss';
 import { performPrestige, prestigeGain } from '@core/prestige';
 import type { Game } from '@core/game';
@@ -26,6 +27,8 @@ export interface EndgameOptions {
   anomalies?: boolean;
   /** Give up an anomaly run after this many hours (the plan is not tried again until the next Äon). */
   anomalyTimeoutH?: number;
+  /** Use the Genom-Keller once it is open (default true). */
+  cellar?: boolean;
 }
 
 /** What the bot remembers between calls (not part of the save). */
@@ -52,9 +55,13 @@ export function endgameCheckIn(g: Game, opts: EndgameOptions = {}): void {
   feedMegaProjects(g, depositShare);
   ensureTowerRoutine(g);
   buyRelics(g);
+  if (opts.cellar !== false) buyDarkRelics(g);
   // The tower routine keeps the same team forever: rebuild it from the strongest creatures each visit.
+  // The tower comes first: a cellar team that is not down there gives its members back.
   if (g.state.tower.run) stopRun(g);
+  if (!g.state.cellar.run) setCellarTeam(g, []);
   climbTower(g);
+  if (opts.cellar !== false) descendCellar(g);
   // Weekly boss: attacks are saved for the strongest team (right before a reset, see spendBossAttacks);
   // only what the next daily refill would push over the limit is used now.
   if (g.state.features.weeklyBoss && g.state.tower.team.length > 0) {
@@ -81,6 +88,7 @@ export function useEndgameSystems(g: Game, opts: EndgameOptions = {}): void {
   const { aeonAt = 3, aeonGrowth = 2, anomalies = true, anomalyTimeoutH = 12 } = opts;
   ensureTowerRoutine(g);
   climbTower(g);
+  if (opts.cellar !== false) descendCellar(g);
   spendShards(g);
   if (anomalies) playAnomalies(g, anomalyTimeoutH);
 
@@ -130,6 +138,7 @@ function climbTower(g: Game): void {
   const score = new Map(g.state.creatures.map((c) => [c.id, value(c)]));
   const free = g.state.creatures
     .filter((c) => c.job === null || c.job.kind === 'building' || c.job.kind === 'tower')
+    .filter((c) => !g.state.cellar.team.includes(c.id))
     .sort((a, b) => score.get(b.id)! - score.get(a.id)!)
     .slice(0, size);
   if (free.length === 0) return;
@@ -243,4 +252,52 @@ function feedMegaProjects(g: Game, share: number): void {
   for (const def of g.content.megaProjects.list) {
     if (megaAvailable(g, def) && currentStage(g, def) && !megaConstruction(g, def.id)) depositMegaProject(g, def.id, share);
   }
+}
+
+/**
+ * Genom-Keller like an idle player: auto-descent on, and whenever no descent
+ * runs a team from what the tower left – strength against the next level's
+ * foes, ×1.3 for every rule that helps and ×0.7 for every rule that hurts
+ * there; the dark relics go to the strongest places.
+ */
+function descendCellar(g: Game): void {
+  if (!g.state.features.cellar || g.state.cellar.run) return;
+  // The tower first: until its team is full (after a reset) the cellar waits, so it never holds the best creatures.
+  if (g.state.tower.team.length < teamSize(g)) return;
+  if (!g.state.cellar.auto) setCellarAuto(g, true);
+  const next = cellarCheckpoint(g) + 1;
+  const foe = cellarEnemies(g, next).find((f) => f.boss) ?? cellarEnemies(g, next)[0]!;
+  const tower = new Set(g.state.tower.team);
+  const free = g.state.creatures.filter((c) => (c.job === null || c.job.kind === 'building') && !tower.has(c.id));
+  const value = (c: Creature) => {
+    const s = effectiveStats(g, c);
+    const worth = (s.hp ?? 0) * (1 + (s.def ?? 0) / Math.max(1, foe.atk)) * (s.atk ?? 0) * Math.pow(Math.max(1, s.spd ?? 0) / Math.max(1, foe.spd), 0.8);
+    const fit = cellarFit(g, c, next);
+    return worth * elementMultiplier(g, g.content.species.get(c.speciesId).element, foe.element) * Math.pow(1.3, fit.good.length) * Math.pow(0.7, fit.bad.length);
+  };
+  const size = teamSize(g);
+  if (free.length < size) return;
+  const team = free.sort((a, b) => value(b) - value(a)).slice(0, size);
+  if (!setCellarTeam(g, team.map((c) => c.id)).ok) return;
+  // The sturdiest one in front, the rest behind (the cellar is long: spread the hits).
+  const tanks = new Set(team.filter((c) => roleOf(g, effectiveStats(g, c)) === 'tank').map((c) => c.id));
+  for (const c of team) setCellarRow(g, c.id, tanks.size > 0 && !tanks.has(c.id) ? 'back' : 'front');
+  const owned = g.content.darkRelics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
+  for (let i = 0; i < size; i++) equipDarkRelic(g, 'cellar', i, owned[i]?.id ?? null);
+}
+
+/** Schattenmarken buy the cheapest dark relic level; the same relics also go into the tower's dark places. */
+function buyDarkRelics(g: Game): void {
+  if (!g.state.features.cellar) return;
+  for (let i = 0; i < 30; i++) {
+    const marks = g.state.resources['shadowMarks']?.toNumber() ?? 0;
+    const next = g.content.darkRelics.list
+      .map((r) => ({ id: r.id, cost: relicCost(g, r.id)?.toNumber() ?? Infinity }))
+      .filter((x) => x.cost <= marks)
+      .sort((a, b) => a.cost - b.cost)[0];
+    if (!next || !buyRelic(g, next.id).ok) break;
+  }
+  if (g.state.tower.run) return;
+  const owned = g.content.darkRelics.list.filter((r) => relicLevel(g, r.id) > 0).sort((a, b) => relicLevel(g, b.id) - relicLevel(g, a.id));
+  for (let i = 0; i < teamSize(g); i++) equipDarkRelic(g, 'tower', i, owned[i]?.id ?? null);
 }

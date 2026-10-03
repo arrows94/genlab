@@ -4,17 +4,6 @@ Hier steht nur Offenes. Was fertig ist, wandert als kurze Zusammenfassung nach `
 Einträge oben) und wird hier gestrichen – `tests/todo.test.ts` prüft das. Einzelheiten, Messreihen und Begründungen
 stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 
-# Code-Durchsicht (Oktober 2026)
-
-Ergebnis einer Durchsicht des ganzen Codes am 2026-10-02 (`svelte-check` ohne Befund, alle Tests grün). Abgearbeitet
-wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, vor dem Beheben einzeln bestätigen.
-
-## Schritt 4 – Balancing und Qualität
-
-Spiellogik (ungeprüft):
-- [ ] Ohne Quelle: `infusion.transferChance`, `cost.capsule`, `cost.upgrade`,
-      Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
-
 # Endgame
 
 - [ ] Gen-Aufträge: kosmetische Muster als Belohnung (braucht neue Muster im Kreaturen-SVG)
@@ -27,12 +16,12 @@ Spiellogik (ungeprüft):
       „Reine Linie vertiefen“ nutzt
 - [ ] Wiederholbare Langzeitziele, wenn Anomalien, Talente und Großprojekt ausgereizt sind (Ideen aus der
       Durchsicht: „Anomalie der Woche“, wöchentliche Zuchtschau, zweites Großprojekt als Senke für Runen und Marken,
-      das `slots.ritualNest` und `infusion.transferChance` eine Quelle gibt)
+      das `slots.ritualNest` eine Quelle gibt)
 
 ## Später
 
-- [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender
-      (mit dem RPG-Dungeon und dem Genom-Keller abgleichen – nicht drei „immer tiefer“-Systeme)
+- [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender – kein eigenes System, sondern
+      mit dem RPG-Dungeon zusammenlegen (Abgrenzung zum Genom-Keller siehe dort)
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
 - [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
 
@@ -81,6 +70,8 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
 
 - [ ] Alle Klänge einmal mit echten Ohren durchhören (Lautstärke untereinander, nervt etwas auf Dauer?) – bisher nur
       fehlerfrei im Browser abgespielt
+- [ ] Genom-Keller mit echten Ohren gegenhören: Musik (Dröhnen, Spieluhr, Raum-Geräusche, Herzschlag, Schatten-Melodie)
+      und Keller-Klänge – schaurig, aber auf Dauer nicht nervig? Lautstärke gegenüber den anderen Stimmungen
 - [ ] Falls Tondateien: lizenzfreie Quellen dokumentieren, als `.ogg` klein halten, nicht in den Service-Worker-Precache
 
 # Turm: Stillstand abbauen und Genom-Keller
@@ -91,6 +82,9 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
       braucht Faktor 1,15, Etage 175 (ein Wasser-Gegner gegen ein Erde/Feuer-Team) 1,98, Boss 180 2,21 – die Mauern
       sind jetzt vor allem Element-Spitzen, weil der Bot-Stall fast nur aus einer oder zwei Arten besteht. Möglich:
       Bot-Zucht vielfältiger (näher am echten Spieler), Entschlossenheit höher deckeln, oder „Veteranen“-Talent
+      Der Genom-Keller löst ihn nicht allein (Äon-Bot 28 Tage, Turm am Ende ohne / mit Keller und dunklen Relikten):
+      Seed 2024 155 / 156, Seed 7 154 / 162, Seed 99 155 / 155 – Seed 99 steht ab Tag 10 bei 155. Der Keller hat
+      ähnliche Mauern (−39 von Tag 10 bis 22 bei Seed 2024), weil beide an derselben Stärke des Stalls hängen
 - [ ] Auf dem Handy nachmessen, wie lange das Laden nach 12 h mit Dauerkampf (Auto-Neustart) dauert
 - [ ] Optional: Äon-Talent „Veteranen“ (+50 % Erfahrung) oder ein Resonanz-Knoten, damit auch das Äon den Turm
       spürbar beschleunigt
@@ -100,23 +94,71 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
 Statt eines zweiten Turms geht es nach unten: ein Keller unter dem Genom-Turm, der mit jedem Sieg eine Ebene tiefer
 wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himmel.
 
-- [ ] **Begrenzte Versuche** statt Dauerkampf: Muster wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`), Zahlen
-      in `balance.ts`. Ein Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt
-- [ ] **Schalter mit Animation** zum Wechsel zwischen Turm und Keller: im Turm-Tab ein Umschalter (▲ Turm / ▼ Keller);
-      beim Wechsel fährt die Ansicht durch den Boden nach unten bzw. zurück nach oben (Aufzug oder Wendeltreppe),
-      `.reduce-motion` = sofortiger Wechsel. Der zuletzt gewählte Bereich bleibt in `viewState`
-- [ ] Grundidee festlegen – Vorschläge:
-  - Eigener Tiefen-Rekord, eigene Kontrollpunkte, eigenes Team (eine Kreatur steht nie in Turm und Keller zugleich)
-  - Härtere Regeln: steilere Gegner-Kurve, Schatten-Aura (Heilung halbiert), mehr Boss-Merkmale,
-    oder eine wöchentlich wechselnde Regel
-  - Freischaltung: Etage 150 im Turm (neue Zählung) oder erster Äon
-  - Belohnung: eigene Währung (z. B. „Schattenmarken“) für dunkle Relikte – und eine weitere Äon-Splitter-Quelle
-  - Überschneidung mit der „Tiefenexpedition“ (Endgame → Später) und dem Dungeon im GenLab RPG prüfen – nicht drei
-    Systeme bauen, die alle „immer tiefer“ sind. Vorschlag aus der Durchsicht: Keller = endloser RPG-Modus mit
-    Heldenstufe je Art; Schattenmarken für dunkle Relikte, die auch im Turm wirken
-- [ ] Technik: `features/tower.ts` so verallgemeinern, dass Turm und Keller aus Daten entstehen (Definitionen in
-      `content/endgame.ts`, Richtung auf/ab) statt einer Kopie des Turm-Codes
-- [ ] Arena im Keller-Stil (Gewölbe, Fackellicht, dunkle Farben, Gegner-Tönung); Ebenen zählen nach unten (−1, −2 …)
+**Grundidee (festgelegt 2026-10-03): „Gen-Keller“ – die Ebenen verlangen Genetik.** Der Turm misst rohe Kampfkraft,
+der Keller misst, wie gut ein Team an seine Umgebung *angezüchtet* ist. Das soll zwei Schwächen des Spiels angehen:
+Der Turm belohnt Einfalt (Bot-Stall aus ein, zwei Arten, Mauern sind Element-Spitzen), und Gene, Farbe und latente
+Merkmale wirken außerhalb der Produktion kaum.
+
+- **Kampf:** Turm-Engine (`simulateFight`), automatisch und idle-tauglich – kein RPG-Modus mit Steuerung von Hand
+- **Begrenzte Versuche** wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`, neuer Tag → neue Versuche). Ein
+  Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt; läuft im Hintergrund, Wiedergabe wie in der
+  Turm-Arena
+- **Erschöpfung:** KP tragen sich über die Ebenen weiter (`FightResult.stats.hpLeft`) – der Turm prüft jede Etage
+  einzeln, der Keller die Ausdauer des Teams. Rast-Gewölbe heilen; **Fackellicht** sinkt je Ebene (darunter ein
+  Treffer-Malus) und füllt sich in der Rast wieder
+- **Umgebungen** je Abschnitt (z. B. alle 10 Ebenen), fest je Ebene wie die Boss-Merkmale, dazu eine wöchentlich
+  wechselnde Regel passend zur Wochen-Mutation. Ideen:
+  - *Finsternis*: Treffer-Malus; Farb-Allele *Dunkel* / *Albino* werden zu Höhlen-Anpassungen
+  - *Überflutet*: Wasser/Eis stärker, Feuer schwächer
+  - *Sporennebel*: Gift jede Runde, reinerbige *Unermüdlich* (Aᵉ) sind immun
+  - *Schatten-Aura*: Heilung halbiert
+  - *Einsturz*: Flächenschaden auf die hintere Reihe
+  - *Vielfalts-Siegel*: jede Art nur einmal im Team
+- **Gegner:** die „verworfenen Linien“ – misslungene Experimente aus der Frühzeit des Labors. Alle 30 Ebenen der Boss
+  **„Schatten deiner Dynastie“**: eine dunkle Kopie der meistgezüchteten Art des Spielers, mit deren Genen
+- **Belohnungen:** eigene Währung **Schattenmarken** für **dunkle Relikte** (Vorteil mit Nachteil, z. B. +30 % ANG,
+  −10 % KP), die in Turm *und* Keller wirken – hilft gegen den Turm-Stillstand. **Tiefen-Meilensteine** als dauerhafte
+  Boni und Quelle für die quellenlosen Werte aus der Code-Durchsicht (`infusion.transferChance`, Ritual-Seltenheit,
+  `cost.capsule`, `cost.upgrade`). Äon-Splitter an neuen Boss-Tiefen mit Wochen-Deckel wie im RPG. Später
+  **Höhlenformen**: blasse, augenlose Varianten bekannter Arten (Dex oder Kosmetik)
+- **Freischaltung:** mit dem ersten Äon oder bei Turm-Etage 150 (im Äon-Bot Tag 5–6, an der ersten Turm-Mauer)
+- **Eigenes Team**, eigener Tiefen-Rekord und eigene Kontrollpunkte; eine Kreatur steht nie in Turm und Keller
+  zugleich. Rekord, Schattenmarken und dunkle Relikte überstehen jede Vererbung und jedes Äon
+- **Atmosphäre – etwas Eigenes, weder Turm noch RPG-Welt:** Der Turm ist das saubere Labor (Violett, Petrol, Himmel),
+  die RPG-Welt Fantasy (Pergament, Messing, Glut). Der Keller ist das **verlassene, überwucherte Labor darunter** –
+  schaurig und böse, aber nicht blutig:
+  - *Farben:* eigene Tokens – Schwarzgrün (`--abyss`), fahles Biolumineszenz-Grün (`--bile`), Rost, Knochenweiß;
+    Rot nur für Augen in der Dunkelheit
+  - *Lichtkegel:* Die Szene ist schwarz, nur ein flackernder Fackelkreis ist sichtbar – sein Radius folgt dem
+    Fackellicht, die Spielregel ist also direkt zu sehen. Ohne Flackern bei `.reduce-motion`
+  - *Gegner aus der Dunkelheit:* erst nur leuchtende Augen, die Gestalt zeigt sich beim Angriff
+  - *Kulisse:* Gewölbe, tropfendes Wasser, zerbrochene Zuchttanks mit trübem Inhalt, Adern in den Wänden, die im
+    Herzschlag pulsieren, Bodennebel, verblichene Laborschilder, Kratzspuren
+  - *Umgebungen sichtbar:* Überflutet = steigende Wasserlinie, Sporennebel = grüne Schwebeteilchen, Finsternis =
+    kleinerer Lichtkegel, Einsturz = Staub und Risse
+  - *Boss „Schatten“:* das SVG der eigenen Art schwarz und verzerrt, mit glühenden Augen
+  - *Ebenen* als Schacht nach unten mit Tiefenmesser (−1, −2 …) statt der Etagen-Liste des Turms
+- **Musik – eigene Stimmung `cellar`** (live mit Web Audio wie `ui/music.ts`, keine Dateien). Kein Akkordwechsel wie
+  bei den anderen Stimmungen, sondern Gruselklang; dafür bekommt `MoodDef` neue Bausteine:
+  - *Atmender Drone:* zwei tiefe, leicht verstimmte Töne, die langsam gegeneinander schweben; ab und zu ein Tritonus
+  - *Kaputte Spieluhr:* ein Wiegenlied aus der Frühzeit des Labors, verstimmt, stockend, bleibt manchmal stehen
+  - *Geräusche im Raum* zu zufälligen Zeiten: Tropfen mit Hall, knarrendes Metall, fernes Klopfen, Flüstern
+    (gefiltertes Rauschen)
+  - *Mit der Tiefe* mehr Dissonanz; bei wenig Licht oder schwachem Team ein Herzschlag
+  - *Boss „Schatten“:* die Melodie der Brutstation, verlangsamt und nach Moll verbogen – das dunkle Spiegelbild
+  - `moodFor` wählt `cellar`, solange der Umschalter auf ▼ Keller steht
+- **Klänge** (`ui/sound.ts`, je Rezept mit Drossel in `LIMITS` und in `SOUND_GROUPS` zum Probehören): Aufzug-Fahrt
+  (Seil, Schleifen, dumpfer Aufprall), Ebene geschafft (dumpfer Gong), Fackel flackert / erlischt, Rast (Feuer
+  knistert), neue Umgebung, Boss erscheint (anschwellendes Grollen), Niederlage (absinkender Cluster), neuer Versuch
+  bereit
+- **Abgrenzung:** Turm = rohe Kraft eines Teams, Dauerkampf. Keller = Anpassung eines Teams, begrenzte Abstiege.
+  RPG-Dungeon = ein Held, von Hand. Die „Tiefenexpedition“ wird kein eigenes System, sondern mit dem RPG-Dungeon
+  zusammengelegt
+
+### Schritte
+
+- [ ] **Schritt 10 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
+      Änderungen am Kreaturen-SVG – zusammen mit den kosmetischen Mustern der Gen-Aufträge planen
 
 # GenLab RPG
 

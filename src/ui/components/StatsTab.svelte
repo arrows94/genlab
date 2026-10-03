@@ -52,6 +52,7 @@
         ['Beste Seltenheit', content.rarities.list.find((r) => r.order === (game.state.statistics['record.rarity'] ?? 0))?.name ?? '–'],
         ['Höchste Infusion', `+${game.state.statistics['record.infusion'] ?? 0}`],
         ...(game.state.features['dynasties'] ? [['Tiefste reine Linie', String(game.state.statistics['record.lineage'] ?? 0)] as const] : []),
+        ...(game.state.features['cellar'] ? [['Tiefste Keller-Ebene', `−${game.state.statistics['record.cellarLevel'] ?? 0}`] as const] : []),
       ] as const,
       earned: Object.entries(game.state.earnedTotal),
       achievements: content.achievements.list.map((a) => ({ def: a, done: !!game.state.achievements[a.id], at: game.state.milestones[`achievement:${a.id}`] })),

@@ -15,7 +15,7 @@ const print = (reports: DayReport[]) => {
     console.log(
       `Tag ${String(d.day).padStart(2)}  Vererbungen ${String(d.inheritances).padStart(3)}  Erbgut ${String(d.heritage).padStart(6)}  Turm ${String(d.towerBest).padStart(3)}` +
         `  Boss ${Math.round(d.bossShare * 100)} %  Äonen ${d.aeons}  Splitter ${d.shards}  Talente ${d.talents}  Resonanz ${d.resonance}  Observatorium ${d.observatory}/4` +
-        `  Relikte ${d.relics}  Rang ${d.veteranRank}  Entschl. ${Math.round(d.resolve * 100)} %  Dynastie ${d.dynastyBest} (${d.dynastyTiers} Stufen)  Anomalie-Rekord ${d.anomalyRecord}  Splitter-Quellen ${Object.entries(d.shardSources).map(([k, v]) => `${k} ${v}`).join(', ') || '–'}` +
+        `  Relikte ${d.relics}  Keller −${d.cellarBest} (${d.descents} Abstiege, ${d.shadowMarks} Marken, dunkle ${d.darkRelics})  Rang ${d.veteranRank}  Entschl. ${Math.round(d.resolve * 100)} %  Dynastie ${d.dynastyBest} (${d.dynastyTiers} Stufen)  Anomalie-Rekord ${d.anomalyRecord}  Splitter-Quellen ${Object.entries(d.shardSources).map(([k, v]) => `${k} ${v}`).join(', ') || '–'}` +
         `${d.unlocked.length ? `  neu: ${d.unlocked.join(', ')}` : ''}`,
     );
   }
@@ -77,8 +77,9 @@ describe('endgame bot', () => {
   });
 
   it.skipIf(!env.GENLAB_AEON)('several weeks: Äons, talents and the observatory keep coming', () => {
-    const g = makeGame(2024);
-    const reports = playDays(g, { days: Number(env.GENLAB_AEON_DAYS ?? 28), endgame: true });
+    const g = makeGame(Number(env.GENLAB_AEON_SEED ?? 2024));
+    // GENLAB_CELLAR=0 plays without the Genom-Keller (for comparisons).
+    const reports = playDays(g, { days: Number(env.GENLAB_AEON_DAYS ?? 28), endgame: env.GENLAB_CELLAR === '0' ? { cellar: false } : true });
     print(reports);
     const last = reports.at(-1)!;
     expect(last.aeons).toBeGreaterThanOrEqual(1);

@@ -35,13 +35,13 @@ export function intervalsOf(lr: LastResult): number[] {
 /** Start of the replay: everyone at full health and with their own element. */
 export function replayStart(lr: LastResult): ReplayState {
   const fighters = lr.fighters ?? [];
-  return { hp: fighters.map((f) => f.maxHp), elements: fighters.map((f) => f.element), clock: 0, idx: 0, attacker: -1, target: -1, marks: {} };
+  return { hp: fighters.map((f, i) => lr.startHp?.[i] ?? f.maxHp), elements: fighters.map((f) => f.element), clock: 0, idx: 0, attacker: -1, target: -1, marks: {} };
 }
 
 /** Hit points and elements after the fight; events are capped, so the outcome decides who is down. */
 export function finalState(lr: LastResult): { hp: number[]; elements: string[] } {
   const fighters = lr.fighters ?? [];
-  const hp = fighters.map((f) => f.maxHp);
+  const hp = fighters.map((f, i) => lr.startHp?.[i] ?? f.maxHp);
   const elements = fighters.map((f) => f.element);
   for (const e of lr.events ?? []) {
     hp[e.t] = e.hp;

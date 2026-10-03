@@ -89,6 +89,12 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Code-Durchsicht (Oktober 2026)
 
+## 2026-10-03 – Werte ohne Quelle
+
+- Bestätigt: `infusion.transferChance`, `cost.capsule`, `cost.upgrade` hatten keinen Bonus im Inhalt, und der
+  `rarityBoost` der Rituale ließ sich durch nichts heben. Quelle sind jetzt die Tiefen-Meilensteine des
+  Genom-Kellers (neues Ziel `breeding.ritualRarity` für Rituale). Damit ist die Code-Durchsicht abgearbeitet.
+
 ## 2026-10-02 – `cost.potion` hat eine Quelle
 
 - Großforschung „Handelskontor“: −15 % auf alle Marktpreise pro Stufe, bis zu drei Stufen (Tester-Feedback, PR #51)
@@ -318,6 +324,146 @@ Kampf-Eigenschaften aus der Genetik, mehrere Gegner und Boss-Begleiter, Wochen-B
 Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben deterministisch und offline schnell.
 
 # Turm: Stillstand abbauen, feinere Etagen
+
+## 2026-10-03 – Genom-Keller Schritt 9: Balancing mit dem Äon-Bot
+
+- Der Äon-Bot spielt den Keller (`tests/endgameBot.ts`): Auto-Abstieg, Keller-Team aus dem, was der Turm übrig lässt
+  (Stärke gegen die nächste Ebene ×1,3 je helfender, ×0,7 je schadender Regel), erst wenn das Turm-Team voll ist;
+  kauft dunkle Relikte und trägt sie in Keller und Turm. Bericht mit Keller-Tiefe, Abstiegen, Marken, dunklen
+  Relikten; `GENLAB_CELLAR=0` spielt ohne Keller, `GENLAB_AEON_SEED` wählt den Seed.
+- Erste Messung (Seed 2024): Freischaltung bei Etage 150 kam erst an Tag 23 (Turm-Mauern an Tag 5–22), das
+  Keller-Team blieb bei −14, kaum Marken, kein Splitter. Danach: Freischaltung mit dem ersten Äon oder Etage 150,
+  Ebene −1 ≈ Turm-Etage 60, ×1,04 je Ebene (statt ≈ Etage 90 und ×1,06), 3 Marken je Ebene, ein Äon-Splitter auch
+  an jedem Tiefen-Meilenstein (weiter höchstens 2 pro Woche). Entschlossenheit wirkt im Keller nicht mehr
+  (`fighterFor(…, 'cellar')`), Kampferfahrung schon.
+- Ergebnis nach 28 Tagen (ohne / mit Keller): Turm Seed 2024 155 / 156, Seed 7 154 / 162, Seed 99 155 / 155;
+  Keller −48, −53, −58 (an Tag 10 schon −39, −17, −49); 3–5 Äon-Splitter aus dem Keller (Äon: 38–43), 11 Stufen
+  dunkle Relikte, Meilensteine bis −50. Der Turm-Stillstand bleibt (siehe „Turm: Stillstand abbauen“).
+
+## 2026-10-03 – Genom-Keller Schritt 8: Klang und Musik
+
+- Eigene Musik-Stimmungen `cellar` und `cellarBoss` (live mit Web Audio, ohne Akkorde): atmender Drone aus zwei
+  leicht verstimmten Tönen, mit der Tiefe ein Tritonus und tiefer ein Halbton-Cluster, eine verstimmte, stockende
+  Spieluhr mit einem Wiegenlied, ein bis drei Geräusche im Dunkeln (Tropfen, knarrendes Metall, Klopfen, Flüstern),
+  ein Herzschlag bei Gefahr. Der Schatten-Boss: tiefer, langsamer, die Brutstation-Akkorde nach Moll verbogen,
+  Herzschlag immer. Tiefe und Gefahr kommen aus `cellarAtmosphere` (schwächstes Teammitglied, Gefallene,
+  Fackellicht); die Musik wechselt nur, solange die Keller-Ansicht offen ist.
+- Acht Keller-Klänge (eigene Gruppe in Optionen → Einzelne Klänge): Aufzug, Gong, Rast-Feuer, Fackel erlischt,
+  neue Umgebung, „Der Schatten wartet“, gescheiterter Abstieg, neue Abstiege. Die Ebenen-Klänge spielt die Arena
+  mit der Wiedergabe – also nur im Keller; Meilenstein und neue Abstiege (neues Ereignis `cellarAttempts`, mit
+  Toast) überall.
+- Tests: Musik mit Fake-AudioContext (Tiefe, Gefahr, Boss), neues Ereignis; im Browser ohne Fehler mit Musik.
+
+## 2026-10-03 – Genom-Keller Schritt 7: Atmosphäre im Bild
+
+- Eigene Farben für den Keller (Schwarzgrün, fahles Biolumineszenz-Grün, Rost, Knochenweiß, Rot nur für Augen),
+  die Panels der Keller-Ansicht übernehmen sie.
+- `CellarArena.svelte`: Gewölbe mit Bogen und Steinfugen, zerbrochene Zuchttanks mit Blasen, Adern im
+  Herzschlag-Takt, Tropfen, Bodennebel, verblichenes Schild „Zuchtreihe B-3 · Ausschuss“ – nur CSS und Inline-SVG.
+  Ein flackernder Lichtkegel um das Team folgt dem Fackellicht (kleiner in der Finsternis, fast aus beim
+  Lichtfresser). Gegner sind bis zu ihrem ersten Schlag oder Treffer nur glühende Augen im Dunkel, danach mit
+  fahler Tönung; der Schatten-Boss ist eine schwarze, zitternde Kopie mit roten Augen.
+- Umgebungen sichtbar: Wasserlinie (Überflutet), aufsteigende Sporen, violetter Dunst (Schatten-Aura), Risse und
+  Staub (Einsturz), Wurzeln, ein rotes Siegel (Vielfalts-Siegel).
+- Wiedergabe jedes Keller-Kampfs wie im Turm (Tempo 1×/2×/⏭), mit den mitgetragenen KP: Kampfdaten speichern
+  `startHp`, das Licht und die Umgebung (`replayStart`/`finalState` nutzen `startHp`). Das Text-Protokoll ist
+  eingeklappt darunter.
+- Aufzug-Fahrt beim Umschalten ▲ Turm / ▼ Keller: Gesteinsschichten ziehen vorbei, die Kabine ruckt, die Lampe
+  flackert; die Ansicht wechselt hinter der Blende, mit reduzierter Bewegung sofort.
+- Im Browser geprüft (Desktop, Handy-Breite, Boss-Kampf, Aufzug).
+
+## 2026-10-03 – Genom-Keller Schritt 6: Oberfläche
+
+- Umschalter ▲ Turm / ▼ Keller oben im Turm-Tab (sobald der Keller offen ist; gewählter Bereich in
+  `viewState.tower.area`, Punkt am Schalter während eines Abstiegs). Neue Ansicht `CellarView.svelte`: Kennzahlen
+  (tiefste Ebene, Kontrollpunkt, Abstiege, Schattenmarken, freie Splitter), Abstieg starten/abbrechen, Auto-Abstieg,
+  Fackellicht, Schacht mit den nächsten zehn Ebenen (Umgebung, Boss, Wächter, Rast, Kontrollpunkt, Meilenstein),
+  nächste Ebene mit Umgebung, Regeln, Wochen-Regel und Gegnern, letzter Kampf als Protokoll, Tiefen-Meilensteine,
+  letzte Abstiege. Daten aus der neuen Abfrage `cellarView`.
+- `CellarTeam.svelte`: Plätze mit Reihe, Nachtsicht, Passung (▲/▼) und KP während des Abstiegs; Kandidaten nach
+  Passung zur nächsten Ebene. `DarkRelicPanel.svelte` für Keller und Turm (dunkle Plätze neben den Relikten).
+  Turm-Kandidaten ohne Keller-Team.
+- Toasts (Schatten bezwungen, Abstieg beendet, Tiefen-Meilenstein), Keller-Regel in der Wochen-Leiste, Statistik
+  „Tiefste Keller-Ebene“, Tab-Aktivität während eines Abstiegs, Changelog-Eintrag 38 (`feature: 'cellar'`).
+- Im Browser geprüft (Desktop und Handy-Breite, Spielstand mit laufendem Abstieg und Aufholen).
+
+## 2026-10-03 – Genom-Keller Schritt 5: Belohnungen
+
+- **Schattenmarken** 🌒 (neue Ressource, nie zurückgesetzt): je geschaffter Ebene, 2 auf −1, etwa 4 auf −20 (statt
+  der vorläufigen Turm-Marken). **Äon-Splitter**: 1 je neuer Boss-Tiefe (alle 30 Ebenen), höchstens 2 pro Woche.
+- **Dunkle Relikte** (`darkRelics`: Blutzahn, Hohles Herz, Knochenpanzer, Geisterschleier) mit Vorteil und
+  Nachteil je Stufe, gekauft mit Schattenmarken (`RelicDef.currency`). Platz-Regel: Jeder Turm-Platz hat neben dem
+  Relikt einen dunklen Platz (`tower.darkSlots`), das Keller-Team eigene Plätze (`cellar.relicSlots`); dasselbe
+  dunkle Relikt darf in Turm und Keller zugleich getragen werden. Im Keller zählen normale Relikte nicht.
+- **Tiefen-Meilensteine** (`cellarMilestones`, `cellarMilestoneProvider`) bei −10 bis −150: Gen-Kapseln und
+  Forschung billiger, mehr Allel-Übertragung bei der Infusion, seltenere Ritual-Eier (neues Ziel
+  `breeding.ritualRarity`); Ereignis `cellarMilestone`.
+- Turm, Langzeit- und Äon-Bot Zeichen für Zeichen unverändert. Tests `tests/cellarRewards.test.ts` (5).
+
+## 2026-10-03 – Genom-Keller Schritt 4: Gegner und Bosse
+
+- **Verworfene Linien**: Keller-Gegner heißen „Wechselbalg-Glutwelpe“, „Fehlzucht-…“, „Zerrbild-…“ (Präfix je
+  Gegner mit eigenen Würfeln, `foePrefixes` an der Strecke) und tragen eine Tönung (`foeTint` → `tint` in den
+  Kampfdaten für die Arena). Die Kurve ist seit Schritt 2 steiler als im Turm (×1,06 statt ×1,035).
+- **Schatten deiner Dynastie** (jeder Boss im Keller): Art und Element der meistgezüchteten Art (neuer Zähler
+  `bred.<Art>` je geschlüpftem Ei; für alte Spielstände tiefste Dynastie, sonst häufigste Art im Stall), Name und
+  Gene der höchsten Generation dieser Art im Stall („Boss: Schatten von Kiko“) – Kᵗ macht ihn stärker und kritisch,
+  Pᵈ gibt Dornen usw. `shadow: true` für die Arena.
+- **Dunkle Boss-Merkmale**, nur im Keller (`courses: ['cellar']`, der Turm wählt weiter aus den alten vier):
+  Lebensraub 🩸 (heilt 30 % des ausgeteilten Schadens), Schrecken 😱 (+15 % Fehlschläge des Teams, solange er
+  steht), Lichtfresser 🌘 (im Kampf stockdunkel, nur Nachtsicht trifft sicher).
+- Turm Zeichen für Zeichen unverändert (Kurven-Test, Äon-Bot). Tests `tests/cellarFoes.test.ts` (10).
+
+## 2026-10-03 – Genom-Keller Schritt 3: Umgebungen
+
+- Neue Inhaltsart `cellarEnvironments` (`content/endgame.ts`, geprüft in `validateCellarEnvironments`): Regeln mit
+  `match` / `except` über Element, Allel (ausgeprägt oder reinerbig), wache Erbanlage, Nachtsicht, Reihe oder
+  doppelte Art, Wirkung auf Werte, Fehlschläge, Heilung oder KP-Verlust vor jeder Ebene (nie der letzte KP).
+- Sieben Umgebungen: Finsternis (ohne Nachtsicht 25 % daneben – die Farb-Allele Dunkel und Albino bekommen
+  `nightSight`), Überflutet (Wasser/Eis stärker, Feuer schwächer), Sporennebel (−8 % KP je Ebene, außer AᵉAᵉ und
+  Gift), Schatten-Aura (Heilung halbiert, außer Schatten), Einsturz (hintere Reihe −12 %, außer Diamanthaut),
+  Wurzelgewirr (−30 % Tempo, außer Natur, Titanenblut, Dornenhaut), Vielfalts-Siegel (doppelte Arten −40 %).
+- Ebene −1 bis −10 ohne Umgebung, danach je zehn Ebenen eine, fest je Abschnitt und reihum ohne direkte
+  Wiederholung. Die Element-Wochen der Wochen-Mutation bringen eine Keller-Regel (+20 % Angriff für ihr Element).
+- **Fackellicht**: −15 % je Ebene, die Rast zündet es neu; unter 60 % mehr Fehlschläge – nicht mit Nachtsicht.
+- Kampf-Engine: `Fighter.miss` (zusätzliche Fehlschläge) und `Fighter.healing` (Heilungs-Faktor); der Turm bleibt
+  Zeichen für Zeichen gleich (Kurven-Test und Äon-Bot verglichen).
+- Abfragen für die Oberfläche: `environmentAt`, `environmentSection`, `cellarRules`, `cellarFit`,
+  `cellarCandidates`. Tests `tests/cellarEnvironments.test.ts` (11).
+
+## 2026-10-03 – Genom-Keller Schritt 2: Grundgerüst
+
+- Strecken als Inhalt (`courses` in `content/endgame.ts`: Turm ↑ „Etage“, Keller ↓ „Ebene“, eigener Würfel-Präfix,
+  geprüft in `validateCourses`); `courseFor` / `cellarCourse` / `floorLabel` in `floors.ts`. Keller-Kurve
+  `balance.cellar` (Platzhalter: Ebene −1 ≈ Turm-Etage 90, ×1,06 je Ebene, Boss alle 30, Wächter und Kontrollpunkt
+  alle 10).
+- `features/cellar.ts`: eigenes Team (nie zugleich im Turm-Team), Reihen, 3 Abstiege am Tag (Vorrat 6, auch
+  offline nach Auftragstag), Abstieg ab dem letzten Kontrollpunkt bis das Team fällt. **Erschöpfung**: der
+  KP-Anteil jedes Kämpfers trägt sich weiter, Gefallene setzen aus, alle 5 Ebenen heilt ein Rast-Gewölbe 50 % (auch
+  Gefallene). Auto-Abstieg, Verlauf, letzte Wiedergabe; vorläufig Turm-Marken als Lohn.
+- Spielstand `state.cellar` (ohne Migration), Job `cellar`, Feature `cellar` ab Turm-Etage 150, Vererbung beendet
+  den Abstieg und leert das Team (Rekord und Abstiege bleiben), Statistik `record.cellarLevel`, Debug-Resets
+  „Abstiege voll“ und „Keller-Fortschritt löschen“, Job-Text auf der Kreaturenkarte.
+- Tests `tests/cellar.test.ts` (13): Strecke, Freischaltung, Teams, Abstiege, Erschöpfung und Rast, Offline in
+  Scheiben gleich wie am Stück, Vererbung, Spielstand alt und neu, Debug.
+
+## 2026-10-03 – Genom-Keller Schritt 1: Turm-Code verallgemeinert
+
+- Neues Modul `core/features/floors.ts`: endlose Strecken (`Course` = Gegner-Kurve + Würfel-Präfix) mit
+  `courseEnemy` / `courseEnemies`, Boss-, Wächter- und Kontrollpunkt-Rhythmus und Marken je Etage. Der Turm ist die
+  Strecke `towerCourse`; `tower.ts` behält seine Funktionen als dünne Hüllen, kein Aufrufer musste sich ändern.
+- `Balance`: neuer Typ `FloorCurve` (Gegner-Kurve) getrennt von den gemeinsamen Kampfregeln, `tower` ist
+  `FloorCurve & {…}` – die Zahlen in `balance.ts` sind unverändert, keine Migration.
+- Abnahme: alle Tests grün, `towerCurve` (`GENLAB_CURVE=1`), Langzeit-Bot und 4 Tage Äon-Bot liefern Zeichen für
+  Zeichen dieselbe Ausgabe wie vorher.
+
+## 2026-10-03 – Genom-Keller: Grundidee festgelegt
+
+- Richtung „Gen-Keller“ statt „Turm rückwärts“ oder endlosem RPG-Modus: Turm-Engine, begrenzte Abstiege mit
+  Erschöpfung, Umgebungen je Abschnitt, die gezüchtete Anpassung (Allele, latente Merkmale, Vielfalt) verlangen;
+  Schattenmarken für dunkle Relikte (wirken auch im Turm), Tiefen-Meilensteine als Quelle für quellenlose Werte,
+  Freischaltung bei Turm-Etage 150. Tiefenexpedition wird mit dem RPG-Dungeon zusammengelegt. Konzept und
+  Schritte-Plan in `TODO.md`
 
 - **Schritt 1 – Etagen ×3** (Etage 3n = alte Etage n, Kampfpause 4 s, Migration `SAVE_VERSION` 9 → 10, Wächter
   alle 10 Etagen, drei kleine Etagen teilen Element und Gruppengröße, Offline-Kämpfe ohne Wiedergabe-Daten)

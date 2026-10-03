@@ -122,6 +122,11 @@ export interface DayReport {
   dynastyTiers: number;
   /** Äon-Splitter earned so far, by source (aeon, tower, anomaly, contract …). */
   shardSources: Record<string, number>;
+  /** Genom-Keller: deepest level, Schattenmarken owned, dark relic levels, descents so far. */
+  cellarBest: number;
+  shadowMarks: number;
+  darkRelics: number;
+  descents: number;
 }
 
 export interface LongRunOptions {
@@ -160,6 +165,8 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
   });
   const unlockedEver = new Set(Object.keys(g.state.features));
   const shardSources: Record<string, number> = {};
+  let descents = 0;
+  g.bus.on('cellarRunEnded', () => descents++);
   g.bus.on('resourceGained', (e) => {
     if (e.resource === 'aeonShards') {
       const src = e.source.replace(/^prestige:/, '').split(':')[0]!;
@@ -216,6 +223,10 @@ export function playDays(g: Game, opts: LongRunOptions): DayReport[] {
       dynastyBest: Math.max(0, ...Object.values(g.state.dynasties)),
       dynastyTiers: totalDynastyTiers(g),
       shardSources: { ...shardSources },
+      cellarBest: g.state.cellar.best,
+      shadowMarks: Math.floor(g.state.resources['shadowMarks']?.toNumber() ?? 0),
+      darkRelics: g.content.darkRelics.list.reduce((n, r) => n + (g.state.relics[r.id] ?? 0), 0),
+      descents,
       bossShare: g.state.weeklyBoss.maxHp > 0 ? Math.round((g.state.weeklyBoss.damage / g.state.weeklyBoss.maxHp) * 100) / 100 : 0,
     });
   }

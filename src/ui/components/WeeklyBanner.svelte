@@ -14,7 +14,7 @@
   <div class="weekly">
     <span class="tag">Woche</span>
     <b>{data.m.name}</b>
-    <span class="muted">{data.m.description}</span>
+    <span class="muted">{data.m.description}{#if data.m.cellar && game.state.features['cellar']} · Keller: {data.m.cellar.text}{/if}</span>
     {#if data.next}
       <span class="next" title={data.next.id === data.m.id ? '' : data.next.description}>
         {#if data.next.id === data.m.id}
