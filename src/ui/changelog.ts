@@ -25,6 +25,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 37,
+    date: '2026-10-03',
+    title: 'Freie Sockel',
+    items: [{ text: 'Brutstation: Verschwindet ein gewähltes Elternteil (verkauft, recycelt, verbraucht), wird sein Sockel wieder frei. Bisher blieb ein unsichtbarer „Geist“ darin, und neue Kandidaten landeten nur noch beim anderen Elternteil.' }],
+  },
+  {
     id: 36,
     date: '2026-10-03',
     title: 'Musik im Takt',

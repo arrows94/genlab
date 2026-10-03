@@ -114,6 +114,13 @@
     };
   });
 
+  // A chosen parent that is gone (sold, recycled, infused, another save loaded) frees its socket:
+  // otherwise the socket looks empty while `pick` still treats it as taken and only ever fills the other one.
+  $effect(() => {
+    if (parentA !== null && !data.a) parentA = null;
+    if (parentB !== null && !data.b) parentB = null;
+  });
+
   // Pair search is heavier than the rest – refreshed at the slow rate.
   const autoPlan = $derived.by(() => {
     view.slowFrame;
