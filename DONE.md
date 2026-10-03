@@ -325,6 +325,20 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 8: Klang und Musik
+
+- Eigene Musik-Stimmungen `cellar` und `cellarBoss` (live mit Web Audio, ohne Akkorde): atmender Drone aus zwei
+  leicht verstimmten Tönen, mit der Tiefe ein Tritonus und tiefer ein Halbton-Cluster, eine verstimmte, stockende
+  Spieluhr mit einem Wiegenlied, ein bis drei Geräusche im Dunkeln (Tropfen, knarrendes Metall, Klopfen, Flüstern),
+  ein Herzschlag bei Gefahr. Der Schatten-Boss: tiefer, langsamer, die Brutstation-Akkorde nach Moll verbogen,
+  Herzschlag immer. Tiefe und Gefahr kommen aus `cellarAtmosphere` (schwächstes Teammitglied, Gefallene,
+  Fackellicht); die Musik wechselt nur, solange die Keller-Ansicht offen ist.
+- Acht Keller-Klänge (eigene Gruppe in Optionen → Einzelne Klänge): Aufzug, Gong, Rast-Feuer, Fackel erlischt,
+  neue Umgebung, „Der Schatten wartet“, gescheiterter Abstieg, neue Abstiege. Die Ebenen-Klänge spielt die Arena
+  mit der Wiedergabe – also nur im Keller; Meilenstein und neue Abstiege (neues Ereignis `cellarAttempts`, mit
+  Toast) überall.
+- Tests: Musik mit Fake-AudioContext (Tiefe, Gefahr, Boss), neues Ereignis; im Browser ohne Fehler mit Musik.
+
 ## 2026-10-03 – Genom-Keller Schritt 7: Atmosphäre im Bild
 
 - Eigene Farben für den Keller (Schwarzgrün, fahles Biolumineszenz-Grün, Rost, Knochenweiß, Rot nur für Augen),

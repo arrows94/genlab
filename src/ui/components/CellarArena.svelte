@@ -3,7 +3,7 @@
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber } from '@core/format';
-  import { cellarIntervalMs, cellarLevelLabel, cellarRowOf } from '@core/features/cellar';
+  import { cellarIntervalMs, cellarLevelLabel, cellarRowOf, environmentAt } from '@core/features/cellar';
   import { advanceReplay, fightSeconds, finalState, replayStart, timedEvents, type LastResult } from '@core/features/towerReplay';
   import type { Fighter } from '@core/features/tower';
   import type { Creature } from '@core/state';
@@ -57,9 +57,21 @@
     setTimeout(() => (popups = popups.filter((x) => x.id !== id)), 1000);
   }
 
+  /** The level's end sounds: a gong (or the crackle of a rest vault), new surroundings, the shadow waiting – or the fall. */
+  function endSounds(lr: LastResult) {
+    if (!lr.win) return play('cellarDefeat');
+    const cfg = game.balance.cellar;
+    play(lr.floor % cfg.restEvery === 0 ? 'cellarRest' : 'cellarGong');
+    const next = lr.floor + 1;
+    const env = environmentAt(game, next);
+    if (env && env !== environmentAt(game, lr.floor)) setTimeout(() => play('cellarEnv'), 700);
+    if (next % cfg.bossEvery === 0) setTimeout(() => play('shadowRises'), 1100);
+  }
+
   function finish(lr: LastResult, key: string, seconds: number) {
     if (!replay || replay.key !== key) return;
     replay = { ...replay, ...finalState(lr), clock: seconds, attacker: -1, target: -1, done: true };
+    endSounds(lr);
     banner = { win: lr.win, level: lr.floor };
     timer = setTimeout(() => (banner = null), 1900);
   }
@@ -73,6 +85,8 @@
     seen = {};
     popups = [];
     banner = null;
+    // Lichtfresser: the torch dies as the fight begins.
+    if (lr.light === 0) play('torchOut');
     if (prefs.reduceMotion || viewState.tower.replaySpeed === 0) return finish(lr, key, seconds);
     const budgetMs = Math.max(900, Math.min(cellarIntervalMs(game) * 0.85 - 400, seconds * REPLAY_MS_PER_SEC));
     const rate = seconds / budgetMs;

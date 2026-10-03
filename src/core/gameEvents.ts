@@ -39,6 +39,8 @@ export interface GameEvents {
   /** A Genom-Keller level fought (`rest`: the team rested in a vault after it). */
   cellarLevel: { level: number; win: boolean; rewards: Record<string, Decimal>; rest: boolean };
   cellarRunEnded: { level: number; startLevel: number };
+  /** New descents into the Genom-Keller (a new day). */
+  cellarAttempts: { attempts: number; gained: number };
   /** A Tiefen-Meilenstein reached for the first time. */
   cellarMilestone: { milestone: string };
   /** One round in the GenLab RPG dungeon; `outcome` once the fight is decided. */

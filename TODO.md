@@ -70,6 +70,8 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
 
 - [ ] Alle Klänge einmal mit echten Ohren durchhören (Lautstärke untereinander, nervt etwas auf Dauer?) – bisher nur
       fehlerfrei im Browser abgespielt
+- [ ] Genom-Keller mit echten Ohren gegenhören: Musik (Dröhnen, Spieluhr, Raum-Geräusche, Herzschlag, Schatten-Melodie)
+      und Keller-Klänge – schaurig, aber auf Dauer nicht nervig? Lautstärke gegenüber den anderen Stimmungen
 - [ ] Falls Tondateien: lizenzfreie Quellen dokumentieren, als `.ogg` klein halten, nicht in den Service-Worker-Precache
 
 # Turm: Stillstand abbauen und Genom-Keller
@@ -153,10 +155,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 8 – Atmosphäre: Klang und Musik** (siehe oben): Stimmung `cellar` mit Drone, Spieluhr, Raum-Geräuschen,
-      Tiefe und Herzschlag; Boss-Variante aus der Brutstation-Melodie; Keller-Klänge in `sound.ts`; Klänge nur im
-      Keller-Bereich (`setSoundScope`-Muster der RPG-Welt prüfen). Mit echten Ohren gegenhören: schaurig, aber auf
-      Dauer nicht nervig
 - [ ] **Schritt 9 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
       Tag, Schattenmarken, Wirkung der dunklen Relikte auf den Turm-Stillstand (Ziel höchstens etwa 3 Tage), Splitter
       je Woche. Zahlen in `balance.ts` nachziehen (die Keller-Kurve ist ein Platzhalter: Ebene −1 ≈ Turm-Etage 90,

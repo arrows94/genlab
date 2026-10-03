@@ -70,4 +70,35 @@ describe('background music', () => {
     setMusic(false, 0.5, 'aeon');
     expect(currentMood()).toBe('aeon');
   });
+
+  /** Oscillators the first segment of a mood starts (randomness pinned). */
+  async function oscillatorsFor(mood: 'cellar' | 'cellarBoss', depth: number, danger: number): Promise<number> {
+    vi.resetModules();
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const sound = (await import('../src/ui/sound')) as unknown as { audioContext: () => { createOscillator: () => unknown } };
+    const ctx = sound.audioContext();
+    const original = ctx.createOscillator;
+    let count = 0;
+    ctx.createOscillator = () => {
+      count++;
+      return original();
+    };
+    const { setMusic, setCellarAtmosphere, currentMood } = await import('../src/ui/music');
+    setCellarAtmosphere(depth, danger);
+    setMusic(true, 0.5, mood);
+    expect(currentMood()).toBe(mood);
+    setMusic(false, 0.5, mood);
+    ctx.createOscillator = original;
+    random.mockRestore();
+    return count;
+  }
+
+  it('the Keller track grows darker with depth and gets a heartbeat when the team is in danger', async () => {
+    const calm = await oscillatorsFor('cellar', 0, 0);
+    expect(calm).toBeGreaterThan(0);
+    expect(await oscillatorsFor('cellar', 1, 0)).toBeGreaterThan(calm);
+    expect(await oscillatorsFor('cellar', 0, 1)).toBeGreaterThan(calm);
+    // The shadow's track always has its heartbeat and the bent Brutstation tune.
+    expect(await oscillatorsFor('cellarBoss', 0, 0)).toBeGreaterThan(calm);
+  });
 });

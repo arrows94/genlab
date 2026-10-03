@@ -245,6 +245,7 @@ function wireEvents(g: Game): void {
   });
   g.bus.on('cellarRunEnded', (e) =>
     toast(e.level >= e.startLevel ? `🕳️ Abstieg beendet: −${e.startLevel} bis −${e.level}.` : `🕳️ Abstieg gescheitert – schon Ebene −${e.startLevel} war zu viel.`, 'info'));
+  g.bus.on('cellarAttempts', (e) => toast(`🕳️ Neue Abstiege in den Genom-Keller: ${e.attempts}/${g.balance.cellar.maxAttempts}`, 'info'));
   g.bus.on('cellarMilestone', (e) => {
     const m = content.cellarMilestones.get(e.milestone);
     toast(`🏅 Tiefen-Meilenstein „${m.name}“: ${m.description}`, 'rare', 6000);

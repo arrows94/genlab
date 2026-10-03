@@ -14,6 +14,7 @@
   import DarkRelicPanel from './DarkRelicPanel.svelte';
   import { viewState, type TowerArea } from '../viewState.svelte';
   import { prefs } from '../prefs.svelte';
+  import { play } from '../sound';
 
   /**
    * Genom-Turm: header figures, the floor column, the arena (replay of the
@@ -41,6 +42,7 @@
   let lift = $state<'down' | 'up' | null>(null);
   function go(target: TowerArea) {
     if (target === area || lift) return;
+    play('cellarLift', target === 'cellar' ? 0 : 1);
     if (prefs.reduceMotion) return void (viewState.tower.area = target);
     lift = target === 'cellar' ? 'down' : 'up';
     setTimeout(() => (viewState.tower.area = target), 650);

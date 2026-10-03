@@ -279,3 +279,21 @@ describe('Genom-Keller: replay data', () => {
     if (untouched >= 0) expect(finalState(lr).hp[untouched]).toBe(lr.startHp![untouched]);
   });
 });
+
+describe('Genom-Keller: new descents', () => {
+  it('a new day announces new descents, the very first fill does not', () => {
+    const g = makeGame(5);
+    const seen: number[] = [];
+    g.bus.on('cellarAttempts', (e) => seen.push(e.gained));
+    for (const f of ['farm', 'breeding', 'tower', 'cellar']) unlockFeature(g, f);
+    refreshCellarAttempts(g);
+    expect(seen).toEqual([]);
+    g.state.cellar.attempts = 1;
+    refreshCellarAttempts(g, g.state.lastTickAt + DAY);
+    expect(seen).toEqual([balance.cellar.attemptsPerDay]);
+    // A full stock gains nothing and stays quiet.
+    g.state.cellar.attempts = balance.cellar.maxAttempts;
+    refreshCellarAttempts(g, g.state.lastTickAt + 2 * DAY);
+    expect(seen).toHaveLength(1);
+  });
+});

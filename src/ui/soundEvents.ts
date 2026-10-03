@@ -89,6 +89,9 @@ export function wireSounds(g: Game, currentTab: () => string): void {
   g.bus.on('towerRunEnded', () => {
     if (inTab('tower')) play('runEnded');
   });
+  // The Keller's level sounds belong to its arena (they play with the replay); rare news sounds anywhere.
+  g.bus.on('cellarMilestone', () => play('milestone'));
+  g.bus.on('cellarAttempts', () => play('cellarBell'));
   g.bus.on('weeklyBossHit', () => {
     const tiers = g.state.weeklyBoss?.tiers ?? 0;
     play(tiers > bossTiers ? 'bossTier' : 'bossHit');

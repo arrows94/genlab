@@ -60,7 +60,10 @@ export function refreshCellarAttempts(ctx: GameContext, nowMs = ctx.state.lastTi
   if (ce.day === day) return;
   const cfg = ctx.balance.cellar;
   const days = ce.day < 0 ? 1 : Math.max(1, day - ce.day);
+  const before = ce.attempts;
   ce.attempts = Math.min(cfg.maxAttempts, ce.attempts + cfg.attemptsPerDay * days);
+  // Not on the very first fill (the unlock says enough).
+  if (ce.day >= 0 && ce.attempts > before) ctx.bus.emit('cellarAttempts', { attempts: ce.attempts, gained: ce.attempts - before });
   ce.day = day;
 }
 
@@ -517,4 +520,21 @@ export function cellarView(ctx: GameContext) {
     intervalMs: cellarIntervalMs(ctx),
     shaft,
   };
+}
+
+/**
+ * For the Keller music: how deep the next level lies (0…1 over the first 150), how dangerous the
+ * descent is (weakest standing member, the fallen, a burnt-down torch) and whether the shadow comes next.
+ */
+export function cellarAtmosphere(ctx: GameContext): { depth: number; danger: number; boss: boolean } {
+  const ce = ctx.state.cellar;
+  const run = ce.run;
+  const next = (run ? run.level : cellarCheckpoint(ctx)) + 1;
+  const depth = Math.min(1, next / 150);
+  if (!run) return { depth, danger: 0, boss: false };
+  const standing = run.hp.filter((share) => share > 0);
+  const weakest = standing.length ? Math.min(...standing) : 0;
+  const fallen = (run.hp.length - standing.length) / Math.max(1, run.hp.length);
+  const danger = Math.min(1, (1 - weakest) * 0.8 + fallen * 0.6 + (1 - (run.light ?? 1)) * 0.3);
+  return { depth, danger, boss: isCourseBossFloor(cellarCourse(ctx), next) };
 }
