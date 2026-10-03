@@ -139,7 +139,11 @@ export const weeklyMutations: WeeklyMutationDef[] = [
 /** Endless courses: the tower climbs, the cellar below it descends. */
 export const courses: CourseDef[] = [
   { id: 'tower', name: 'Genom-Turm', icon: '🗼', direction: 'up', unit: 'Etage', dice: 'tower' },
-  { id: 'cellar', name: 'Genom-Keller', icon: '🕳️', direction: 'down', unit: 'Ebene', dice: 'cellar' },
+  // Below the tower live the „verworfenen Linien“: failed experiments from the lab's early days.
+  {
+    id: 'cellar', name: 'Genom-Keller', icon: '🕳️', direction: 'down', unit: 'Ebene', dice: 'cellar',
+    foePrefixes: ['Wechselbalg', 'Fehlzucht', 'Zerrbild', 'Ausschuss', 'Abart', 'Kümmerling'], foeTint: '#7fae6e',
+  },
 ];
 
 /**
@@ -199,6 +203,13 @@ export const bossTraits: BossTraitDef[] = [
     description: 'Jede dritte Aktion trifft die ganze hintere Reihe mit 40 % Schaden – steht niemand hinten, alle.' },
   { id: 'regenerator', name: 'Regeneration', icon: '💚', kind: 'regen', value: 0.25, targeting: 'back',
     description: 'Heilt jede Sekunde Kampfzeit 25 % des Schadens, den er in dieser Sekunde genommen hat, und greift bevorzugt die hintere Reihe an. Je schneller er fällt, desto weniger kann er heilen.' },
+  // Dark tricks: only the bosses of the Genom-Keller have them (besides the four above).
+  { id: 'lifeDrain', name: 'Lebensraub', icon: '🩸', kind: 'drain', value: 0.3, courses: ['cellar'],
+    description: 'Heilt sich um 30 % des Schadens, den er austeilt. Schnell und hart zuschlagen, bevor er sich satt trinkt.' },
+  { id: 'terror', name: 'Schrecken', icon: '😱', kind: 'terror', value: 0.15, courses: ['cellar'],
+    description: 'Solange er steht, gehen 15 % mehr Angriffe deines Teams daneben – auch Nachtsicht hilft nicht.' },
+  { id: 'lightEater', name: 'Lichtfresser', icon: '🌘', kind: 'darken', value: 0, courses: ['cellar'],
+    description: 'Verschluckt das Fackellicht: Im Kampf ist es stockdunkel – nur wer im Dunkeln sieht, trifft sicher.' },
 ];
 
 /** Relikte for the places of the tower team (bought with Turm-Marken, never reset). */

@@ -38,7 +38,12 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
     bus.on('processCompleted', (e) => inc(`completed.${e.kind}`)),
     bus.on('upgradeBought', () => inc('upgradesBought')),
     bus.on('prestige', (e) => inc(`prestige.${e.layer}`)),
-    bus.on('eggHatched', () => inc('hatched')),
+    bus.on('eggHatched', (e) => {
+      inc('hatched');
+      // Per species: the Genom-Keller's „Schatten deiner Dynastie“ takes the most bred one.
+      const c = getCtx().state.creatures.find((x) => x.id === e.creatureId);
+      if (c) inc(`bred.${c.speciesId}`);
+    }),
     bus.on('missionCompleted', (e) => {
       if (e.wildCreatureId !== null) inc('wildFound');
     }),

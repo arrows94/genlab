@@ -164,8 +164,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 4 – Gegner und Bosse**: verworfene Linien (Namen, Tönung), steilere Kurve als im Turm, Boss „Schatten
-      deiner Dynastie“ (meistgezüchtete Art, deren Gene), dunkle Boss-Merkmale zusätzlich zu `bossTraits`
 - [ ] **Schritt 5 – Belohnungen**: Ressource Schattenmarken (`resources.ts`), dunkle Relikte (`RelicDef` mit Nachteil,
       Platz-Regel für Turm und Keller festlegen), `cellarMilestoneProvider` mit den Quellen für
       `infusion.transferChance`, Ritual-`rarityBoost` und `cost.capsule` (dann den Punkt in der Code-Durchsicht
@@ -179,7 +177,8 @@ Merkmale wirken außerhalb der Produktion kaum.
       `feature: 'cellar'`. Funktional, noch im einfachen Stil. Auch auf Handy-Breite prüfen. Bis hierhin den Branch
       nicht nach `main` bringen: Ab Turm-Etage 150 schaltet der Keller schon frei, hat aber noch keine Oberfläche
 - [ ] **Schritt 7 – Atmosphäre: Bild** (siehe oben): eigene Farb-Tokens, Arena mit Lichtkegel nach Fackellicht,
-      Gegner aus der Dunkelheit, Kulisse, sichtbare Umgebungen, Boss „Schatten“, Aufzug-Fahrt durch den Boden
+      Gegner aus der Dunkelheit (Kämpfer-Daten tragen `tint`), Kulisse, sichtbare Umgebungen, Boss „Schatten“
+      (`shadow: true`), Lichtfresser lässt den Lichtkegel erlöschen, Aufzug-Fahrt durch den Boden
       (Licht flackert, Seil ruckt, Ansicht sinkt). `.reduce-motion` = ruhiges Bild ohne Flackern und sofortiger
       Wechsel. Leistung auf dem Handy prüfen (Lichtkegel und Nebel nur mit CSS, keine großen Bilder)
 - [ ] **Schritt 8 – Atmosphäre: Klang und Musik** (siehe oben): Stimmung `cellar` mit Drone, Spieluhr, Raum-Geräuschen,

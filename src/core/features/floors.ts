@@ -2,7 +2,7 @@ import { D, type Decimal } from '../num';
 import { Rng, hashSeed } from '../rng';
 import type { GameContext } from '../context';
 import type { FloorCurve } from '../content/balance';
-import type { CourseDef, TechniqueDef } from '../content/types';
+import type { BossTraitDef, CourseDef, TechniqueDef } from '../content/types';
 import type { Fighter } from './towerCombat';
 
 /**
@@ -84,6 +84,21 @@ export function courseFloorTokens(course: Course, floor: number): Decimal {
   return D(Math.max(0, total(floor) - total(floor - 1)));
 }
 
+/** Boss traits a course's bosses may have (`courses` on the trait; all if missing). */
+export function courseTraits(ctx: GameContext, course: Course): BossTraitDef[] {
+  return ctx.content.bossTraits.list.filter((t) => !t.courses || t.courses.includes(course.def.id));
+}
+
+/**
+ * Name of the `i`-th foe of a floor: the course's prefix before the species
+ * („Wechselbalg-Glutwelpe“), picked with dice of its own so the foes stay the same.
+ */
+function foeName(course: Course, floor: number, i: number, species: string): string {
+  const prefixes = course.def.foePrefixes;
+  if (!prefixes?.length) return species;
+  return `${Rng.fromSeed(hashSeed(`${course.dice}-name-${floor}-${i}`)).pick(prefixes)}-${species}`;
+}
+
 /** The Element-Technik of an element. */
 export function techniqueFor(ctx: GameContext, element: string): TechniqueDef | undefined {
   return ctx.content.techniques.list.find((t) => t.element === element);
@@ -105,10 +120,10 @@ export function courseEnemy(ctx: GameContext, course: Course, floor: number, opt
   const hp = Math.round((t.enemyBase['hp'] ?? 50) * scale * hpMult);
   const names = ctx.content.species.list.filter((s) => s.element === element);
   const species = own.pick(names.length ? names : ctx.content.species.list);
-  const traits = ctx.content.bossTraits.list;
+  const traits = courseTraits(ctx, course);
   const trait = boss && floor >= t.bossTraitFromFloor && traits.length > 0 ? rng.pick(traits).id : undefined;
   return {
-    name: `${boss ? 'Boss: ' : guard ? 'Wächter: ' : ''}${species.name}`,
+    name: `${boss ? 'Boss: ' : guard ? 'Wächter: ' : ''}${foeName(course, floor, 0, species.name)}`,
     speciesId: species.id,
     element,
     hp,
@@ -123,6 +138,7 @@ export function courseEnemy(ctx: GameContext, course: Course, floor: number, opt
     ...(boss ? { boss: true } : {}),
     ...(guard ? { guard: true } : {}),
     technique: techniqueFor(ctx, element)?.id,
+    ...(course.def.foeTint ? { tint: course.def.foeTint } : {}),
   };
 }
 
@@ -141,16 +157,16 @@ export function courseEnemies(ctx: GameContext, course: Course, floor: number): 
   const sameElement = ctx.content.species.list.filter((sp) => sp.element === main.element && sp.id !== main.speciesId);
   const pickSpecies = () => (sameElement.length ? own.pick(sameElement) : ctx.content.species.get(main.speciesId));
   if (main.boss) {
-    const traits = ctx.content.bossTraits.list.filter((b) => b.id !== main.trait);
+    const traits = courseTraits(ctx, course).filter((b) => b.id !== main.trait);
     if (floor >= t.phaseFromFloor && main.trait && traits.length) main.phaseTrait = rng.pick(traits).id;
     if (floor < t.companionsFromFloor) return [main];
     main.row = 'back';
     const normalHp = main.maxHp / t.bossHpMult;
     const normalAtk = main.atk / t.bossAtkMult;
-    const companions = [0, 1].map((): Fighter => {
+    const companions = [0, 1].map((k): Fighter => {
       const sp = pickSpecies();
       const hp = Math.max(1, Math.round(normalHp * t.companionHp));
-      return { ...main, name: sp.name, speciesId: sp.id, hp, maxHp: hp, atk: Math.max(1, Math.round(normalAtk * t.companionAtk)), trait: undefined, phaseTrait: undefined, boss: undefined, row: 'front' };
+      return { ...main, name: foeName(course, floor, k + 1, sp.name), speciesId: sp.id, hp, maxHp: hp, atk: Math.max(1, Math.round(normalAtk * t.companionAtk)), trait: undefined, phaseTrait: undefined, boss: undefined, row: 'front' };
     });
     return [...companions, main];
   }
@@ -166,6 +182,6 @@ export function courseEnemies(ctx: GameContext, course: Course, floor: number): 
   const atk = Math.max(1, Math.round((main.atk * (t.groupAtk[size - 1] ?? 1)) / size));
   return Array.from({ length: size }, (_, i): Fighter => {
     const sp = i === 0 ? ctx.content.species.get(main.speciesId) : pickSpecies();
-    return { ...main, name: i === 0 ? main.name : sp.name, speciesId: sp.id, hp, maxHp: hp, atk };
+    return { ...main, name: i === 0 ? main.name : foeName(course, floor, i, sp.name), speciesId: sp.id, hp, maxHp: hp, atk };
   });
 }

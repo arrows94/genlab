@@ -1,7 +1,8 @@
 import { grant } from '../resources';
 import { Rng, hashSeed } from '../rng';
 import { activeLatent, findCreature, isOccupied } from '../creatures';
-import { expressLocus } from '../genetics';
+import { expressLocus, genomeModifiers } from '../genetics';
+import { ModifierSet } from '../modifiers';
 import type { GameContext } from '../context';
 import type { ActionResult } from '../actions';
 import type { Creature } from '../state';
@@ -9,7 +10,7 @@ import type { System } from '../systems/types';
 import type { CellarEffect, CellarEnvironmentDef, CellarMatch, CellarRuleDef } from '../content/types';
 import { contractDay } from './contracts';
 import { activeMutation } from './weekly';
-import { cellarCourse, courseCheckpoint, courseEnemies, courseFloorTokens, floorLabel } from './floors';
+import { cellarCourse, courseCheckpoint, courseEnemies, courseFloorTokens, floorLabel, techniqueFor } from './floors';
 import { fighterFor, simulateFight, teamSize, type Fighter, type Row } from './tower';
 
 /**
@@ -25,6 +26,11 @@ import { fighterFor, simulateFight, teamSize, type Fighter, type Row } from './t
  * their genes, Erbanlage, element, row or the team's variety – a team bred to
  * fit beats raw strength. The week's mutation may add a rule of its own, and
  * the torch burns down between the rest vaults (`light`).
+ *
+ * Its foes are the „verworfenen Linien“ (names and tint from the course), its
+ * bosses the „Schatten deiner Dynastie“: a dark copy of the player's most bred
+ * species with the genes of its most advanced creature, and they may have
+ * dark tricks of their own (Lebensraub, Schrecken, Lichtfresser).
  */
 
 const NOT_YET = 'Der Genom-Keller ist noch nicht freigeschaltet.';
@@ -81,6 +87,64 @@ export function setCellarTeam(ctx: GameContext, ids: number[]): ActionResult {
   ce.team = unique;
   ce.back = ce.back.filter((id) => unique.includes(id));
   return { ok: true };
+}
+
+// ---- Foes ----------------------------------------------------------------------
+
+/**
+ * The player's most bred species (hatch counter per species); for saves from
+ * before the counter: the deepest dynasty, else the species most common in the stable.
+ */
+export function dynastySpecies(ctx: GameContext): string {
+  const best = (counts: [string, number][]) =>
+    counts.filter(([id, n]) => n > 0 && ctx.content.species.has(id)).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
+  const bred = Object.entries(ctx.state.statistics).filter(([k]) => k.startsWith('bred.')).map(([k, n]): [string, number] => [k.slice(5), n]);
+  const stable = new Map<string, number>();
+  for (const c of ctx.state.creatures) stable.set(c.speciesId, (stable.get(c.speciesId) ?? 0) + 1);
+  return best(bred) ?? best(Object.entries(ctx.state.dynasties)) ?? best([...stable]) ?? ctx.balance.start.species;
+}
+
+/** The creature the shadow copies: the highest generation of that species in the stable (null if none). */
+export function shadowModel(ctx: GameContext, speciesId: string): Creature | null {
+  return ctx.state.creatures.filter((c) => c.speciesId === speciesId).sort((a, b) => b.generation - a.generation || a.id - b.id)[0] ?? null;
+}
+
+/** Turns a level's boss into the „Schatten deiner Dynastie“: species, element and genes of the player's line. */
+function shadowOf(ctx: GameContext, boss: Fighter): Fighter {
+  const speciesId = dynastySpecies(ctx);
+  const sp = ctx.content.species.get(speciesId);
+  const model = shadowModel(ctx, speciesId);
+  const genes = new ModifierSet(model ? genomeModifiers(ctx, model.genome) : []);
+  const stat = (k: string, v: number) => Math.max(1, Math.round(genes.apply(`stat.${k}`, v)));
+  const maxHp = stat('hp', boss.maxHp);
+  const crit = genes.apply('tower.crit', 0);
+  const thorns = genes.apply('tower.thorns', 0);
+  return {
+    ...boss,
+    name: `Boss: Schatten ${model ? `von ${model.name}` : `deiner ${sp.name}-Linie`}`,
+    speciesId,
+    element: sp.element,
+    technique: techniqueFor(ctx, sp.element)?.id,
+    hp: maxHp,
+    maxHp,
+    atk: stat('atk', boss.atk),
+    def: stat('def', boss.def),
+    spd: stat('spd', boss.spd),
+    ...(crit > 0 ? { crit } : {}),
+    ...(thorns > 0 ? { thorns } : {}),
+    ...(genes.apply('tower.firstStrike', 0) >= 1 ? { firstStrike: true } : {}),
+    shadow: true,
+  };
+}
+
+/** Everyone the team meets on a level: the course's foes, the boss as the shadow of the player's dynasty. */
+export function cellarEnemies(ctx: GameContext, level: number): Fighter[] {
+  return courseEnemies(ctx, cellarCourse(ctx), level).map((f) => (f.boss ? shadowOf(ctx, f) : f));
+}
+
+/** A foe of the level puts out the torch (Lichtfresser, also as its second trait). */
+export function eatsLight(ctx: GameContext, foes: readonly Fighter[]): boolean {
+  return foes.some((f) => [f.trait, f.phaseTrait].some((t) => t && ctx.content.bossTraits.has(t) && ctx.content.bossTraits.get(t).kind === 'darken'));
 }
 
 // ---- Environments ----------------------------------------------------------------
@@ -290,7 +354,10 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
   const level = run.level + 1;
   const rules = cellarRules(ctx, level);
   const team = members.map((m) => m.c);
-  const light = run.light ?? 1;
+  const foes = cellarEnemies(ctx, level);
+  // Lichtfresser: stockdunkel for this fight, the torch burns on afterwards.
+  const torch = run.light ?? 1;
+  const light = eatsLight(ctx, foes) ? 0 : torch;
   const fighters = standing.map((m) => {
     const hits = rules.filter((r) => ruleFor(ctx, r, m.c, team, cellarRowOf(ctx, m.c.id)) === 'hit');
     const effect = combineEffects(hits.map((r) => r.effect));
@@ -299,7 +366,7 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
     if (effect.hazard > 0) f.hp = Math.max(1, f.hp - Math.round(effect.hazard * f.maxHp));
     return f;
   });
-  const result = simulateFight(ctx, fighters, courseEnemies(ctx, cellarCourse(ctx), level), ctx.rng, { replay });
+  const result = simulateFight(ctx, fighters, foes, ctx.rng, { replay });
   ce.lastResult = { floor: level, win: result.win, log: result.log, fighters: result.fighters, events: result.events, stats: result.stats, at: ctx.state.lastTickAt };
   if (!result.win) {
     ctx.bus.emit('cellarLevel', { level, win: false, rewards: {}, rest: false });
@@ -314,7 +381,7 @@ export function fightNextCellarLevel(ctx: GameContext, replay = true): void {
   ce.best = Math.max(ce.best, level);
   const cfg = ctx.balance.cellar;
   const rest = cfg.restEvery > 0 && level % cfg.restEvery === 0;
-  run.light = Math.max(0, light - cfg.lightPerLevel);
+  run.light = Math.max(0, torch - cfg.lightPerLevel);
   // A rest vault: everyone heals, the fallen get up again, the torch is lit anew.
   if (rest) {
     run.hp = run.hp.map((share) => Math.min(1, share + cfg.restHeal));

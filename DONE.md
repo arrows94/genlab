@@ -319,6 +319,20 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 4: Gegner und Bosse
+
+- **Verworfene Linien**: Keller-Gegner heißen „Wechselbalg-Glutwelpe“, „Fehlzucht-…“, „Zerrbild-…“ (Präfix je
+  Gegner mit eigenen Würfeln, `foePrefixes` an der Strecke) und tragen eine Tönung (`foeTint` → `tint` in den
+  Kampfdaten für die Arena). Die Kurve ist seit Schritt 2 steiler als im Turm (×1,06 statt ×1,035).
+- **Schatten deiner Dynastie** (jeder Boss im Keller): Art und Element der meistgezüchteten Art (neuer Zähler
+  `bred.<Art>` je geschlüpftem Ei; für alte Spielstände tiefste Dynastie, sonst häufigste Art im Stall), Name und
+  Gene der höchsten Generation dieser Art im Stall („Boss: Schatten von Kiko“) – Kᵗ macht ihn stärker und kritisch,
+  Pᵈ gibt Dornen usw. `shadow: true` für die Arena.
+- **Dunkle Boss-Merkmale**, nur im Keller (`courses: ['cellar']`, der Turm wählt weiter aus den alten vier):
+  Lebensraub 🩸 (heilt 30 % des ausgeteilten Schadens), Schrecken 😱 (+15 % Fehlschläge des Teams, solange er
+  steht), Lichtfresser 🌘 (im Kampf stockdunkel, nur Nachtsicht trifft sicher).
+- Turm Zeichen für Zeichen unverändert (Kurven-Test, Äon-Bot). Tests `tests/cellarFoes.test.ts` (10).
+
 ## 2026-10-03 – Genom-Keller Schritt 3: Umgebungen
 
 - Neue Inhaltsart `cellarEnvironments` (`content/endgame.ts`, geprüft in `validateCellarEnvironments`): Regeln mit

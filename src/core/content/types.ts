@@ -507,6 +507,10 @@ export interface CourseDef {
   unit: string;
   /** Seed prefix of the floor dice – changing it changes every floor of the course. */
   dice: string;
+  /** Name prefixes of its foes, one picked per foe („Wechselbalg“ → „Wechselbalg-Glutwelpe“); none = the plain species name. */
+  foePrefixes?: string[];
+  /** Colour cast of its foes in the arena (CSS colour). */
+  foeTint?: string;
 }
 
 /** Which team members a Keller rule concerns; a list matches if any entry does. */
@@ -563,9 +567,14 @@ export interface BossTraitDef {
    * shield: damage without element advantage × value; shift: changes element
    * every second (value unused); regen: heals value × the damage it took in
    * the last second; sweep: every `sweepEvery`-th action hits the whole back
-   * row (everyone if nobody stands back) with value × a normal hit.
+   * row (everyone if nobody stands back) with value × a normal hit;
+   * drain: heals value × the damage it deals; terror: while it stands the
+   * team's attacks miss value more often; darken: puts out the Keller torch
+   * for the fight (value unused).
    */
-  kind: 'shield' | 'shift' | 'regen' | 'sweep';
+  kind: 'shield' | 'shift' | 'regen' | 'sweep' | 'drain' | 'terror' | 'darken';
+  /** Courses whose bosses may have it (all if missing). */
+  courses?: CourseDef['id'][];
   value: number;
   /**
    * Whom the boss attacks: rows (default) prefers the front row,

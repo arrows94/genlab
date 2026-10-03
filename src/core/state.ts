@@ -233,6 +233,10 @@ export interface FightFighterSnapshot {
   interval?: number;
   row?: 'front' | 'back';
   boss?: boolean;
+  /** Colour cast in the arena (foes of the Genom-Keller). */
+  tint?: string;
+  /** „Schatten deiner Dynastie“ (Genom-Keller boss). */
+  shadow?: boolean;
 }
 
 /**

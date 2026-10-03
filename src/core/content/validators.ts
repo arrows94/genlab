@@ -371,7 +371,8 @@ export function validateBossTraits({ data, issues, at, text, num }: ContentCheck
   for (const b of data.bossTraits) {
     const w = at('bossTraits', b.id);
     text(`${w}.name`, b.name);
-    if (!['shield', 'shift', 'regen', 'sweep'].includes(b.kind)) issues.push(`${w}.kind: ungültig "${b.kind}"`);
+    if (!['shield', 'shift', 'regen', 'sweep', 'drain', 'terror', 'darken'].includes(b.kind)) issues.push(`${w}.kind: ungültig "${b.kind}"`);
+    for (const c of b.courses ?? []) if (!data.courses.some((x) => x.id === c)) issues.push(`${w}.courses: unbekannte Strecke "${c}"`);
     num(`${w}.value`, b.value, 0, 1);
     if (b.targeting !== undefined && !['rows', 'weakest', 'back'].includes(b.targeting)) issues.push(`${w}.targeting: ungültig "${b.targeting}"`);
   }
@@ -408,6 +409,8 @@ export function validateCourses({ data, issues, at, text }: ContentChecks): void
     text(`${w}.dice`, c.dice);
     if (!['up', 'down'].includes(c.direction)) issues.push(`${w}.direction: "up" oder "down"`);
     if (dice.has(c.dice)) issues.push(`${w}.dice: "${c.dice}" doppelt – zwei Strecken hätten dieselben Gegner`);
+    (c.foePrefixes ?? []).forEach((p, i) => text(`${w}.foePrefixes[${i}]`, p));
+    if (c.foePrefixes && c.foePrefixes.length === 0) issues.push(`${w}.foePrefixes: leere Liste (weglassen statt leer)`);
     dice.add(c.dice);
   }
   for (const id of ['tower', 'cellar']) if (!data.courses.some((c) => c.id === id)) issues.push(`courses: Strecke "${id}" fehlt`);
