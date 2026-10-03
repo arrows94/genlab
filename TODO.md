@@ -63,6 +63,41 @@ Urzeitwesen, Brutkammer und Fundquellen (RPG-Endboss, 5★-Gen-Aufträge) sind u
       „Regenbogenchronik“ verlangen alle 40 Arten, also auch die Urzeitwesen
 - [ ] Entscheiden, ob geschlüpfte Urzeitwesen die Vererbung überstehen sollen (bisher gehen sie wie alle Kreaturen)
 
+# Sagenwesen (einzigartige, dauerhafte Monster)
+
+Ziel: sechs einzigartige Monster mit festem Namen und Geschichte – von jedem gibt es genau eines, es bleibt für
+immer (Vererbung, Äon, Anomalien) und gibt dem ganzen Spiel einen dauerhaften Bonus. Man bekommt sie nicht per
+Zufall, sondern durch eine **Erweckung**: Ein Urzeitwesen besteht eine Sagen-Prüfung im GenLab RPG und wird zum
+Sagenwesen. So bekommen Urzeit-Eier einen Zweck über den Dex hinaus. Name „Sagenwesen“, weil „Legendär“ schon eine
+Seltenheit ist. Schritte in dieser Reihenfolge:
+
+- [ ] **Schritt 1 – Datenmodell und Dauerhaftigkeit**: neue Art-Stufe `legend` „Sagenwesen“ und
+      `content/legends.ts` (`LegendDef`: Art, Name mit Titel wie „Ignar, der Erste Funke“, Geschichte, Dungeon,
+      erlaubte Urzeitwesen, Bonus-Modifier), Validierung. `Creature.legend` (id); höchstens eines je Sagenwesen.
+      Übersteht `resetLayer` (behält Werte, Gene, Fähigkeiten und RPG-Stufe, verliert nur die Arbeit). Geschützt:
+      nicht verkaufen, recyceln, infundieren (als Opfer), an Aufträge abgeben oder verleihen (`canConsume`,
+      `consumeBlocker`), nicht züchten (`canBreed`), nicht im Zuchtautomaten. Bonus über einen eigenen
+      `ModifierProvider`, solange es da ist (egal welche Arbeit). Debug „Sagenwesen erwecken“
+- [ ] **Schritt 2 – Lücke bei den Urzeitwesen schließen**: Jeder Dungeon bekommt ein Sagenwesen, die erlaubten
+      Urzeitwesen kommen aus seinen Elementen. Wurzellabyrinth (Natur/Erde): Trilobix · Glutgrotten (Feuer):
+      Glutraptor · Flutgewölbe (Wasser/Eis): Ammonix, Mammutling · Sturmspitze (Luft/Elektro): **fehlt** – ein
+      achtes Urzeitwesen (z. B. Flugsaurier „Pterix“, Luft) · Schattengruft (Schatten/Gift): Ursporling ·
+      Kristallkern (Kristall/Licht/Metall): Bernsteinflügler, Sternensaat. Achievement-Zahlen (alle Arten) mitziehen
+- [ ] **Schritt 3 – Erweckung**: Voraussetzungen je Sagenwesen (z. B. passendes Urzeitwesen ab Episch, Dungeon
+      N-mal geschafft, Runen/Schattenmarken als Opfergabe). Erfüllt, erscheint im Dungeon statt des normalen Bosses
+      ein **Sagen-Echo** (stärkere Variante des Dungeon-Bosses aus `rpgEnemies`, eigene Phase 2 und Text). Das
+      Urzeitwesen muss es selbst als Held besiegen; danach wird es zum Sagenwesen (Art, Name, Werte auf das neue
+      Profil wie bei der Evolution). Niederlage kostet nur die Fackel, der Versuch bleibt offen
+- [ ] **Schritt 4 – Boni festlegen**: je Sagenwesen ein eigenes Thema, spürbar, aber kein Muss – Ideen:
+      Produktion einer Ressource, Turm-Schaden eines Elements, Offline-Deckel, Prozess-Tempo (Brut/Sequenzierung),
+      Keller-Ertrag, Äon-Splitter. Optional „Sagenstufe“: Bonus wächst mit Runen (Senke für Runen, siehe Endgame)
+- [ ] **Schritt 5 – Oberfläche**: Sagenhalle (Panel im Dex oder Labor: alle sechs, Silhouette bis erweckt,
+      Geschichte, Voraussetzungen, Bonus), eigener Rahmen und Aura im Kreaturen-SVG, große Enthüllung bei der
+      Erweckung, Hinweis im RPG-Dungeon, wenn ein Sagen-Echo wartet
+- [ ] **Schritt 6 – Abschluss**: Dex (eigene Gruppe, eine Eintragung je Sagenwesen statt sechs Seltenheiten),
+      Erfolge („Erste Sage“, „Alle sechs“), Spieler-Changelog ohne Spoiler (`feature`), RPG-Bot und Äon-Bot
+      messen, wann die erste Erweckung gelingt (Ziel: frühestens nach etwa zwei Wochen)
+
 # Tester-Feedback (Oktober 2026)
 
 Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR #51).
