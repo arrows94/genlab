@@ -399,6 +399,13 @@ export const balance: Balance = {
     restEvery: 5,
     restHeal: 0.5,
     historySize: 10,
+    // Levels −1 to −10 are a plain vault; from −11 on every ten levels have their own surroundings.
+    environmentFrom: 11,
+    environmentEvery: 10,
+    // Four levels after a rest the torch is at 40 %: the last level before the next rest vault is the darkest.
+    lightPerLevel: 0.15,
+    lightMissFrom: 0.6,
+    lightMiss: 0.5,
     // Placeholder curve until the Keller has its environments and rewards (TODO.md, Genom-Keller step 9):
     // level −1 is about as strong as tower floor 90 (old floor 30), and every level is ×1.06 – steeper
     // than the tower's ×1.035 per floor, but the team does not heal between levels.

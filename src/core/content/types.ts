@@ -105,6 +105,8 @@ export interface AlleleDef {
   visual?: AlleleVisual;
   /** Target allele for the "perfect genome" (Perfektions-Jagd). */
   top?: boolean;
+  /** Expressing it lets a creature see in the dark of the Genom-Keller (no torchlight malus, „Finsternis“). */
+  nightSight?: boolean;
 }
 
 export interface AlleleVisual {
@@ -369,6 +371,8 @@ export interface WeeklyMutationDef {
   name: string;
   description: string;
   modifiers: ModifierDef[];
+  /** Rule in the Genom-Keller while this mutation is active (on every level). */
+  cellar?: CellarRuleDef;
 }
 
 export interface CapsuleDef {
@@ -503,6 +507,50 @@ export interface CourseDef {
   unit: string;
   /** Seed prefix of the floor dice – changing it changes every floor of the course. */
   dice: string;
+}
+
+/** Which team members a Keller rule concerns; a list matches if any entry does. */
+export type CellarMatch =
+  | { kind: 'element'; elements: string[] }
+  /** Expresses the allele (or, with `homozygous`, carries it twice). */
+  | { kind: 'allele'; locus: string; allele: string; homozygous?: boolean }
+  /** Has this Erbanlage awake (deep-sequenced). */
+  | { kind: 'latent'; trait: string }
+  /** Expresses an allele with `nightSight`. */
+  | { kind: 'nightSight' }
+  | { kind: 'row'; row: 'front' | 'back' }
+  /** Another creature of its species stands before it in the team. */
+  | { kind: 'duplicate' };
+
+/** What a Keller rule does to a team member. Several rules add up (heal multiplies). */
+export interface CellarEffect {
+  /** Share more (negative: less) of a fight stat, e.g. `{ atk: -0.25 }`. */
+  stats?: Partial<Record<'hp' | 'atk' | 'def' | 'spd', number>>;
+  /** Extra chance that its own attacks miss. */
+  miss?: number;
+  /** Multiplier on the healing it receives (0.5 = halved). */
+  heal?: number;
+  /** Share of its max HP it loses before every level (never below 1 HP). */
+  hazard?: number;
+}
+
+export interface CellarRuleDef {
+  /** Concerns the team members matching any of these (everyone if missing) … */
+  match?: CellarMatch[];
+  /** … except those matching any of these – they are adapted. */
+  except?: CellarMatch[];
+  effect: CellarEffect;
+  /** Short German text for the UI („Feuer: −25 % Angriff“). */
+  text: string;
+}
+
+/** Surroundings of a section of the Genom-Keller: rules that call for a team bred to fit. */
+export interface CellarEnvironmentDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  rules: CellarRuleDef[];
 }
 
 /** A special trick of a tower boss (from `balance.tower.bossTraitFromFloor`). */
@@ -893,6 +941,7 @@ export interface ContentData {
   megaProjects: MegaProjectDef[];
   researchThemes: ResearchThemeDef[];
   courses: CourseDef[];
+  cellarEnvironments: CellarEnvironmentDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
   techniques: TechniqueDef[];

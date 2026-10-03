@@ -1,4 +1,5 @@
 import type { ContentChecks } from './checks';
+import type { CellarMatch, CellarRuleDef } from './types';
 
 /**
  * Per-kind validators for the lab and endgame content. Each one reports its
@@ -242,8 +243,70 @@ export function validateAnomalies({ data, at, mods, cond }: ContentChecks): void
   }
 }
 
-export function validateWeeklyMutations({ data, at, mods }: ContentChecks): void {
-  for (const m of data.weeklyMutations) mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
+export function validateWeeklyMutations(checks: ContentChecks): void {
+  const { data, at, mods } = checks;
+  for (const m of data.weeklyMutations) {
+    mods(`${at('weeklyMutations', m.id)}.modifiers`, m.modifiers);
+    if (m.cellar) checkCellarRule(checks, `${at('weeklyMutations', m.id)}.cellar`, m.cellar);
+  }
+}
+
+function checkCellarMatches(checks: ContentChecks, where: string, list: readonly CellarMatch[] | undefined): void {
+  const { issues, ref, alleleRef } = checks;
+  if (list && list.length === 0) issues.push(`${where}: leere Liste (weglassen statt leer)`);
+  (list ?? []).forEach((m, i) => {
+    const w = `${where}[${i}]`;
+    switch (m.kind) {
+      case 'element':
+        if (m.elements.length === 0) issues.push(`${w}.elements: mindestens ein Element`);
+        m.elements.forEach((e) => ref(`${w}.elements`, 'elements', e));
+        break;
+      case 'allele':
+        alleleRef(w, m);
+        break;
+      case 'latent':
+        ref(`${w}.trait`, 'latentTraits', m.trait);
+        break;
+      case 'row':
+        if (m.row !== 'front' && m.row !== 'back') issues.push(`${w}.row: "front" oder "back"`);
+        break;
+      case 'nightSight':
+        if (!checks.data.genes.some((l) => l.alleles.some((a) => a.nightSight))) issues.push(`${w}: kein Allel hat nightSight`);
+        break;
+      case 'duplicate':
+        break;
+      default:
+        issues.push(`${w}.kind: unbekannt "${(m as { kind: string }).kind}"`);
+    }
+  });
+}
+
+function checkCellarRule(checks: ContentChecks, where: string, rule: CellarRuleDef): void {
+  const { issues, text, num } = checks;
+  text(`${where}.text`, rule.text);
+  checkCellarMatches(checks, `${where}.match`, rule.match);
+  checkCellarMatches(checks, `${where}.except`, rule.except);
+  const e = rule.effect;
+  for (const [k, v] of Object.entries(e.stats ?? {})) {
+    if (!['hp', 'atk', 'def', 'spd'].includes(k)) issues.push(`${where}.effect.stats: unbekannter Wert "${k}"`);
+    num(`${where}.effect.stats.${k}`, v, -0.9, 5);
+  }
+  if (e.miss !== undefined) num(`${where}.effect.miss`, e.miss, 0, 0.9);
+  if (e.heal !== undefined) num(`${where}.effect.heal`, e.heal, 0, 5);
+  if (e.hazard !== undefined) num(`${where}.effect.hazard`, e.hazard, 0, 0.9);
+  if (!e.stats && e.miss === undefined && e.heal === undefined && e.hazard === undefined) issues.push(`${where}.effect: mindestens eine Wirkung`);
+}
+
+export function validateCellarEnvironments(checks: ContentChecks): void {
+  const { data, issues, at, text } = checks;
+  for (const env of data.cellarEnvironments) {
+    const w = at('cellarEnvironments', env.id);
+    text(`${w}.name`, env.name);
+    text(`${w}.description`, env.description);
+    if (env.rules.length === 0) issues.push(`${w}.rules: mindestens eine Regel`);
+    env.rules.forEach((r, i) => checkCellarRule(checks, `${w}.rules[${i}]`, r));
+  }
+  if (data.cellarEnvironments.length < 2) issues.push('cellarEnvironments: mindestens zwei Umgebungen (sonst wiederholt sich der Keller)');
 }
 
 export function validateVoyageDestinations({ data, issues, at, text, ref }: ContentChecks): void {

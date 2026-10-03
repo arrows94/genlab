@@ -14,7 +14,7 @@ import { species } from './species';
 import { stats } from './stats';
 import { researchThemes, upgrades } from './upgrades';
 import { capsules } from './capsules';
-import { anomalies, bossTraits, courses, relics, resonances, talents, weeklyMutations } from './endgame';
+import { anomalies, bossTraits, cellarEnvironments, courses, relics, resonances, talents, weeklyMutations } from './endgame';
 import { techniques } from './techniques';
 import { megaProjects } from './megaProjects';
 import { contracts } from './contracts';
@@ -60,6 +60,7 @@ export const contentData: ContentData = {
   megaProjects,
   researchThemes,
   courses,
+  cellarEnvironments,
   bossTraits,
   relics,
   techniques,

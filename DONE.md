@@ -319,6 +319,23 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 3: Umgebungen
+
+- Neue Inhaltsart `cellarEnvironments` (`content/endgame.ts`, geprüft in `validateCellarEnvironments`): Regeln mit
+  `match` / `except` über Element, Allel (ausgeprägt oder reinerbig), wache Erbanlage, Nachtsicht, Reihe oder
+  doppelte Art, Wirkung auf Werte, Fehlschläge, Heilung oder KP-Verlust vor jeder Ebene (nie der letzte KP).
+- Sieben Umgebungen: Finsternis (ohne Nachtsicht 25 % daneben – die Farb-Allele Dunkel und Albino bekommen
+  `nightSight`), Überflutet (Wasser/Eis stärker, Feuer schwächer), Sporennebel (−8 % KP je Ebene, außer AᵉAᵉ und
+  Gift), Schatten-Aura (Heilung halbiert, außer Schatten), Einsturz (hintere Reihe −12 %, außer Diamanthaut),
+  Wurzelgewirr (−30 % Tempo, außer Natur, Titanenblut, Dornenhaut), Vielfalts-Siegel (doppelte Arten −40 %).
+- Ebene −1 bis −10 ohne Umgebung, danach je zehn Ebenen eine, fest je Abschnitt und reihum ohne direkte
+  Wiederholung. Die Element-Wochen der Wochen-Mutation bringen eine Keller-Regel (+20 % Angriff für ihr Element).
+- **Fackellicht**: −15 % je Ebene, die Rast zündet es neu; unter 60 % mehr Fehlschläge – nicht mit Nachtsicht.
+- Kampf-Engine: `Fighter.miss` (zusätzliche Fehlschläge) und `Fighter.healing` (Heilungs-Faktor); der Turm bleibt
+  Zeichen für Zeichen gleich (Kurven-Test und Äon-Bot verglichen).
+- Abfragen für die Oberfläche: `environmentAt`, `environmentSection`, `cellarRules`, `cellarFit`,
+  `cellarCandidates`. Tests `tests/cellarEnvironments.test.ts` (11).
+
 ## 2026-10-03 – Genom-Keller Schritt 2: Grundgerüst
 
 - Strecken als Inhalt (`courses` in `content/endgame.ts`: Turm ↑ „Etage“, Keller ↓ „Ebene“, eigener Würfel-Präfix,

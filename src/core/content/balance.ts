@@ -478,6 +478,16 @@ export interface Balance {
     restHeal: number;
     /** Number of recent descents kept in the history. */
     historySize: number;
+    /** Environments (`cellarEnvironments`) from this level on, one per section of `environmentEvery` levels. */
+    environmentFrom: number;
+    environmentEvery: number;
+    /**
+     * Fackellicht: starts full (1) and drops by lightPerLevel after every level, a rest vault fills it again.
+     * Below lightMissFrom own attacks miss more: (lightMissFrom − light) × lightMiss – not for creatures with night sight.
+     */
+    lightPerLevel: number;
+    lightMissFrom: number;
+    lightMiss: number;
   };
   anomalies: {
     /** Highest difficulty stage (I–V). */

@@ -1,4 +1,4 @@
-import type { AnomalyDef, BossTraitDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, BossTraitDef, CellarEnvironmentDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
 
 /** Talent tiers 4 and 5 and the resonance open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
@@ -114,11 +114,16 @@ export const anomalies: AnomalyDef[] = [
 
 /** Weekly mutations – one is active per calendar week (date-based seed). */
 export const weeklyMutations: WeeklyMutationDef[] = [
-  { id: 'iceAge', name: 'Eiszeit', description: 'Eis-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.ice.production', op: 'pct', value: 0.5 }] },
-  { id: 'emberWeek', name: 'Glutwoche', description: 'Feuer-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.fire.production', op: 'pct', value: 0.5 }] },
-  { id: 'stormWeek', name: 'Sturmwoche', description: 'Elektro- und Luft-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.electric.production', op: 'pct', value: 0.5 }, { target: 'element.air.production', op: 'pct', value: 0.5 }] },
-  { id: 'bloom', name: 'Blütezeit', description: 'Natur- und Erd-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.nature.production', op: 'pct', value: 0.5 }, { target: 'element.earth.production', op: 'pct', value: 0.5 }] },
-  { id: 'shadowTime', name: 'Schattenzeit', description: 'Schatten- und Gift-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.shadow.production', op: 'pct', value: 0.5 }, { target: 'element.poison.production', op: 'pct', value: 0.5 }] },
+  { id: 'iceAge', name: 'Eiszeit', description: 'Eis-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.ice.production', op: 'pct', value: 0.5 }],
+    cellar: { match: [{ kind: 'element', elements: ['ice'] }], effect: { stats: { atk: 0.2 } }, text: 'Eis: +20 % Angriff' } },
+  { id: 'emberWeek', name: 'Glutwoche', description: 'Feuer-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.fire.production', op: 'pct', value: 0.5 }],
+    cellar: { match: [{ kind: 'element', elements: ['fire'] }], effect: { stats: { atk: 0.2 } }, text: 'Feuer: +20 % Angriff' } },
+  { id: 'stormWeek', name: 'Sturmwoche', description: 'Elektro- und Luft-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.electric.production', op: 'pct', value: 0.5 }, { target: 'element.air.production', op: 'pct', value: 0.5 }],
+    cellar: { match: [{ kind: 'element', elements: ['electric', 'air'] }], effect: { stats: { atk: 0.2 } }, text: 'Elektro und Luft: +20 % Angriff' } },
+  { id: 'bloom', name: 'Blütezeit', description: 'Natur- und Erd-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.nature.production', op: 'pct', value: 0.5 }, { target: 'element.earth.production', op: 'pct', value: 0.5 }],
+    cellar: { match: [{ kind: 'element', elements: ['nature', 'earth'] }], effect: { stats: { atk: 0.2 } }, text: 'Natur und Erde: +20 % Angriff' } },
+  { id: 'shadowTime', name: 'Schattenzeit', description: 'Schatten- und Gift-Kreaturen +50 % Ertrag.', modifiers: [{ target: 'element.shadow.production', op: 'pct', value: 0.5 }, { target: 'element.poison.production', op: 'pct', value: 0.5 }],
+    cellar: { match: [{ kind: 'element', elements: ['shadow', 'poison'] }], effect: { stats: { atk: 0.2 } }, text: 'Schatten und Gift: +20 % Angriff' } },
   { id: 'fertile', name: 'Fruchtbare Woche', description: '−25 % Brutzeit.', modifiers: [{ target: 'breeding.time', op: 'mult', value: 0.75 }] },
   { id: 'goldRush', name: 'Goldrausch', description: '+30 % Goldproduktion.', modifiers: [{ target: 'production.gold', op: 'pct', value: 0.3 }] },
   { id: 'mutationWave', name: 'Mutationswelle', description: '+5 % Mutationschance.', modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.05 }] },
@@ -135,6 +140,53 @@ export const weeklyMutations: WeeklyMutationDef[] = [
 export const courses: CourseDef[] = [
   { id: 'tower', name: 'Genom-Turm', icon: '🗼', direction: 'up', unit: 'Etage', dice: 'tower' },
   { id: 'cellar', name: 'Genom-Keller', icon: '🕳️', direction: 'down', unit: 'Ebene', dice: 'cellar' },
+];
+
+/**
+ * Surroundings of the Genom-Keller, one per section of levels: each asks for a team bred to fit – an
+ * allele, an Erbanlage, an element, a row or a colourful team – instead of raw strength.
+ */
+export const cellarEnvironments: CellarEnvironmentDef[] = [
+  {
+    id: 'darkness', name: 'Finsternis', icon: '🌑', description: 'Stockdunkle Gewölbe. Wer nicht im Dunkeln sieht, schlägt ins Leere.',
+    rules: [{ except: [{ kind: 'nightSight' }], effect: { miss: 0.25 }, text: 'Ohne Nachtsicht (Farbe Dunkel oder Albino): 25 % der Angriffe gehen daneben' }],
+  },
+  {
+    id: 'flooded', name: 'Überflutet', icon: '🌊', description: 'Schwarzes Wasser steht kniehoch in den Gängen.',
+    rules: [
+      { match: [{ kind: 'element', elements: ['water', 'ice'] }], effect: { stats: { atk: 0.25, spd: 0.15 } }, text: 'Wasser und Eis: +25 % Angriff, +15 % Tempo' },
+      { match: [{ kind: 'element', elements: ['fire'] }], effect: { stats: { atk: -0.25 } }, text: 'Feuer: −25 % Angriff' },
+    ],
+  },
+  {
+    id: 'spores', name: 'Sporennebel', icon: '🍄', description: 'Fahlgrüne Sporen hängen in der Luft und kriechen in jede Lunge.',
+    rules: [{
+      except: [{ kind: 'allele', locus: 'stamina', allele: 'Ae', homozygous: true }, { kind: 'element', elements: ['poison'] }],
+      effect: { hazard: 0.08 }, text: 'Vor jeder Ebene −8 % KP – außer reinerbig Unermüdlich (AᵉAᵉ) und Gift',
+    }],
+  },
+  {
+    id: 'shadowAura', name: 'Schatten-Aura', icon: '🕯️', description: 'Etwas in der Dunkelheit trinkt jede Wärme.',
+    rules: [{ except: [{ kind: 'element', elements: ['shadow'] }], effect: { heal: 0.5 }, text: 'Heilung halbiert – außer bei Schatten' }],
+  },
+  {
+    id: 'collapse', name: 'Einsturz', icon: '🪨', description: 'Die Decke bröckelt. Wer hinten steht, bekommt die Brocken ab.',
+    rules: [{
+      match: [{ kind: 'row', row: 'back' }], except: [{ kind: 'allele', locus: 'armor', allele: 'Pd' }],
+      effect: { hazard: 0.12 }, text: 'Hintere Reihe: vor jeder Ebene −12 % KP durch Steinschlag – außer Diamanthaut (Pᵈ)',
+    }],
+  },
+  {
+    id: 'roots', name: 'Wurzelgewirr', icon: '🌿', description: 'Alte Wurzeln greifen nach allem, was sich bewegt.',
+    rules: [{
+      except: [{ kind: 'element', elements: ['nature'] }, { kind: 'latent', trait: 'titanBlood' }, { kind: 'latent', trait: 'thornSkin' }],
+      effect: { stats: { spd: -0.3 } }, text: '−30 % Tempo – außer Natur, Titanenblut und Dornenhaut',
+    }],
+  },
+  {
+    id: 'diversity', name: 'Vielfalts-Siegel', icon: '🔯', description: 'Ein uraltes Siegel duldet keine Wiederholung.',
+    rules: [{ match: [{ kind: 'duplicate' }], effect: { stats: { atk: -0.4, def: -0.4 } }, text: 'Jede Art nach der ersten im Team: −40 % Angriff und Verteidigung' }],
+  },
 ];
 
 /** Tricks of tower bosses from `balance.tower.bossTraitFromFloor` on (one per boss, fixed per floor). */

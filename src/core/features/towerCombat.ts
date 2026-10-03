@@ -37,6 +37,10 @@ export interface Fighter {
   thorns?: number;
   /** Acts almost at once in a fight (tower.firstStrike ≥ 1). */
   firstStrike?: boolean;
+  /** Extra chance that its own attacks miss (darkness in the Genom-Keller). */
+  miss?: number;
+  /** Multiplier on the healing it receives (Schatten-Aura: 0.5). */
+  healing?: number;
   /** Boss of its floor (crown in the arena). */
   boss?: boolean;
   /** Wächter of its floor (a stronger single enemy between the bosses). */
@@ -383,7 +387,7 @@ function land(fight: Fight, att: Combatant, target: Combatant, dmg: number, at: 
 /** Heals `target` by `amount` (capped at max HP). */
 function heal(fight: Fight, by: Combatant, target: Combatant, amount: number, at: number): void {
   const f = target.f;
-  const healed = Math.min(f.maxHp - f.hp, Math.round(amount));
+  const healed = Math.min(f.maxHp - f.hp, Math.round(amount * (f.healing ?? 1)));
   if (healed <= 0 || f.hp <= 0) return;
   f.hp += healed;
   bump(fight.stats.healed, target.i, healed);
@@ -428,7 +432,7 @@ function strike(fight: Fight, a: Combatant, t: Combatant, at: number, mult: numb
   const att = a.f;
   const target = t.f;
   const m = elementMultiplier(ctx, att.element, target.element);
-  const evade = Math.min(0.6, evadeChance(ctx, att, target) + (statusOf(t, 'evade', at)?.value ?? 0));
+  const evade = Math.min(0.6, evadeChance(ctx, att, target) + (statusOf(t, 'evade', at)?.value ?? 0)) + (att.miss ?? 0);
   if (rng.chance(evade)) {
     bump(stats.missed, a.i, 1);
     bump(stats.dodged, t.i, 1);

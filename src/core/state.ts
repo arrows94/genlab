@@ -197,6 +197,8 @@ export interface CellarRun {
   team: number[];
   /** Share of its max HP each team member carries into the next level (same order as `team`; 1 = full, 0 = fallen). */
   hp: number[];
+  /** Fackellicht (1 = full): drops with every level, a rest vault fills it again. */
+  light: number;
   elapsedMs: number;
   startLevel: number;
 }

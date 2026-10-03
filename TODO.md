@@ -164,10 +164,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 3 – Umgebungen**: `CellarEnvironmentDef` in `content/endgame.ts` (Bedingung über Allel, reinerbig,
-      latentes Merkmal, Element oder Team-Vielfalt → Modifier auf den `Fighter`), Prüfung in `validate.ts`, Fackellicht,
-      Wochen-Regel aus der Wochen-Mutation. Abfrage-Helfer in `core/queries.ts` bzw. im Feature: „Welche meiner
-      Kreaturen passen zur nächsten Umgebung?“
 - [ ] **Schritt 4 – Gegner und Bosse**: verworfene Linien (Namen, Tönung), steilere Kurve als im Turm, Boss „Schatten
       deiner Dynastie“ (meistgezüchtete Art, deren Gene), dunkle Boss-Merkmale zusätzlich zu `bossTraits`
 - [ ] **Schritt 5 – Belohnungen**: Ressource Schattenmarken (`resources.ts`), dunkle Relikte (`RelicDef` mit Nachteil,
@@ -175,8 +171,10 @@ Merkmale wirken außerhalb der Produktion kaum.
       `infusion.transferChance`, Ritual-`rarityBoost` und `cost.capsule` (dann den Punkt in der Code-Durchsicht
       streichen), Äon-Splitter mit Wochen-Deckel
 - [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab (zuletzt gewählter Bereich in
-      `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung und welche
-      Kreaturen passen, Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Toasts zu `cellarRunEnded`, Zeile
+      `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung des nächsten
+      Abschnitts (`environmentAt`, `environmentSection`) mit ihren Regeln und welche Kreaturen passen
+      (`cellarFit`, `cellarCandidates`), Fackellicht-Anzeige, Keller-Regel der Wochen-Mutation (auch in der
+      Wochen-Anzeige oben), Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Toasts zu `cellarRunEnded`, Zeile
       „Tiefste Keller-Ebene“ in der Statistik (`record.cellarLevel`), `tabActivity`, Changelog-Eintrag mit
       `feature: 'cellar'`. Funktional, noch im einfachen Stil. Auch auf Handy-Breite prüfen. Bis hierhin den Branch
       nicht nach `main` bringen: Ab Turm-Etage 150 schaltet der Keller schon frei, hat aber noch keine Oberfläche
