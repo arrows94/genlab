@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 34,
+    date: '2026-10-03',
+    title: 'Brutzeit neu austariert',
+    items: [
+      { text: 'Tiefe Linien brüten nicht mehr endlos länger: Ab der 11. Generation wächst die Brutzeit nicht weiter (höchstens 2½ Minuten Grundzeit).', feature: 'breeding' },
+      { text: 'Jeder Brut-Bonus zählt jetzt bis zum Schluss: Ein Ei braucht mindestens 15 Sekunden statt eines Viertels seiner Grundzeit. Inkubator, Gen „Fruchtbar“, Brutpfleger und Nestwärter stapeln sich bis dorthin.', feature: 'breeding' },
+      { text: 'Der Inkubator kürzt die Brutzeit um 6 % pro Stufe (statt 10 %), dafür ist Brutpfleger stärker: −15 % bei den eigenen Eiern statt −10 %.', feature: 'breeding' },
+      { text: 'Mit dem Fähigkeits-Elixier erreicht Brutpfleger III jetzt −30 % Brutzeit.', feature: 'abilityElixir' },
+    ],
+  },
+  {
     id: 33,
     date: '2026-10-02',
     title: 'Ruf, Suche und Ordnung',

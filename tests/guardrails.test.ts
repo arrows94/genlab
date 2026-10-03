@@ -60,7 +60,7 @@ describe('Leitplanken', () => {
     for (const m of content.missions.list.filter((x) => x.durationSec > HOUR)) expect(needsInheritance(m.requires), `mission ${m.id}`).toBe(true);
     // The short loops stay short even deep into a run.
     expect(balance.genetics.sequencing.baseTimeSec).toBeLessThanOrEqual(HOUR);
-    expect(balance.breeding.baseTimeSec * (1 + balance.breeding.timePerGeneration * 29)).toBeLessThanOrEqual(HOUR / 4);
+    expect(balance.breeding.baseTimeSec * (1 + balance.breeding.timePerGeneration * (balance.breeding.maxTimeGeneration - 1))).toBeLessThanOrEqual(HOUR / 24);
   });
 
   it('long projects are a bonus: no basic system waits for one', () => {

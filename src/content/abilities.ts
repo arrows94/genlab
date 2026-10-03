@@ -5,6 +5,6 @@ export const abilities: AbilityDef[] = [
   { id: 'tough', name: 'Zäh', tier: 'common', scope: 'self', description: '+10 % KP.', modifiers: [{ target: 'stat.hp', op: 'pct', value: 0.1 }] },
   { id: 'swift', name: 'Flink', tier: 'uncommon', scope: 'self', description: '+15 % Tempo, im Turm handelt es sofort.', modifiers: [{ target: 'stat.spd', op: 'pct', value: 0.15 }, { target: 'tower.firstStrike', op: 'add', value: 1 }] },
   { id: 'mutagenic', name: 'Mutagen', tier: 'rare', scope: 'self', description: '+2 % Mutationschance bei den eigenen Eiern.', modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.02 }] },
-  { id: 'nurturer', name: 'Brutpfleger', tier: 'epic', scope: 'self', description: '−10 % Brutzeit bei den eigenen Eiern.', modifiers: [{ target: 'breeding.time', op: 'pct', value: -0.1 }] },
+  { id: 'nurturer', name: 'Brutpfleger', tier: 'epic', scope: 'self', description: '−15 % Brutzeit bei den eigenen Eiern.', modifiers: [{ target: 'breeding.time', op: 'pct', value: -0.15 }] },
   { id: 'goldheart', name: 'Goldherz', tier: 'legendary', scope: 'global', description: '+25 % Goldproduktion, solange es arbeitet.', modifiers: [{ target: 'production.gold', op: 'pct', value: 0.25 }] },
 ];
