@@ -82,6 +82,9 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
       braucht Faktor 1,15, Etage 175 (ein Wasser-Gegner gegen ein Erde/Feuer-Team) 1,98, Boss 180 2,21 – die Mauern
       sind jetzt vor allem Element-Spitzen, weil der Bot-Stall fast nur aus einer oder zwei Arten besteht. Möglich:
       Bot-Zucht vielfältiger (näher am echten Spieler), Entschlossenheit höher deckeln, oder „Veteranen“-Talent
+      Der Genom-Keller löst ihn nicht allein (Äon-Bot 28 Tage, Turm am Ende ohne / mit Keller und dunklen Relikten):
+      Seed 2024 155 / 156, Seed 7 154 / 162, Seed 99 155 / 155 – Seed 99 steht ab Tag 10 bei 155. Der Keller hat
+      ähnliche Mauern (−39 von Tag 10 bis 22 bei Seed 2024), weil beide an derselben Stärke des Stalls hängen
 - [ ] Auf dem Handy nachmessen, wie lange das Laden nach 12 h mit Dauerkampf (Auto-Neustart) dauert
 - [ ] Optional: Äon-Talent „Veteranen“ (+50 % Erfahrung) oder ein Resonanz-Knoten, damit auch das Äon den Turm
       spürbar beschleunigt
@@ -118,8 +121,7 @@ Merkmale wirken außerhalb der Produktion kaum.
   Boni und Quelle für die quellenlosen Werte aus der Code-Durchsicht (`infusion.transferChance`, Ritual-Seltenheit,
   `cost.capsule`, `cost.upgrade`). Äon-Splitter an neuen Boss-Tiefen mit Wochen-Deckel wie im RPG. Später
   **Höhlenformen**: blasse, augenlose Varianten bekannter Arten (Dex oder Kosmetik)
-- **Freischaltung:** Etage 150 im Turm (dort steht schon der Erfolg „Turmstürmer“; liegt im Äon-Bot an der ersten
-  Mauer – mit dem Bot prüfen)
+- **Freischaltung:** mit dem ersten Äon oder bei Turm-Etage 150 (im Äon-Bot Tag 5–6, an der ersten Turm-Mauer)
 - **Eigenes Team**, eigener Tiefen-Rekord und eigene Kontrollpunkte; eine Kreatur steht nie in Turm und Keller
   zugleich. Rekord, Schattenmarken und dunkle Relikte überstehen jede Vererbung und jedes Äon
 - **Atmosphäre – etwas Eigenes, weder Turm noch RPG-Welt:** Der Turm ist das saubere Labor (Violett, Petrol, Himmel),
@@ -155,11 +157,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 9 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
-      Tag, Schattenmarken, Wirkung der dunklen Relikte auf den Turm-Stillstand (Ziel höchstens etwa 3 Tage), Splitter
-      je Woche. Zahlen in `balance.ts` nachziehen (die Keller-Kurve ist ein Platzhalter: Ebene −1 ≈ Turm-Etage 90,
-      ×1,06 je Ebene). Klären, ob Kampferfahrung und Entschlossenheit des Turms im Keller mitwirken sollen – heute tun
-      sie es, weil `cellarFighter` auf `fighterFor` aufsetzt
 - [ ] **Schritt 10 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
       Änderungen am Kreaturen-SVG – zusammen mit den kosmetischen Mustern der Gen-Aufträge planen
 

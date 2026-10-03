@@ -325,6 +325,21 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 9: Balancing mit dem Äon-Bot
+
+- Der Äon-Bot spielt den Keller (`tests/endgameBot.ts`): Auto-Abstieg, Keller-Team aus dem, was der Turm übrig lässt
+  (Stärke gegen die nächste Ebene ×1,3 je helfender, ×0,7 je schadender Regel), erst wenn das Turm-Team voll ist;
+  kauft dunkle Relikte und trägt sie in Keller und Turm. Bericht mit Keller-Tiefe, Abstiegen, Marken, dunklen
+  Relikten; `GENLAB_CELLAR=0` spielt ohne Keller, `GENLAB_AEON_SEED` wählt den Seed.
+- Erste Messung (Seed 2024): Freischaltung bei Etage 150 kam erst an Tag 23 (Turm-Mauern an Tag 5–22), das
+  Keller-Team blieb bei −14, kaum Marken, kein Splitter. Danach: Freischaltung mit dem ersten Äon oder Etage 150,
+  Ebene −1 ≈ Turm-Etage 60, ×1,04 je Ebene (statt ≈ Etage 90 und ×1,06), 3 Marken je Ebene, ein Äon-Splitter auch
+  an jedem Tiefen-Meilenstein (weiter höchstens 2 pro Woche). Entschlossenheit wirkt im Keller nicht mehr
+  (`fighterFor(…, 'cellar')`), Kampferfahrung schon.
+- Ergebnis nach 28 Tagen (ohne / mit Keller): Turm Seed 2024 155 / 156, Seed 7 154 / 162, Seed 99 155 / 155;
+  Keller −48, −53, −58 (an Tag 10 schon −39, −17, −49); 3–5 Äon-Splitter aus dem Keller (Äon: 38–43), 11 Stufen
+  dunkle Relikte, Meilensteine bis −50. Der Turm-Stillstand bleibt (siehe „Turm: Stillstand abbauen“).
+
 ## 2026-10-03 – Genom-Keller Schritt 8: Klang und Musik
 
 - Eigene Musik-Stimmungen `cellar` und `cellarBoss` (live mit Web Audio, ohne Akkorde): atmender Drone aus zwei
