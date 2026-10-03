@@ -156,7 +156,7 @@ export const balance: Balance = {
     // Taking equipment apart gives Runen by rarity (also for pieces found while the collection is full).
     salvage: { common: 2, uncommon: 4, rare: 8, epic: 16, legendary: 32, mythic: 64 },
     // The most valuable loot has a weekly limit, so the idle game never depends on the dungeon.
-    weeklyCap: { timeCrystals: 6, aeonShards: 2, primalEgg: 2 },
+    weeklyCap: { timeCrystals: 6, aeonShards: 2, primalEgg: 7 },
     // An Urzeit-Ei is too rare to lose to a defeat: it is safe the moment it is found.
     instantLoot: ['primalEgg'],
   },

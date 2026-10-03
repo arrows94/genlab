@@ -57,10 +57,10 @@ Nestwärter, gezieltere Vererbung und das Fähigkeits-Elixier mit Keimöl sind u
 
 Urzeitwesen, Brutkammer und Fundquellen (RPG-Endboss, 5★-Gen-Aufträge) sind umgesetzt (siehe `DONE.md`).
 
-- [ ] Rate mit dem RPG-Bot und dem Äon-Bot messen (Bosschance 4 % × Beute-Faktor, höchstens 2 pro Woche, 10 % je
-      5★-Auftrag). Sternensaat (3,2 % je Ei) braucht im Schnitt rund 31 Eier – bei 2 pro Woche etwa vier Monate;
-      falls zu lang, `eggWeight` von 1,5 auf etwa 3 heben. „Vollkommenheit“ und „Regenbogenchronik“ verlangen alle
-      40 Arten, also auch die Urzeitwesen
+- [ ] Rate mit dem RPG-Bot und dem Äon-Bot messen (Bosschance 4 % × Beute-Faktor, höchstens 7 pro Woche, 10 % je
+      5★-Auftrag). Erst im Kristallkern (29 % je Boss) kommt man in die Nähe des Deckels; vorher bestimmt die Zahl der
+      Boss-Siege die Rate. Sternensaat (3,2 % je Ei) braucht im Schnitt rund 31 Eier. „Vollkommenheit“ und
+      „Regenbogenchronik“ verlangen alle 40 Arten, also auch die Urzeitwesen
 - [ ] Entscheiden, ob geschlüpfte Urzeitwesen die Vererbung überstehen sollen (bisher gehen sie wie alle Kreaturen)
 
 # Tester-Feedback (Oktober 2026)

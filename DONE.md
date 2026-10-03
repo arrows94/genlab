@@ -491,7 +491,7 @@ Verworfen (vorerst): Stärke-Zuwachs nur beim Vererben aus dem Rekord des Laufs 
 ## 2026-10-03 – Fundquellen für Urzeit-Eier
 
 - GenLab RPG: Endboss mit `primalEgg: 0.04` × Beute-Faktor (Wurzellabyrinth 3,2 %, Kristallkern 29 %), Wochendeckel
-  `rpg.weeklyCap.primalEgg` 2. Neu `rpg.instantLoot`: solche Beute wird beim Fund sofort ausgezahlt und zählt als
+  `rpg.weeklyCap.primalEgg` 7. Neu `rpg.instantLoot`: solche Beute wird beim Fund sofort ausgezahlt und zählt als
   gesichert – eine Niederlage verliert kein Ei, der Blutfleck bekommt keins
 - Gen-Aufträge: `primalEggs.contractChance` nach Sternen (`{ 5: 0.1 }` – 10 % je erfülltem 5★-Auftrag)
 - Spieler-Changelog „Urzeit-Eier“ (RPG- und Auftragshinweis nur mit offenem Bereich, der Rest ab dem ersten Ei)

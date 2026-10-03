@@ -186,7 +186,7 @@ describe('Urzeit-Eier', () => {
 describe('Urzeit-Eier – Fundquellen', () => {
   it('come from the RPG boss (capped per week) and from 5★ Gen-Aufträge', () => {
     expect(balance.rpg.loot.boss!.chance!['primalEgg']).toBeGreaterThan(0);
-    expect(balance.rpg.weeklyCap['primalEgg']).toBe(2);
+    expect(balance.rpg.weeklyCap['primalEgg']).toBe(7);
     expect(balance.rpg.instantLoot).toContain('primalEgg');
     for (const kind of ['fight', 'elite', 'treasure'] as const) expect(balance.rpg.loot[kind]?.chance?.['primalEgg'] ?? 0, kind).toBe(0);
     expect(Object.keys(balance.primalEggs.contractChance)).toEqual(['5']);
@@ -218,7 +218,7 @@ describe('Urzeit-Eier – Fundquellen', () => {
     expect(lootChance(g, { ...run, dungeon: 'crystalCore' }, 'boss', 'primalEgg')).toBeGreaterThan(lootChance(g, run, 'boss', 'primalEgg'));
   });
 
-  it('GenLab RPG: an egg is safe the moment it is found, at most two a week', () => {
+  it('GenLab RPG: an egg is safe the moment it is found, at most the weekly cap', () => {
     const treasure = balance.rpg.loot.treasure!;
     const loot = { ...balance.rpg.loot, treasure: { ...treasure, chance: { ...treasure.chance, primalEgg: 2 } } };
     const g = makeGame(42, { rpg: { ...balance.rpg, loot } });
@@ -226,17 +226,18 @@ describe('Urzeit-Eier – Fundquellen', () => {
     refreshTorches(g, NOW);
     expect(startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze').ok).toBe(true);
     const run = g.state.rpg.run!;
-    for (let i = 0; i < 3; i++) {
+    const cap = balance.rpg.weeklyCap['primalEgg']!;
+    for (let i = 0; i <= cap; i++) {
       run.choices = ['treasure'];
       enterRoom(g, 0);
     }
-    expect(primalEggsOwned(g)).toBe(2); // paid out at once, the weekly cap stops the third
+    expect(primalEggsOwned(g)).toBe(cap); // paid out at once, the weekly cap stops the last one
     expect(run.loot['primalEgg']).toBeUndefined();
-    expect(run.secured['primalEgg']).toBe(2);
+    expect(run.secured['primalEgg']).toBe(cap);
     finishRpgRun(g, false); // a defeat loses the carried loot – not the eggs
-    expect(primalEggsOwned(g)).toBe(2);
+    expect(primalEggsOwned(g)).toBe(cap);
     expect(g.state.rpg.bloodstain?.loot['primalEgg']).toBeUndefined();
-    expect(g.state.rpg.lastResult?.loot['primalEgg']).toBe(2);
+    expect(g.state.rpg.lastResult?.loot['primalEgg']).toBe(cap);
     g.advance(100);
     expect(g.state.features['primalEggs']).toBe(true);
   });
