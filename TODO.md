@@ -13,7 +13,7 @@ wird in der Reihenfolge der Schritte. „(ungeprüft)“ = aus der Durchsicht, v
 
 Spiellogik (ungeprüft):
 - [ ] Ohne Quelle: `infusion.transferChance`, `cost.capsule`, `cost.upgrade`,
-      Ritual-`rarityBoost` (Ideen: zweites Großprojekt als Quelle, siehe Endgame)
+      Ritual-`rarityBoost` (geplant: Tiefen-Meilensteine des Genom-Kellers, Schritt 5; sonst ein zweites Großprojekt)
 
 # Endgame
 
@@ -31,8 +31,8 @@ Spiellogik (ungeprüft):
 
 ## Später
 
-- [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender
-      (mit dem RPG-Dungeon und dem Genom-Keller abgleichen – nicht drei „immer tiefer“-Systeme)
+- [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender – kein eigenes System, sondern
+      mit dem RPG-Dungeon zusammenlegen (Abgrenzung zum Genom-Keller siehe dort)
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
 - [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
 
@@ -100,23 +100,75 @@ Offene Punkte aus den Kommentaren von Rexodeus; die übrigen sind umgesetzt (PR 
 Statt eines zweiten Turms geht es nach unten: ein Keller unter dem Genom-Turm, der mit jedem Sieg eine Ebene tiefer
 wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himmel.
 
-- [ ] **Begrenzte Versuche** statt Dauerkampf: Muster wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`), Zahlen
-      in `balance.ts`. Ein Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt
-- [ ] **Schalter mit Animation** zum Wechsel zwischen Turm und Keller: im Turm-Tab ein Umschalter (▲ Turm / ▼ Keller);
-      beim Wechsel fährt die Ansicht durch den Boden nach unten bzw. zurück nach oben (Aufzug oder Wendeltreppe),
-      `.reduce-motion` = sofortiger Wechsel. Der zuletzt gewählte Bereich bleibt in `viewState`
-- [ ] Grundidee festlegen – Vorschläge:
-  - Eigener Tiefen-Rekord, eigene Kontrollpunkte, eigenes Team (eine Kreatur steht nie in Turm und Keller zugleich)
-  - Härtere Regeln: steilere Gegner-Kurve, Schatten-Aura (Heilung halbiert), mehr Boss-Merkmale,
-    oder eine wöchentlich wechselnde Regel
-  - Freischaltung: Etage 150 im Turm (neue Zählung) oder erster Äon
-  - Belohnung: eigene Währung (z. B. „Schattenmarken“) für dunkle Relikte – und eine weitere Äon-Splitter-Quelle
-  - Überschneidung mit der „Tiefenexpedition“ (Endgame → Später) und dem Dungeon im GenLab RPG prüfen – nicht drei
-    Systeme bauen, die alle „immer tiefer“ sind. Vorschlag aus der Durchsicht: Keller = endloser RPG-Modus mit
-    Heldenstufe je Art; Schattenmarken für dunkle Relikte, die auch im Turm wirken
-- [ ] Technik: `features/tower.ts` so verallgemeinern, dass Turm und Keller aus Daten entstehen (Definitionen in
-      `content/endgame.ts`, Richtung auf/ab) statt einer Kopie des Turm-Codes
-- [ ] Arena im Keller-Stil (Gewölbe, Fackellicht, dunkle Farben, Gegner-Tönung); Ebenen zählen nach unten (−1, −2 …)
+**Grundidee (festgelegt 2026-10-03): „Gen-Keller“ – die Ebenen verlangen Genetik.** Der Turm misst rohe Kampfkraft,
+der Keller misst, wie gut ein Team an seine Umgebung *angezüchtet* ist. Das soll zwei Schwächen des Spiels angehen:
+Der Turm belohnt Einfalt (Bot-Stall aus ein, zwei Arten, Mauern sind Element-Spitzen), und Gene, Farbe und latente
+Merkmale wirken außerhalb der Produktion kaum.
+
+- **Kampf:** Turm-Engine (`simulateFight`), automatisch und idle-tauglich – kein RPG-Modus mit Steuerung von Hand
+- **Begrenzte Versuche** wie beim Wochen-Boss (`attemptsPerDay` / `maxAttempts`, neuer Tag → neue Versuche). Ein
+  Versuch = ein Abstieg ab dem letzten Kontrollpunkt, bis das Team fällt; läuft im Hintergrund, Wiedergabe wie in der
+  Turm-Arena
+- **Erschöpfung:** KP tragen sich über die Ebenen weiter (`FightResult.stats.hpLeft`) – der Turm prüft jede Etage
+  einzeln, der Keller die Ausdauer des Teams. Rast-Gewölbe heilen; **Fackellicht** sinkt je Ebene (darunter ein
+  Treffer-Malus) und füllt sich in der Rast wieder
+- **Umgebungen** je Abschnitt (z. B. alle 10 Ebenen), fest je Ebene wie die Boss-Merkmale, dazu eine wöchentlich
+  wechselnde Regel passend zur Wochen-Mutation. Ideen:
+  - *Finsternis*: Treffer-Malus; Farb-Allele *Dunkel* / *Albino* werden zu Höhlen-Anpassungen
+  - *Überflutet*: Wasser/Eis stärker, Feuer schwächer
+  - *Sporennebel*: Gift jede Runde, reinerbige *Unermüdlich* (Aᵉ) sind immun
+  - *Schatten-Aura*: Heilung halbiert
+  - *Einsturz*: Flächenschaden auf die hintere Reihe
+  - *Vielfalts-Siegel*: jede Art nur einmal im Team
+- **Gegner:** die „verworfenen Linien“ – misslungene Experimente aus der Frühzeit des Labors. Alle 30 Ebenen der Boss
+  **„Schatten deiner Dynastie“**: eine dunkle Kopie der meistgezüchteten Art des Spielers, mit deren Genen
+- **Belohnungen:** eigene Währung **Schattenmarken** für **dunkle Relikte** (Vorteil mit Nachteil, z. B. +30 % ANG,
+  −10 % KP), die in Turm *und* Keller wirken – hilft gegen den Turm-Stillstand. **Tiefen-Meilensteine** als dauerhafte
+  Boni und Quelle für die quellenlosen Werte aus der Code-Durchsicht (`infusion.transferChance`, Ritual-`rarityBoost`,
+  `cost.capsule`). Äon-Splitter an Meilensteinen mit Wochen-Deckel wie im RPG. Später **Höhlenformen**: blasse,
+  augenlose Varianten bekannter Arten (Dex oder Kosmetik)
+- **Freischaltung:** Etage 150 im Turm (dort steht schon der Erfolg „Turmstürmer“; liegt im Äon-Bot an der ersten
+  Mauer – mit dem Bot prüfen)
+- **Eigenes Team**, eigener Tiefen-Rekord und eigene Kontrollpunkte; eine Kreatur steht nie in Turm und Keller
+  zugleich. Rekord, Schattenmarken und dunkle Relikte überstehen jede Vererbung und jedes Äon
+- **Abgrenzung:** Turm = rohe Kraft eines Teams, Dauerkampf. Keller = Anpassung eines Teams, begrenzte Abstiege.
+  RPG-Dungeon = ein Held, von Hand. Die „Tiefenexpedition“ wird kein eigenes System, sondern mit dem RPG-Dungeon
+  zusammengelegt
+
+### Schritte
+
+- [ ] **Schritt 1 – Turm-Code verallgemeinern** (ohne Verhaltensänderung): Gegner-Kurve, Etagen-Würfel
+      (`floorDice`-Präfix), Boss-/Wächter-Rhythmus, Kontrollpunkte und Belohnungs-Takt aus einer Definition lesen
+      (`content/endgame.ts`, Richtung auf/ab, Zahlen in `balance.ts`) statt aus `balance.tower` direkt. `state.tower`
+      bleibt, wie es ist (keine Migration). Abnahme: alle Turm-Tests, `towerCurve` und der Langzeit-Bot liefern
+      unverändert dieselben Zahlen
+- [ ] **Schritt 2 – Grundgerüst Keller** (`features/cellar.ts`): `state.cellar` (Team, Reihen, Lauf, Rekord, Versuche
+      mit Zeitstempel, Verlauf), Job `{ kind: 'cellar' }` (in `isOccupied`, `pruneCreatureRefs`), Feature `cellar` in
+      `progression.ts` (Bedingung `towerFloor` 150), Versuche wie in `weeklyBoss.ts` (neuer Tag → neue
+      Versuche, auch offline), Abstieg mit
+      Erschöpfung und Rast-Gewölben, Kontrollpunkte, `registerResetSurvivor`/Prestige-`resets` prüfen, Debug-Reset in
+      `core/debug.ts`. Noch ohne Umgebungen und eigene Belohnungen (vorläufig Turm-Marken). Tests
+      `tests/cellar.test.ts` inkl. Offline-Aufholen und Spielstand laden
+- [ ] **Schritt 3 – Umgebungen**: `CellarEnvironmentDef` in `content/endgame.ts` (Bedingung über Allel, reinerbig,
+      latentes Merkmal, Element oder Team-Vielfalt → Modifier auf den `Fighter`), Prüfung in `validate.ts`, Fackellicht,
+      Wochen-Regel aus der Wochen-Mutation. Abfrage-Helfer in `core/queries.ts` bzw. im Feature: „Welche meiner
+      Kreaturen passen zur nächsten Umgebung?“
+- [ ] **Schritt 4 – Gegner und Bosse**: verworfene Linien (Namen, Tönung), steilere Kurve als im Turm, Boss „Schatten
+      deiner Dynastie“ (meistgezüchtete Art, deren Gene), dunkle Boss-Merkmale zusätzlich zu `bossTraits`
+- [ ] **Schritt 5 – Belohnungen**: Ressource Schattenmarken (`resources.ts`), dunkle Relikte (`RelicDef` mit Nachteil,
+      Platz-Regel für Turm und Keller festlegen), `cellarMilestoneProvider` mit den Quellen für
+      `infusion.transferChance`, Ritual-`rarityBoost` und `cost.capsule` (dann den Punkt in der Code-Durchsicht
+      streichen), Äon-Splitter mit Wochen-Deckel
+- [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab mit Aufzug-Fahrt durch den Boden
+      (`.reduce-motion` = sofort, zuletzt gewählter Bereich in `viewState`), `TowerArena` im Keller-Stil (Gewölbe,
+      Fackellicht, dunkle Farben, Gegner-Tönung), Ebenen zählen nach unten (−1, −2 …), Anzeige der Umgebung und welche
+      Kreaturen passen, Versuche-Zähler, `tabActivity`, Klänge, Changelog-Eintrag mit `feature: 'cellar'`. Auch auf
+      Handy-Breite prüfen
+- [ ] **Schritt 7 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
+      Tag, Schattenmarken, Wirkung der dunklen Relikte auf den Turm-Stillstand (Ziel höchstens etwa 3 Tage), Splitter
+      je Woche. Zahlen in `balance.ts` nachziehen
+- [ ] **Schritt 8 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
+      Änderungen am Kreaturen-SVG – zusammen mit den kosmetischen Mustern der Gen-Aufträge planen
 
 # GenLab RPG
 

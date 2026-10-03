@@ -319,6 +319,14 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller: Grundidee festgelegt
+
+- Richtung „Gen-Keller“ statt „Turm rückwärts“ oder endlosem RPG-Modus: Turm-Engine, begrenzte Abstiege mit
+  Erschöpfung, Umgebungen je Abschnitt, die gezüchtete Anpassung (Allele, latente Merkmale, Vielfalt) verlangen;
+  Schattenmarken für dunkle Relikte (wirken auch im Turm), Tiefen-Meilensteine als Quelle für quellenlose Werte,
+  Freischaltung bei Turm-Etage 150. Tiefenexpedition wird mit dem RPG-Dungeon zusammengelegt. Konzept und
+  Schritte-Plan in `TODO.md`
+
 - **Schritt 1 – Etagen ×3** (Etage 3n = alte Etage n, Kampfpause 4 s, Migration `SAVE_VERSION` 9 → 10, Wächter
   alle 10 Etagen, drei kleine Etagen teilen Element und Gruppengröße, Offline-Kämpfe ohne Wiedergabe-Daten)
 - **Schritt 2 – Boss-Mauer abflachen**: Boss kostet jetzt Ø 3,7 frühere Etagen statt 9,9 (Schild ohne Vorteil 5,4–7,0),
