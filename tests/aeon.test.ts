@@ -77,7 +77,7 @@ describe('endgame bot', () => {
   });
 
   it.skipIf(!env.GENLAB_AEON)('several weeks: Äons, talents and the observatory keep coming', () => {
-    const g = makeGame(2024);
+    const g = makeGame(Number(env.GENLAB_AEON_SEED ?? 2024));
     // GENLAB_CELLAR=0 plays without the Genom-Keller (for comparisons).
     const reports = playDays(g, { days: Number(env.GENLAB_AEON_DAYS ?? 28), endgame: env.GENLAB_CELLAR === '0' ? { cellar: false } : true });
     print(reports);

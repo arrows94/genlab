@@ -49,19 +49,29 @@ describe('Genom-Keller: course', () => {
     expect(courseEnemies(g, cellar, 7)).toEqual(courseEnemies(g, cellar, 7));
   });
 
-  it('starts about as strong as tower floor 90 and grows steeper than the tower', () => {
+  it('starts about as strong as tower floor 60 and grows steeper than the tower', () => {
     const g = cellarGame();
     const first = courseEnemy(g, cellarCourse(g), 1, { plain: true });
-    const tower90 = enemyFor(g, 90, { plain: true });
-    expect(first.maxHp / tower90.maxHp).toBeGreaterThan(0.9);
-    expect(first.maxHp / tower90.maxHp).toBeLessThan(1.1);
+    const tower60 = enemyFor(g, 60, { plain: true });
+    expect(first.maxHp / tower60.maxHp).toBeGreaterThan(0.9);
+    expect(first.maxHp / tower60.maxHp).toBeLessThan(1.1);
     const growth = (course: ReturnType<typeof cellarCourse>, f: number) => courseEnemy(g, course, f + 1, { plain: true }).maxHp / courseEnemy(g, course, f, { plain: true }).maxHp;
     expect(growth(cellarCourse(g), 20)).toBeGreaterThan(growth(towerCourse(g), 150));
   });
 });
 
 describe('Genom-Keller: unlock and team', () => {
-  it('opens at tower floor 150', () => {
+  it('opens with the first Äon', () => {
+    const g = makeGame(3);
+    unlockFeature(g, 'tower');
+    g.step(100);
+    expect(g.state.features['cellar']).toBeFalsy();
+    g.state.prestige['aeon'] = { count: 1 };
+    g.step(100);
+    expect(g.state.features['cellar']).toBe(true);
+  });
+
+  it('or at tower floor 150 for a fast climber', () => {
     const g = makeGame(3);
     unlockFeature(g, 'tower');
     g.state.tower.best = 149;
@@ -120,7 +130,7 @@ describe('Genom-Keller: descent', () => {
   it('HP carries from level to level, a rest vault heals, the record sets the next start', () => {
     const g = cellarGame();
     // Strong enough for a few levels, weak enough to take damage on the first one.
-    const ids = team(g, 200);
+    const ids = team(g, 80);
     expect(startCellarRun(g).ok).toBe(true);
     expect(g.state.creatures.filter((c) => ids.includes(c.id)).every((c) => c.job?.kind === 'cellar')).toBe(true);
     const run = g.state.cellar.run!;
@@ -295,5 +305,25 @@ describe('Genom-Keller: new descents', () => {
     g.state.cellar.attempts = balance.cellar.maxAttempts;
     refreshCellarAttempts(g, g.state.lastTickAt + 2 * DAY);
     expect(seen).toHaveLength(1);
+  });
+});
+
+describe('Genom-Keller: tower bonuses', () => {
+  it('Kampferfahrung counts in the cellar, Entschlossenheit stays in the tower', async () => {
+    const { fighterFor } = await import('@core/features/tower');
+    const g = cellarGame();
+    const [id] = team(g, 300);
+    const c = g.state.creatures.find((x) => x.id === id)!;
+    const towerBefore = fighterFor(g, c);
+    const cellarBefore = fighterFor(g, c, 'cellar');
+    g.state.tower.resolve = 0.6;
+    g.invalidate();
+    expect(fighterFor(g, c).maxHp).toBeGreaterThan(towerBefore.maxHp);
+    expect(fighterFor(g, c).power).toBeGreaterThan(towerBefore.power);
+    expect(fighterFor(g, c, 'cellar').maxHp).toBe(cellarBefore.maxHp);
+    expect(fighterFor(g, c, 'cellar').power).toBeCloseTo(cellarBefore.power);
+    g.state.tower.xp = 1e6;
+    g.invalidate();
+    expect(fighterFor(g, c, 'cellar').maxHp).toBeGreaterThan(cellarBefore.maxHp);
   });
 });

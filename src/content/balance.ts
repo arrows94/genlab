@@ -406,11 +406,10 @@ export const balance: Balance = {
     lightPerLevel: 0.15,
     lightMissFrom: 0.6,
     lightMiss: 0.5,
-    // Placeholder curve until the Keller has its environments and rewards (TODO.md, Genom-Keller step 9):
-    // level −1 is about as strong as tower floor 90 (old floor 30), and every level is ×1.06 – steeper
-    // than the tower's ×1.035 per floor, but the team does not heal between levels.
-    enemyBase: { hp: 1240, atk: 185, def: 103, spd: 27 },
-    enemyGrowth: 1.06,
+    // Level −1 is about as strong as tower floor 60, every level ×1.045 – steeper than the tower's ×1.035 per
+    // floor, and the team does not heal between levels (Äon-Bot, TODO.md / DONE.md Genom-Keller step 9).
+    enemyBase: { hp: 436, atk: 65, def: 36, spd: 16 },
+    enemyGrowth: 1.045,
     subFloors: 1,
     groupFromFloor: 1,
     groupHp: [1, 1.1, 1.2],
@@ -427,8 +426,8 @@ export const balance: Balance = {
     guardHpMult: 1.12,
     guardAtkMult: 1.1,
     checkpointEvery: 10,
-    // Schattenmarken per level (whole numbers, see courseFloorTokens): 2 on −1, about 4 on −20, 5 on −30.
-    tokensPerFloor: 2,
+    // Schattenmarken per level (whole numbers, see courseFloorTokens): 3 on −1, 6 on −20, 7–8 on −30.
+    tokensPerFloor: 3,
     tokenGrowthPerFloor: 0.05,
     // A new boss depth (every 30 levels) gives an Äon-Splitter, at most two a week (like the RPG).
     shardsPerBoss: 1,

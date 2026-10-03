@@ -112,7 +112,14 @@ export function fighterFor(ctx: GameContext, c: Creature, course: 'tower' | 'cel
   const global = ctx.mods();
   const worn = relicsFor(ctx, c, course);
   const boost = (key: keyof RelicDef['bonus']) => worn.reduce((f, r) => f * Math.max(0.1, 1 + (r.def.bonus[key] ?? 0) * r.level), 1);
-  const hp = Math.round((s.hp ?? 1) * boost('hp') * global.factor('tower.hp') * own.factor('tower.hp'));
+  // Entschlossenheit is the tower's answer to a standing record – it does not follow the team into the cellar.
+  const resolve = course === 'cellar' ? (ctx.state.tower.resolve ?? 0) : 0;
+  const towerFactor = (target: string) => {
+    if (!resolve) return global.factor(target);
+    const t = global.totals(target);
+    return (1 + t.add) * (1 + t.pct - resolve) * t.mult;
+  };
+  const hp = Math.round((s.hp ?? 1) * boost('hp') * towerFactor('tower.hp') * own.factor('tower.hp'));
   return {
     name: c.name,
     speciesId: c.speciesId,
@@ -122,7 +129,7 @@ export function fighterFor(ctx: GameContext, c: Creature, course: 'tower' | 'cel
     atk: Math.round((s.atk ?? 1) * boost('atk')),
     def: Math.round((s.def ?? 0) * boost('def')),
     spd: Math.round((s.spd ?? 1) * boost('spd')),
-    power: global.factor('tower.damage') * own.factor('tower.damage'),
+    power: towerFactor('tower.damage') * own.factor('tower.damage'),
     elementPower: global.factor('tower.elementDamage') * own.factor('tower.elementDamage') * boost('element'),
     team: true,
     row: rowOf(ctx, c.id),
