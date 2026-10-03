@@ -35,6 +35,8 @@ interface ViewState {
    * `area`: the Turm or the Genom-Keller below it (the switch in the tower tab).
    */
   tower: { replaySpeed: ReplaySpeed; logImportant: boolean; defeatOpen: boolean; sort: TowerSort; invert: boolean; vsElement: string; area: TowerArea };
+  /** Keller candidates: like the tower's, plus „Passung“ to the next level (the default). */
+  cellar: { sort: CellarSort; invert: boolean; vsElement: string };
 }
 
 export type ReplaySpeed = 0 | 1 | 2;
@@ -42,6 +44,8 @@ export type TowerArea = 'tower' | 'cellar';
 
 export const TOWER_SORTS = ['power', 'matchup', 'speed', 'hp', 'atk', 'def', 'role', 'rarity'] as const;
 export type TowerSort = (typeof TOWER_SORTS)[number];
+export const CELLAR_SORTS = ['fit', ...TOWER_SORTS] as const;
+export type CellarSort = (typeof CELLAR_SORTS)[number];
 
 export type BreedingSort = 'power' | 'rarity' | 'generation' | 'lineage' | 'species' | 'name' | `stat:${string}`;
 
@@ -58,6 +62,7 @@ const defaults = (): ViewState => ({
   genome: { sequencedOnly: false, species: '', libraryOpen: true, hideCompleteGenes: false, sort: 'power', invert: false },
   nav: { last: {} },
   tower: { replaySpeed: 1, logImportant: true, defeatOpen: true, sort: 'power', invert: false, vsElement: '', area: 'tower' },
+  cellar: { sort: 'fit', invert: false, vsElement: '' },
 });
 
 function load(): ViewState {
@@ -84,6 +89,11 @@ function load(): ViewState {
         replaySpeed: ([0, 1, 2] as const).find((v) => v === saved.tower?.replaySpeed) ?? base.tower.replaySpeed,
         sort: TOWER_SORTS.find((v) => v === saved.tower?.sort) ?? base.tower.sort,
         area: saved.tower?.area === 'cellar' ? 'cellar' : 'tower',
+      },
+      cellar: {
+        ...base.cellar,
+        ...saved.cellar,
+        sort: CELLAR_SORTS.find((v) => v === saved.cellar?.sort) ?? base.cellar.sort,
       },
     };
   } catch {

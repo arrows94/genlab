@@ -1,24 +1,35 @@
 <script lang="ts">
   import { content } from '@content/index';
-  import { creaturePower } from '@core/creatures';
+  import { creaturePower, effectiveStats } from '@core/creatures';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber } from '@core/format';
   import { cellarCandidates, cellarFit, cellarRowOf, hasNightSight, setCellarRow, setCellarTeam } from '@core/features/cellar';
-  import { teamSize } from '@core/features/tower';
+  import { ROLE_INFO, elementMultiplier, roleOf, teamSize, type Role } from '@core/features/tower';
   import type { Creature } from '@core/state';
   import { game, view, act } from '../store.svelte';
+  import { viewState, type CellarSort } from '../viewState.svelte';
   import CreatureSvg from './CreatureSvg.svelte';
   import CreatureTile from './CreatureTile.svelte';
   import Meter from './Meter.svelte';
+  import SortToggle from './SortToggle.svelte';
 
   /**
    * Keller team: the places with row, HP share during a descent and how each
-   * member fits the next level; below, the free creatures – best fitting first.
+   * member fits the next level; below, the free creatures, sorted like the
+   * tower's candidates – by default by how well they fit the next level.
    */
-  let { team, next }: { team: Creature[]; next: number } = $props();
+  let { team, next, enemyElement }: { team: Creature[]; next: number; enemyElement: string } = $props();
 
   let search = $state('');
   const el = (id: string) => content.elements.get(id);
+  const SORT_LABELS: Record<CellarSort, string> = {
+    fit: 'Passung', power: 'Stärke', matchup: 'Vorteil vs.', speed: 'Tempo', hp: 'KP', atk: 'Angriff', def: 'Verteidigung', role: 'Rolle', rarity: 'Seltenheit',
+  };
+  const ROLE_ORDER: Record<Role, number> = { tank: 2, attacker: 1, fast: 0 };
+  /** The number under a candidate: the sorted stat, otherwise the total power. */
+  const STAT_SHORT: Partial<Record<CellarSort, string>> = { speed: '💨', hp: 'KP', atk: 'ANG', def: 'VER' };
+  /** „Vorteil vs.“ against the chosen element, or the next level's foe. */
+  const vsElement = $derived(content.elements.has(viewState.cellar.vsElement) ? viewState.cellar.vsElement : enemyElement);
 
   const data = $derived.by(() => {
     view.slowFrame;
@@ -26,12 +37,32 @@
     const size = teamSize(game);
     const q = search.trim().toLowerCase();
     const inTeam = game.state.cellar.team;
+    const { sort, invert } = viewState.cellar;
     const candidates = run
       ? []
       : cellarCandidates(game, next)
           .filter(({ creature: c }) => !q || c.name.toLowerCase().includes(q) || content.species.get(c.speciesId).name.toLowerCase().includes(q))
-          .slice(0, 40)
-          .map((x) => ({ ...x, inTeam: inTeam.includes(x.creature.id) }));
+          .map((x) => {
+            const c = x.creature;
+            const element = content.species.get(c.speciesId).element;
+            const stats = effectiveStats(game, c);
+            const role = roleOf(game, stats);
+            const dealt = elementMultiplier(game, element, vsElement);
+            const taken = elementMultiplier(game, vsElement, element);
+            const key =
+              sort === 'fit' ? x.good.length - x.bad.length
+              : sort === 'matchup' ? dealt / taken
+              : sort === 'speed' ? (stats.spd ?? 0)
+              : sort === 'hp' || sort === 'atk' || sort === 'def' ? (stats[sort] ?? 0)
+              : sort === 'role' ? ROLE_ORDER[role]
+              : sort === 'rarity' ? content.rarities.get(c.rarity).order
+              : 0;
+            const short = STAT_SHORT[sort];
+            const info = short ? `${short} ${formatNumber(stats[sort === 'speed' ? 'spd' : sort] ?? 0)}` : `Σ ${formatNumber(creaturePower(game, c))}`;
+            return { ...x, power: creaturePower(game, c), info, role, key, dealt, inTeam: inTeam.includes(c.id) };
+          })
+          .sort((a, b) => (invert ? -1 : 1) * (b.key - a.key || b.power - a.power))
+          .slice(0, 40);
     const members = team.map((c) => {
       const i = run ? run.team.indexOf(c.id) : -1;
       return { c, hp: run && i >= 0 ? (run.hp[i] ?? 0) : 1, fit: cellarFit(game, c, next, team), row: cellarRowOf(game, c.id), night: hasNightSight(game, c) };
@@ -83,23 +114,37 @@
 
   {#if !data.run}
     <div class="team-head">
-      <h3>Kandidaten <span class="small muted">– passend zur nächsten Ebene zuerst</span></h3>
-      <input type="search" placeholder="Name oder Art …" bind:value={search} />
+      <h3>Kandidaten</h3>
+      <div class="sorting">
+        <input type="search" placeholder="Name oder Art …" bind:value={search} />
+        <select bind:value={viewState.cellar.sort} title="Sortierung (Passung: wie gut zur nächsten Ebene)">
+          {#each Object.entries(SORT_LABELS) as [id, label] (id)}<option value={id}>{label}</option>{/each}
+        </select>
+        {#if viewState.cellar.sort === 'matchup'}
+          <select bind:value={viewState.cellar.vsElement} title="Vorteil gegen welches Element?">
+            <option value="">{el(enemyElement).name} (nächste Ebene)</option>
+            {#each content.elements.list as e (e.id)}<option value={e.id}>{e.name}</option>{/each}
+          </select>
+        {/if}
+        <SortToggle bind:inverted={viewState.cellar.invert} />
+      </div>
     </div>
     <div class="tiles">
       {#each data.candidates as t (t.creature.id)}
         {@const sp = content.species.get(t.creature.speciesId)}
         <CreatureTile
           creature={t.creature}
-          info="Σ {formatNumber(creaturePower(game, t.creature))}"
+          info={t.info}
           selected={t.inTeam}
           disabled={!t.inTeam && team.length >= data.size}
           title="{t.creature.name} · {el(sp.element).name}{t.good.length || t.bad.length ? `\n${fitTitle(t.good, t.bad)}` : ''}"
           onclick={() => toggle(t.creature.id)}
         >
           {#snippet corner()}
-            {#if t.good.length}<span class="good">▲{t.good.length}</span>{/if}
-            {#if t.bad.length}<span class="bad">▼{t.bad.length}</span>{/if}
+            <span title={ROLE_INFO[t.role].name}>{ROLE_INFO[t.role].icon}</span>
+            {#if t.good.length}<span class="good" title="Hilft auf der nächsten Ebene">▲{t.good.length}</span>{/if}
+            {#if t.bad.length}<span class="bad" title="Schadet auf der nächsten Ebene">▼{t.bad.length}</span>{/if}
+            {#if viewState.cellar.sort === 'matchup'}{#if t.dealt > 1}<span class="good" title="Elementvorteil gegen {el(vsElement).name}">⬆</span>{:else if t.dealt < 1}<span class="bad" title="Elementnachteil gegen {el(vsElement).name}">⬇</span>{/if}{/if}
           {/snippet}
         </CreatureTile>
       {:else}
@@ -116,7 +161,9 @@
   .team-panel { margin-top: 0.75rem; }
   .team-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; margin: 0.3rem 0 0.5rem; }
   .team-head h3 { margin: 0; }
-  .team-head input { flex: 1 1 9rem; max-width: 14rem; }
+  .sorting { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: stretch; }
+  .sorting input[type='search'] { flex: 1 1 9rem; max-width: 14rem; }
+  .sorting select { max-width: 11rem; }
   .sockets { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.5rem; }
   .socket {
     position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;

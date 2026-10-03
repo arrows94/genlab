@@ -108,7 +108,7 @@
   </div>
 </div>
 
-<CellarTeam team={data.team} next={data.next} />
+<CellarTeam team={data.team} next={data.next} enemyElement={data.foes[0]?.element ?? 'fire'} />
 
 <DarkRelicPanel course="cellar" />
 
