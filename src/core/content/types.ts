@@ -71,7 +71,8 @@ export interface RarityDef {
   glow?: boolean;
 }
 
-export type SpeciesTier = 'base' | 'hybrid' | 'rareHybrid' | 'mythic';
+/** `primal`: Urzeitwesen – hatch only from Urzeit-Eier (no recipe, no wild find). */
+export type SpeciesTier = 'base' | 'hybrid' | 'rareHybrid' | 'mythic' | 'primal';
 
 export interface SpeciesDef {
   id: string;
@@ -87,6 +88,8 @@ export interface SpeciesDef {
   shape: string;
   /** Can this species appear as a wild creature on expeditions? */
   wild: boolean;
+  /** Urzeitwesen only: relative weight when an Urzeit-Ei hatches. */
+  eggWeight?: number;
 }
 
 export interface AlleleDef {

@@ -73,7 +73,7 @@
     return 'Beschäftigt';
   }
 
-  const TIER_LABELS: Record<string, string> = { hybrid: 'Hybrid', rareHybrid: 'Seltener Hybrid', mythic: 'Mythisch' };
+  const TIER_LABELS: Record<string, string> = { hybrid: 'Hybrid', rareHybrid: 'Seltener Hybrid', mythic: 'Mythisch', primal: 'Urzeitwesen' };
   /** Rarity order from which the frame shimmers (3 = Episch); one step higher also glows. */
   const SHIMMER_FROM = 3;
 

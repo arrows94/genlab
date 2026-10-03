@@ -31,6 +31,10 @@ Gültige Ziel-Wurzeln stehen in `MODIFIER_ROOTS` (`src/core/modifiers.ts`): `pro
 - `shape` wählt die SVG-Silhouette (`blob`, `drop`, `round`, `wing`), `hue` die Grundfarbe.
 - Der Dex zeigt die Art automatisch in allen Seltenheiten an.
 
+### Urzeitwesen
+
+Arten mit `tier: 'primal'` schlüpfen nur aus Urzeit-Eiern (Brutkammer in der Brutstation). Sie brauchen ein `eggWeight` (Gewicht beim Öffnen eines Eis, Arten ohne Dex-Eintrag zählen `balance.primalEggs.undiscoveredWeight`-fach) und `wild: false`; Rezepte und Gen-Kapseln führen nicht zu ihnen. Woher die Eier kommen, steht im Balancing: `primalEggs.contractChance` (je erfülltem Gen-Auftrag) oder ein Eintrag `primalEgg` in `rpg.loot.<raum>.chance`.
+
 ## Neues Gen (Locus mit Allelen)
 
 `src/content/genes.ts`:

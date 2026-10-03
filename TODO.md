@@ -23,7 +23,7 @@ stehen in der Git-Historie (`git log -p TODO.md DONE.md`).
 - [ ] **Tiefenexpedition**: endlose Region, mit jeder Tiefe gefährlicher und lohnender – kein eigenes System, sondern
       mit dem RPG-Dungeon zusammenlegen (Abgrenzung zum Genom-Keller siehe dort)
 - [ ] **Dritte Prestige-Stufe** (z. B. „Genesis“) – erst, wenn Äon ausgereizt ist
-- [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 198 Dex-Einträge, Etage 200 …)
+- [ ] **Endgame-Erfolge und Statistiken** als Langzeitziele (alle 240 Dex-Einträge, Etage 200 …)
 
 ## Ideen (noch grob)
 
@@ -52,6 +52,19 @@ Nestwärter, gezieltere Vererbung und das Fähigkeits-Elixier mit Keimöl sind u
 
 - [ ] Keimöl-Menge beobachten: Ritual 30 %, Auftrag 4★ 1 / 5★ 2, Wochenexpedition selten – Elixier II kostet 2,
       Elixier III 6 Keimöl
+
+# Urzeit-Eier
+
+Urzeitwesen (7 Arten, Stufe `primal`), die Ressource „Urzeit-Ei“ und die Brutkammer sind gebaut (siehe `DONE.md`).
+Bis eine Fundquelle feststeht, gibt es Eier nur über das Debug-Werkzeug „+1 Urzeit-Ei“ (`?debug=1`).
+
+- [ ] Fundquelle festlegen – beide sind angeschlossen und stehen auf 0: Gen-Aufträge (`balance.primalEggs.contractChance`,
+      Chance je erfülltem Auftrag) oder GenLab RPG (`balance.rpg.loot.<fight|elite|treasure|boss>.chance.primalEgg`,
+      × Beute-Faktor des Dungeons). Im RPG geht ein getragenes Ei bei einer Niederlage verloren (Abrundung von
+      `defeatKeep`) und landet im Blutfleck – so lassen oder Eier sofort sichern?
+- [ ] Danach Spieler-Changelog (Einträge mit `feature: 'primalEggs'`, damit nichts verraten wird) und Rate mit einem
+      Bot messen; „Vollkommenheit“ und „Regenbogenchronik“ verlangen jetzt alle 40 Arten, also auch die Urzeitwesen
+- [ ] Entscheiden, ob geschlüpfte Urzeitwesen die Vererbung überstehen sollen (bisher gehen sie wie alle Kreaturen)
 
 # Tester-Feedback (Oktober 2026)
 

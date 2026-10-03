@@ -9,7 +9,7 @@ import type { LatentTraitDef } from './content/types';
 import { Rng } from './rng';
 import { dexKey, pruneCreatureRefs, type AncestorInfo, type Appearance, type Creature, type Genome, type StatBlock } from './state';
 
-export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'other';
+export type CreatureSource = 'start' | 'hatch' | 'wild' | 'capsule' | 'primal' | 'other';
 
 export interface CreateCreatureOptions {
   speciesId: string;

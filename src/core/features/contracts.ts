@@ -13,6 +13,7 @@ import { processRemainingMs, registerProcessHandler, registerResetSurvivor, star
 import type { ContractOffer, ContractRequirement, Creature, RpgItem } from '../state';
 import { rpgLevel } from './rpgCombat';
 import { consumeBlocker } from './stable';
+import { rollPrimalEgg } from './primalEggs';
 
 /**
  * Gen-Aufträge: every day a board of contracts asks for a creature with
@@ -368,6 +369,7 @@ function completeOffer(ctx: GameContext, offer: ContractOffer, creatureId: numbe
   const template = ctx.content.contracts.get(offer.template);
   for (const [res, amount] of Object.entries(contractReward(ctx, offer))) grant(ctx, res, amount, `contract:${template.id}`);
   catalogueSamples(ctx, template.reward.alleleSamples ?? 0);
+  rollPrimalEgg(ctx, ctx.balance.primalEggs.contractChance, `contract:${template.id}`);
   offer.done = true;
   ctx.state.contracts.completed++;
   ctx.invalidate();

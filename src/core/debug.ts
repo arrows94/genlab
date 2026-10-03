@@ -4,6 +4,7 @@ import type { ActionResult } from './actions';
 import { refreshContracts } from './features/contracts';
 import { bossAttempts, refreshWeeklyBoss } from './features/weeklyBoss';
 import { finishRpgRun, maxTorches } from './features/rpg';
+import { findPrimalEgg } from './features/primalEggs';
 
 /**
  * Debug tools: reset single game mechanics for testing (options, only visible with `?debug=1`). They change the
@@ -14,6 +15,7 @@ export type DebugResetId =
   | 'collect'
   | 'daily'
   | 'contracts'
+  | 'primalEgg'
   | 'weeklyBoss'
   | 'cellarAttempts'
   | 'cellarProgress'
@@ -39,6 +41,7 @@ export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'collect', group: 'Allgemein', name: 'Sammel-Ausdauer voll', description: 'Die Ausdauer beim Sammeln ist sofort wieder voll, die Wartezeit bis zum nächsten Fundstück ist vorbei.' },
   { id: 'daily', group: 'Allgemein', name: 'Tagesbelohnung wieder offen', description: 'Die heutige Tagesbelohnung kann noch einmal abgeholt werden.' },
   { id: 'contracts', group: 'Allgemein', name: 'Gen-Aufträge neu', description: 'Das heutige Auftragsbrett wird neu ausgelegt, erledigte Aufträge sind wieder offen, der Tausch ist wieder frei.' },
+  { id: 'primalEgg', group: 'Allgemein', name: '+1 Urzeit-Ei', description: 'Ein Urzeit-Ei für die Brutkammer – solange noch keine Fundquelle feststeht, der einzige Weg zu einem.' },
   { id: 'weeklyBoss', group: 'Allgemein', name: 'Wochen-Boss neu', description: 'Ein frischer Wochen-Titan nach dem aktuellen Turm-Rekord, alle Angriffe voll.' },
   { id: 'cellarAttempts', group: 'Genom-Keller', name: 'Abstiege voll', description: 'Der Vorrat an Abstiegen in den Genom-Keller ist sofort voll.' },
   { id: 'cellarProgress', group: 'Genom-Keller', name: 'Keller-Fortschritt löschen', description: 'Rekord, Kontrollpunkt und Verlauf im Keller stehen wieder auf 0.' },
@@ -72,6 +75,9 @@ export function debugReset(ctx: GameContext, id: DebugResetId): ActionResult {
     case 'contracts':
       s.contracts.day = -1;
       refreshContracts(ctx);
+      break;
+    case 'primalEgg':
+      findPrimalEgg(ctx, 'debug');
       break;
     case 'weeklyBoss':
       if (!s.features['weeklyBoss']) return { ok: false, reason: 'Der Wochen-Boss ist noch nicht freigeschaltet.' };

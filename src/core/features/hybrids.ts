@@ -56,8 +56,13 @@ export function revealHint(ctx: GameContext): string | null {
  * Offspring species: every matching recipe gets a roll (in content order);
  * otherwise one of the parent species. `mult` scales the recipe chances
  * (breeding rituals); `guaranteed` makes a matching recipe always succeed.
+ * Urzeitwesen pass on their species only to a pair of Urzeitwesen: with any
+ * other partner the child is of the partner's species (it still inherits genes).
  */
 export function rollOffspringSpecies(ctx: GameContext, a: Creature, b: Creature, mult = 1, guaranteed = false): string {
+  const primalA = ctx.content.species.get(a.speciesId).tier === 'primal';
+  const primalB = ctx.content.species.get(b.speciesId).tier === 'primal';
+  if (primalA !== primalB) return primalA ? b.speciesId : a.speciesId;
   if (ctx.state.features['hybrids']) {
     if (guaranteed) {
       const matching = ctx.content.recipes.list.filter((r) => recipeMatches(ctx, r, a, b));

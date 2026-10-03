@@ -8,7 +8,7 @@ export interface GameEvents {
   collected: { amounts: Record<string, Decimal>; find: { resource: string; amount: Decimal } | null };
   featureUnlocked: { feature: string; silent: boolean };
   upgradeBought: { upgrade: string; level: number };
-  creatureAdded: { creatureId: number; source: 'start' | 'hatch' | 'wild' | 'capsule' | 'other' };
+  creatureAdded: { creatureId: number; source: 'start' | 'hatch' | 'wild' | 'capsule' | 'primal' | 'other' };
   creatureRemoved: { creatureId: number; reason: string };
   dexDiscovered: { species: string; rarity: string };
   processStarted: { processId: number; kind: string };

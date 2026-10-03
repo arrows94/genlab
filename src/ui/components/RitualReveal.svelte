@@ -14,12 +14,12 @@
 </script>
 
 <div class="reveal-backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="reveal" class:hybrid={revealed.sp.tier !== 'base'} style="--rc: {revealed.rar.color}" role="dialog" aria-modal="true" aria-label="Ritual-Ei geöffnet" tabindex="-1" use:dialog={{ onescape: onclose }} in:scale={{ duration: 450, start: 0.4 }}>
+  <div class="reveal" class:hybrid={revealed.sp.tier !== 'base'} style="--rc: {revealed.rar.color}" role="dialog" aria-modal="true" aria-label="{ritualName} geöffnet" tabindex="-1" use:dialog={{ onescape: onclose }} in:scale={{ duration: 450, start: 0.4 }}>
     <span class="rays" aria-hidden="true"></span>
     <span class="small muted">{ritualName}</span>
     <span class="reveal-art"><CreatureSvg appearance={look(revealed.c)} shape={revealed.sp.shape} tier={revealed.sp.tier} size={110} shiny={revealed.c.shiny} /></span>
     <strong class="reveal-name">{revealed.c.name}</strong>
-    <span class="small"><span class="rar">{revealed.rar.name}</span> · {revealed.sp.name}{revealed.sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
+    <span class="small"><span class="rar">{revealed.rar.name}</span> · {revealed.sp.name}{revealed.sp.tier === 'primal' ? ' · Urzeitwesen' : revealed.sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
     <div class="reveal-actions">
       <button onclick={() => { view.detail = revealed.c.id; onclose(); }}>Details</button>
       <button class="primary" onclick={onclose}>Weiter</button>

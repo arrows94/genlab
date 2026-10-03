@@ -10,7 +10,7 @@ import { missionAvailable } from './expedition';
  *  - recipes: parents + requirements once discovered, only the hint once hinted
  */
 export interface OriginView {
-  kind: 'recipe' | 'evolution';
+  kind: 'recipe' | 'evolution' | 'egg';
   id: string;
   /** Revealed = result discovered. */
   revealed: boolean;
@@ -32,8 +32,8 @@ export interface TreeNode {
   origins: OriginView[];
 }
 
-export const TIER_ORDER: SpeciesTier[] = ['base', 'hybrid', 'rareHybrid', 'mythic'];
-export const TIER_NAMES: Record<SpeciesTier, string> = { base: 'Basisarten', hybrid: 'Hybride', rareHybrid: 'Seltene Hybride', mythic: 'Mythische Endformen' };
+export const TIER_ORDER: SpeciesTier[] = ['base', 'hybrid', 'rareHybrid', 'mythic', 'primal'];
+export const TIER_NAMES: Record<SpeciesTier, string> = { base: 'Basisarten', hybrid: 'Hybride', rareHybrid: 'Seltene Hybride', mythic: 'Mythische Endformen', primal: 'Urzeitwesen' };
 
 function recipeRequirements(ctx: GameContext, r: HybridRecipeDef): string[] {
   const out: string[] = [];
@@ -103,6 +103,11 @@ export function familyTree(ctx: GameContext): { tier: SpeciesTier; name: string;
             from: [sourceKnown ? ctx.content.species.get(e.from).name : null],
             requirements: sourceKnown ? [e.requires.minGeneration ? `Generation ≥ ${e.requires.minGeneration}` : '', e.requires.minRarity ? `≥ ${ctx.content.rarities.get(e.requires.minRarity).name}` : ''].filter(Boolean) : [],
           });
+        }
+        // Urzeitwesen: the Urzeit-Ei is named once the player found one (no spoiler before).
+        if (s.tier === 'primal') {
+          const known = !!ctx.state.features['primalEggs'];
+          origins.push({ kind: 'egg', id: s.id, revealed: isSpeciesDiscovered(ctx, s.id), hinted: known, hint: known ? 'Schlüpft aus einem Urzeit-Ei.' : null, from: [], requirements: [] });
         }
         return {
           species: s,

@@ -17,7 +17,7 @@ export const balance: Balance = {
   },
   rewards: {
     // Bonuses such as `contracts.reward` never multiply these (rare currencies stay fixed).
-    unscaled: ['aeonShards', 'timeCrystals', 'catalyst', 'germOil'],
+    unscaled: ['aeonShards', 'timeCrystals', 'catalyst', 'germOil', 'primalEgg'],
   },
   contracts: {
     offersPerDay: 3,
@@ -239,6 +239,15 @@ export const balance: Balance = {
     baseNests: 1,
     ritualNests: 1,
     autoNests: 1,
+  },
+  primalEggs: {
+    hours: 8,
+    nests: 1,
+    minRarity: 'rare',
+    undiscoveredWeight: 3,
+    // Still open where the eggs come from (see TODO.md). Both sources are wired: a chance here, or
+    // `rpg.loot.<room>.chance.primalEgg` for the GenLab RPG.
+    contractChance: 0,
   },
   genetics: {
     alleleMutationFactor: 0.5,

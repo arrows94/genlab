@@ -324,6 +324,22 @@ export interface Balance {
     /** Places in the Automatennest: the Zuchtautomat only breeds there (`slots.autoNest`). */
     autoNests: number;
   };
+  /**
+   * Urzeit-Eier (resource `primalEgg`): hatched in the Brutkammer into Urzeitwesen (species tier `primal`).
+   * Sources are data: RPG loot via `rpg.loot.<room>.chance.primalEgg`, Gen-Aufträge via `contractChance`.
+   */
+  primalEggs: {
+    /** Hours in the Brutkammer until the egg can be opened (`process.primalEgg.speed`). */
+    hours: number;
+    /** Places in the Brutkammer (`slots.primalNest`). */
+    nests: number;
+    /** A hatchling is at least this rare. */
+    minRarity: string;
+    /** Urzeitwesen not yet in the dex weigh this many times as much (new species come sooner). */
+    undiscoveredWeight: number;
+    /** Chance per fulfilled Gen-Auftrag to find an Urzeit-Ei (0 = no eggs from contracts). */
+    contractChance: number;
+  };
   genetics: {
     /** Allele mutation chance = breeding mutation chance × this factor (per inherited allele). */
     alleleMutationFactor: number;

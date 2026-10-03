@@ -4,7 +4,8 @@ import type { SpeciesDef } from '@core/content/types';
  * Species pool. Family tree: base → hybrid → rare hybrid → mythic end form.
  * Hybrids come from recipes (recipes.ts), mythic forms from rare recipes or
  * evolutions. `wild: true` = found on the standard expeditions; regional
- * species appear only in the missions that list them.
+ * species appear only in the missions that list them. Urzeitwesen (`primal`)
+ * stand outside the tree: they only hatch from Urzeit-Eier (`eggWeight`).
  */
 export const species: SpeciesDef[] = [
   // --- Base species (one per element) ---
@@ -80,4 +81,20 @@ export const species: SpeciesDef[] = [
     description: 'Seine Wurzeln reichen durch alle Genome.', baseStats: { hp: 80, atk: 12, def: 24, spd: 6 } },
   { id: 'chronodrake', name: 'Chronosdrache', element: 'light', tier: 'mythic', shape: 'dragon', hue: 280, wild: false,
     description: 'Existiert gleichzeitig in Licht und Schatten.', baseStats: { hp: 60, atk: 24, def: 16, spd: 20 } },
+
+  // --- Urzeitwesen: only from Urzeit-Eier ---
+  { id: 'ammonix', name: 'Ammonix', element: 'water', tier: 'primal', shape: 'round', hue: 28, wild: false, eggWeight: 10,
+    description: 'Trägt sein Spiralhaus seit dreihundert Millionen Jahren mit sich herum.', baseStats: { hp: 44, atk: 9, def: 18, spd: 5 } },
+  { id: 'trilobix', name: 'Trilobix', element: 'earth', tier: 'primal', shape: 'blob', hue: 36, wild: false, eggWeight: 10,
+    description: 'Krabbelte schon über den Meeresgrund, als es noch keine Fische gab.', baseStats: { hp: 40, atk: 10, def: 16, spd: 8 } },
+  { id: 'amberwing', name: 'Bernsteinflügler', element: 'crystal', tier: 'primal', shape: 'wing', hue: 40, wild: false, eggWeight: 8,
+    description: 'Erwachte nach Äonen aus einem Tropfen Bernstein – und summt noch immer dasselbe Lied.', baseStats: { hp: 32, atk: 14, def: 10, spd: 19 } },
+  { id: 'mammuthling', name: 'Mammutling', element: 'ice', tier: 'primal', shape: 'round', hue: 22, wild: false, eggWeight: 6,
+    description: 'Ein wolliger Koloss aus der Eiszeit, der jeden Sommer schmollt.', baseStats: { hp: 56, atk: 12, def: 15, spd: 4 } },
+  { id: 'glutraptor', name: 'Glutraptor', element: 'fire', tier: 'primal', shape: 'dragon', hue: 16, wild: false, eggWeight: 6,
+    description: 'Jagte durch Vulkanwälder, lange bevor es Drachen gab.', baseStats: { hp: 38, atk: 19, def: 9, spd: 16 } },
+  { id: 'ursporling', name: 'Ursporling', element: 'poison', tier: 'primal', shape: 'blob', hue: 95, wild: false, eggWeight: 6,
+    description: 'Die erste Spore, aus der alles Gift der Welt gekeimt ist.', baseStats: { hp: 40, atk: 15, def: 12, spd: 11 } },
+  { id: 'starseed', name: 'Sternensaat', element: 'light', tier: 'primal', shape: 'spiky', hue: 48, wild: false, eggWeight: 1.5,
+    description: 'Fiel als glühendes Ei vom Himmel. Niemand weiß, woher.', baseStats: { hp: 50, atk: 20, def: 18, spd: 17 } },
 ];

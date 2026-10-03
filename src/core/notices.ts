@@ -6,6 +6,7 @@ import { DEEP_SEQUENCE, SEQUENCE, type SequenceData } from './features/sequencin
 import { VOYAGE, type VoyageData } from './features/voyage';
 import { GRAND_RESEARCH, type GrandResearchData } from './features/grandResearch';
 import { MEGA_PROJECT, type MegaProjectData } from './features/megaProjects';
+import { PRIMAL_EGG } from './features/primalEggs';
 import { formatDuration } from './format';
 import type { Process } from './state';
 import { processRemainingMs } from './systems/processes';
@@ -66,6 +67,12 @@ const TEXTS: Record<string, NoticeText> = {
       return `Das Ritual-Ei${a && b ? ` von ${a} und ${b}` : ''} ist bereit – öffne es in der Brutstation.`;
     },
     many: (n) => `${n} Ritual-Eier sind bereit – öffne sie in der Brutstation.`,
+  },
+  // Urzeit-Eier wait to be opened, too.
+  [PRIMAL_EGG]: {
+    title: 'Urzeit-Ei bereit 🥚',
+    one: () => 'In der Brutkammer regt sich etwas – öffne das Urzeit-Ei in der Brutstation.',
+    many: (n) => `${n} Urzeit-Eier sind bereit – öffne sie in der Brutstation.`,
   },
   [VOYAGE]: {
     title: 'Wochenexpedition zurück 🗺️',

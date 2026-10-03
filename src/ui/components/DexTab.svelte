@@ -73,7 +73,7 @@
 <section class="panel rings">
   {@render ring(data.count.found / data.count.total, 'Gesamt', `${data.count.found}/${data.count.total}`, 'var(--teal)')}
   {#each data.tree as g (g.tier)}
-    {@render ring(g.progress.entries / Math.max(1, g.progress.entriesTotal), g.name, `${g.progress.species}/${g.progress.speciesTotal} Arten`, g.tier === 'mythic' ? '#ff5fa2' : g.tier === 'rareHybrid' ? 'var(--gold)' : g.tier === 'hybrid' ? 'var(--violet)' : 'var(--teal)')}
+    {@render ring(g.progress.entries / Math.max(1, g.progress.entriesTotal), g.name, `${g.progress.species}/${g.progress.speciesTotal} Arten`, g.tier === 'primal' ? '#d9a35b' : g.tier === 'mythic' ? '#ff5fa2' : g.tier === 'rareHybrid' ? 'var(--gold)' : g.tier === 'hybrid' ? 'var(--violet)' : 'var(--teal)')}
   {/each}
   <div class="perfection">
     <span title="Alle Loci reinerbig mit Top-Allelen (sequenziert)">✦ Perfekte Genome <b class="num">{data.perfection.perfect}/{data.perfection.species}</b></span>
@@ -149,11 +149,13 @@
                   <div class="origin">
                     {#if o.kind === 'recipe'}
                       <span class="num">{o.from.map((f) => f ?? '???').join(' × ')}</span>
+                    {:else if o.kind === 'egg'}
+                      <span>{o.hint ? '🥚 aus einem Urzeit-Ei' : '???'}</span>
                     {:else}
                       <span>✨ aus {o.from[0] ?? '???'}</span>
                     {/if}
                     {#if o.requirements.length}<span class="muted req">{o.requirements.join(' · ')}</span>{/if}
-                    {#if o.hint && !o.revealed}<span class="hint">„{o.hint}“</span>{/if}
+                    {#if o.hint && !o.revealed && o.kind !== 'egg'}<span class="hint">„{o.hint}“</span>{/if}
                   </div>
                 {/each}
               </div>
@@ -227,16 +229,26 @@
           {/if}
           {#each n.origins as o (o.id)}
             <div class="from">
-              {#if o.kind === 'recipe'}
-                <b class="small">🧪 Hybrid-Rezept</b>
-                <span class="num">{o.from.map((f) => f ?? '???').join(' × ')}</span>
+              {#if o.kind === 'egg'}
+                {#if o.hint}
+                  <b class="small">🥚 Urzeit-Ei</b>
+                  <span class="small">Schlüpft nur aus einem Urzeit-Ei in der Brutkammer – nie in der Wildnis, nie aus einer Kreuzung.</span>
+                {:else}
+                  <b class="small">❔ Unbekannt</b>
+                  <span class="muted small">Diese Art lebt weder in der Wildnis, noch entsteht sie aus einer Kreuzung …</span>
+                {/if}
               {:else}
-                <b class="small">✨ Evolution</b>
-                <span>aus {o.from[0] ?? '???'}</span>
+                {#if o.kind === 'recipe'}
+                  <b class="small">🧪 Hybrid-Rezept</b>
+                  <span class="num">{o.from.map((f) => f ?? '???').join(' × ')}</span>
+                {:else}
+                  <b class="small">✨ Evolution</b>
+                  <span>aus {o.from[0] ?? '???'}</span>
+                {/if}
+                {#if o.requirements.length}<span class="muted small">{o.requirements.join(' · ')}</span>{/if}
+                {#if o.hint && !o.revealed}<span class="hint small">„{o.hint}“</span>{/if}
+                {#if !o.revealed && !o.hint}<span class="muted small">Noch unbekannt – Forschung und lange Erkundungen verraten Hinweise.</span>{/if}
               {/if}
-              {#if o.requirements.length}<span class="muted small">{o.requirements.join(' · ')}</span>{/if}
-              {#if o.hint && !o.revealed}<span class="hint small">„{o.hint}“</span>{/if}
-              {#if !o.revealed && !o.hint}<span class="muted small">Noch unbekannt – Forschung und lange Erkundungen verraten Hinweise.</span>{/if}
             </div>
           {/each}
           {#if detail.habitats.length > 0}

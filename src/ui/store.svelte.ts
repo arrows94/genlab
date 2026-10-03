@@ -205,11 +205,18 @@ function wireEvents(g: Game): void {
     if (c) {
       const rarity = content.rarities.get(c.rarity);
       const species = content.species.get(c.speciesId);
-      const hybrid = species.tier !== 'base';
+      // Urzeitwesen only breed true among themselves – their young are no new hybrid.
+      const hybrid = species.tier !== 'base' && species.tier !== 'primal';
       toast(`${hybrid ? '🧪 Hybrid' : '🐣 Geschlüpft'}: ${c.name} (${species.name}, ${rarity.name})`, rarity.order >= 3 || hybrid ? 'rare' : 'info', hybrid ? 6000 : 3500);
     }
     view.hatchlings = [{ id: e.creatureId, key: ++listId }, ...view.hatchlings].slice(0, 4);
     markUnseen('breeding');
+  });
+  g.bus.on('resourceGained', (e) => {
+    if (e.resource !== 'primalEgg') return;
+    markUnseen('breeding');
+    // The very first egg is announced by the feature's own unlock hint.
+    if (g.state.features['primalEggs']) toast('🥚 Ein Urzeit-Ei! In der Brutkammer der Brutstation schlüpft daraus ein Urzeitwesen.', 'rare', 7000);
   });
   g.bus.on('sequenced', (e) => {
     const c = g.state.creatures.find((x) => x.id === e.creatureId);

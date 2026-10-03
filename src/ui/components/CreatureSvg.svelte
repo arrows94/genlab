@@ -42,6 +42,10 @@
   {#if tier === 'mythic'}
     <circle cx="50" cy="54" r="46" fill="none" stroke={light} stroke-width="1.5" stroke-dasharray="4 6" class="aura" />
   {/if}
+  {#if tier === 'primal'}
+    <!-- Urzeitwesen: bony back plates with an amber rim, behind the body. -->
+    <path d="M28 34 L33 16 L42 30 Z M42 28 L50 8 L58 28 Z M58 30 L67 16 L72 34 Z" fill={dark} stroke="#d9a35b" stroke-width="1.4" stroke-linejoin="round" />
+  {/if}
   {#if shape === 'wing'}
     <path d="M28 50 C8 38 6 60 18 66 C22 62 26 58 30 58 Z" fill={light} opacity="0.85" />
     <path d="M72 50 C92 38 94 60 82 66 C78 62 74 58 70 58 Z" fill={light} opacity="0.85" />

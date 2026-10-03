@@ -29,8 +29,12 @@ describe('species pool', () => {
     expect(new Set(base.map((s) => s.element)).size).toBe(12);
   });
 
-  it('every non-base species is reachable by a recipe or an evolution', () => {
-    const reachable = new Set([...content.recipes.list.map((r) => r.result), ...content.evolutions.list.map((e) => e.to)]);
+  it('every non-base species is reachable by a recipe, an evolution or an Urzeit-Ei', () => {
+    const reachable = new Set([
+      ...content.recipes.list.map((r) => r.result),
+      ...content.evolutions.list.map((e) => e.to),
+      ...content.species.list.filter((s) => s.tier === 'primal' && (s.eggWeight ?? 0) > 0).map((s) => s.id),
+    ]);
     for (const s of content.species.list.filter((x) => x.tier !== 'base')) expect(reachable.has(s.id), s.id).toBe(true);
   });
 
@@ -252,6 +256,7 @@ describe('dex family tree', () => {
       ['hybrid', 10],
       ['rareHybrid', 7],
       ['mythic', 4],
+      ['primal', 7],
     ]);
   });
 });

@@ -9,7 +9,7 @@ import type { CellarMatch, CellarRuleDef } from './types';
 
 /** Status effects a tower technique or RPG skill may apply. */
 export const statusIds = ['burn', 'poison', 'stun', 'slow', 'shield', 'evade', 'regen', 'armor', 'reflect'];
-const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic'];
+const tiers = ['base', 'hybrid', 'rareHybrid', 'mythic', 'primal'];
 
 export function validateResources({ data, at, text, ref }: ContentChecks): void {
   for (const r of data.resources) {
@@ -26,6 +26,13 @@ export function validateSpecies({ data, issues, statIds, at, text, ref, num }: C
     num(`${w}.hue`, s.hue, 0, 360);
     for (const stat of statIds) num(`${w}.baseStats.${stat}`, s.baseStats[stat], 0);
     for (const key of Object.keys(s.baseStats)) if (!statIds.has(key)) issues.push(`${w}.baseStats: unbekannter Stat "${key}"`);
+    if (!tiers.includes(s.tier)) issues.push(`${w}.tier: unbekannte Stufe "${s.tier}"`);
+    // Urzeitwesen hatch only from Urzeit-Eier: they need a weight there and never live in the wild.
+    if (s.tier === 'primal') {
+      num(`${w}.eggWeight`, s.eggWeight, 0);
+      if (!((s.eggWeight ?? 0) > 0)) issues.push(`${w}.eggWeight: Urzeitwesen brauchen ein Gewicht > 0`);
+      if (s.wild) issues.push(`${w}.wild: Urzeitwesen schlüpfen nur aus Urzeit-Eiern`);
+    } else if (s.eggWeight !== undefined) issues.push(`${w}.eggWeight: nur für Urzeitwesen (tier "primal")`);
   }
 }
 

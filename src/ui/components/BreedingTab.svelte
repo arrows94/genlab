@@ -25,6 +25,8 @@
   import NestKeeperPanel from './NestKeeperPanel.svelte';
   import NestCard from './NestCard.svelte';
   import RitualReveal from './RitualReveal.svelte';
+  import PrimalNest from './PrimalNest.svelte';
+  import { primalNestVisible } from '@core/features/primalEggs';
   import CreatureTile from './CreatureTile.svelte';
   import Meter from './Meter.svelte';
 
@@ -93,6 +95,7 @@
       slots: nestSlots(game),
       ritualSlots: game.state.features['specialBreeding'] ? ritualNestSlots(game) : 0,
       autoSlots: game.state.features['autoBreed'] ? autoNestSlots(game) : 0,
+      primal: primalNestVisible(game),
       hatchlings: view.hatchlings.map((h) => ({ key: h.key, c: findCreature(game, h.id) })).filter((h): h is { key: number; c: Creature } => !!h.c),
       candidates,
       hidden: pool.length - candidates.length,
@@ -294,7 +297,7 @@
       <button class="chick" class:hybrid={sp.tier !== 'base'} style="--rc: {rar.color}" title="Details" onclick={() => (view.detail = h.c.id)} in:scale={{ duration: 500, start: 0.3 }}>
         <CreatureSvg appearance={look(h.c)} shape={sp.shape} tier={sp.tier} size={36} shiny={h.c.shiny} />
         <span class="cname">{h.c.name}</span>
-        <span class="tiny" style="color: {rar.color}">{rar.name}{sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
+        <span class="tiny" style="color: {rar.color}">{rar.name}{sp.tier === 'primal' ? ' · Urzeitwesen' : sp.tier !== 'base' ? ' · Hybrid' : ''}</span>
       </button>
     {/each}
   </div>
@@ -440,6 +443,8 @@
     {@render tileList(data.candidates, data.hidden, null)}
   {/if}
 </article>
+
+{#if data.primal}<PrimalNest />{/if}
 
 {#if data.dynasties}<DynastyPanel />{/if}
 

@@ -13,5 +13,6 @@ export const resources: ResourceDef[] = [
   { id: 'shadowMarks', name: 'Schattenmarken', icon: '🌒', color: '#8fbf7a', feature: 'cellar', description: 'Aus dem Genom-Keller: für jede Ebene eines Abstiegs. Für dunkle Relikte.' },
   { id: 'runes', name: 'Runen', icon: '🪬', color: '#c792ea', feature: 'rpg', description: 'Aus dem GenLab RPG: von Elite-Gegnern, Bossen und zerlegter Ausrüstung. Für dauerhaften Fortschritt im Dungeon.' },
   { id: 'germOil', name: 'Keimöl', icon: '🌰', color: '#c6ff6b', feature: 'abilityElixir', description: 'Selten: aus Brutritualen, Gen-Aufträgen ab 4★ und Wochenexpeditionen. Für das Fähigkeits-Elixier.' },
+  { id: 'primalEgg', name: 'Urzeit-Ei', icon: '🥚', color: '#d9a35b', feature: 'primalEggs', description: 'Sehr selten. Ein versteinertes Ei aus uralter Zeit – in der Brutkammer der Brutstation schlüpft daraus ein Urzeitwesen.' },
   { id: 'heritage', name: 'Erbgut', icon: '🧬', color: '#4fd6c8', feature: 'inheritance', description: 'Dauerhafter Produktionsbonus aus der Vererbung.' },
 ];

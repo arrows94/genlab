@@ -42,6 +42,11 @@ export const features: FeatureDef[] = [
   { id: 'autoBreed', name: 'Zuchtautomat', hint: 'Der Zuchtautomat brütet nach deinen Regeln weiter – in seinem eigenen Automatennest, etwas gemächlicher als du von Hand.' },
   { id: 'nestKeeper', name: 'Nestwärter', hint: 'Nestwärter: In der Brutstation kannst du eine Kreatur an die Nester setzen. Ihre Brut-Fähigkeiten wie Brutpfleger oder Mutagen gelten dann für jedes Ei.' },
   { id: 'abilityElixir', name: 'Fähigkeits-Elixier', hint: 'Fähigkeits-Elixier: Im Markt stärkst du jetzt eine Fähigkeit einer Kreatur um eine Stufe. Dafür brauchst du seltenes Keimöl – aus Brutritualen, Gen-Aufträgen ab 4★ und Wochenexpeditionen.' },
+  {
+    id: 'primalEggs', name: 'Urzeit-Eier', hint: 'Ein Urzeit-Ei! In der Brutkammer der Brutstation brütest du es aus – was darin schlummert, zeigt sich erst beim Öffnen.',
+    // Owned eggs or one ever hatched: stays open after an Äon (which clears „earned“ and features).
+    condition: { type: 'any', of: [{ type: 'resourceOwned', resource: 'primalEgg', amount: 1 }, { type: 'statistic', statistic: 'completed.primalEgg', amount: 1 }] },
+  },
   { id: 'breedRepeat', name: 'Zuchtbuch', hint: 'Zuchtbuch: In der Brutstation wählt der Knopf ↻ zwischen den Eltern dein letztes Paar wieder aus.' },
   { id: 'breedSplit', name: 'Zwei Zuchtlisten', hint: 'Zwei Zuchtlisten: In der Brutstation hat jetzt jedes Elternteil seine eigene Kandidatenliste. Unter Optionen lässt sich wieder eine Liste einstellen.' },
   { id: 'autoRecycle', name: 'Recycling-Automat', hint: 'Der Recycling-Automat zerlegt überzählige Kreaturen nach deinen Regeln (Gen-Recycler).' },
@@ -154,13 +159,13 @@ export const achievements: AchievementDef[] = [
   { id: 'tower100', name: 'Turmspitze?', description: 'Etage 300 im Genom-Turm.', condition: { type: 'towerFloor', floor: 300 }, modifiers: [{ target: 'stat.atk', op: 'pct', value: 0.1 }] },
   { id: 'perfectGenome', name: 'Makellos', description: 'Ein perfektes Genom entdeckt.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 1 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'shinyFound', name: 'Schillernd!', description: 'Eine schillernde Kreatur gefunden.', condition: { type: 'statistic', statistic: 'shinies', amount: 1 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
-  // Perfection hunt: both statistics count species (the first perfect / shiny one of each), 33 at most.
+  // Perfection hunt: both statistics count species (the first perfect / shiny one of each), 40 at most.
   { id: 'perfectGenome5', name: 'Feinschliff', description: 'Perfekte Genome von 5 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 5 }, modifiers: [{ target: 'breeding.mutation', op: 'add', value: 0.01 }] },
   { id: 'perfectGenome15', name: 'Genmeister', description: 'Perfekte Genome von 15 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 15 }, modifiers: [{ target: 'splicing.instability', op: 'add', value: -0.03 }] },
-  { id: 'perfectGenomeAll', name: 'Vollkommenheit', description: 'Perfekte Genome aller 33 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 33 }, modifiers: [{ target: 'production.essence', op: 'pct', value: 0.5 }] },
+  { id: 'perfectGenomeAll', name: 'Vollkommenheit', description: 'Perfekte Genome aller 40 Arten.', condition: { type: 'statistic', statistic: 'perfectGenomes', amount: 40 }, modifiers: [{ target: 'production.essence', op: 'pct', value: 0.5 }] },
   { id: 'shiny3', name: 'Glanzsammler', description: 'Schillernde Kreaturen von 3 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 3 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.25 }] },
   { id: 'shiny10', name: 'Schimmerzucht', description: 'Schillernde Kreaturen von 10 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 10 }, modifiers: [{ target: 'creature.shinyChance', op: 'pct', value: 0.5 }] },
-  { id: 'shinyAll', name: 'Regenbogenchronik', description: 'Schillernde Kreaturen aller 33 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 33 }, modifiers: [
+  { id: 'shinyAll', name: 'Regenbogenchronik', description: 'Schillernde Kreaturen aller 40 Arten.', condition: { type: 'statistic', statistic: 'shinies', amount: 40 }, modifiers: [
     { target: 'stat.hp', op: 'pct', value: 0.05 }, { target: 'stat.atk', op: 'pct', value: 0.05 }, { target: 'stat.def', op: 'pct', value: 0.05 }, { target: 'stat.spd', op: 'pct', value: 0.05 },
   ] },
   { id: 'anomalist', name: 'Anomalist', description: 'Alle Anomalien gemeistert.', condition: { type: 'all', of: [
