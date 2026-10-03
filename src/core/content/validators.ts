@@ -336,6 +336,20 @@ export function validateTechniques({ data, issues, at, text, ref, num }: Content
   }
 }
 
+export function validateCourses({ data, issues, at, text }: ContentChecks): void {
+  const dice = new Set<string>();
+  for (const c of data.courses) {
+    const w = at('courses', c.id);
+    text(`${w}.name`, c.name);
+    text(`${w}.unit`, c.unit);
+    text(`${w}.dice`, c.dice);
+    if (!['up', 'down'].includes(c.direction)) issues.push(`${w}.direction: "up" oder "down"`);
+    if (dice.has(c.dice)) issues.push(`${w}.dice: "${c.dice}" doppelt – zwei Strecken hätten dieselben Gegner`);
+    dice.add(c.dice);
+  }
+  for (const id of ['tower', 'cellar']) if (!data.courses.some((c) => c.id === id)) issues.push(`courses: Strecke "${id}" fehlt`);
+}
+
 export function validateRelics({ data, issues, at, text, num }: ContentChecks): void {
   for (const r of data.relics) {
     const w = at('relics', r.id);

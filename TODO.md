@@ -164,15 +164,6 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 2 – Grundgerüst Keller** (`features/cellar.ts`): Strecke `cellar` über `features/floors.ts` (eigener
-      Würfel-Präfix, eigene `FloorCurve` in `balance.cellar`; Name, Richtung ab und Einheit „Ebene“ als Definition in
-      `content/endgame.ts`), `state.cellar` (Team, Reihen, Lauf, Rekord, Versuche
-      mit Zeitstempel, Verlauf), Job `{ kind: 'cellar' }` (in `isOccupied`, `pruneCreatureRefs`), Feature `cellar` in
-      `progression.ts` (Bedingung `towerFloor` 150), Versuche wie in `weeklyBoss.ts` (neuer Tag → neue
-      Versuche, auch offline), Abstieg mit
-      Erschöpfung und Rast-Gewölben, Kontrollpunkte, `registerResetSurvivor`/Prestige-`resets` prüfen, Debug-Reset in
-      `core/debug.ts`. Noch ohne Umgebungen und eigene Belohnungen (vorläufig Turm-Marken). Tests
-      `tests/cellar.test.ts` inkl. Offline-Aufholen und Spielstand laden
 - [ ] **Schritt 3 – Umgebungen**: `CellarEnvironmentDef` in `content/endgame.ts` (Bedingung über Allel, reinerbig,
       latentes Merkmal, Element oder Team-Vielfalt → Modifier auf den `Fighter`), Prüfung in `validate.ts`, Fackellicht,
       Wochen-Regel aus der Wochen-Mutation. Abfrage-Helfer in `core/queries.ts` bzw. im Feature: „Welche meiner
@@ -185,8 +176,10 @@ Merkmale wirken außerhalb der Produktion kaum.
       streichen), Äon-Splitter mit Wochen-Deckel
 - [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab (zuletzt gewählter Bereich in
       `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung und welche
-      Kreaturen passen, Versuche-Zähler, `tabActivity`, Changelog-Eintrag mit `feature: 'cellar'`. Funktional, noch
-      im einfachen Stil. Auch auf Handy-Breite prüfen
+      Kreaturen passen, Versuche-Zähler, Auto-Abstieg (`setCellarAuto`), Verlauf, Toasts zu `cellarRunEnded`, Zeile
+      „Tiefste Keller-Ebene“ in der Statistik (`record.cellarLevel`), `tabActivity`, Changelog-Eintrag mit
+      `feature: 'cellar'`. Funktional, noch im einfachen Stil. Auch auf Handy-Breite prüfen. Bis hierhin den Branch
+      nicht nach `main` bringen: Ab Turm-Etage 150 schaltet der Keller schon frei, hat aber noch keine Oberfläche
 - [ ] **Schritt 7 – Atmosphäre: Bild** (siehe oben): eigene Farb-Tokens, Arena mit Lichtkegel nach Fackellicht,
       Gegner aus der Dunkelheit, Kulisse, sichtbare Umgebungen, Boss „Schatten“, Aufzug-Fahrt durch den Boden
       (Licht flackert, Seil ruckt, Ansicht sinkt). `.reduce-motion` = ruhiges Bild ohne Flackern und sofortiger
@@ -197,7 +190,9 @@ Merkmale wirken außerhalb der Produktion kaum.
       Dauer nicht nervig
 - [ ] **Schritt 9 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
       Tag, Schattenmarken, Wirkung der dunklen Relikte auf den Turm-Stillstand (Ziel höchstens etwa 3 Tage), Splitter
-      je Woche. Zahlen in `balance.ts` nachziehen
+      je Woche. Zahlen in `balance.ts` nachziehen (die Keller-Kurve ist ein Platzhalter: Ebene −1 ≈ Turm-Etage 90,
+      ×1,06 je Ebene). Klären, ob Kampferfahrung und Entschlossenheit des Turms im Keller mitwirken sollen – heute tun
+      sie es, weil `cellarFighter` auf `fighterFor` aufsetzt
 - [ ] **Schritt 10 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
       Änderungen am Kreaturen-SVG – zusammen mit den kosmetischen Mustern der Gen-Aufträge planen
 

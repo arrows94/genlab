@@ -1,4 +1,4 @@
-import type { AnomalyDef, BossTraitDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
+import type { AnomalyDef, BossTraitDef, CourseDef, RelicDef, ResonanceDef, TalentDef, WeeklyMutationDef } from '@core/content/types';
 
 /** Talent tiers 4 and 5 and the resonance open with the stages of the Äon-Observatorium (Großprojekt). */
 const dome = { type: 'megaProject', project: 'observatory', stage: 2 } as const;
@@ -129,6 +129,12 @@ export const weeklyMutations: WeeklyMutationDef[] = [
     { target: 'rarity.weight.rare', op: 'pct', value: 0.3 }, { target: 'rarity.weight.epic', op: 'pct', value: 0.3 },
     { target: 'rarity.weight.legendary', op: 'pct', value: 0.3 }, { target: 'creature.shinyChance', op: 'mult', value: 2 },
   ] },
+];
+
+/** Endless courses: the tower climbs, the cellar below it descends. */
+export const courses: CourseDef[] = [
+  { id: 'tower', name: 'Genom-Turm', icon: '🗼', direction: 'up', unit: 'Etage', dice: 'tower' },
+  { id: 'cellar', name: 'Genom-Keller', icon: '🕳️', direction: 'down', unit: 'Ebene', dice: 'cellar' },
 ];
 
 /** Tricks of tower bosses from `balance.tower.bossTraitFromFloor` on (one per boss, fixed per floor). */

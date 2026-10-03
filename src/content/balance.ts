@@ -392,6 +392,38 @@ export const balance: Balance = {
       { target: 'production.essence', op: 'pct', value: 0.1 },
     ],
   },
+  cellar: {
+    fightIntervalSec: 4,
+    attemptsPerDay: 3,
+    maxAttempts: 6,
+    restEvery: 5,
+    restHeal: 0.5,
+    historySize: 10,
+    // Placeholder curve until the Keller has its environments and rewards (TODO.md, Genom-Keller step 9):
+    // level −1 is about as strong as tower floor 90 (old floor 30), and every level is ×1.06 – steeper
+    // than the tower's ×1.035 per floor, but the team does not heal between levels.
+    enemyBase: { hp: 1240, atk: 185, def: 103, spd: 27 },
+    enemyGrowth: 1.06,
+    subFloors: 1,
+    groupFromFloor: 1,
+    groupHp: [1, 1.1, 1.2],
+    groupAtk: [1, 1, 1.05],
+    companionsFromFloor: 30,
+    companionHp: 0.2,
+    companionAtk: 0.2,
+    phaseFromFloor: 60,
+    bossEvery: 30,
+    bossHpMult: 1.3,
+    bossAtkMult: 1.05,
+    bossTraitFromFloor: 30,
+    guardEvery: 10,
+    guardHpMult: 1.12,
+    guardAtkMult: 1.1,
+    checkpointEvery: 10,
+    // Turm-Marken for now (own Schattenmarken come with the rewards step).
+    tokensPerFloor: 5,
+    tokenGrowthPerFloor: 0.1,
+  },
   anomalies: {
     maxLevel: 5,
     goalGrowth: 4,

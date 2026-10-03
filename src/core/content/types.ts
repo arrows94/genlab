@@ -489,6 +489,22 @@ export interface ResonanceDef {
   modifiers: ModifierDef[];
 }
 
+/**
+ * An endless floor course: the Genom-Turm (up) or the Genom-Keller (down). The enemy curve comes from
+ * `balance.<id>` (a `FloorCurve`), the fight from the shared tower engine.
+ */
+export interface CourseDef {
+  id: 'tower' | 'cellar';
+  name: string;
+  icon: string;
+  /** Up: floors count 1, 2, 3 …; down: levels count −1, −2, −3 … */
+  direction: 'up' | 'down';
+  /** What one step is called („Etage“, „Ebene“). */
+  unit: string;
+  /** Seed prefix of the floor dice – changing it changes every floor of the course. */
+  dice: string;
+}
+
 /** A special trick of a tower boss (from `balance.tower.bossTraitFromFloor`). */
 export interface BossTraitDef {
   id: string;
@@ -876,6 +892,7 @@ export interface ContentData {
   resonances: ResonanceDef[];
   megaProjects: MegaProjectDef[];
   researchThemes: ResearchThemeDef[];
+  courses: CourseDef[];
   bossTraits: BossTraitDef[];
   relics: RelicDef[];
   techniques: TechniqueDef[];

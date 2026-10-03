@@ -62,6 +62,9 @@ export function attachStatistics(bus: EventBus<GameEvents>, getCtx: () => GameCo
       record('record.towerFloor', e.floor);
       if (getCtx().balance.activity.towerMilestones.includes(e.floor)) stampMilestone(getCtx(), `tower:${e.floor}`);
     }),
+    bus.on('cellarLevel', (e) => {
+      if (e.win) record('record.cellarLevel', e.level);
+    }),
     // Milestones: when (in active play time) something was first reached.
     bus.on('featureUnlocked', (e) => stampMilestone(getCtx(), `feature:${e.feature}`)),
     bus.on('achievementUnlocked', (e) => stampMilestone(getCtx(), `achievement:${e.achievement}`)),

@@ -463,6 +463,22 @@ export interface Balance {
     resolvePerDay: number;
     resolveCap: number;
   };
+  /**
+   * Genom-Keller: limited descents below the tower with the tower's fight engine. The team's HP carries from
+   * level to level (Erschöpfung); a rest vault heals between them.
+   */
+  cellar: FloorCurve & {
+    /** Seconds of play per level (the fights run in the background like the tower's). */
+    fightIntervalSec: number;
+    /** Descents per day and how many can be saved up. */
+    attemptsPerDay: number;
+    maxAttempts: number;
+    /** After every n-th cleared level a rest vault heals the team by restHeal of its max HP – the fallen get up again. */
+    restEvery: number;
+    restHeal: number;
+    /** Number of recent descents kept in the history. */
+    historySize: number;
+  };
   anomalies: {
     /** Highest difficulty stage (I–V). */
     maxLevel: number;

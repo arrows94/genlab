@@ -15,6 +15,8 @@ export type DebugResetId =
   | 'daily'
   | 'contracts'
   | 'weeklyBoss'
+  | 'cellarAttempts'
+  | 'cellarProgress'
   | 'rpgRun'
   | 'rpgTorches'
   | 'rpgOpenDungeons'
@@ -38,6 +40,8 @@ export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'daily', group: 'Allgemein', name: 'Tagesbelohnung wieder offen', description: 'Die heutige Tagesbelohnung kann noch einmal abgeholt werden.' },
   { id: 'contracts', group: 'Allgemein', name: 'Gen-Aufträge neu', description: 'Das heutige Auftragsbrett wird neu ausgelegt, erledigte Aufträge sind wieder offen, der Tausch ist wieder frei.' },
   { id: 'weeklyBoss', group: 'Allgemein', name: 'Wochen-Boss neu', description: 'Ein frischer Wochen-Titan nach dem aktuellen Turm-Rekord, alle Angriffe voll.' },
+  { id: 'cellarAttempts', group: 'Genom-Keller', name: 'Abstiege voll', description: 'Der Vorrat an Abstiegen in den Genom-Keller ist sofort voll.' },
+  { id: 'cellarProgress', group: 'Genom-Keller', name: 'Keller-Fortschritt löschen', description: 'Rekord, Kontrollpunkt und Verlauf im Keller stehen wieder auf 0.' },
   { id: 'rpgRun', group: 'GenLab RPG', name: 'Lauf beenden', description: 'Der laufende Lauf endet wie beim Verlassen (Beute kommt mit).' },
   { id: 'rpgTorches', group: 'GenLab RPG', name: '+10 Fackeln', description: 'Zehn Fackeln mehr, das Nachfüllen beginnt von vorn.' },
   { id: 'rpgOpenDungeons', group: 'GenLab RPG', name: 'Alle Dungeons öffnen', description: 'Jeder Dungeon zählt als einmal geschafft.' },
@@ -74,6 +78,14 @@ export function debugReset(ctx: GameContext, id: DebugResetId): ActionResult {
       s.weeklyBoss.week = -1;
       refreshWeeklyBoss(ctx);
       s.weeklyBoss.attempts = bossAttempts(ctx).max;
+      break;
+    case 'cellarAttempts':
+      if (!s.features['cellar']) return { ok: false, reason: 'Der Genom-Keller ist noch nicht freigeschaltet.' };
+      s.cellar.attempts = ctx.balance.cellar.maxAttempts;
+      break;
+    case 'cellarProgress':
+      if (s.cellar.run) return { ok: false, reason: 'Beende zuerst den laufenden Abstieg.' };
+      Object.assign(s.cellar, { best: 0, history: [], lastResult: null });
       break;
     case 'rpgRun':
       if (!s.rpg.run) return { ok: false, reason: 'Es läuft kein Lauf.' };

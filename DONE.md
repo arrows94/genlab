@@ -319,6 +319,22 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 2: Grundgerüst
+
+- Strecken als Inhalt (`courses` in `content/endgame.ts`: Turm ↑ „Etage“, Keller ↓ „Ebene“, eigener Würfel-Präfix,
+  geprüft in `validateCourses`); `courseFor` / `cellarCourse` / `floorLabel` in `floors.ts`. Keller-Kurve
+  `balance.cellar` (Platzhalter: Ebene −1 ≈ Turm-Etage 90, ×1,06 je Ebene, Boss alle 30, Wächter und Kontrollpunkt
+  alle 10).
+- `features/cellar.ts`: eigenes Team (nie zugleich im Turm-Team), Reihen, 3 Abstiege am Tag (Vorrat 6, auch
+  offline nach Auftragstag), Abstieg ab dem letzten Kontrollpunkt bis das Team fällt. **Erschöpfung**: der
+  KP-Anteil jedes Kämpfers trägt sich weiter, Gefallene setzen aus, alle 5 Ebenen heilt ein Rast-Gewölbe 50 % (auch
+  Gefallene). Auto-Abstieg, Verlauf, letzte Wiedergabe; vorläufig Turm-Marken als Lohn.
+- Spielstand `state.cellar` (ohne Migration), Job `cellar`, Feature `cellar` ab Turm-Etage 150, Vererbung beendet
+  den Abstieg und leert das Team (Rekord und Abstiege bleiben), Statistik `record.cellarLevel`, Debug-Resets
+  „Abstiege voll“ und „Keller-Fortschritt löschen“, Job-Text auf der Kreaturenkarte.
+- Tests `tests/cellar.test.ts` (13): Strecke, Freischaltung, Teams, Abstiege, Erschöpfung und Rast, Offline in
+  Scheiben gleich wie am Stück, Vererbung, Spielstand alt und neu, Debug.
+
 ## 2026-10-03 – Genom-Keller Schritt 1: Turm-Code verallgemeinert
 
 - Neues Modul `core/features/floors.ts`: endlose Strecken (`Course` = Gegner-Kurve + Würfel-Präfix) mit

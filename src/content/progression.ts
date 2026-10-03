@@ -96,6 +96,11 @@ export const features: FeatureDef[] = [
     id: 'rpg', name: 'GenLab RPG', tab: 'rpg', hint: 'GenLab RPG: Schicke ein einzelnes Monster in den Dungeon (Abenteuer) – rundenbasiert, du wählst jeden Zug. Jeder Lauf kostet eine Fackel 🔥.',
     condition: { type: 'towerFloor', floor: 20 },
   },
+  // Genom-Keller: below the tower, from the first tower milestone on (also where the Äon-Bot meets its first wall).
+  {
+    id: 'cellar', name: 'Genom-Keller', hint: 'Unter dem Genom-Turm öffnet sich ein Keller. Ein eigenes Team steigt dort Ebene für Ebene hinab – ohne Pause zum Heilen, nur ein paar Abstiege am Tag.',
+    condition: { type: 'towerFloor', floor: 150 },
+  },
   { id: 'stats', name: 'Statistik', tab: 'stats', hint: 'Statistiken freigeschaltet.', condition: { type: 'statistic', statistic: 'clicks', amount: 25 } },
 ];
 

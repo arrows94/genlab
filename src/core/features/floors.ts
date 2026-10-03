@@ -2,26 +2,42 @@ import { D, type Decimal } from '../num';
 import { Rng, hashSeed } from '../rng';
 import type { GameContext } from '../context';
 import type { FloorCurve } from '../content/balance';
-import type { TechniqueDef } from '../content/types';
+import type { CourseDef, TechniqueDef } from '../content/types';
 import type { Fighter } from './towerCombat';
 
 /**
- * Endless floor courses: the Genom-Turm today, the Genom-Keller later. A
- * course is its enemy curve (`FloorCurve` in balance.ts) plus the seed
- * prefix of its dice, so two courses with the same numbers still meet
+ * Endless floor courses: the Genom-Turm (up) and the Genom-Keller (down). A
+ * course is its definition (`courses` in content/endgame.ts), its enemy curve
+ * (`FloorCurve`, `balance.<id>`) and the seed prefix of its dice, so two courses with the same numbers still meet
  * different foes. Everything here is deterministic per floor and independent
  * of the game RNG; the fight itself is `simulateFight` in `towerCombat.ts`.
  */
 export interface Course {
-  id: string;
+  def: CourseDef;
   /** Seed prefix of the floor dice (`tower` for the Genom-Turm – changing it changes every floor). */
   dice: string;
   curve: FloorCurve;
 }
 
+/** A course by id: its definition (content) and its enemy curve (`balance.<id>`). */
+export function courseFor(ctx: GameContext, id: CourseDef['id']): Course {
+  const def = ctx.content.courses.get(id);
+  return { def, dice: def.dice, curve: ctx.balance[id] };
+}
+
 /** The Genom-Turm as a course. */
 export function towerCourse(ctx: GameContext): Course {
-  return { id: 'tower', dice: 'tower', curve: ctx.balance.tower };
+  return courseFor(ctx, 'tower');
+}
+
+/** The Genom-Keller as a course. */
+export function cellarCourse(ctx: GameContext): Course {
+  return courseFor(ctx, 'cellar');
+}
+
+/** How a floor of a course is shown: „Etage 12“ in the tower, „Ebene −12“ in the cellar. */
+export function floorLabel(course: Course, floor: number): string {
+  return `${course.def.unit} ${course.def.direction === 'down' ? `−${floor}` : floor}`;
 }
 
 /**

@@ -295,6 +295,8 @@ export function setTeam(ctx: GameContext, ids: number[]): ActionResult {
   // Ids of creatures that no longer exist are dropped instead of blocking the change.
   const unique = [...new Set(ids)].filter((id) => findCreature(ctx, id));
   if (unique.length > teamSize(ctx)) return { ok: false, reason: `Höchstens ${teamSize(ctx)} Kreaturen.` };
+  const inCellar = unique.find((id) => ctx.state.cellar.team.includes(id));
+  if (inCellar !== undefined) return { ok: false, reason: `${findCreature(ctx, inCellar)!.name} steht schon im Keller-Team.` };
   ctx.state.tower.team = unique;
   ctx.state.tower.back = ctx.state.tower.back.filter((id) => unique.includes(id));
   return { ok: true };

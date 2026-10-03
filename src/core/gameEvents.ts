@@ -36,6 +36,9 @@ export interface GameEvents {
   recipeHinted: { recipe: string };
   towerFloor: { floor: number; win: boolean; rewards: Record<string, Decimal>; allele: { locus: string; allele: string } | null };
   towerRunEnded: { floor: number };
+  /** A Genom-Keller level fought (`rest`: the team rested in a vault after it). */
+  cellarLevel: { level: number; win: boolean; rewards: Record<string, Decimal>; rest: boolean };
+  cellarRunEnded: { level: number; startLevel: number };
   /** One round in the GenLab RPG dungeon; `outcome` once the fight is decided. */
   rpgRound: { events: RpgEvent[]; outcome: 'win' | 'lose' | null; boss: boolean };
   /** A GenLab RPG run ended (`cleared`: the boss fell). */
