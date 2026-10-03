@@ -5,6 +5,13 @@ Messreihen und Begründungen stehen in der Git-Historie (`git log -p TODO.md DON
 
 # Tester-Feedback (Oktober 2026)
 
+## 2026-10-03 – Musik wechselt wieder mit dem Bereich
+
+- Seit der Musik pro Bereich lief der Effekt in `App.svelte` alle 100 ms neu (`activeGroup` ist jedes Frame ein neues
+  Objekt), und `setMusic` startete die 350-ms-Wechselverzögerung jedes Mal neu – die Stimmung wechselte nie, bis man
+  die Musik aus- und einschaltete. Jetzt: Stimmung als String-`$derived`, und `setMusic` lässt einen laufenden
+  Wechsel zur selben Stimmung weiterlaufen (`pendingMood`). Test mit Fake-AudioContext in `tests/music.test.ts`.
+
 ## 2026-10-03 – Brutzeit: Deckel, Untergrenze, Inkubator und Brutpfleger
 
 - Tester hatte trotz Upgrades über eine Minute Brutzeit: Der Generationszuschlag (+15 % je Generation) hob auch die

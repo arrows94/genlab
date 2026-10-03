@@ -25,6 +25,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: 35,
+    date: '2026-10-03',
+    title: 'Musik im Takt',
+    items: [{ text: 'Die Hintergrundmusik wechselt wieder von selbst, wenn du den Bereich wechselst – kein Aus- und Einschalten mehr nötig.' }],
+  },
+  {
     id: 34,
     date: '2026-10-03',
     title: 'Brutzeit neu austariert',

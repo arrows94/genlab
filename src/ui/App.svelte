@@ -143,7 +143,9 @@
     view.frame;
     return view.world === 'run' && !!game.state.rpg.run?.battle;
   });
-  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab, activeGroup.id)));
+  // A string, so the effect only reruns when the mood changes (`activeGroup` is a new object every frame).
+  const mood = $derived(inBattle ? 'battle' : view.world !== 'off' ? 'isekai' : moodFor(view.tab, activeGroup.id));
+  $effect(() => setMusic(prefs.music && view.ready, prefs.musicVolume, mood));
 
   // Keep the active tab visible in the scrollable bottom bar on phones.
   let navEl: HTMLElement | undefined = $state();
