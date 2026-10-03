@@ -2,10 +2,10 @@
   import { content } from '@content/index';
   import { expressedAppearance } from '@core/genetics';
   import { formatNumber, formatPercent } from '@core/format';
-  import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, enterRoom, giveUpRpgRun, leaveRpgRun, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
-  import { foeIntent, heroPerks, heroStats, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
+  import { INTENT_INFO, ROOM_INFO, chooseEventOption, guardianRoom, isGuardianNext, closeRpgAftermath, chooseUpgrade, drinkRpgFlask, enterRoom, giveUpRpgRun, leaveRpgRun, rpgDefense, rpgFlasks, rpgHero, rpgSkills, useRpgSkill } from '@core/features/rpg';
+  import { foeIntent, heroPerks, heroStats, maxPoise, rpgLevel, skillBlocker, effectiveCooldown } from '@core/features/rpgCombat';
   import { game, view, act, ask, leaveWorld, startPortal } from '../store.svelte';
-  import type { Creature, RpgAftermath, RpgBattle } from '@core/state';
+  import type { Creature, RpgAftermath, RpgBattle, RpgCombatant } from '@core/state';
   import { prefs, updatePrefs } from '../prefs.svelte';
   import { STATUS_ICON, STATUS_NAME, gearOf, itemText, lootList, pct, rarityOf, speciesLook } from '../rpgView';
   import CreatureSvg from './CreatureSvg.svelte';
@@ -17,6 +17,8 @@
    * until the player goes back to the lab. All rules live in core/features/rpg.ts; this view only shows state
    * and calls actions.
    */
+  /** The boss door: a fog gate, like the last threshold before a lord of the dungeon. */
+  const FOG_GATE = { name: 'Nebeltor', icon: '🌫️', hint: 'Dahinter wartet der Boss. Kein Zurück, bis einer fällt.' };
   let menuOpen = $state(false);
   const GUARDIAN_INFO = { icon: '🛡️', name: 'Wächter', hint: 'Ein starker Elite-Gegner bewacht die Mitte des Dungeons – an ihm führt kein Weg vorbei.' };
 
@@ -36,6 +38,9 @@
       /** The dungeon's colour lights the other world. */
       realm: dungeon ? content.elements.get(dungeon.elements[0]!).color : '#9b6bff',
       skills: run ? rpgSkills(game) : [],
+      defense: run ? rpgDefense(game) : [],
+      flasks: rpgFlasks(game),
+      stain: r.bloodstain ? structuredClone(r.bloodstain) : null,
       perks: run ? heroPerks(game, run.upgrades) : null,
       maxHp: run && hero ? heroStats(game, hero, run.upgrades).hp : 1,
       heroLevel: hero ? rpgLevel(game, hero.id) : null,
@@ -56,7 +61,7 @@
     menuOpen = false;
     const fighting = !!data.run?.battle;
     const text = fighting
-      ? `Mitten im Kampf aufgeben? Das zählt als Niederlage: Nur gesicherte Beute und ${formatPercent(game.balance.rpg.defeatKeep, 0)} der getragenen bleiben.`
+      ? 'Mitten im Kampf aufgeben? Das zählt als Niederlage: Deine getragene Beute bleibt als Blutfleck hier liegen.'
       : 'Aufgeben und zurückkehren? Du nimmst alle Beute mit, der Lauf ist dann vorbei.';
     if (await ask(text, { ok: 'Aufgeben', danger: fighting })) act(giveUpRpgRun(game));
   }
@@ -76,7 +81,7 @@
   {@const fl = speciesLook(b.foe)}
   {@const heroHits = (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit')}
   {@const foeHits = (b.last ?? []).filter((e) => e.by === 'hero' && e.kind === 'hit')}
-  <section class="arena" class:ended={!!ended} style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
+  <section class="arena" class:ended={!!ended} class:phase2={b.foe.phase === 2} style="--foe: {content.elements.get(b.foe.element).color}; --hero: {content.elements.get(b.hero.element).color}">
     <span class="round">Runde {b.round}</span>
     <div class="fighter">
       {#key b.round}
@@ -86,6 +91,11 @@
         </div>
       {/key}
       <div class="bar blood small-bar"><div style="width: {pct(b.hero.hp, b.hero.maxHp)}"></div><span class="num">{formatNumber(b.hero.hp)}</span></div>
+      {@render poise(b.hero)}
+      {#if !ended}
+        {@const stamina = b.stamina ?? game.balance.rpg.stamina.max}
+        <div class="bar stamina small-bar" title="Ausdauer: jeder Zug kostet etwas, jede Runde kommt {game.balance.rpg.stamina.regen} zurück"><div style="width: {pct(stamina, game.balance.rpg.stamina.max)}"></div><span class="num">{formatNumber(stamina)}</span></div>
+      {/if}
       <div class="statuses">{#each b.hero.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
     </div>
     <div class="fighter foe" class:boss={b.foe.kind === 'boss'} class:elite={b.foe.kind === 'elite'}>
@@ -97,10 +107,27 @@
         </div>
       {/key}
       <span class="f-name">{b.foe.kind === 'boss' ? '👑 ' : b.foe.kind === 'elite' ? '💀 ' : ''}{b.foe.name}{b.foe.level ? ` · Stufe ${b.foe.level}` : ''}</span>
-      <div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>
+      {#if b.foe.kind !== 'boss'}<div class="bar blood foe-bar small-bar"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)}</span></div>{/if}
+      {@render poise(b.foe)}
       <div class="statuses">{#each b.foe.statuses as st (st.id)}<span title="{STATUS_NAME[st.id]} ({st.rounds} Runden)">{STATUS_ICON[st.id]}{st.rounds}</span>{/each}</div>
     </div>
   </section>
+  {#if b.foe.kind === 'boss'}
+    <!-- The lord of the dungeon: its name and a long bar across the bottom, like in the old dark tales. -->
+    <div class="boss-bar" class:phase2={b.foe.phase === 2}>
+      <span class="boss-name">{b.foe.name}{b.foe.phase === 2 ? ' · entfesselt' : ''}</span>
+      <div class="bar blood boss-hp"><div style="width: {pct(b.foe.hp, b.foe.maxHp)}"></div><span class="num">{formatNumber(b.foe.hp)} / {formatNumber(b.foe.maxHp)}</span></div>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet banner(text: string, tone: 'gold' | 'blood')}
+  <!-- Big words across the screen after a fight, fading in and away (they never block a tap). -->
+  <div class="banner {tone}" aria-live="assertive"><span>{text}</span></div>
+{/snippet}
+
+{#snippet poise(c: RpgCombatant)}
+  <div class="bar poise small-bar" class:broken={c.exposed} title={c.exposed ? 'Taumelt – der nächste Treffer ist kritisch' : 'Gleichgewicht: voll = gerät ins Wanken'}><div style="width: {c.exposed ? '100%' : pct(c.poise ?? 0, maxPoise(game, c))}"></div>{#if c.exposed}<span>🎯 taumelt</span>{/if}</div>
 {/snippet}
 
 {#snippet gains(af: RpgAftermath)}
@@ -143,6 +170,10 @@
       <div class="hero-title"><b>{data.hero.name}</b> <span class="lvl">Stufe {data.heroLevel?.level ?? 1}</span></div>
       <div class="bar blood" title="KP"><div style="width: {pct(run.hp, data.maxHp)}"></div><span class="num">{formatNumber(run.hp)} / {formatNumber(data.maxHp)} KP</span></div>
       <Meter size="sm" tone="gold" value={data.heroLevel && data.heroLevel.need > 0 ? data.heroLevel.into / data.heroLevel.need : 1} title="Erfahrung bis zur nächsten Stufe" />
+      <div class="flasks">
+        <span class="tag" title="Heiltränke: heilen {formatPercent(content.rpgSkills.get('flask').heal ?? 0, 0)} der KP, im Kampf kostet ein Schluck den Zug. Das Leuchtfeuer füllt sie auf.">🧪 {data.flasks} / {game.balance.rpg.flasks}</span>
+        {#if !run.battle && data.flasks > 0 && run.hp < data.maxHp}<button class="iron sip" onclick={() => act(drinkRpgFlask(game))}>Trinken</button>{/if}
+      </div>
       {#if run.upgrades.length > 0}
         <div class="ups" title="Verbesserungen dieses Laufs">{#each run.upgrades as u, i (i)}<span title="{content.rpgUpgrades.get(u).name}: {content.rpgUpgrades.get(u).description}">{content.rpgUpgrades.get(u).icon}</span>{/each}</div>
       {/if}
@@ -160,8 +191,9 @@
       {@const kind = path[i]}
       {@const here = i === run.depth - 1 && (!!run.battle || !!run.event)}
       {@const guard = i === guardianRoom(game, run.dungeon)}
-      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} class:guard title={guard ? 'Wächter' : kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
-        {kind ? ROOM_INFO[kind].icon : i === d.rooms ? '👑' : guard ? '🛡️' : ''}
+      {@const stain = data.stain?.dungeon === run.dungeon && data.stain.depth === i + 1}
+      <li class:done={i < run.depth && !here} class:here class:boss={i === d.rooms} class:guard class:stain title={stain ? 'Dein Blutfleck – hier liegt deine verlorene Beute' : guard ? 'Wächter' : kind ? ROOM_INFO[kind].name : i === d.rooms ? 'Boss' : undefined}>
+        {kind ? ROOM_INFO[kind].icon : stain ? '🩸' : i === d.rooms ? '👑' : guard ? '🛡️' : ''}
       </li>
     {/each}
   </ol>
@@ -170,24 +202,39 @@
     {@const b = run.battle}
     {@render arena(b, data.hero)}
     <ol class="parchment chronicle">{#each b.log as line, i (i)}<li>{line}</li>{/each}</ol>
-    <div class="skills">
-      {#each data.skills as k (k.id)}
-        {@const blocked = skillBlocker(b, k)}
-        {@const cd = b.cooldowns[k.id] ?? 0}
-        <button class="iron skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
-          <span class="k-icon">{k.icon}</span>
-          <span class="k-name">{k.name}</span>
-          {#if k.slot === 'special'}
-            <span class="charge"><Meter size="sm" tone="gold" value={b.charge} title="Aufladung" /></span>
-          {:else if cd > 0}
-            <span class="cd num">{cd}</span>
-          {/if}
-        </button>
-      {/each}
+    <div class="actions">
+      <div class="skills">
+        {#each data.skills as k (k.id)}
+          {@const blocked = skillBlocker(b, k)}
+          {@const cd = b.cooldowns[k.id] ?? 0}
+          <button class="iron skill" class:special={k.slot === 'special'} disabled={!!blocked} title="{blocked ?? k.description}{effectiveCooldown(k, data.perks ?? {}) > 0 ? ` Abklingzeit: ${effectiveCooldown(k, data.perks ?? {})} Runden.` : ''}" onclick={() => useSkill(k.id)}>
+            <span class="k-icon">{k.icon}</span>
+            <span class="k-name">{k.name}</span>
+            {#if k.slot === 'special'}
+              <span class="charge"><Meter size="sm" tone="gold" value={b.charge} title="Aufladung" /></span>
+            {:else if cd > 0}
+              <span class="cd num">{cd}</span>
+            {/if}
+            {#if k.stamina}<span class="cost num" title="Ausdauer">{k.stamina}</span>{/if}
+          </button>
+        {/each}
+      </div>
+      <div class="skills defense">
+        {#each data.defense as k (k.id)}
+          {@const empty = k.slot === 'item' && data.flasks <= 0}
+          {@const blocked = empty ? 'Keine Heiltränke mehr.' : skillBlocker(b, k)}
+          <button class="iron skill guard-move" class:flask={k.slot === 'item'} disabled={!!blocked} title={blocked ?? k.description} onclick={() => useSkill(k.id)}>
+            <span class="k-icon">{k.icon}</span>
+            <span class="k-name">{k.name}{k.slot === 'item' ? ` ×${data.flasks}` : ''}</span>
+            {#if k.stamina}<span class="cost num" title="Ausdauer">{k.stamina}</span>{/if}
+          </button>
+        {/each}
+      </div>
     </div>
   {:else if run.aftermath}
     {@const af = run.aftermath}
     {@const foe = af.battle.foe}
+    {#key `${run.depth}-${af.battle.round}`}{@render banner(foe.kind === 'normal' ? 'FEIND GEFÄLLT' : 'STARKER FEIND GEFÄLLT', 'gold')}{/key}
     {@render arena(af.battle, data.hero, 'win')}
     <ol class="parchment chronicle">{#each af.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
     <section class="parchment scroll verdict won">
@@ -225,20 +272,26 @@
   {:else}
     {#if run.eventResult}<p class="parchment tale told">{run.eventResult}</p>{/if}
     {@const guardian = isGuardianNext(game, run)}
-    <h2 class="fork">{run.choices.includes('boss') ? 'Vor dir liegt der letzte Raum …' : guardian ? 'Ein Wächter versperrt den Weg …' : 'Der Weg teilt sich'}</h2>
+    {@const fog = run.choices.includes('boss')}
+    {@const bonfire = run.choices.includes('bonfire')}
+    <h2 class="fork">{fog ? 'Ein Nebeltor versperrt den letzten Raum …' : guardian ? 'Ein Wächter versperrt den Weg …' : bonfire ? 'Ein Leuchtfeuer brennt in der Dunkelheit' : 'Der Weg teilt sich'}</h2>
+    {#if fog}<p class="parchment tale told">Grauer Nebel wabert im Torbogen. Dahinter wartet der Herr dieses Dungeons – wer hindurchgeht, kommt erst zurück, wenn einer von beiden fällt. Noch kannst du mit deiner Beute umkehren.</p>{/if}
     <div class="doors">
       {#each run.choices as kind, i (kind)}
-        {@const info = guardian ? GUARDIAN_INFO : ROOM_INFO[kind]}
-        <button class="door" class:boss={kind === 'boss' || guardian} onclick={() => act(enterRoom(game, i))}>
+        {@const info = guardian ? GUARDIAN_INFO : kind === 'boss' ? FOG_GATE : ROOM_INFO[kind]}
+        <button class="door" class:boss={kind === 'boss' || guardian} class:bonfire={kind === 'bonfire'} onclick={() => act(enterRoom(game, i))}>
           <span class="c-icon">{info.icon}</span><b>{info.name}</b><span class="c-text">{info.hint}</span>
         </button>
       {/each}
     </div>
-    <div class="leave-bar"><button class="iron" onclick={leave}>🚪 Dungeon verlassen (Beute mitnehmen)</button></div>
+    <div class="leave-bar"><button class="iron" onclick={leave}>🚪 {fog ? 'Umkehren' : 'Dungeon verlassen'} (Beute mitnehmen)</button></div>
   {/if}
 {:else if data.lastResult}
   {@const res = data.lastResult}
   {@const fight = res.fight}
+  {#if fight}
+    {#key res.at}{@render banner(fight.win ? 'GROSSER FEIND GEFÄLLT' : 'DU BIST GESTORBEN', fight.win ? 'gold' : 'blood')}{/key}
+  {/if}
   {#if fight && data.resultHero}
     {@render arena(fight.battle, data.resultHero, fight.win ? 'win' : 'lose')}
     <ol class="parchment chronicle">{#each fight.battle.log.slice(-4) as line, i (i)}<li>{line}</li>{/each}</ol>
@@ -257,13 +310,13 @@
     </p>
     {#if !res.win}
       <div class="ledger">
-        <span class="ledger-head">Verloren</span>
+        <span class="ledger-head">{res.stain ? `🩸 Liegt im Blutfleck (Raum ${res.stain})` : 'Verloren'}</span>
         <div class="pouch">
           {#each lootList(res.lost ?? {}) as l (l.name)}<span class="tag lost">{l.icon} −{formatNumber(l.amount)} {l.name}</span>{/each}
           {#each res.lostGear ?? [] as item (item.id)}<span class="tag lost" title={itemText(game, item)}>{gearOf(item).icon} {gearOf(item).name}</span>{/each}
           {#if lootList(res.lost ?? {}).length === 0 && !(res.lostGear ?? []).length}<span class="c-text">Nichts – du hattest nichts Ungesichertes dabei.</span>{/if}
         </div>
-        <span class="c-text">Bei einer Niederlage bleiben gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen, getragene Ausrüstung geht verloren. Rastplätze sichern alles.</span>
+        <span class="c-text">{res.stain ? `Erreichst du im nächsten Lauf durch diesen Dungeon Raum ${res.stain}, gehört alles wieder dir – stirbst du vorher, ist es verloren.` : ''} Leuchtfeuer und Lagerplätze sichern deine Beute.</span>
       </div>
     {/if}
     <div class="ledger">
@@ -358,6 +411,7 @@
   .trail li + li::before { content: ''; position: absolute; right: 100%; top: 50%; width: 14px; border-top: 2px dotted #6a5236; }
   .trail li.done { border-style: solid; border-color: var(--brass); background: #3a2a1c; opacity: 1; }
   .trail li.here { border: 2px solid var(--glow); background: #5a3a1a; opacity: 1; box-shadow: 0 0 10px #ff9a3c99; }
+  .trail li.stain { border: 2px solid #a3262a; background: #3a1414; opacity: 1; box-shadow: 0 0 8px #a3262a99; }
   .trail li.boss { border-color: #b0453a; opacity: 0.9; }
   .trail li.guard { border-color: #c9a227; }
 
@@ -400,7 +454,36 @@
   .chronicle li:nth-last-child(-n + 3) { opacity: 1; }
 
   /* Skill plates at the bottom, in thumb reach on phones. */
-  .skills { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); z-index: 2; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; padding: 0.35rem; border-radius: 8px; background: #0e0a08e6; border: 1px solid #3a2c20; }
+  .actions { position: sticky; bottom: calc(0.4rem + env(safe-area-inset-bottom)); z-index: 2; display: grid; gap: 0.35rem; padding: 0.35rem; border-radius: 8px; background: #0e0a08e6; border: 1px solid #3a2c20; }
+  .skills { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.4rem; }
+  .skills.defense .skill { min-height: 52px; padding: 0.35rem 0.2rem; }
+  .guard-move { border-color: #6a8a9a; }
+  .skill.flask:not(:disabled) { border-color: #b0453a; background: linear-gradient(180deg, #5a2622, #2f1513); }
+  .cost { position: absolute; top: 0.15rem; left: 0.3rem; font-size: 0.65rem; color: #9fe0a0; opacity: 0.85; }
+  .cost::before { content: '⚡'; font-size: 0.6rem; }
+  .banner { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none; animation: banner 3.4s ease-in-out forwards; }
+  .banner span { width: 100%; padding: 1.1rem 0.5rem; text-align: center; font-size: clamp(1.2rem, 6vw, 3rem); letter-spacing: 0.08em; font-weight: 400; white-space: nowrap;
+    background: linear-gradient(90deg, #000a, #000f 15%, #000f 85%, #000a); }
+  .banner.gold span { color: #f0d080; text-shadow: 0 0 18px #ffcf7a88, 0 2px 4px #000; }
+  .banner.blood span { color: #c0392b; text-shadow: 0 0 22px #a3262aaa, 0 2px 4px #000; letter-spacing: 0.12em; }
+  @keyframes banner { 0% { opacity: 0; } 18% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+  .boss-bar { display: grid; gap: 0.2rem; margin: -0.3rem 0 0.7rem; padding: 0 0.3rem; }
+  .boss-name { font-size: 0.95rem; letter-spacing: 0.06em; color: var(--parch); text-shadow: 0 1px 3px #000; }
+  .boss-hp { height: 12px; border-color: #7a5a2a; }
+  .boss-hp > div { background: linear-gradient(180deg, #c0392b, #6e1414); }
+  .boss-bar.phase2 .boss-name { color: #ff9a8a; }
+  .arena.phase2 { box-shadow: inset 0 0 50px #a3262a88, inset 0 0 40px #000c; }
+  .bar.poise { height: 5px; border-color: #4a3a1a; }
+  .bar.poise > div { background: linear-gradient(90deg, #b8860b, #ffcf7a); }
+  .bar.poise.broken { height: 12px; }
+  .bar.poise.broken > div { background: linear-gradient(90deg, #d9483b, #ffcf7a); animation: pulse 0.6s ease-in-out infinite alternate; }
+  .bar.poise.broken span { font-size: 0.6rem; line-height: 10px; }
+  @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+  .bar.stamina { height: 8px; }
+  .bar.stamina > div { background: linear-gradient(180deg, #8fd19e, #3f7d54); }
+  .bar.stamina span { font-size: 0.55rem; line-height: 7px; }
+  .flasks { display: flex; gap: 0.35rem; align-items: center; font-size: 0.8rem; }
+  .sip { padding: 0.1rem 0.6rem; font-size: 0.8rem; }
   .skill { position: relative; display: grid; justify-items: center; gap: 0.1rem; padding: 0.5rem 0.2rem; min-height: 66px; }
   .skill.special:not(:disabled) { border-color: var(--glow); background: linear-gradient(180deg, #6b4a1c, #3a2710); box-shadow: 0 0 12px #ff9a3c66, inset 0 1px 0 #ffffff22; }
   .k-icon { font-size: 1.4rem; }
@@ -428,6 +511,7 @@
     box-shadow: inset 0 0 24px #000c, 0 6px 14px #000b;
   }
   .door:hover { border-color: var(--brass); box-shadow: inset 0 0 24px #000c, 0 0 16px #ff9a3c44; }
+  .door.bonfire { border-color: #c4965a; background: radial-gradient(ellipse at 50% 75%, #ff9a3c55, transparent 60%), repeating-linear-gradient(90deg, #3a2a1d 0 18px, #33251a 18px 20px), #2d2016; box-shadow: inset 0 0 24px #000c, 0 0 22px #ff9a3c66; }
   .door.boss { border-color: #9a3a30; box-shadow: inset 0 0 24px #000c, 0 0 18px #d9483b66; }
   .door b { font-size: 1.05rem; color: var(--glow); }
   .leave-bar { display: flex; justify-content: center; padding: 0.4rem 0; }

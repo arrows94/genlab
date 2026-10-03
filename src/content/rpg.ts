@@ -9,6 +9,15 @@ import type { RpgDungeonDef, RpgEnemyDef, RpgEventDef, RpgGearDef, RpgMetaDef, R
 export const rpgSkills: RpgSkillDef[] = [
   { id: 'strike', slot: 'basic', name: 'Angriff', icon: '⚔️', target: 'enemy', hit: 1, cooldown: 0,
     description: 'Ein normaler Treffer.' },
+  // Defense and the Heiltrank: always there, they cost stamina (or a flask) instead of a cooldown.
+  { id: 'dodge', slot: 'defense', stance: 'dodge', name: 'Ausweichen', icon: '💨', target: 'self', hit: 0, cooldown: 0,
+    description: 'Weicht dem nächsten Treffer dieser Runde fast sicher aus – auch einem schweren Schlag. Kein eigener Angriff.' },
+  { id: 'parry', slot: 'defense', stance: 'parry', name: 'Parieren', icon: '🤺', target: 'self', hit: 0, cooldown: 0, stamina: 25,
+    description: 'Fängt einen normalen Angriff ab und kontert kritisch – der Gegner taumelt und setzt aus. Gegen schwere Schläge und Techniken misslingt es: Du nimmst mehr Schaden.' },
+  { id: 'breathe', slot: 'defense', stance: 'breathe', name: 'Verschnaufen', icon: '🫁', target: 'self', hit: 0, cooldown: 0, stamina: 0,
+    description: 'Holt Luft: deutlich mehr Ausdauer zurück, aber keine Abwehr.' },
+  { id: 'flask', slot: 'item', name: 'Heiltrank', icon: '🧪', target: 'self', hit: 0, heal: 0.45, cooldown: 0, stamina: 0,
+    description: 'Heilt 45 % der KP – kostet aber deinen Zug. Nur wenige pro Lauf, das Leuchtfeuer füllt sie auf.' },
   { id: 'primal', slot: 'special', name: 'Urkraft', icon: '🌟', target: 'enemy', hit: 3, cooldown: 0,
     description: 'Die ganze gesammelte Kraft in einem Schlag: dreifacher Schaden. Lädt sich über Treffer und Runden auf.' },
 
@@ -35,8 +44,39 @@ export const rpgEnemies: RpgEnemyDef[] = [
   { id: 'brawler', name: 'Wilder', kind: 'normal', pattern: ['attack', 'attack', 'charge', 'heavy'], hp: 1, atk: 1, def: 1, spd: 1 },
   { id: 'guardian', name: 'Gepanzerter', kind: 'normal', pattern: ['guard', 'attack', 'attack'], hp: 1.2, atk: 0.9, def: 1.4, spd: 0.8 },
   { id: 'adept', name: 'Kundiger', kind: 'normal', pattern: ['tech', 'attack', 'attack'], hp: 0.9, atk: 1, def: 0.9, spd: 1.1 },
-  { id: 'champion', name: 'Rasender', kind: 'elite', pattern: ['attack', 'charge', 'heavy', 'tech'], hp: 1.8, atk: 1.25, def: 1.2, spd: 1.1 },
+  { id: 'champion', name: 'Rasender', kind: 'elite', pattern: ['attack', 'charge', 'heavy', 'tech', 'combo'], hp: 1.8, atk: 1.25, def: 1.2, spd: 1.1 },
+  // Fallback boss for a dungeon without its own (and fights saved before the named bosses).
   { id: 'warden', name: 'Hüter', kind: 'boss', pattern: ['tech', 'attack', 'guard', 'charge', 'heavy', 'heal'], hp: 2.2, atk: 1.2, def: 1.2, spd: 1 },
+
+  // The lords of the dungeons: their own name, a mark their blows leave, and a second phase at half their HP.
+  { id: 'rootMother', name: 'Morgrin, die Wurzelmutter', kind: 'boss', dungeon: 'rootMaze', species: 'worldtree',
+    pattern: ['attack', 'guard', 'charge', 'heavy', 'combo', 'attack'], hp: 5, atk: 3.4, def: 1.1, spd: 0.95,
+    onHit: { id: 'slow', rounds: 2, value: 1 },
+    phase2: { pattern: ['combo', 'charge', 'heavy', 'tech', 'combo', 'attack'], atk: 1.2, spd: 1.3,
+      text: 'Die Wurzeln brechen aus dem Boden – Morgrin erhebt sich in voller Größe!' } },
+  { id: 'emberLord', name: 'Ignaros, der Glutfürst', kind: 'boss', dungeon: 'emberCaves', species: 'phoenix',
+    pattern: ['combo', 'tech', 'attack', 'charge', 'heavy'], hp: 3, atk: 1.4, def: 1.05, spd: 1.1,
+    onHit: { id: 'burn', rounds: 3, value: 0.1 },
+    phase2: { pattern: ['tech', 'combo', 'charge', 'heavy', 'combo', 'attack'], atk: 1.25, spd: 1.15,
+      text: 'Ignaros lodert auf – die Höhle steht in Flammen!' } },
+  { id: 'tideQueen', name: 'Neridia, Herrin der Flut', kind: 'boss', dungeon: 'tidalHalls', species: 'leviathan',
+    pattern: ['attack', 'guard', 'tech', 'combo', 'heal'], hp: 2.6, atk: 1.2, def: 1.1, spd: 1,
+    onHit: { id: 'slow', rounds: 2, value: 1 },
+    phase2: { pattern: ['charge', 'heavy', 'combo', 'tech', 'charge', 'heavy', 'attack'], atk: 1.15, spd: 1.25,
+      text: 'Das Wasser steigt – Neridia reitet auf der Flut!' } },
+  { id: 'stormCaller', name: 'Voltar, der Sturmrufer', kind: 'boss', dungeon: 'stormSpire', species: 'tempestlord',
+    pattern: ['combo', 'attack', 'tech', 'charge', 'heavy'], hp: 2.6, atk: 1.35, def: 1, spd: 1.3,
+    phase2: { pattern: ['combo', 'charge', 'heavy', 'combo', 'charge', 'heavy'], atk: 1.15, spd: 1.2,
+      text: 'Blitze zucken um Voltar – der Sturm bricht los!' } },
+  { id: 'nameless', name: 'Die Namenlose', kind: 'boss', dungeon: 'shadowCrypt', species: 'eclipsewing',
+    pattern: ['tech', 'combo', 'guard', 'attack', 'charge', 'heavy'], hp: 2.5, atk: 1.2, def: 1.1, spd: 1.05,
+    onHit: { id: 'poison', rounds: 3, value: 0.15 },
+    phase2: { pattern: ['heal', 'tech', 'charge', 'heavy', 'combo', 'tech'], atk: 1.2,
+      text: 'Die Schatten verdichten sich – die Namenlose zeigt ihr wahres Gesicht!' } },
+  { id: 'prismaton', name: 'Prismaton, der Kristallkoloss', kind: 'boss', dungeon: 'crystalCore', species: 'prismgolem',
+    pattern: ['guard', 'combo', 'charge', 'heavy', 'guard', 'tech'], hp: 3.8, atk: 1.45, def: 1.35, spd: 0.85,
+    phase2: { pattern: ['charge', 'heavy', 'combo', 'charge', 'heavy', 'tech'], atk: 1.3, spd: 1.2,
+      text: 'Prismaton zerspringt – und setzt sich schärfer wieder zusammen!' } },
 ];
 
 /** Dungeons in unlock order: each one opens after the previous is cleared. */
@@ -60,7 +100,7 @@ export const rpgEvents: RpgEventDef[] = [
   { id: 'shrine', name: 'Verlassener Schrein', icon: '⛩️', weight: 3,
     text: 'Ein moosbewachsener Schrein. In der Schale liegen alte Opfergaben.',
     options: [
-      { label: 'Beten', hp: 0.3, result: 'Eine warme Kraft durchströmt dein Monster.' },
+      { label: 'Beten', hp: 0.15, result: 'Eine schwache Wärme durchströmt dein Monster.' },
       { label: 'Opfergaben nehmen', loot: 1.5, hp: -0.15, result: 'Die Gaben gehören jetzt dir – aber der Schrein grollt.' },
     ] },
   { id: 'chest', name: 'Verdächtige Truhe', icon: '🧰', weight: 3,
@@ -73,8 +113,8 @@ export const rpgEvents: RpgEventDef[] = [
   { id: 'spring', name: 'Klare Quelle', icon: '⛲', weight: 2,
     text: 'Klares Wasser sprudelt aus dem Fels. Ein ruhiger Ort.',
     options: [
-      { label: 'Trinken', hp: 0.5, result: 'Das Wasser heilt alle Schrammen.' },
-      { label: 'Beute verstecken', secure: true, hp: 0.15, result: 'Hinter dem Wasserfall ist deine Beute sicher.' },
+      { label: 'Trinken', hp: 0.25, result: 'Das kalte Wasser lindert die schlimmsten Schrammen.' },
+      { label: 'Beute verstecken', secure: true, result: 'Hinter dem Wasserfall ist deine Beute sicher.' },
     ] },
   { id: 'rubble', name: 'Eingestürzter Gang', icon: '🪨', weight: 2,
     text: 'Geröll versperrt einen Seitengang. Dahinter glitzert etwas.',

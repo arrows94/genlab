@@ -340,6 +340,77 @@ Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`Process
 
 # GenLab RPG
 
+## 2026-10-02 – Dark Souls, Schritt 8: Bot und Balancing
+
+- Bot: Heiltrank bei wenig KP, Ausweichen vor schweren Schlägen, Techniken und Kombos, Parieren bei genug Ausdauer
+- Neuer Gegnerzug `combo` (zwei Treffer à `comboMult` 0,85: Ausweichen entgeht nur dem ersten, eine Parade
+  beiden) bei Elite und Bossen; Parieren gegen Elite ×0,8, gegen Bosse ×0,6 (`parryKind`)
+- Zahlen: Ausweichen 80 % (30 Ausdauer), Parieren 60 % (25 Ausdauer), Wut erst ab Runde 25, Wanken-Grenze des
+  Helden 100; Elite-Räume 13; Bosse eher tödlich als zäh (Wurzelmutter ohne Heilung KP 5 / ANG 3,4, die anderen
+  KP 2,5–3,8, ANG 1,2–1,45); Ignaros' Brand 10 % ANG
+- Bot (Boss-Siegrate, wenn erreicht, Glutwelpe auf Ankunftsstufe → 6 Stufen höher): Glutgrotten 39 → 46 %,
+  Flutgewölbe 0 → 36 % (Element-Nachteil), Sturmspitze 38 → 25 %, Schattengruft 33 → 57 %, Kristallkern 27 → 74 %
+- Frisches Monster bis alle Dungeons: Glutwelpe 23–30 Läufe (vorher 45–70), Magmaulwurf 17–26 (20–47), Zephyrix
+  150–178 (120–165, Mauer Sturmspitze), Kieselkauz ab Lauf 17–20 im Wurzellabyrinth (doppelter Element-Nachteil)
+
+## 2026-10-02 – Dark Souls, Schritt 7: Einblendungen und Klänge
+
+- Große Einblendungen nach einem Kampf (blockieren keinen Tipp): „FEIND GEFÄLLT“ / „STARKER FEIND GEFÄLLT“
+  (Elite) / „GROSSER FEIND GEFÄLLT“ (Boss) in Gold, „DU BIST GESTORBEN“ in Blutrot
+- Neue Klänge (einzeln abschaltbar unter „GenLab RPG“): Parieren (Metallklang), Wanken, Boss-Phase (tiefes
+  Grollen), Feind gefällt, Du bist gestorben; eine Niederlage spielt nur noch den Totenklang
+
+## 2026-10-02 – Dark Souls, Schritt 6: Blutfleck
+
+- `balance.rpg.defeatKeep` 0,5 → 0: eine Niederlage behält nichts von der getragenen Beute; sie bleibt mit der
+  getragenen Ausrüstung als Blutfleck (`rpg.bloodstain`: Dungeon, Raum, Beute, Ausrüstung) liegen
+- Der nächste Lauf im selben Dungeon nimmt ihn beim Betreten dieses Raums wieder auf (getragen – erst ein
+  Leuchtfeuer, Lagerplatz oder der Heimweg sichert ihn); eine neue Niederlage ersetzt ihn, ohne Beute bleibt keiner
+- 🩸 auf dem Pfad, in der Lobby am Dungeon und auf dem Ergebnisschirm; Debug-Reset „Blutfleck entfernen“
+
+## 2026-10-02 – Dark Souls, Schritt 5: Bosse mit Namen und zweiter Phase
+
+- Je Dungeon ein eigener Boss (`rpgEnemies` mit `dungeon`, `species`, `onHit`, `phase2`): Morgrin die Wurzelmutter
+  (verlangsamt), Ignaros der Glutfürst (Brand), Neridia Herrin der Flut (verlangsamt), Voltar der Sturmrufer
+  (schnell), die Namenlose (Gift), Prismaton der Kristallkoloss (Panzer) – stärker als der alte Hüter
+  (KP ×2,7–3,6, ANG ×1,3–1,5); der Hüter bleibt als Rückfall
+- Zweite Phase unter `balance.rpg.bossPhaseAt` (50 %) der KP: neues Zugmuster von vorn, mehr Angriff und Tempo,
+  eigener Text; Phasen-Ereignis für Klang und Darstellung
+- Große Boss-Leiste mit Namen unter der Arena, rötlicher Schimmer in Phase 2
+
+## 2026-10-02 – Dark Souls, Schritt 4: Gleichgewicht
+
+- Gleichgewicht (`RpgCombatant.poise`, `balance.rpg.poise`): jeder Treffer füllt die Leiste um 20 × seine Stärke
+  (schwerer Schlag 2,2×, Spezial 3×, Gegenschlag 2,5×); Grenze Held 70, Gegner 50 / Elite 90 / Boss 150
+- Voll = Wanken: der Getroffene setzt seinen nächsten Zug aus, der nächste Treffer gegen ihn ist kritisch
+  (`exposed`); eine Runde ohne Treffer baut 20 ab. Ein taumelnder Held verliert den Zug, zahlt aber weder Ausdauer
+  noch Heiltrank
+- Wanken-Leisten unter den KP in der Arena, Klang beim Wanken
+
+## 2026-10-02 – Dark Souls, Schritt 3: Ausdauer, Ausweichen, Parieren
+
+- Ausdauer (`battle.stamina`, `balance.rpg.stamina`): max 100, +20 je Runde; Kosten je Slot (Angriff 25,
+  Technik 40, dritte 35, Spezial 45, Abwehr 20, Parieren 15); zu wenig = Zug gesperrt
+- Abwehr-Züge (Slot `defense`, `stance`): Ausweichen (90 % gegen jeden Treffer, auch schwere), Parieren (75 % gegen
+  einen normalen Angriff: Gegner taumelt eine Runde, Gegenschlag ×2,5; gegen schwere Schläge, Techniken oder
+  misslungen ×1,5 Schaden), Verschnaufen (kostenlos, +40 Ausdauer extra)
+- Kampfansicht: zweite Knopfreihe, Ausdauerleiste, Kosten auf den Knöpfen, Trank-Zähler; Bot weicht schweren
+  Schlägen aus, pariert normale Angriffe und trinkt bei wenig KP
+
+## 2026-10-02 – Dark Souls, Schritt 2: Heiltränke
+
+- Heiltränke 🧪 (`rpgSkills` „flask“, Slot `item`): `balance.rpg.flasks` = 3 je Lauf (`run.flasks`), heilen 45 %
+  der KP; im Kampf kostet ein Schluck den Zug (`useRpgSkill(ctx, 'flask')`), zwischen den Räumen
+  `drinkRpgFlask`. Das Leuchtfeuer füllt sie wieder auf
+
+## 2026-10-02 – Dark Souls, Schritt 1: weniger Erholung, Leuchtfeuer, Nebeltor
+
+- Raumgewichte `fight 56, elite 16, treasure 4, rest 3, event 12` (vorher 50/12/10/12/14): Schatz und Lagerplatz
+  zusammen unter 10 %; Ereignisse heilen weniger (Schrein 15 %, Quelle 25 %, Beute verstecken ohne Heilung)
+- Neuer Raum `bonfire` (Leuchtfeuer 🔥) fest direkt nach dem Wächter: heilt voll (`balance.rpg.bonfireHeal`) und
+  sichert die Beute; der seltene Lagerplatz heilt weiter `restHeal`
+- Vor dem Boss ein Nebeltor 🌫️ mit kurzer Szene und „Umkehren (Beute mitnehmen)“
+
 Isekai-Umbau (Stufe 1 aus den Grundwerten der Art, Stufe bleibt dem Monster, eigene Welt ohne Labor,
 Portal-Animation, dunkles Design, eigene Musik und Kampfmusik), Rundenkampf mit drei Fähigkeiten und Spezialangriff,
 sichtbares Kampfende (Sieg-Zusammenfassung bis „Weiter“, Niederlage mit Verlusten; `run.aftermath`, `lastResult.fight`),

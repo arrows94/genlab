@@ -660,7 +660,7 @@ export interface VoyageDecisionDef {
 }
 
 /** GenLab RPG: where a skill sits on the hero. Element techniques are derived from `techniques`. */
-export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special';
+export type RpgSkillSlot = 'basic' | 'technique' | 'third' | 'special' | 'defense' | 'item';
 
 /** A turn-based skill of the GenLab RPG hero. */
 export interface RpgSkillDef {
@@ -668,8 +668,15 @@ export interface RpgSkillDef {
   name: string;
   icon: string;
   description: string;
-  /** In content only basic, third and special (techniques come from `techniques`). */
+  /**
+   * In content basic, third, special, defense (Ausweichen, Parieren, Verschnaufen) and item (the Heiltrank);
+   * techniques come from `techniques`.
+   */
   slot: RpgSkillSlot;
+  /** Defense moves: dodge (a hit misses), parry (counter a normal attack) or breathe (extra stamina). */
+  stance?: 'dodge' | 'parry' | 'breathe';
+  /** Stamina the move costs (default: `balance.rpg.stamina.cost` of its slot). */
+  stamina?: number;
   /** enemy: hits the foe (statuses land on it) · self: acts on the hero. */
   target: 'enemy' | 'self';
   /** Damage as a multiple of a normal hit (0 = none). */
@@ -693,7 +700,7 @@ export interface RpgSkillDef {
 }
 
 /** What a dungeon foe does next; shown to the player before they choose. */
-export type RpgIntent = 'attack' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
+export type RpgIntent = 'attack' | 'combo' | 'charge' | 'heavy' | 'guard' | 'heal' | 'tech';
 
 /** A kind of dungeon foe; species and element come from the dungeon. */
 export interface RpgEnemyDef {
@@ -708,10 +715,18 @@ export interface RpgEnemyDef {
   atk: number;
   def: number;
   spd: number;
+  /** A boss of one dungeon: `name` is then its full name (no species added) and it always fights there. */
+  dungeon?: string;
+  /** Its species (look and element); default: the strongest form of the dungeon's elements. */
+  species?: string;
+  /** What its attacks leave behind when they land (burn, poison, slow …). */
+  onHit?: { id: StatusId; rounds: number; value: number };
+  /** Second phase below `balance.rpg.bossPhaseAt` of its HP: a new pattern, stronger and faster. */
+  phase2?: { pattern: RpgIntent[]; atk?: number; spd?: number; text: string };
 }
 
 /** Room kinds of a dungeon; after each room the player picks the next from 2–3. */
-export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'boss';
+export type RpgRoomKind = 'fight' | 'elite' | 'treasure' | 'rest' | 'event' | 'bonfire' | 'boss';
 
 /** A dungeon of the GenLab RPG: element theme, strength and length. */
 export interface RpgDungeonDef {

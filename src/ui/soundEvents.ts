@@ -97,15 +97,16 @@ export function wireSounds(g: Game, currentTab: () => string): void {
   // ---- GenLab RPG: the hero's move, then the foe's answer a moment later ----
   g.bus.on('rpgRound', (e) => {
     const sound = (ev: (typeof e.events)[number]) =>
-      ev.kind === 'miss' ? 'whoosh' : ev.kind === 'heal' ? 'talent' : ev.kind === 'skill' ? 'technique' : ev.crit || (ev.m ?? 1) > 1 ? 'hitCrit' : (ev.m ?? 1) < 1 ? 'hitWeak' : ev.special ? 'technique' : 'hit';
+      ev.kind === 'miss' || ev.kind === 'dodge' ? 'whoosh' : ev.kind === 'parry' ? 'parry' : ev.kind === 'stagger' ? 'stagger' : ev.kind === 'phase' ? 'bossPhase' : ev.kind === 'heal' ? 'talent' : ev.kind === 'skill' ? 'technique' : ev.crit || (ev.m ?? 1) > 1 ? 'hitCrit' : (ev.m ?? 1) < 1 ? 'hitWeak' : ev.special ? 'technique' : 'hit';
     const hero = e.events.find((ev) => ev.by === 'hero');
     const foe = e.events.find((ev) => ev.by === 'foe');
     if (hero) play(sound(hero));
     if (foe) setTimeout(() => play(sound(foe)), 220);
-    if (e.outcome === 'lose') setTimeout(() => play('ko'), 400);
-    else if (e.outcome === 'win' && !e.boss) setTimeout(() => play('floorClear'), 300);
+    if (e.outcome === 'lose') setTimeout(() => play('youDied'), 500);
+    else if (e.outcome === 'win') setTimeout(() => play('felled'), 350);
   });
-  g.bus.on('rpgRunEnded', (e) => play(e.cleared ? 'milestone' : 'runEnded'));
+  // A defeat already tolls (`youDied` above).
+  g.bus.on('rpgRunEnded', (e) => (e.cleared ? play('milestone') : e.win ? play('runEnded') : undefined));
   g.bus.on('rpgLevelUp', () => play('talent'));
   g.bus.on('prestige', (e) => play(e.layer === 'aeon' ? 'aeon' : 'prestige'));
   g.bus.on('talentBought', () => play('talent'));

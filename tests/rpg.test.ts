@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLELE_SAMPLES, closeRpgAftermath, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
+import { ALLELE_SAMPLES, closeRpgAftermath, drinkRpgFlask, giveUpRpgRun, buyMeta, maxTorches, metaCost, salvageItem, salvageValue, equipItem, rollItem, rpgCandidates, chooseEventOption, lootChance, weeklyRoom, chooseUpgrade, dungeonUnlocked, gainXp, xpToNext, enterRoom, finishRpgRun, leaveRpgRun, roomLevel, roomLoot, nextTorchAt, refreshTorches, rpgHero, rpgMaxHp, rpgSkills, secureLoot, startRpgBattle, startRpgRun, torches, useRpgSkill } from '@core/features/rpg';
 import { canConsume, sell } from '@core/features/stable';
 import { effectiveCooldown, heroPerks, itemValues, foeIntent, heroActsFirst, heroStats, rpgLevel, speciesProfile, upgradePerks, xpForLevel, makeFoe, newBattle, playRound, rpgSkillsFor, statusOf, techniqueSkill, thirdSkill } from '@core/features/rpgCombat';
 import type { RpgCombatant } from '@core/state';
@@ -138,11 +138,12 @@ describe('GenLab RPG – Lauf', () => {
     g.state.rpg.run!.loot = { towerTokens: 10 };
     startRpgBattle(g, 'brawler', 'sproutle', 1);
     expect(giveUpRpgRun(g).ok).toBe(true);
-    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: Math.floor(10 * balance.rpg.defeatKeep) } });
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: {}, lost: { towerTokens: 10 } });
+    expect(g.state.rpg.bloodstain).toMatchObject({ dungeon: 'rootMaze', loot: { towerTokens: 10 } });
     expect(c.job).toBeNull();
   });
 
-  it('a defeat keeps secured loot and only a share of the carried loot', () => {
+  it('a defeat keeps secured loot; the carried loot stays behind as a Blutfleck', () => {
     const g = rpgGame();
     startRpgRun(g, g.state.creatures[0]!.id, 'rootMaze');
     const run = g.state.rpg.run!;
@@ -153,7 +154,38 @@ describe('GenLab RPG – Lauf', () => {
     finishRpgRun(g, false);
     const kept = Math.floor(10 * balance.rpg.defeatKeep);
     expect(g.state.resources['towerTokens']!.toNumber()).toBe(10 + kept);
-    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: 10 + kept } });
+    expect(g.state.rpg.lastResult).toMatchObject({ win: false, loot: { towerTokens: 10 + kept }, stain: 1 });
+    expect(g.state.rpg.bloodstain).toMatchObject({ depth: 1, loot: { towerTokens: 10 - kept } });
+  });
+
+  it('the next run takes the Blutfleck back in its room; dying first loses it', () => {
+    const g = rpgGame();
+    g.state.resources['torches'] = D(9);
+    const id = g.state.creatures[0]!.id;
+    const item = rollItem(g, 'rootMaze');
+    g.state.rpg.bloodstain = { dungeon: 'rootMaze', depth: 2, loot: { towerTokens: 7 }, gear: [item] };
+    startRpgRun(g, id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    run.choices = ['treasure'];
+    enterRoom(g, 0); // room 1: not yet
+    expect(g.state.rpg.bloodstain).not.toBeNull();
+    run.choices = ['rest'];
+    run.loot = {};
+    enterRoom(g, 0); // room 2: the stain – picked up, then the camp secures it
+    expect(g.state.rpg.bloodstain).toBeNull();
+    expect(run.secured['towerTokens']).toBe(7);
+    expect(run.securedGear.map((x) => x.id)).toContain(item.id);
+    leaveRpgRun(g);
+    // Dying before reaching it replaces it (the old loot is gone).
+    g.state.rpg.bloodstain = { dungeon: 'rootMaze', depth: 5, loot: { towerTokens: 7 }, gear: [] };
+    startRpgRun(g, id, 'rootMaze');
+    g.state.rpg.run!.loot = { towerTokens: 1 };
+    finishRpgRun(g, false);
+    expect(g.state.rpg.bloodstain).toMatchObject({ depth: 1, loot: { towerTokens: 1 } });
+    // Dying with nothing carried leaves no stain at all.
+    startRpgRun(g, id, 'rootMaze');
+    finishRpgRun(g, false);
+    expect(g.state.rpg.bloodstain).toBeNull();
   });
 
   it('survives save and load; a prestige ends the run', () => {
@@ -358,6 +390,217 @@ describe('GenLab RPG – Rundenkampf', () => {
   });
 });
 
+describe('GenLab RPG – Ausdauer, Abwehr und Heiltränke', () => {
+  /** A fight against a plain foe; `sure` makes dodging and parrying always work. */
+  function duel(over: Partial<typeof balance.rpg> = {}, enemy = 'brawler') {
+    const g = makeGame(42, { rpg: { ...balance.rpg, ...over } });
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = g.state.creatures[0]!;
+    c.abilities = [];
+    c.latent = null;
+    startRpgRun(g, c.id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    run.room = 'fight';
+    startRpgBattle(g, enemy, 'sproutle', 1);
+    const b = run.battle!;
+    b.foe.hp = b.foe.maxHp = 100_000;
+    return { g, c, run, b };
+  }
+  const cost = balance.rpg.stamina.cost;
+
+  it('every move costs stamina, it comes back each round; when it runs out only lighter moves are left', () => {
+    const { g, b } = duel();
+    expect(b.stamina).toBe(balance.rpg.stamina.max);
+    useRpgSkill(g, 'strike');
+    expect(b.stamina).toBe(balance.rpg.stamina.max - cost.basic + balance.rpg.stamina.regen);
+    b.stamina = cost.basic - 1;
+    const res = useRpgSkill(g, 'strike');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toContain('erschöpft');
+    // Verschnaufen is free and brings extra stamina.
+    expect(useRpgSkill(g, 'breathe').ok).toBe(true);
+    expect(b.stamina).toBe(cost.basic - 1 + balance.rpg.stamina.regen + balance.rpg.stamina.breathe);
+  });
+
+  it('Ausweichen lets a heavy blow miss; it does not attack', () => {
+    const { g, b } = duel({ dodgeChance: 1 });
+    b.foe.step = 3; // brawler: attack, attack, charge, heavy
+    expect(foeIntent(g, b.foe)).toBe('heavy');
+    const hp = b.hero.hp;
+    const foeHp = b.foe.hp;
+    expect(useRpgSkill(g, 'dodge').ok).toBe(true);
+    expect(b.hero.hp).toBe(hp);
+    expect(b.foe.hp).toBe(foeHp);
+    expect(b.last?.some((e) => e.kind === 'dodge')).toBe(true);
+  });
+
+  it('Parieren catches a normal attack: the foe staggers for its next move and takes a counter', () => {
+    const { g, b } = duel({ parryChance: 1 });
+    expect(foeIntent(g, b.foe)).toBe('attack');
+    const hp = b.hero.hp;
+    useRpgSkill(g, 'parry');
+    expect(b.hero.hp).toBe(hp);
+    expect(b.foe.hp).toBeLessThan(100_000);
+    expect(b.last?.some((e) => e.kind === 'parry')).toBe(true);
+    // Next round the foe skips its move.
+    const before = b.hero.hp;
+    useRpgSkill(g, 'breathe');
+    expect(b.hero.hp).toBe(before);
+    expect(b.log.some((l) => l.includes('betäubt'))).toBe(true);
+  });
+
+  it('a Kombo: Ausweichen escapes only the first hit, a parry catches both', () => {
+    const foeHits = (stance: string) => {
+      const { g, b } = duel({ dodgeChance: 1, parryChance: 1, parryKind: { normal: 1, elite: 1, boss: 1 } }, 'champion');
+      b.foe.step = 4; // champion: attack, charge, heavy, tech, combo
+      expect(foeIntent(g, b.foe)).toBe('combo');
+      useRpgSkill(g, stance);
+      return (b.last ?? []).filter((e) => e.by === 'foe' && e.kind === 'hit').length;
+    };
+    expect(foeHits('breathe')).toBe(2);
+    expect(foeHits('dodge')).toBe(1);
+    expect(foeHits('parry')).toBe(0);
+  });
+
+  it('Parieren fails against a heavy blow: the hit lands harder', () => {
+    const hit = (stance: string) => {
+      const { g, b } = duel({ parryChance: 1 });
+      b.foe.step = 3;
+      b.hero.hp = b.hero.maxHp = 100_000;
+      b.hero.def = 0;
+      useRpgSkill(g, stance);
+      return 100_000 - b.hero.hp;
+    };
+    const plain = hit('breathe');
+    const parried = hit('parry');
+    expect(plain).toBeGreaterThan(0);
+    expect(parried / plain).toBeGreaterThan(1.3);
+  });
+
+  it('Gleichgewicht: hits fill the poise; full = the foe staggers, skips its move and takes a critical hit', () => {
+    const { g, b } = duel();
+    const p = balance.rpg.poise;
+    useRpgSkill(g, 'strike');
+    expect(b.foe.poise).toBe(p.perHit);
+    b.foe.poise = p.normal - 1;
+    useRpgSkill(g, 'strike');
+    expect(b.foe.exposed).toBe(true);
+    expect(b.foe.poise).toBe(0);
+    expect(b.last?.some((e) => e.kind === 'stagger')).toBe(true);
+    expect(b.log.at(-1)).toContain('betäubt'); // it skipped its move right away
+    // The next hit is critical and ends the stagger.
+    useRpgSkill(g, 'strike');
+    expect(b.foe.exposed).toBe(false);
+    expect(b.last?.some((e) => e.by === 'hero' && e.crit)).toBe(true);
+  });
+
+  it('poise recovers in a round without a hit', () => {
+    const { g, b } = duel({ dodgeChance: 1 });
+    b.foe.poise = 40;
+    b.foe.step = 2; // charge: nobody is hit
+    useRpgSkill(g, 'breathe');
+    expect(b.foe.poise).toBe(40 - balance.rpg.poise.regen);
+  });
+
+  it('a staggered hero loses its move – without paying stamina or a Heiltrank', () => {
+    const { g, run, b } = duel();
+    b.hero.statuses.push({ id: 'stun', rounds: 2, value: 1 });
+    const stamina = b.stamina!;
+    const foeHp = b.foe.hp;
+    useRpgSkill(g, 'flask');
+    expect(run.flasks).toBe(balance.rpg.flasks);
+    expect(b.foe.hp).toBe(foeHp);
+    expect(b.stamina).toBe(Math.min(balance.rpg.stamina.max, stamina + balance.rpg.stamina.regen));
+  });
+
+  it('a Heiltrank heals in a fight but costs the turn; only a few per run, the Leuchtfeuer refills them', () => {
+    const { g, c, run, b } = duel();
+    expect(run.flasks).toBe(balance.rpg.flasks);
+    b.hero.hp = 1;
+    const foeHp = b.foe.hp;
+    expect(useRpgSkill(g, 'flask').ok).toBe(true);
+    expect(run.flasks).toBe(balance.rpg.flasks - 1);
+    expect(b.hero.hp).toBeGreaterThan(1);
+    expect(b.foe.hp).toBe(foeHp);
+    run.flasks = 0;
+    expect(useRpgSkill(g, 'flask').ok).toBe(false);
+    // Between rooms too.
+    run.battle = null;
+    run.room = null;
+    run.flasks = 1;
+    run.hp = 1;
+    expect(drinkRpgFlask(g).ok).toBe(true);
+    expect(run.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * g.content.rpgSkills.get('flask').heal!));
+    expect(drinkRpgFlask(g).ok).toBe(false);
+    run.choices = ['bonfire'];
+    enterRoom(g, 0);
+    expect(run.flasks).toBe(balance.rpg.flasks);
+  });
+});
+
+describe('GenLab RPG – Bosse', () => {
+  it('every dungeon has its own named boss behind the fog gate', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    const c = makeHero(g, 60);
+    for (const d of g.content.rpgDungeons.list) {
+      const def = g.content.rpgEnemies.list.find((e) => e.dungeon === d.id);
+      expect(def, d.id).toBeDefined();
+      g.state.rpg.cleared = Object.fromEntries(g.content.rpgDungeons.list.map((x) => [x.id, 1]));
+      g.state.resources['torches'] = D(9);
+      startRpgRun(g, c.id, d.id);
+      const run = g.state.rpg.run!;
+      run.depth = d.rooms;
+      run.choices = ['boss'];
+      enterRoom(g, 0);
+      expect(run.battle!.foe.enemy).toBe(def!.id);
+      expect(run.battle!.foe.name).toBe(def!.name);
+      giveUpRpgRun(g);
+    }
+  });
+
+  it('below half its HP a boss enters its second phase: new pattern, stronger', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = makeHero(g, 1);
+    g.state.rpg.cleared['rootMaze'] = 1;
+    startRpgRun(g, c.id, 'emberCaves');
+    const run = g.state.rpg.run!;
+    run.room = 'boss';
+    startRpgBattle(g, 'emberLord', 'phoenix', 10);
+    const b = run.battle!;
+    b.hero.hp = b.hero.maxHp = 1_000_000;
+    const atk = b.foe.atk;
+    b.foe.hp = Math.floor(b.foe.maxHp * balance.rpg.bossPhaseAt) + 1;
+    b.foe.step = 2; // attack – the strike takes it below half
+    useRpgSkill(g, 'strike');
+    expect(b.foe.phase).toBe(2);
+    expect(b.foe.atk).toBeGreaterThan(atk);
+    expect(b.last?.some((e) => e.kind === 'phase')).toBe(true);
+    expect(foeIntent(g, b.foe)).toBe(g.content.rpgEnemies.get('emberLord').phase2!.pattern[0]);
+  });
+
+  it("a boss's blows leave its mark", () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    refreshTorches(g, NOW);
+    const c = makeHero(g, 1);
+    g.state.rpg.cleared['rootMaze'] = 1;
+    startRpgRun(g, c.id, 'emberCaves');
+    const run = g.state.rpg.run!;
+    run.room = 'boss';
+    startRpgBattle(g, 'emberLord', 'phoenix', 10);
+    const b = run.battle!;
+    b.hero.hp = b.hero.maxHp = 1_000_000;
+    b.hero.spd = 0;
+    b.foe.hp = b.foe.maxHp = 1_000_000;
+    for (let i = 0; i < 6 && !b.hero.statuses.some((st) => st.id === 'burn'); i++) useRpgSkill(g, 'breathe');
+    expect(b.hero.statuses.some((st) => st.id === 'burn')).toBe(true);
+  });
+});
+
 describe('GenLab RPG – Dungeon', () => {
   function run(seed = 42) {
     const g = strongGame(seed);
@@ -440,7 +683,7 @@ describe('GenLab RPG – Dungeon', () => {
     r.hp = 1;
     expect(chooseEventOption(g, 2).ok).toBe(false);
     expect(chooseEventOption(g, 0).ok).toBe(true);
-    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * 0.3));
+    expect(r.hp).toBe(1 + Math.round(rpgMaxHp(g, c) * g.content.rpgEvents.get('shrine').options[0].hp!));
     expect(r.eventResult).toBe(g.content.rpgEvents.get('shrine').options[0].result);
     expect(r.event).toBeNull();
     expect(r.choices.length).toBeGreaterThan(0);
@@ -723,6 +966,39 @@ describe('GenLab RPG – Freischaltung und Tagesbelohnung', () => {
       expect(g.state.rpg.run!.choices).toEqual(['elite']);
       leaveRpgRun(g);
     }
+  });
+
+  it('behind the guardian the Leuchtfeuer heals fully and secures the loot; then the ways split again', () => {
+    const g = makeGame();
+    unlockFeature(g, 'rpg');
+    const c = makeHero(g, 60);
+    g.state.resources['torches'] = D(9);
+    startRpgRun(g, c.id, 'rootMaze');
+    const run = g.state.rpg.run!;
+    const at = guardianRoom(g, 'rootMaze');
+    run.depth = at + 1; // inside the guardian's room
+    run.choices = [];
+    run.room = 'elite';
+    startRpgBattle(g, 'champion', 'sproutle', 1);
+    run.battle!.foe.hp = 1;
+    useRpgSkill(g, 'strike');
+    expect(run.choices).toEqual(['bonfire']);
+    run.offer = [];
+    run.pendingLevels = 0;
+    run.hp = 1;
+    run.loot = { towerTokens: 5 };
+    expect(enterRoom(g, 0).ok).toBe(true);
+    expect(run.hp).toBe(rpgMaxHp(g, c, run.upgrades));
+    expect(run.loot).toEqual({});
+    expect(run.secured['towerTokens']).toBe(5);
+    expect(run.choices.length).toBeGreaterThanOrEqual(2);
+    expect(run.choices).not.toContain('bonfire');
+  });
+
+  it('treasure and camps are rare; the boss waits behind the last room', () => {
+    const w = balance.rpg.roomWeights;
+    const total = Object.values(w).reduce((a, b) => a + b, 0);
+    expect((w.treasure + w.rest) / total).toBeLessThan(0.1);
   });
 
   it('candidates are the free monsters, strongest first', () => {

@@ -79,7 +79,7 @@
       <h3>{res.cleared ? '👑 Dungeon geschafft!' : res.win ? '🚪 Lauf beendet' : '💀 Niederlage'}</h3>
       <p class="small">
         {content.rpgDungeons.get(res.dungeon).name} · Raum {res.depth} · Stufe {res.startLevel !== undefined && res.startLevel < res.level ? `${res.startLevel} → ${res.level}` : res.level}
-        {#if !res.win}· Nur gesicherte Beute und {Math.round(game.balance.rpg.defeatKeep * 100)} % der getragenen bleiben.{/if}
+        {#if !res.win && res.stain}· 🩸 Deine getragene Beute liegt als Blutfleck in Raum {res.stain} – hol sie dir im nächsten Lauf zurück.{/if}
       </p>
       <div class="loot">
         {#each lootList(res.loot) as l (l.name)}<span class="chip">{l.icon} {formatNumber(l.amount)} {l.name}</span>{:else}<span class="muted small">Keine Beute.</span>{/each}
@@ -97,6 +97,7 @@
           <span class="d-name">{x.d.name}</span>
           <span class="small d-level" title="Stufe der Gegner vom ersten Raum bis zum Boss">Stufe {x.levels.from}–{x.levels.boss}</span>
           <span class="small muted">{x.open ? (x.cleared > 0 ? `👑 ×${x.cleared}` : x.best > 0 ? `bis Raum ${x.best}` : `${x.d.rooms} Räume + Boss`) : 'Vorigen Dungeon besiegen'}</span>
+          {#if game.state.rpg.bloodstain?.dungeon === x.d.id}<span class="small stain" title="Hier liegt deine Beute aus der letzten Niederlage">🩸 Blutfleck in Raum {game.state.rpg.bloodstain.depth}</span>{/if}
         </button>
       {/each}
     </div>
@@ -192,6 +193,7 @@
 {/if}
 
 <style>
+  .stain { color: #e0605a; }
   .torch-count { font-size: 0.95rem; }
   .small { font-size: 0.8rem; }
   h3 { margin: 0 0 0.5rem; }

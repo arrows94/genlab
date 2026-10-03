@@ -22,7 +22,8 @@ export type DebugResetId =
   | 'rpgLevels'
   | 'rpgGear'
   | 'rpgMeta'
-  | 'rpgWeekly';
+  | 'rpgWeekly'
+  | 'rpgBloodstain';
 
 export interface DebugResetDef {
   id: DebugResetId;
@@ -45,6 +46,7 @@ export const DEBUG_RESETS: DebugResetDef[] = [
   { id: 'rpgGear', group: 'GenLab RPG', name: 'Ausrüstung löschen', description: 'Alle Ausrüstung ist weg.' },
   { id: 'rpgMeta', group: 'GenLab RPG', name: 'Runen-Wissen löschen', description: 'Runen-Wissen und Runen stehen wieder auf 0.' },
   { id: 'rpgWeekly', group: 'GenLab RPG', name: 'Wochen-Deckel zurücksetzen', description: 'Zeitkristalle und Äon-Splitter aus dem Dungeon zählen diese Woche wieder von 0.' },
+  { id: 'rpgBloodstain', group: 'GenLab RPG', name: 'Blutfleck entfernen', description: 'Die Beute der letzten Niederlage verschwindet.' },
 ];
 
 /** Resets that change the hero's power or the dungeon while a run is going – they wait for its end. */
@@ -102,6 +104,9 @@ export function debugReset(ctx: GameContext, id: DebugResetId): ActionResult {
       break;
     case 'rpgWeekly':
       s.rpg.weekly = { week: -1, got: {} };
+      break;
+    case 'rpgBloodstain':
+      s.rpg.bloodstain = null;
       break;
   }
   ctx.invalidate();
