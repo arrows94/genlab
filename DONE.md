@@ -319,6 +319,16 @@ Niederlagen-Auswertung (`analyzeDefeat`, `tower.lastDefeat`). Kämpfe bleiben de
 
 # Turm: Stillstand abbauen, feinere Etagen
 
+## 2026-10-03 – Genom-Keller Schritt 1: Turm-Code verallgemeinert
+
+- Neues Modul `core/features/floors.ts`: endlose Strecken (`Course` = Gegner-Kurve + Würfel-Präfix) mit
+  `courseEnemy` / `courseEnemies`, Boss-, Wächter- und Kontrollpunkt-Rhythmus und Marken je Etage. Der Turm ist die
+  Strecke `towerCourse`; `tower.ts` behält seine Funktionen als dünne Hüllen, kein Aufrufer musste sich ändern.
+- `Balance`: neuer Typ `FloorCurve` (Gegner-Kurve) getrennt von den gemeinsamen Kampfregeln, `tower` ist
+  `FloorCurve & {…}` – die Zahlen in `balance.ts` sind unverändert, keine Migration.
+- Abnahme: alle Tests grün, `towerCurve` (`GENLAB_CURVE=1`), Langzeit-Bot und 4 Tage Äon-Bot liefern Zeichen für
+  Zeichen dieselbe Ausgabe wie vorher.
+
 ## 2026-10-03 – Genom-Keller: Grundidee festgelegt
 
 - Richtung „Gen-Keller“ statt „Turm rückwärts“ oder endlosem RPG-Modus: Turm-Engine, begrenzte Abstiege mit

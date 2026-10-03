@@ -164,12 +164,9 @@ Merkmale wirken außerhalb der Produktion kaum.
 
 ### Schritte
 
-- [ ] **Schritt 1 – Turm-Code verallgemeinern** (ohne Verhaltensänderung): Gegner-Kurve, Etagen-Würfel
-      (`floorDice`-Präfix), Boss-/Wächter-Rhythmus, Kontrollpunkte und Belohnungs-Takt aus einer Definition lesen
-      (`content/endgame.ts`, Richtung auf/ab, Zahlen in `balance.ts`) statt aus `balance.tower` direkt. `state.tower`
-      bleibt, wie es ist (keine Migration). Abnahme: alle Turm-Tests, `towerCurve` und der Langzeit-Bot liefern
-      unverändert dieselben Zahlen
-- [ ] **Schritt 2 – Grundgerüst Keller** (`features/cellar.ts`): `state.cellar` (Team, Reihen, Lauf, Rekord, Versuche
+- [ ] **Schritt 2 – Grundgerüst Keller** (`features/cellar.ts`): Strecke `cellar` über `features/floors.ts` (eigener
+      Würfel-Präfix, eigene `FloorCurve` in `balance.cellar`; Name, Richtung ab und Einheit „Ebene“ als Definition in
+      `content/endgame.ts`), `state.cellar` (Team, Reihen, Lauf, Rekord, Versuche
       mit Zeitstempel, Verlauf), Job `{ kind: 'cellar' }` (in `isOccupied`, `pruneCreatureRefs`), Feature `cellar` in
       `progression.ts` (Bedingung `towerFloor` 150), Versuche wie in `weeklyBoss.ts` (neuer Tag → neue
       Versuche, auch offline), Abstieg mit
