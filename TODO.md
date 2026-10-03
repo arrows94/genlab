@@ -131,6 +131,33 @@ Merkmale wirken außerhalb der Produktion kaum.
   Mauer – mit dem Bot prüfen)
 - **Eigenes Team**, eigener Tiefen-Rekord und eigene Kontrollpunkte; eine Kreatur steht nie in Turm und Keller
   zugleich. Rekord, Schattenmarken und dunkle Relikte überstehen jede Vererbung und jedes Äon
+- **Atmosphäre – etwas Eigenes, weder Turm noch RPG-Welt:** Der Turm ist das saubere Labor (Violett, Petrol, Himmel),
+  die RPG-Welt Fantasy (Pergament, Messing, Glut). Der Keller ist das **verlassene, überwucherte Labor darunter** –
+  schaurig und böse, aber nicht blutig:
+  - *Farben:* eigene Tokens – Schwarzgrün (`--abyss`), fahles Biolumineszenz-Grün (`--bile`), Rost, Knochenweiß;
+    Rot nur für Augen in der Dunkelheit
+  - *Lichtkegel:* Die Szene ist schwarz, nur ein flackernder Fackelkreis ist sichtbar – sein Radius folgt dem
+    Fackellicht, die Spielregel ist also direkt zu sehen. Ohne Flackern bei `.reduce-motion`
+  - *Gegner aus der Dunkelheit:* erst nur leuchtende Augen, die Gestalt zeigt sich beim Angriff
+  - *Kulisse:* Gewölbe, tropfendes Wasser, zerbrochene Zuchttanks mit trübem Inhalt, Adern in den Wänden, die im
+    Herzschlag pulsieren, Bodennebel, verblichene Laborschilder, Kratzspuren
+  - *Umgebungen sichtbar:* Überflutet = steigende Wasserlinie, Sporennebel = grüne Schwebeteilchen, Finsternis =
+    kleinerer Lichtkegel, Einsturz = Staub und Risse
+  - *Boss „Schatten“:* das SVG der eigenen Art schwarz und verzerrt, mit glühenden Augen
+  - *Ebenen* als Schacht nach unten mit Tiefenmesser (−1, −2 …) statt der Etagen-Liste des Turms
+- **Musik – eigene Stimmung `cellar`** (live mit Web Audio wie `ui/music.ts`, keine Dateien). Kein Akkordwechsel wie
+  bei den anderen Stimmungen, sondern Gruselklang; dafür bekommt `MoodDef` neue Bausteine:
+  - *Atmender Drone:* zwei tiefe, leicht verstimmte Töne, die langsam gegeneinander schweben; ab und zu ein Tritonus
+  - *Kaputte Spieluhr:* ein Wiegenlied aus der Frühzeit des Labors, verstimmt, stockend, bleibt manchmal stehen
+  - *Geräusche im Raum* zu zufälligen Zeiten: Tropfen mit Hall, knarrendes Metall, fernes Klopfen, Flüstern
+    (gefiltertes Rauschen)
+  - *Mit der Tiefe* mehr Dissonanz; bei wenig Licht oder schwachem Team ein Herzschlag
+  - *Boss „Schatten“:* die Melodie der Brutstation, verlangsamt und nach Moll verbogen – das dunkle Spiegelbild
+  - `moodFor` wählt `cellar`, solange der Umschalter auf ▼ Keller steht
+- **Klänge** (`ui/sound.ts`, je Rezept mit Drossel in `LIMITS` und in `SOUND_GROUPS` zum Probehören): Aufzug-Fahrt
+  (Seil, Schleifen, dumpfer Aufprall), Ebene geschafft (dumpfer Gong), Fackel flackert / erlischt, Rast (Feuer
+  knistert), neue Umgebung, Boss erscheint (anschwellendes Grollen), Niederlage (absinkender Cluster), neuer Versuch
+  bereit
 - **Abgrenzung:** Turm = rohe Kraft eines Teams, Dauerkampf. Keller = Anpassung eines Teams, begrenzte Abstiege.
   RPG-Dungeon = ein Held, von Hand. Die „Tiefenexpedition“ wird kein eigenes System, sondern mit dem RPG-Dungeon
   zusammengelegt
@@ -159,15 +186,22 @@ Merkmale wirken außerhalb der Produktion kaum.
       Platz-Regel für Turm und Keller festlegen), `cellarMilestoneProvider` mit den Quellen für
       `infusion.transferChance`, Ritual-`rarityBoost` und `cost.capsule` (dann den Punkt in der Code-Durchsicht
       streichen), Äon-Splitter mit Wochen-Deckel
-- [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab mit Aufzug-Fahrt durch den Boden
-      (`.reduce-motion` = sofort, zuletzt gewählter Bereich in `viewState`), `TowerArena` im Keller-Stil (Gewölbe,
-      Fackellicht, dunkle Farben, Gegner-Tönung), Ebenen zählen nach unten (−1, −2 …), Anzeige der Umgebung und welche
-      Kreaturen passen, Versuche-Zähler, `tabActivity`, Klänge, Changelog-Eintrag mit `feature: 'cellar'`. Auch auf
-      Handy-Breite prüfen
-- [ ] **Schritt 7 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
+- [ ] **Schritt 6 – Oberfläche**: Umschalter ▲ Turm / ▼ Keller im Turm-Tab (zuletzt gewählter Bereich in
+      `viewState`), Keller-Ansicht mit eigenem Schacht statt der Etagen-Liste, Anzeige der Umgebung und welche
+      Kreaturen passen, Versuche-Zähler, `tabActivity`, Changelog-Eintrag mit `feature: 'cellar'`. Funktional, noch
+      im einfachen Stil. Auch auf Handy-Breite prüfen
+- [ ] **Schritt 7 – Atmosphäre: Bild** (siehe oben): eigene Farb-Tokens, Arena mit Lichtkegel nach Fackellicht,
+      Gegner aus der Dunkelheit, Kulisse, sichtbare Umgebungen, Boss „Schatten“, Aufzug-Fahrt durch den Boden
+      (Licht flackert, Seil ruckt, Ansicht sinkt). `.reduce-motion` = ruhiges Bild ohne Flackern und sofortiger
+      Wechsel. Leistung auf dem Handy prüfen (Lichtkegel und Nebel nur mit CSS, keine großen Bilder)
+- [ ] **Schritt 8 – Atmosphäre: Klang und Musik** (siehe oben): Stimmung `cellar` mit Drone, Spieluhr, Raum-Geräuschen,
+      Tiefe und Herzschlag; Boss-Variante aus der Brutstation-Melodie; Keller-Klänge in `sound.ts`; Klänge nur im
+      Keller-Bereich (`setSoundScope`-Muster der RPG-Welt prüfen). Mit echten Ohren gegenhören: schaurig, aber auf
+      Dauer nicht nervig
+- [ ] **Schritt 9 – Balancing mit dem Äon-Bot**: Bot nutzt den Keller (Team nach Umgebung wählen), messen: Tiefe je
       Tag, Schattenmarken, Wirkung der dunklen Relikte auf den Turm-Stillstand (Ziel höchstens etwa 3 Tage), Splitter
       je Woche. Zahlen in `balance.ts` nachziehen
-- [ ] **Schritt 8 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
+- [ ] **Schritt 10 – Höhlenformen** (optional, nach Rückmeldungen): blasse Varianten als Fund tief im Keller; braucht
       Änderungen am Kreaturen-SVG – zusammen mit den kosmetischen Mustern der Gen-Aufträge planen
 
 # GenLab RPG
