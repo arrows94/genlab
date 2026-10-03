@@ -145,6 +145,56 @@ wird. Thematisch das Gegenteil des Turms – dunkel, feucht, Gewölbe statt Himm
 Ritual-Eier bleiben fertig im Nest liegen, bis der Spieler sie öffnet (`ProcessHandler.waitsForPlayer`,
 `openRitualEgg`, Enthüllungs-Animation, Zähler am Reiter); der Zuchtautomat öffnet sie nicht, der Test-Bot schon.
 
+# Markt: in jeder Etappe relevant
+
+Stand: vier Tränke (Kraftfutter, Turbo-Trank, Festmahl, Zeittrank) mit festen Preisen in Gold, Nahrung und Essenz
+(`content/potions.ts`, `core/features/market.ts`), nur Kraftfutter wird pro Kreatur teurer. Der Markt öffnet nach 25
+Essenz und hat keinen Bezug zu Turm, Äon, Relikten oder Anomalien (`noPotions` sperrt ihn nur). Folge: Nach der ersten
+Vererbung sind die Preise Kleingeld, das Sortiment ändert sich nie, es gibt keine Entscheidung und keinen Grund
+wiederzukommen.
+
+Leitplanken: Die Regeln liegen in `core`, Zahlen in `balance.ts`, Tränke sind Daten (neuer `kind` + Datenzeile oder
+Provider). Angebote verfallen, aber nichts geht dauerhaft verloren (wie bei der Tagesbelohnung). Der Markt darf die
+Ökonomie nicht aushebeln – Tausch nur mit festem Kurs und Tageslimit. Wirkung jeweils mit `longrun` und `aeon` messen.
+
+## Offen
+
+Reihenfolge nach Aufwand und Wirkung:
+
+- [ ] **1. Preise und Effekte mitwachsen lassen**
+  - Kosten als Anteil der aktuellen Produktion (z. B. Festmahl = 15 min Goldertrag) statt fester Zahl, Faktor in
+    `balance.ts`, Berechnung in `potionCost` (passt zu `cost.potion` und `scaleCost`)
+  - Tränke in Stufen I–III, freigeschaltet über Features (Turm, Äon, Großprojekt); höhere Stufen kosten
+    Mittelspiel-Währungen (Fragmente, Katalysator), später Turmmarken und Äon-Splitter
+  - Effekte skalieren mit dem Fortschritt (z. B. „+Y % der Produktion von 1 h sofort“ statt fester Prozente)
+- [ ] **2. Mehrfachkauf** ×5 / ×10 (vor allem Kraftfutter) und Kosten-Vorschau für den ganzen Stapel
+- [ ] **3. Neue Tränke für spätere Systeme** (neue `kind`s)
+  - Zucht und Genetik: Mutations-Serum (höhere Mutationschance für eine Brut), Allel-Fixierer (ein Locus wird bei der
+    nächsten Brut garantiert vererbt), Rarität-Katalysator für die Besondere Brut
+  - Turm und Kampf: Kampf-Elixier für einen Lauf, Wochen-Boss-Trank (mehr Schaden), Wiederbelebungstrank
+  - Expedition: Proviant (Dauer/Risiko, Beute `lootPct`), Kompass für die Wochenexpedition
+  - Prestige: Erbgut-Trank (zieht einen Teil der nächsten Vererbung vor), „Äon-Trank“ als Starthilfe nach dem Reset
+  - Anomalie-Serum, das eine Regel abmildert (statt `noPotions` als völlige Sperre)
+  - Talent oder Großprojekt „Markt-Rabatt“ über den vorhandenen Modifier `cost.potion`
+- [ ] **4. Rotierendes Angebot**: täglich 3–4 Angebote aus einem Pool (Rabatt, Rarität, Limit), deterministisch über
+      Seed/Epoche wie Gen-Aufträge und Wochen-Mutation; dazu ein Wochen-Spezial passend zur Wochen-Mutation (Gold-
+      Mutation → passender Trank, Brut-Mutation → Brut-Elixier). Benachrichtigung „Neues Angebot“ optional
+- [ ] **5. Händler-Ruf und Währungs-Senke**
+  - Käufe und Verkäufe erhöhen einen Ruf mit Stufen (neue Waren, Rabatte, Lager-Slot); Ruf überdauert die Vererbung,
+    pro Äon teilweise zurücksetzen (`registerResetSurvivor`, `PrestigeLayerDef.resets`), evtl. Händler-Zweig im Talentbaum
+  - Überlaufende Währungen (Fragmente, Kapseln, Relikt-Staub, Turmmarken, Äon-Splitter) gegen Spezialtränke tauschen,
+    fester Kurs mit Tageslimit; Bots messen, ob der Markt als Inflations-Ventil taugt
+  - Sammelbuch der Tränke mit Erfolgen und kleinen Dauer-Boni (Provider, ähnlich Dex-Boni), Kombo-Bonus bei zwei
+    gleichzeitig aktiven Tränken
+- [ ] **6. Handel mit Kreaturen und Genen**
+  - Händleranfragen („Sprössling mit hoher Geschwindigkeit“): schneller als Gen-Aufträge, dafür schlechter bezahlt
+  - Genbörse: Allele und Kapseln mit schwankenden Preisen kaufen und verkaufen
+  - Wandernder Händler: erscheint zufällig für begrenzte Zeit mit einmaligen Waren (seltenes Ei, Kapsel, Relikt),
+    Benachrichtigung
+  - Apotheker-Automat (Regeln wie Zuchtautomat / Recycling-Automat) und Trank-Vorrat mit automatischem Einsatz –
+    erst sinnvoll, wenn es viele Trank-Sorten gibt
+- [ ] Verkaufstresen mit Preisen je nach Art oder Gen-Merkmal prüfen (Verbindung zum gezielten Züchten)
+
 # GenLab RPG (ein Monster, aktiver Dungeon)
 
 Erledigt: Isekai-Umbau (Stufe 1 aus den Grundwerten der Art, Stufe bleibt dem Monster, eigene Welt ohne Labor,
